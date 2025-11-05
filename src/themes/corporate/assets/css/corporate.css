@@ -1,0 +1,396 @@
+/**
+ * Corporate Theme Styles
+ * Premium glassmorphism design with aurora effects
+ * Optimized for B2B, legal, consulting, and professional services
+ */
+
+/* Reset and Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  color: #f1f5f9;
+  line-height: 1.7;
+  background: #020617;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Outfit, Inter, sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--primary-color, #2d6aff);
+  color: #fff;
+  box-shadow: 0 30px 80px -20px rgba(93, 127, 255, 0.35);
+}
+
+.btn-primary:hover {
+  background: #1f50db;
+  box-shadow: 0 40px 100px -30px rgba(93, 127, 255, 0.45);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Glass Panel Effects */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.45));
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Light Mode Adjustments */
+body.light-mode .glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.9));
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+body.light-mode {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(93, 127, 255, 0.15), transparent 45%),
+    radial-gradient(circle at 85% 25%, rgba(64, 235, 208, 0.2), transparent 55%),
+    #f1f5f9;
+  color: #0f172a;
+}
+
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6 {
+  color: #0f172a;
+}
+
+/* Aurora Wrapper */
+.aurora-wrapper {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.65;
+  z-index: -1;
+  overflow: hidden;
+}
+
+body.light-mode .aurora-wrapper {
+  mix-blend-mode: normal;
+  opacity: 0.4;
+}
+
+.aurora-gradient {
+  width: 120vw;
+  height: 120vh;
+  background: conic-gradient(
+    from 45deg,
+    rgba(93, 127, 255, 0.15),
+    rgba(64, 235, 208, 0.1),
+    rgba(93, 127, 255, 0.25)
+  );
+  filter: blur(120px);
+  transform-origin: center;
+  animation: auroraDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift {
+  0% {
+    transform: translate3d(-10%, -5%, 0) scale(1.05) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(5%, 2%, 0) scale(1.2) rotate(15deg);
+  }
+  100% {
+    transform: translate3d(-4%, 6%, 0) scale(1.05) rotate(-12deg);
+  }
+}
+
+/* Navigation */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(2, 6, 23, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+body.light-mode .site-nav {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(148, 163, 184, 0.32);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+.nav-indicator {
+  position: relative;
+}
+
+.nav-indicator::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -8px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(64, 235, 208, 0.4), rgba(93, 127, 255, 0.6));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.4s ease;
+}
+
+.nav-indicator:hover::before,
+.nav-indicator[data-active="true"]::before {
+  transform: scaleX(1);
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  background: rgba(2, 6, 23, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.light-mode .mobile-menu {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+}
+
+/* Scroll Reveal Animations */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Metric Cards with Conic Gradient Effect */
+.metric-card {
+  position: relative;
+  transition: all 0.5s ease;
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(64, 235, 208, 0.35),
+    rgba(93, 127, 255, 0.3),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+/* Case Study Cards */
+.case-study-card {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  cursor: pointer;
+}
+
+.case-study-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 80px -32px rgba(59, 130, 246, 0.45);
+}
+
+/* Split Highlight */
+.split-highlight {
+  background: linear-gradient(120deg, rgba(93, 127, 255, 0.25), rgba(64, 235, 208, 0.2));
+  clip-path: polygon(0 0, 100% 0, 75% 100%, 0% 100%);
+}
+
+body.light-mode .split-highlight {
+  background: linear-gradient(120deg, rgba(93, 127, 255, 0.18), rgba(64, 235, 208, 0.22));
+}
+
+/* Forms */
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+textarea {
+  border-radius: 16px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #5989ff;
+  box-shadow: 0 0 0 1px #5989ff;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+}
+
+body.light-mode input,
+body.light-mode textarea,
+body.light-mode select {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(148, 163, 184, 0.32);
+  color: #0f172a;
+}
+
+/* Shadow Aurora */
+.shadow-aurora {
+  box-shadow: 0 30px 80px -20px rgba(93, 127, 255, 0.35);
+}
+
+.shadow-aurora-lg {
+  box-shadow: 0 40px 100px -30px rgba(93, 127, 255, 0.45);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tracking-\[0\.35em\] {
+    letter-spacing: 0.22em !important;
+  }
+
+  .tracking-\[0\.4em\],
+  .tracking-\[0\.45em\] {
+    letter-spacing: 0.24em !important;
+  }
+
+  .aurora-wrapper {
+    opacity: 0.55;
+  }
+
+  body.light-mode .aurora-wrapper {
+    opacity: 0.35;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-gradient {
+    animation: none;
+  }
+
+  .scroll-reveal,
+  .case-study-card,
+  .metric-card,
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Utility Classes */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, #5989ff, #40ebd0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Selection */
+::selection {
+  background: rgba(93, 127, 255, 0.6);
+  color: #fff;
+}
+
+body.light-mode ::selection {
+  background: rgba(93, 127, 255, 0.3);
+  color: #0f172a;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(93, 127, 255, 0.5);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(93, 127, 255, 0.7);
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+}
+
+body.light-mode ::-webkit-scrollbar-thumb {
+  background: rgba(93, 127, 255, 0.4);
+}
