@@ -61,7 +61,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
             <span>Total: <strong>\${stats.totalPermissions}</strong></span>
             <span>Módulos: <strong class="text-purple-600">\${stats.totalModules}</strong></span>
           </div>
-        \` : ""}
+        ` : ""}
       </div>
       <div class="page-actions">
         <button onclick="showCreateModal()" class="btn-action">
@@ -88,9 +88,9 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
               permiso\${item.count === 1 ? '' : 's'}
             </div>
           </div>
-        \`)}
+        `)}
       </div>
-    \` : ""}
+    ` : ""}
 
     <!-- Permissions by Module -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -146,12 +146,12 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                       </div>
                     </td>
                   </tr>
-                \`)}
+                `)}
               </tbody>
             </table>
           </div>
         </div>
-      \`)}
+      `)}
     </div>
 
     <!-- Create/Edit Modal -->
@@ -179,9 +179,9 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
               <datalist id="modulesList">
                 \${modules && modules.length > 0 ? modules.map(m => html`
                   <option value="\${m}">\${m}</option>
-                \`) : grouped.map(g => html`
+                `) : grouped.map(g => html`
                   <option value="\${g.module}">\${g.module}</option>
-                \`)}
+                `)}
               </datalist>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Nombre del módulo o sección del sistema
@@ -267,7 +267,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
       }
 
       async function deletePermission(id, name) {
-        if (!confirm(\`¿Estás seguro de eliminar el permiso "\${name}"?\nEsto puede afectar a roles que tengan este permiso asignado.\`)) {
+        if (!confirm(`¿Estás seguro de eliminar el permiso "\${name}"?\nEsto puede afectar a roles que tengan este permiso asignado.`)) {
           return;
         }
 
@@ -301,7 +301,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
         }
       });
     </script>
-  \`;
+  `;
 
   return AdminLayout({ user, content, title: "Permisos" });
 };

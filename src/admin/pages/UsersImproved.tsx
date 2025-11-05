@@ -83,7 +83,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                   <span>Suspendidos: <strong class="text-red-600">\${stats.suspended}</strong></span>
                   <span>Con 2FA: <strong class="text-blue-600">\${stats.with2FA}</strong></span>
                 </div>
-              \`
+              `
             : ""
         }
       </div>
@@ -150,7 +150,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                   <option value="\${r.id}" \${filters.roleId === r.id ? "selected" : ""}>
                     \${r.name}\${r.isSystem ? " (sistema)" : ""}
                   </option>
-                \`
+                `
               )}
             </select>
           </div>
@@ -235,7 +235,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                       No hay usuarios para mostrar
                     </td>
                   </tr>
-                \`
+                `
               : users.map(
                   (u) => html`
                     <tr>
@@ -253,13 +253,13 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                           <img
                             class="table-avatar"
                             src="\${u.avatar ||
-                            \`https://ui-avatars.com/api/?name=\${encodeURIComponent(u.name || u.email)}\`}"
+                            `https://ui-avatars.com/api/?name=\${encodeURIComponent(u.name || u.email)}`}"
                             alt="\${u.name}"
                           />
                           <div class="ml-3">
                             <div class="font-medium text-gray-900 dark:text-gray-100">
                               \${u.name || "Sin nombre"}
-                              \${u.id === 1 ? html`<span class="ml-2 badge-info text-xs">Superadmin</span>\` : ""}
+                              \${u.id === 1 ? html`<span class="ml-2 badge-info text-xs">Superadmin</span>` : ""}
                             </div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">\${u.email}</div>
                           </div>
@@ -269,13 +269,13 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                       <td>
                         <span class="badge-info">
                           \${u.role?.name || "Sin rol"}
-                          \${u.role?.isSystem ? html`<span class="ml-1 text-xs">(sistema)</span>\` : ""}
+                          \${u.role?.isSystem ? html`<span class="ml-1 text-xs">(sistema)</span>` : ""}
                         </span>
                       </td>
                       <td>
                         \${u.twoFactorEnabled
-                          ? html`<span class="badge-success">Habilitado</span>\`
-                          : html`<span class="badge-secondary">Deshabilitado</span>\`}
+                          ? html`<span class="badge-success">Habilitado</span>`
+                          : html`<span class="badge-secondary">Deshabilitado</span>`}
                       </td>
                       <td class="text-sm text-gray-500 dark:text-gray-400">\${formatLastLogin(u.lastLoginAt)}</td>
                       <td class="text-sm text-gray-500 dark:text-gray-400">
@@ -309,12 +309,12 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                                     ></path>
                                   </svg>
                                 </button>
-                              \`
+                              `
                             : ""}
                         </div>
                       </td>
                     </tr>
-                  \`
+                  `
                 )
           }
         </tbody>
@@ -338,7 +338,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                           >
                             Anterior
                           </a>
-                        \`
+                        `
                       : ""}
                     \${pagination.hasMore
                       ? html`
@@ -348,12 +348,12 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                           >
                             Siguiente
                           </a>
-                        \`
+                        `
                       : ""}
                   </div>
                 </div>
               </div>
-            \`
+            `
           : ""
       }
     </div>
@@ -384,7 +384,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               <select id="roleId" name="roleId" class="form-input" required>
                 <option value="">Seleccionar rol...</option>
                 \${roles.map(
-                  (r) => html` <option value="\${r.id}">\${r.name}\${r.isSystem ? " (sistema)" : ""}</option> \`
+                  (r) => html` <option value="\${r.id}">\${r.name}\${r.isSystem ? " (sistema)" : ""}</option> `
                 )}
               </select>
             </div>
@@ -451,7 +451,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm(\`¿Estás seguro de cambiar el estado de \${ids.length} usuario(s) a "\${status}"?\`)) {
+        if (!confirm(`¿Estás seguro de cambiar el estado de \${ids.length} usuario(s) a "\${status}"?`)) {
           return;
         }
 
@@ -478,7 +478,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm(\`¿Estás seguro de eliminar \${ids.length} usuario(s)? Esta acción no se puede deshacer.\`)) {
+        if (!confirm(`¿Estás seguro de eliminar \${ids.length} usuario(s)? Esta acción no se puede deshacer.`)) {
           return;
         }
 
@@ -532,7 +532,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       }
 
       async function deleteUser(id, email) {
-        if (!confirm(\`¿Estás seguro de eliminar el usuario "\${email}"?\`)) {
+        if (!confirm(`¿Estás seguro de eliminar el usuario "\${email}"?`)) {
           return;
         }
 
@@ -566,7 +566,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         }
       });
     </script>
-  \`;
+  `;
 
   return AdminLayout({ user, content, title: "Usuarios" });
 };
