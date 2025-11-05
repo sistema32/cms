@@ -1,0 +1,174 @@
+{
+  "name": "modern",
+  "displayName": "Modern",
+  "version": "1.0.0",
+  "description": "Contemporary theme inspired by tiptap.dev and astro.build. Features vibrant gradients, smooth animations, and modern design patterns perfect for developer-focused products and SaaS platforms.",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "config": {
+    "posts_per_page": 9,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 },
+      "xlarge": { "width": 2000 }
+    },
+    "custom": {
+      "accent_color": {
+        "type": "color",
+        "label": "Accent Color",
+        "default": "#6366f1",
+        "group": "colors",
+        "description": "Primary accent color for gradients and highlights"
+      },
+      "secondary_accent": {
+        "type": "color",
+        "label": "Secondary Accent",
+        "default": "#8b5cf6",
+        "group": "colors",
+        "description": "Secondary color for gradient combinations"
+      },
+      "enable_gradients": {
+        "type": "boolean",
+        "label": "Enable Gradients",
+        "default": true,
+        "group": "design",
+        "description": "Use gradient backgrounds and effects"
+      },
+      "enable_animations": {
+        "type": "boolean",
+        "label": "Enable Animations",
+        "default": true,
+        "group": "design",
+        "description": "Enable scroll animations and transitions"
+      },
+      "enable_parallax": {
+        "type": "boolean",
+        "label": "Enable Parallax",
+        "default": true,
+        "group": "design",
+        "description": "Enable parallax scrolling effects"
+      },
+      "hero_style": {
+        "type": "select",
+        "label": "Hero Style",
+        "options": ["gradient", "minimal", "bold"],
+        "default": "gradient",
+        "group": "homepage",
+        "description": "Style for the homepage hero section"
+      },
+      "show_hero_badge": {
+        "type": "boolean",
+        "label": "Show Hero Badge",
+        "default": true,
+        "group": "homepage",
+        "description": "Display animated badge in hero section"
+      },
+      "show_stats": {
+        "type": "boolean",
+        "label": "Show Statistics",
+        "default": true,
+        "group": "homepage",
+        "description": "Display statistics in hero section"
+      },
+      "features_layout": {
+        "type": "select",
+        "label": "Features Layout",
+        "options": ["grid-3", "grid-2", "list"],
+        "default": "grid-3",
+        "group": "homepage",
+        "description": "Layout for features section"
+      },
+      "card_style": {
+        "type": "select",
+        "label": "Card Style",
+        "options": ["elevated", "bordered", "minimal"],
+        "default": "elevated",
+        "group": "design",
+        "description": "Style for content cards"
+      },
+      "button_style": {
+        "type": "select",
+        "label": "Button Style",
+        "options": ["gradient", "solid", "outline"],
+        "default": "gradient",
+        "group": "design",
+        "description": "Default button style"
+      },
+      "show_cta_section": {
+        "type": "boolean",
+        "label": "Show CTA Section",
+        "default": true,
+        "group": "homepage",
+        "description": "Display call-to-action section at bottom"
+      },
+      "enable_backdrop_blur": {
+        "type": "boolean",
+        "label": "Enable Backdrop Blur",
+        "default": true,
+        "group": "design",
+        "description": "Use backdrop blur for header and overlays"
+      },
+      "font_display": {
+        "type": "select",
+        "label": "Display Font",
+        "options": ["Space Grotesk", "Inter", "Poppins", "Outfit"],
+        "default": "Space Grotesk",
+        "group": "typography",
+        "description": "Font for headings and display text"
+      },
+      "show_social_links": {
+        "type": "boolean",
+        "label": "Show Social Links",
+        "default": true,
+        "group": "footer",
+        "description": "Display social media links in footer"
+      },
+      "enable_ripple_effect": {
+        "type": "boolean",
+        "label": "Enable Ripple Effect",
+        "default": true,
+        "group": "design",
+        "description": "Material Design ripple effect on buttons"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": true,
+    "menus": ["header", "footer"],
+    "postFormats": ["standard"],
+    "customTemplates": true,
+    "responsiveDesign": true,
+    "seo": true,
+    "animations": true
+  },
+  "templates": {
+    "home": "templates/home.tsx"
+  },
+  "partials": {
+    "header": "partials/Header.tsx",
+    "footer": "partials/Footer.tsx"
+  },
+  "requirements": {
+    "lexcms": ">=1.0.0",
+    "deno": ">=1.40.0"
+  },
+  "tags": [
+    "modern",
+    "gradient",
+    "animated",
+    "developer",
+    "saas",
+    "contemporary",
+    "vibrant",
+    "tiptap",
+    "astro",
+    "tailwind"
+  ]
+}
