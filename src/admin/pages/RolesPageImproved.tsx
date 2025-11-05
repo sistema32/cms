@@ -159,9 +159,10 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                           <td>
                             <div class="flex gap-2">
                               <button
-                                onclick="viewRolePermissions(${role.id})"
-                                class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                                class="btn-view-permissions text-blue-600 hover:text-blue-800 dark:text-blue-400"
                                 title="Ver permisos"
+                                data-role-id="${role.id}"
+                                data-role-name="${role.name}"
                               >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
@@ -173,9 +174,9 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                 </svg>
                               </button>
                               <button
-                                onclick="openRoleModal('edit', ${role.id})"
-                                class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                                class="btn-edit-role text-purple-600 hover:text-purple-800 dark:text-purple-400"
                                 title="Editar"
+                                data-role-id="${role.id}"
                               >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path
@@ -184,9 +185,10 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                 </svg>
                               </button>
                               <button
-                                onclick="cloneRole(${role.id})"
-                                class="text-green-600 hover:text-green-800 dark:text-green-400"
+                                class="btn-clone-role text-green-600 hover:text-green-800 dark:text-green-400"
                                 title="Clonar rol"
+                                data-role-id="${role.id}"
+                                data-role-name="${role.name}"
                               >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path
@@ -200,9 +202,10 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                               ${!role.isSystem
                                 ? html`
                                     <button
-                                      onclick="deleteRole(${role.id}, '${role.name}')"
-                                      class="text-red-600 hover:text-red-800 dark:text-red-400"
+                                      class="btn-delete-role text-red-600 hover:text-red-800 dark:text-red-400"
                                       title="Eliminar"
+                                      data-role-id="${role.id}"
+                                      data-role-name="${role.name}"
                                     >
                                       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path
@@ -465,91 +468,114 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         document.getElementById('roleModal').classList.remove('modal-open');
       }
 
-      // View role permissions
-      function viewRolePermissions(roleId) {
-        const role = rolesData.find(r => r.id === roleId);
-        if (!role) return;
-
-        document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + role.name + '"';
-
-        const permissions = ${JSON.stringify(permissions)};
-        const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
-
-        // Group by module
-        const grouped = rolePermissions.reduce((acc, perm) => {
-          if (!acc[perm.module]) acc[perm.module] = [];
-          acc[perm.module].push(perm);
-          return acc;
-        }, {});
-
-        let content = '<div class="space-y-4">';
-        for (const [module, perms] of Object.entries(grouped)) {
-          content += \`
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm">
-                \${module} <span class="text-xs text-gray-500">(\${perms.length})</span>
-              </div>
-              <div class="p-3 space-y-1">
-                \${perms.map(p => \`
-                  <div class="flex items-center text-sm">
-                    <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="font-medium">\${p.action}</span>
-                    \${p.description ? \`<span class="text-xs text-gray-500 ml-2">- \${p.description}</span>\` : ''}
-                  </div>
-                \`).join('')}
-              </div>
-            </div>
-          \`;
-        }
-        content += '</div>';
-
-        document.getElementById('viewPermissionsContent').innerHTML = content;
-        document.getElementById('viewPermissionsModal').classList.add('modal-open');
-      }
-
       function closeViewPermissionsModal() {
         document.getElementById('viewPermissionsModal').classList.remove('modal-open');
-      }
-
-      // Clone role
-      function cloneRole(roleId) {
-        const role = rolesData.find(r => r.id === roleId);
-        if (!role) return;
-
-        document.getElementById('cloneRoleId').value = roleId;
-        document.getElementById('cloneRoleName').value = role.name + ' (Copia)';
-        document.getElementById('cloneRoleDescription').value = 'Copia de ' + role.name;
-        document.getElementById('cloneForm').action = ADMIN_BASE_PATH + '/roles/clone/' + roleId;
-        document.getElementById('cloneModal').classList.add('modal-open');
       }
 
       function closeCloneModal() {
         document.getElementById('cloneModal').classList.remove('modal-open');
       }
 
-      // Delete role
-      async function deleteRole(roleId, roleName) {
-        if (!confirm('¿Estás seguro de eliminar el rol "' + roleName + '"?')) {
-          return;
-        }
+      // Event listeners
+      document.addEventListener('DOMContentLoaded', () => {
+        const permissions = ${JSON.stringify(permissions)};
 
-        try {
-          const response = await fetch(ADMIN_BASE_PATH + '/roles/delete/' + roleId, {
-            method: 'POST'
+        // View permissions buttons
+        document.querySelectorAll('.btn-view-permissions').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const roleId = parseInt(e.currentTarget.dataset.roleId);
+            const roleName = e.currentTarget.dataset.roleName;
+            const role = rolesData.find(r => r.id === roleId);
+            if (!role) return;
+
+            document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + roleName + '"';
+
+            const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
+            const grouped = rolePermissions.reduce((acc, perm) => {
+              if (!acc[perm.module]) acc[perm.module] = [];
+              acc[perm.module].push(perm);
+              return acc;
+            }, {});
+
+            let content = '<div class="space-y-4">';
+            for (const [module, perms] of Object.entries(grouped)) {
+              content += \`
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm">
+                    \${module} <span class="text-xs text-gray-500">(\${perms.length})</span>
+                  </div>
+                  <div class="p-3 space-y-1">
+                    \${perms.map(p => \`
+                      <div class="flex items-center text-sm">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="font-medium">\${p.action}</span>
+                        \${p.description ? \`<span class="text-xs text-gray-500 ml-2">- \${p.description}</span>\` : ''}
+                      </div>
+                    \`).join('')}
+                  </div>
+                </div>
+              \`;
+            }
+            content += '</div>';
+
+            document.getElementById('viewPermissionsContent').innerHTML = content;
+            document.getElementById('viewPermissionsModal').classList.add('modal-open');
           });
+        });
 
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            const data = await response.json();
-            alert('Error: ' + (data.error || 'No se pudo eliminar'));
-          }
-        } catch (error) {
-          alert('Error de conexión');
-        }
-      }
+        // Edit role buttons
+        document.querySelectorAll('.btn-edit-role').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const roleId = parseInt(e.currentTarget.dataset.roleId);
+            openRoleModal('edit', roleId);
+          });
+        });
+
+        // Clone role buttons
+        document.querySelectorAll('.btn-clone-role').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const roleId = parseInt(e.currentTarget.dataset.roleId);
+            const roleName = e.currentTarget.dataset.roleName;
+            const role = rolesData.find(r => r.id === roleId);
+            if (!role) return;
+
+            document.getElementById('cloneRoleId').value = roleId;
+            document.getElementById('cloneRoleName').value = roleName + ' (Copia)';
+            document.getElementById('cloneRoleDescription').value = 'Copia de ' + roleName;
+            document.getElementById('cloneForm').action = ADMIN_BASE_PATH + '/roles/clone/' + roleId;
+            document.getElementById('cloneModal').classList.add('modal-open');
+          });
+        });
+
+        // Delete role buttons
+        document.querySelectorAll('.btn-delete-role').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const roleId = parseInt(e.currentTarget.dataset.roleId);
+            const roleName = e.currentTarget.dataset.roleName;
+
+            if (!confirm('¿Estás seguro de eliminar el rol "' + roleName + '"?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch(ADMIN_BASE_PATH + '/roles/delete/' + roleId, {
+                method: 'POST'
+              });
+
+              if (response.ok) {
+                window.location.reload();
+              } else {
+                const data = await response.json();
+                alert('Error: ' + (data.error || 'No se pudo eliminar'));
+              }
+            } catch (error) {
+              alert('Error de conexión');
+            }
+          });
+        });
+      });
 
       // Close modals on ESC
       document.addEventListener('keydown', (e) => {

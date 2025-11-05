@@ -284,9 +284,13 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                       <td>
                         <div class="flex gap-2">
                           <button
-                            onclick="editUser(${u.id}, '${u.name?.replace(/'/g, "\\\\'") || ""}', '${u.email}', ${u.role?.id || "null"}, '${u.status || "active"}')"
-                            class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                            class="btn-edit-user text-purple-600 hover:text-purple-800 dark:text-purple-400"
                             title="Editar"
+                            data-id="${u.id}"
+                            data-name="${u.name || ""}"
+                            data-email="${u.email}"
+                            data-role-id="${u.role?.id || ""}"
+                            data-status="${u.status || "active"}"
                           >
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                               <path
@@ -297,9 +301,10 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                           ${u.email !== user.email && u.id !== 1
                             ? html`
                                 <button
-                                  onclick="deleteUser(${u.id}, '${u.email}')"
-                                  class="text-red-600 hover:text-red-800 dark:text-red-400"
+                                  class="btn-delete-user text-red-600 hover:text-red-800 dark:text-red-400"
                                   title="Eliminar"
+                                  data-id="${u.id}"
+                                  data-email="${u.email}"
                                 >
                                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path
@@ -516,43 +521,63 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         document.getElementById('userModal').classList.add('modal-open');
       }
 
-      function editUser(id, name, email, roleId, status) {
-        document.getElementById('modalTitle').textContent = 'Editar Usuario';
-        document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/edit/' + id;
-        document.getElementById('userId').value = id;
-        document.getElementById('name').value = name;
-        document.getElementById('email').value = email;
-        document.getElementById('roleId').value = roleId || '';
-        document.getElementById('status').value = status || 'active';
-        document.getElementById('password').value = '';
-        document.getElementById('password').required = false;
-        document.getElementById('userModal').classList.add('modal-open');
-      }
-
       function closeModal() {
         document.getElementById('userModal').classList.remove('modal-open');
       }
 
-      async function deleteUser(id, email) {
-        if (!confirm('Estás seguro de eliminar el usuario "' + email + '"?')) {
-          return;
-        }
+      // Event listeners for edit and delete buttons
+      document.addEventListener('DOMContentLoaded', () => {
+        // Edit buttons
+        document.querySelectorAll('.btn-edit-user').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const target = e.currentTarget;
+            const id = target.dataset.id;
+            const name = target.dataset.name;
+            const email = target.dataset.email;
+            const roleId = target.dataset.roleId;
+            const status = target.dataset.status;
 
-        try {
-          const response = await fetch(ADMIN_BASE_PATH + '/users/delete/' + id, {
-            method: 'POST'
+            document.getElementById('modalTitle').textContent = 'Editar Usuario';
+            document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/edit/' + id;
+            document.getElementById('userId').value = id;
+            document.getElementById('name').value = name;
+            document.getElementById('email').value = email;
+            document.getElementById('roleId').value = roleId || '';
+            document.getElementById('status').value = status || 'active';
+            document.getElementById('password').value = '';
+            document.getElementById('password').required = false;
+            document.getElementById('userModal').classList.add('modal-open');
           });
+        });
 
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            const data = await response.json();
-            alert('Error: ' + (data.error || 'No se pudo eliminar'));
-          }
-        } catch (error) {
-          alert('Error de conexión');
-        }
-      }
+        // Delete buttons
+        document.querySelectorAll('.btn-delete-user').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.currentTarget;
+            const id = target.dataset.id;
+            const email = target.dataset.email;
+
+            if (!confirm('Estás seguro de eliminar el usuario "' + email + '"?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch(ADMIN_BASE_PATH + '/users/delete/' + id, {
+                method: 'POST'
+              });
+
+              if (response.ok) {
+                window.location.reload();
+              } else {
+                const data = await response.json();
+                alert('Error: ' + (data.error || 'No se pudo eliminar'));
+              }
+            } catch (error) {
+              alert('Error de conexión');
+            }
+          });
+        });
+      });
 
       // Close modal on ESC
       document.addEventListener('keydown', (e) => {
