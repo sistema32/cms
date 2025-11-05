@@ -75,7 +75,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         <h1 class="page-title">Gestión de Usuarios</h1>
         \${
           stats
-            ? html\`
+            ? html`
                 <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
                   <span>Total: <strong>\${stats.total}</strong></span>
                   <span>Activos: <strong class="text-green-600">\${stats.active}</strong></span>
@@ -146,7 +146,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             >
               <option value="">Todos los roles</option>
               \${roles.map(
-                (r) => html\`
+                (r) => html`
                   <option value="\${r.id}" \${filters.roleId === r.id ? "selected" : ""}>
                     \${r.name}\${r.isSystem ? " (sistema)" : ""}
                   </option>
@@ -229,7 +229,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         <tbody>
           \${
             users.length === 0
-              ? html\`
+              ? html`
                   <tr>
                     <td colspan="8" class="text-center py-8 text-gray-500 dark:text-gray-400">
                       No hay usuarios para mostrar
@@ -237,7 +237,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                   </tr>
                 \`
               : users.map(
-                  (u) => html\`
+                  (u) => html`
                     <tr>
                       <td>
                         <input
@@ -259,7 +259,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                           <div class="ml-3">
                             <div class="font-medium text-gray-900 dark:text-gray-100">
                               \${u.name || "Sin nombre"}
-                              \${u.id === 1 ? html\`<span class="ml-2 badge-info text-xs">Superadmin</span>\` : ""}
+                              \${u.id === 1 ? html`<span class="ml-2 badge-info text-xs">Superadmin</span>\` : ""}
                             </div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">\${u.email}</div>
                           </div>
@@ -269,13 +269,13 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                       <td>
                         <span class="badge-info">
                           \${u.role?.name || "Sin rol"}
-                          \${u.role?.isSystem ? html\`<span class="ml-1 text-xs">(sistema)</span>\` : ""}
+                          \${u.role?.isSystem ? html`<span class="ml-1 text-xs">(sistema)</span>\` : ""}
                         </span>
                       </td>
                       <td>
                         \${u.twoFactorEnabled
-                          ? html\`<span class="badge-success">Habilitado</span>\`
-                          : html\`<span class="badge-secondary">Deshabilitado</span>\`}
+                          ? html`<span class="badge-success">Habilitado</span>\`
+                          : html`<span class="badge-secondary">Deshabilitado</span>\`}
                       </td>
                       <td class="text-sm text-gray-500 dark:text-gray-400">\${formatLastLogin(u.lastLoginAt)}</td>
                       <td class="text-sm text-gray-500 dark:text-gray-400">
@@ -295,7 +295,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                             </svg>
                           </button>
                           \${u.email !== user.email && u.id !== 1
-                            ? html\`
+                            ? html`
                                 <button
                                   onclick="deleteUser(\${u.id}, '\${u.email}')"
                                   class="text-red-600 hover:text-red-800 dark:text-red-400"
@@ -322,7 +322,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
 
       \${
         pagination && pagination.total > pagination.limit
-          ? html\`
+          ? html`
               <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                   <div class="text-sm text-gray-700 dark:text-gray-300">
@@ -331,7 +331,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                   </div>
                   <div class="flex gap-2">
                     \${pagination.offset > 0
-                      ? html\`
+                      ? html`
                           <a
                             href="?offset=\${Math.max(0, pagination.offset - pagination.limit)}&limit=\${pagination.limit}"
                             class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300"
@@ -341,7 +341,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                         \`
                       : ""}
                     \${pagination.hasMore
-                      ? html\`
+                      ? html`
                           <a
                             href="?offset=\${pagination.offset + pagination.limit}&limit=\${pagination.limit}"
                             class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
@@ -384,7 +384,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               <select id="roleId" name="roleId" class="form-input" required>
                 <option value="">Seleccionar rol...</option>
                 \${roles.map(
-                  (r) => html\` <option value="\${r.id}">\${r.name}\${r.isSystem ? " (sistema)" : ""}</option> \`
+                  (r) => html` <option value="\${r.id}">\${r.name}\${r.isSystem ? " (sistema)" : ""}</option> \`
                 )}
               </select>
             </div>

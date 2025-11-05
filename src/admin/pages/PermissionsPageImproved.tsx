@@ -49,14 +49,14 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     count: perms.length,
   })).sort((a, b) => a.module.localeCompare(b.module));
 
-  const content = html\`
+  const content = html`
     <div class="page-header">
       <div>
         <h1 class="page-title">Gestión de Permisos</h1>
         <p class="page-subtitle">
           Define permisos específicos para módulos y acciones del sistema
         </p>
-        \${stats ? html\`
+        \${stats ? html`
           <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
             <span>Total: <strong>\${stats.totalPermissions}</strong></span>
             <span>Módulos: <strong class="text-purple-600">\${stats.totalModules}</strong></span>
@@ -74,9 +74,9 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     </div>
 
     <!-- Stats Cards -->
-    \${stats && stats.moduleBreakdown.length > 0 ? html\`
+    \${stats && stats.moduleBreakdown.length > 0 ? html`
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        \${stats.moduleBreakdown.slice(0, 4).map(item => html\`
+        \${stats.moduleBreakdown.slice(0, 4).map(item => html`
           <div class="table-card p-4">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               \${item.module}
@@ -94,7 +94,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
 
     <!-- Permissions by Module -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      \${grouped.map(group => html\`
+      \${grouped.map(group => html`
         <div class="table-card">
           <div class="table-card-header">
             <h2 class="table-card-title">
@@ -113,7 +113,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                 </tr>
               </thead>
               <tbody>
-                \${group.permissions.map(perm => html\`
+                \${group.permissions.map(perm => html`
                   <tr>
                     <td>
                       <span class="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">
@@ -177,9 +177,9 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                 placeholder="ej: users, posts, media..."
               />
               <datalist id="modulesList">
-                \${modules && modules.length > 0 ? modules.map(m => html\`
+                \${modules && modules.length > 0 ? modules.map(m => html`
                   <option value="\${m}">\${m}</option>
-                \`) : grouped.map(g => html\`
+                \`) : grouped.map(g => html`
                   <option value="\${g.module}">\${g.module}</option>
                 \`)}
               </datalist>
