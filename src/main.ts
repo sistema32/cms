@@ -1,7 +1,17 @@
 import { app } from "./app.ts";
 import { env } from "./config/env.ts";
+import { pluginManager } from "./lib/plugin-system/index.ts";
 
 const port = env.PORT;
+
+// Initialize plugin system
+console.log('\n🔌 Initializing plugin system...');
+try {
+  await pluginManager.initialize();
+} catch (error) {
+  console.error('❌ Failed to initialize plugin system:', error);
+  // Continue anyway - plugins are optional
+}
 
 console.log(`
 🚀 Servidor iniciado exitosamente
@@ -18,6 +28,13 @@ console.log(`
    GET    /api/users/:id (protegido)
    PUT    /api/users/:id (protegido)
    DELETE /api/users/:id (protegido)
+
+🔌 Plugin System:
+   GET    /api/plugins (protegido)
+   POST   /api/plugins/:name/install (protegido)
+   POST   /api/plugins/:name/activate (protegido)
+   POST   /api/plugins/:name/deactivate (protegido)
+   PATCH  /api/plugins/:name/settings (protegido)
 `);
 
 Deno.serve({ port }, app.fetch);
