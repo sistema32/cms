@@ -34,10 +34,17 @@ export async function securityHeaders(c: Context, next: Next) {
         "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://cdn.quilljs.com; img-src 'self' data: https:; font-src 'self' https://cdn.quilljs.com; connect-src 'self'; frame-ancestors 'none';",
       );
     } else {
-      // CSP más restrictivo para el sitio público
+      // CSP para el sitio público con soporte para temas
+      // Permite CDNs de Tailwind, Google Fonts, y scripts inline para configuración de temas
       c.header(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';",
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "img-src 'self' data: https:; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "connect-src 'self'; " +
+        "frame-ancestors 'none';",
       );
     }
   }
