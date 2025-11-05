@@ -1,0 +1,109 @@
+{
+  "name": "minimalist",
+  "displayName": "Minimalist",
+  "version": "1.0.0",
+  "description": "Clean, simple, and content-focused theme with elegant typography and minimal distractions",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "config": {
+    "posts_per_page": 8,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 }
+    },
+    "custom": {
+      "primary_color": {
+        "type": "color",
+        "label": "Primary Color",
+        "default": "#000000",
+        "group": "design",
+        "description": "Main color for text and accents (typically black for minimalist)"
+      },
+      "background_color": {
+        "type": "color",
+        "label": "Background Color",
+        "default": "#ffffff",
+        "group": "design",
+        "description": "Background color for the site"
+      },
+      "show_featured_images": {
+        "type": "boolean",
+        "label": "Show Featured Images",
+        "default": true,
+        "group": "posts",
+        "description": "Display featured images on posts"
+      },
+      "post_layout": {
+        "type": "select",
+        "label": "Post Layout",
+        "options": ["Horizontal", "Vertical", "Stacked"],
+        "default": "Horizontal",
+        "group": "homepage",
+        "description": "Layout style for post cards"
+      },
+      "show_post_excerpts": {
+        "type": "boolean",
+        "label": "Show Post Excerpts",
+        "default": true,
+        "group": "homepage",
+        "description": "Display post excerpts in listings"
+      },
+      "content_width": {
+        "type": "select",
+        "label": "Content Width",
+        "options": ["Narrow", "Medium", "Wide"],
+        "default": "Medium",
+        "group": "layout",
+        "description": "Maximum width for content container"
+      },
+      "show_reading_time": {
+        "type": "boolean",
+        "label": "Show Reading Time",
+        "default": true,
+        "group": "posts",
+        "description": "Display estimated reading time on articles"
+      },
+      "hero_style": {
+        "type": "select",
+        "label": "Hero Style",
+        "options": ["Centered", "Left Aligned", "None"],
+        "default": "Centered",
+        "group": "homepage",
+        "description": "Style for the homepage hero section"
+      },
+      "enable_dark_mode": {
+        "type": "boolean",
+        "label": "Enable Dark Mode",
+        "default": false,
+        "group": "design",
+        "description": "Allow users to switch to dark mode"
+      },
+      "show_categories": {
+        "type": "boolean",
+        "label": "Show Categories",
+        "default": false,
+        "group": "posts",
+        "description": "Display category labels on posts (minimal aesthetic)"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": false,
+    "menus": ["header", "footer"],
+    "postFormats": ["standard"],
+    "customTemplates": true
+  },
+  "templates": {
+    "home": "templates/home.tsx"
+  },
+  "partials": {
+    "post-card": "partials/PostCard.tsx"
+  }
+}
