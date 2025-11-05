@@ -119,6 +119,7 @@ export const tags = sqliteTable("tags", {
 export const content = sqliteTable("content", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   contentTypeId: integer("content_type_id").notNull().references(() => contentTypes.id, { onDelete: "cascade" }),
+  parentId: integer("parent_id"), // Para páginas hijas (child pages)
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
   excerpt: text("excerpt"),
@@ -393,6 +394,29 @@ export const settings = sqliteTable("settings", {
     .default(sql`(unixepoch())`),
 });
 
+// ============= CONTENT REVISIONS (Historial de Versiones) =============
+export const contentRevisions = sqliteTable("content_revisions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  excerpt: text("excerpt"),
+  body: text("body"),
+  status: text("status").notNull(),
+  visibility: text("visibility").notNull(),
+  password: text("password"),
+  featuredImageId: integer("featured_image_id"),
+  publishedAt: integer("published_at", { mode: "timestamp" }),
+  scheduledAt: integer("scheduled_at", { mode: "timestamp" }),
+  // Metadatos de la revisión
+  revisionNumber: integer("revision_number").notNull(), // Número secuencial de versión
+  authorId: integer("author_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Autor de esta versión
+  changesSummary: text("changes_summary"), // Resumen opcional de los cambios
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // ============= RELATIONS =============
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -468,6 +492,14 @@ export const contentRelations = relations(content, ({ one, many }) => ({
     fields: [content.contentTypeId],
     references: [contentTypes.id],
   }),
+  parent: one(content, {
+    fields: [content.parentId],
+    references: [content.id],
+    relationName: "contentParent",
+  }),
+  children: many(content, {
+    relationName: "contentParent",
+  }),
   featuredImage: one(media, {
     fields: [content.featuredImageId],
     references: [media.id],
@@ -481,6 +513,7 @@ export const contentRelations = relations(content, ({ one, many }) => ({
   seo: one(contentSeo),
   meta: many(contentMeta),
   comments: many(comments),
+  revisions: many(contentRevisions),
 }));
 
 export const contentCategoriesRelations = relations(contentCategories, ({ one }) => ({
@@ -603,6 +636,17 @@ export const contentFiltersRelations = relations(contentFilters, ({ one }) => ({
   }),
 }));
 
+export const contentRevisionsRelations = relations(contentRevisions, ({ one }) => ({
+  content: one(content, {
+    fields: [contentRevisions.contentId],
+    references: [content.id],
+  }),
+  author: one(users, {
+    fields: [contentRevisions.authorId],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -670,3 +714,6 @@ export type NewContentFilter = typeof contentFilters.$inferInsert;
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
+
+export type ContentRevision = typeof contentRevisions.$inferSelect;
+export type NewContentRevision = typeof contentRevisions.$inferInsert;

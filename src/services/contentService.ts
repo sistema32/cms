@@ -6,14 +6,17 @@ import {
   contentMeta,
   contentSeo,
   contentTags,
+  contentRevisions,
   type NewContent,
   type NewContentMeta,
   type NewContentSeo,
+  type NewContentRevision,
 } from "../db/schema.ts";
 import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 
 export interface CreateContentInput {
   contentTypeId: number;
+  parentId?: number; // Para páginas hijas
   title: string;
   slug: string;
   excerpt?: string;
@@ -56,6 +59,7 @@ export interface CreateContentMetaInput {
 }
 
 export interface UpdateContentInput {
+  parentId?: number; // Para páginas hijas
   title?: string;
   slug?: string;
   excerpt?: string;
@@ -70,6 +74,8 @@ export interface UpdateContentInput {
   tagIds?: number[];
   seo?: CreateContentSeoInput;
   meta?: CreateContentMetaInput[];
+  saveRevision?: boolean; // Indica si se debe guardar una revisión
+  changesSummary?: string; // Resumen de los cambios realizados
 }
 
 export interface ContentFilters {
@@ -133,11 +139,22 @@ export async function createContent(
     throw new Error(`El contenido con slug '${data.slug}' ya existe`);
   }
 
+  // Validar parentId si se proporciona
+  if (data.parentId) {
+    const parent = await db.query.content.findFirst({
+      where: eq(content.id, data.parentId),
+    });
+    if (!parent) {
+      throw new Error(`El contenido padre con ID ${data.parentId} no existe`);
+    }
+  }
+
   // Crear el contenido
   const [newContent] = await db
     .insert(content)
     .values({
       contentTypeId: data.contentTypeId,
+      parentId: data.parentId,
       title: data.title,
       slug: data.slug,
       excerpt: data.excerpt,
@@ -383,10 +400,37 @@ export async function updateContent(
     }
   }
 
+  // Validar parentId si se proporciona
+  if (data.parentId !== undefined && data.parentId !== null) {
+    // No permitir que una página sea su propia hija
+    if (data.parentId === id) {
+      throw new Error("Un contenido no puede ser su propia página padre");
+    }
+    const parent = await db.query.content.findFirst({
+      where: eq(content.id, data.parentId),
+    });
+    if (!parent) {
+      throw new Error(`El contenido padre con ID ${data.parentId} no existe`);
+    }
+  }
+
+  // Guardar revisión si se solicita (por defecto se guarda si hay cambios importantes)
+  const shouldSaveRevision = data.saveRevision !== false && (
+    data.title !== undefined ||
+    data.body !== undefined ||
+    data.excerpt !== undefined ||
+    data.status !== undefined
+  );
+
+  if (shouldSaveRevision) {
+    await createRevision(id, existing, data.changesSummary);
+  }
+
   // Actualizar contenido
   const [updated] = await db
     .update(content)
     .set({
+      parentId: data.parentId,
       title: data.title,
       slug: data.slug,
       excerpt: data.excerpt,
@@ -585,4 +629,177 @@ export async function createContentMetaEntry(
   }).returning();
 
   return created;
+}
+
+// ============= FUNCIONES DE REVISIONES =============
+
+// Crear una revisión del contenido actual
+async function createRevision(
+  contentId: number,
+  currentContent: Content,
+  changesSummary?: string,
+) {
+  // Obtener el número de revisión siguiente
+  const lastRevision = await db.query.contentRevisions.findFirst({
+    where: eq(contentRevisions.contentId, contentId),
+    orderBy: (revisions, { desc }) => [desc(revisions.revisionNumber)],
+  });
+
+  const nextRevisionNumber = (lastRevision?.revisionNumber || 0) + 1;
+
+  // Crear la revisión
+  await db.insert(contentRevisions).values({
+    contentId,
+    title: currentContent.title,
+    slug: currentContent.slug,
+    excerpt: currentContent.excerpt,
+    body: currentContent.body,
+    status: currentContent.status,
+    visibility: currentContent.visibility,
+    password: currentContent.password,
+    featuredImageId: currentContent.featuredImageId,
+    publishedAt: currentContent.publishedAt,
+    scheduledAt: currentContent.scheduledAt,
+    revisionNumber: nextRevisionNumber,
+    authorId: currentContent.authorId,
+    changesSummary,
+  });
+}
+
+// Obtener todas las revisiones de un contenido
+export async function getContentRevisions(contentId: number) {
+  const revisions = await db.query.contentRevisions.findMany({
+    where: eq(contentRevisions.contentId, contentId),
+    orderBy: (revisions, { desc }) => [desc(revisions.revisionNumber)],
+    with: {
+      author: {
+        columns: {
+          password: false,
+        },
+      },
+    },
+  });
+
+  return revisions;
+}
+
+// Obtener una revisión específica por ID
+export async function getRevisionById(revisionId: number) {
+  const revision = await db.query.contentRevisions.findFirst({
+    where: eq(contentRevisions.id, revisionId),
+    with: {
+      author: {
+        columns: {
+          password: false,
+        },
+      },
+    },
+  });
+
+  return revision;
+}
+
+// Restaurar una revisión (copiar sus datos al contenido actual)
+export async function restoreRevision(
+  contentId: number,
+  revisionId: number,
+  restoredByUserId: number,
+) {
+  const revision = await getRevisionById(revisionId);
+
+  if (!revision) {
+    throw new Error("Revisión no encontrada");
+  }
+
+  if (revision.contentId !== contentId) {
+    throw new Error("La revisión no pertenece a este contenido");
+  }
+
+  const currentContent = await db.query.content.findFirst({
+    where: eq(content.id, contentId),
+  });
+
+  if (!currentContent) {
+    throw new Error("Contenido no encontrado");
+  }
+
+  // Guardar el estado actual como una revisión antes de restaurar
+  await createRevision(contentId, currentContent, `Restaurado desde revisión #${revision.revisionNumber}`);
+
+  // Restaurar los datos de la revisión
+  const [restored] = await db
+    .update(content)
+    .set({
+      title: revision.title,
+      slug: revision.slug,
+      excerpt: revision.excerpt,
+      body: revision.body,
+      status: revision.status,
+      visibility: revision.visibility,
+      password: revision.password,
+      featuredImageId: revision.featuredImageId,
+      publishedAt: revision.publishedAt,
+      scheduledAt: revision.scheduledAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(content.id, contentId))
+    .returning();
+
+  return restored;
+}
+
+// Eliminar una revisión
+export async function deleteRevision(revisionId: number) {
+  const revision = await db.query.contentRevisions.findFirst({
+    where: eq(contentRevisions.id, revisionId),
+  });
+
+  if (!revision) {
+    throw new Error("Revisión no encontrada");
+  }
+
+  await db.delete(contentRevisions).where(eq(contentRevisions.id, revisionId));
+}
+
+// Comparar dos versiones (útil para ver qué cambió)
+export async function compareRevisions(revisionId1: number, revisionId2: number) {
+  const [revision1, revision2] = await Promise.all([
+    getRevisionById(revisionId1),
+    getRevisionById(revisionId2),
+  ]);
+
+  if (!revision1 || !revision2) {
+    throw new Error("Una o ambas revisiones no fueron encontradas");
+  }
+
+  return {
+    revision1,
+    revision2,
+    differences: {
+      title: revision1.title !== revision2.title,
+      slug: revision1.slug !== revision2.slug,
+      excerpt: revision1.excerpt !== revision2.excerpt,
+      body: revision1.body !== revision2.body,
+      status: revision1.status !== revision2.status,
+      visibility: revision1.visibility !== revision2.visibility,
+    },
+  };
+}
+
+// Obtener páginas hijas de una página
+export async function getChildPages(parentId: number) {
+  const children = await db.query.content.findMany({
+    where: eq(content.parentId, parentId),
+    with: {
+      contentType: true,
+      author: {
+        columns: {
+          password: false,
+        },
+      },
+    },
+    orderBy: (content, { asc }) => [asc(content.title)],
+  });
+
+  return children.map((item) => normalizeContent(item));
 }
