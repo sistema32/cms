@@ -1,0 +1,79 @@
+{
+  "name": "base",
+  "displayName": "Base",
+  "version": "1.0.0",
+  "description": "Clean and minimal theme perfect for development. Built with Tailwind CSS, this theme provides a solid foundation for building custom themes.",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "config": {
+    "posts_per_page": 10,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 }
+    },
+    "custom": {
+      "enable_animations": {
+        "type": "boolean",
+        "label": "Enable Animations",
+        "default": true,
+        "group": "general",
+        "description": "Enable subtle animations and transitions"
+      },
+      "container_width": {
+        "type": "select",
+        "label": "Container Width",
+        "options": ["narrow", "medium", "wide"],
+        "default": "medium",
+        "group": "layout",
+        "description": "Maximum width for content container"
+      },
+      "show_post_images": {
+        "type": "boolean",
+        "label": "Show Post Images",
+        "default": true,
+        "group": "blog",
+        "description": "Display featured images on post cards"
+      },
+      "show_post_excerpts": {
+        "type": "boolean",
+        "label": "Show Post Excerpts",
+        "default": true,
+        "group": "blog",
+        "description": "Display excerpts in post listings"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": false,
+    "menus": ["header", "footer"],
+    "postFormats": ["standard"],
+    "customTemplates": true,
+    "responsiveDesign": true
+  },
+  "templates": {
+    "home": "templates/home.tsx"
+  },
+  "partials": {
+    "header": "partials/Header.tsx",
+    "footer": "partials/Footer.tsx"
+  },
+  "requirements": {
+    "lexcms": ">=1.0.0",
+    "deno": ">=1.40.0"
+  },
+  "tags": [
+    "simple",
+    "minimal",
+    "clean",
+    "development",
+    "tailwind",
+    "starter"
+  ]
+}
