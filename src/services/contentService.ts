@@ -28,6 +28,8 @@ export interface CreateContentInput {
   password?: string;
   publishedAt?: Date;
   scheduledAt?: Date;
+  featured?: boolean;
+  sticky?: boolean;
   categoryIds?: number[];
   tagIds?: number[];
   seo?: CreateContentSeoInput;
@@ -70,6 +72,8 @@ export interface UpdateContentInput {
   password?: string;
   publishedAt?: Date;
   scheduledAt?: Date;
+  featured?: boolean;
+  sticky?: boolean;
   categoryIds?: number[];
   tagIds?: number[];
   seo?: CreateContentSeoInput;
@@ -166,6 +170,8 @@ export async function createContent(
       password: data.password,
       publishedAt: data.publishedAt,
       scheduledAt: data.scheduledAt,
+      featured: data.featured || false,
+      sticky: data.sticky || false,
     })
     .returning();
 
@@ -441,6 +447,8 @@ export async function updateContent(
       password: data.password,
       publishedAt: data.publishedAt,
       scheduledAt: data.scheduledAt,
+      featured: data.featured,
+      sticky: data.sticky,
       updatedAt: new Date(),
     })
     .where(eq(content.id, id))

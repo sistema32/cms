@@ -141,6 +141,8 @@ export const content = sqliteTable("content", {
   likeCount: integer("like_count").notNull().default(0),
   commentCount: integer("comment_count").notNull().default(0),
   commentsEnabled: integer("comments_enabled", { mode: "boolean" }).notNull().default(false), // Control de comentarios a nivel de contenido individual
+  featured: integer("featured", { mode: "boolean" }).notNull().default(false), // Post destacado para homepage y destacados
+  sticky: integer("sticky", { mode: "boolean" }).notNull().default(false), // Post fijo en la parte superior de listados
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

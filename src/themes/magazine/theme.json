@@ -1,0 +1,102 @@
+{
+  "name": "magazine",
+  "displayName": "Magazine Pro",
+  "version": "1.0.0",
+  "description": "Professional newspaper and magazine style theme with bold typography and editorial layout",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "config": {
+    "posts_per_page": 12,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 },
+      "xlarge": { "width": 2000 }
+    },
+    "custom": {
+      "primary_color": {
+        "type": "color",
+        "label": "Primary Color",
+        "default": "#c41e3a",
+        "group": "design",
+        "description": "Main accent color for the magazine theme (typically red for news)"
+      },
+      "secondary_color": {
+        "type": "color",
+        "label": "Secondary Color",
+        "default": "#1a1a1a",
+        "group": "design",
+        "description": "Secondary color for headings and important elements"
+      },
+      "show_category_badges": {
+        "type": "boolean",
+        "label": "Show Category Badges",
+        "default": true,
+        "group": "posts",
+        "description": "Display category badges on featured posts"
+      },
+      "featured_grid_style": {
+        "type": "select",
+        "label": "Featured Grid Style",
+        "options": ["Split", "Full Width", "Three Column"],
+        "default": "Split",
+        "group": "homepage",
+        "description": "Layout style for the featured posts section"
+      },
+      "articles_per_row": {
+        "type": "select",
+        "label": "Articles Per Row",
+        "options": ["2", "3", "4"],
+        "default": "3",
+        "group": "homepage",
+        "description": "Number of articles to display per row in the grid"
+      },
+      "show_top_bar": {
+        "type": "boolean",
+        "label": "Show Top Bar",
+        "default": true,
+        "group": "layout",
+        "description": "Display the magazine top bar with date and edition"
+      },
+      "edition_text": {
+        "type": "text",
+        "label": "Edition Text",
+        "default": "Edición Digital",
+        "group": "layout",
+        "description": "Text to display in the top bar"
+      },
+      "show_author_photos": {
+        "type": "boolean",
+        "label": "Show Author Photos",
+        "default": true,
+        "group": "posts",
+        "description": "Display author photos in articles"
+      },
+      "enable_breaking_news": {
+        "type": "boolean",
+        "label": "Enable Breaking News Banner",
+        "default": false,
+        "group": "homepage",
+        "description": "Show a breaking news banner at the top"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": true,
+    "menus": ["header", "footer", "sidebar", "topbar"],
+    "postFormats": ["standard", "video", "gallery"],
+    "customTemplates": true
+  },
+  "templates": {
+    "home": "templates/home.tsx"
+  },
+  "partials": {
+    "post-card": "partials/PostCard.tsx"
+  }
+}
