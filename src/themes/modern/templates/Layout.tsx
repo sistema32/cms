@@ -9,6 +9,7 @@ import type { SiteData } from "../helpers/index.ts";
 interface LayoutProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   title?: string;
   description?: string;
   children: any;
@@ -19,6 +20,7 @@ export const Layout = (props: LayoutProps) => {
   const {
     site,
     custom,
+    activeTheme = "modern",
     title = site.name,
     description = site.description,
     children,
@@ -45,7 +47,7 @@ export const Layout = (props: LayoutProps) => {
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="/themes/modern/assets/css/modern.css">
+    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
 
     <script>
       tailwind.config = {
@@ -122,7 +124,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/modern/assets/js/modern.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
 </body>
 </html>`;
 };

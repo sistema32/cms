@@ -13,12 +13,13 @@ import type { SiteData, PostData } from "../helpers/index.ts";
 interface HomeProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   featuredPosts: PostData[];
   categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, featuredPosts } = props;
+  const { site, custom, activeTheme, featuredPosts } = props;
 
   const heroTitle = custom.homepage_hero_title || `${site.name}`;
   const heroSubtitle = custom.homepage_hero_subtitle || site.description || "Un espacio para reflexionar y compartir ideas";
@@ -147,6 +148,7 @@ export const HomeTemplate = (props: HomeProps) => {
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home front-page minimalist-theme",
     children: content,
   });
