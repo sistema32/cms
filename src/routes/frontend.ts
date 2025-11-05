@@ -3,18 +3,56 @@ import { serveStatic } from "hono/deno";
 import { db } from "../config/db.ts";
 import { content, categories as categoriesSchema, tags as tagsSchema } from "../db/schema.ts";
 import { eq, desc } from "drizzle-orm";
-import * as themeHelpers from "../themes/default/helpers/index.ts";
-import IndexTemplate from "../themes/default/templates/index.tsx";
-import HomeTemplate from "../themes/default/templates/home.tsx";
-import BlogTemplate from "../themes/default/templates/blog.tsx";
-import PostTemplate from "../themes/default/templates/post.tsx";
+import * as themeService from "../services/themeService.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
- * Sistema multi-theme tipo WordPress
+ * Sistema multi-theme tipo WordPress con carga dinámica de themes
  */
 
 const frontendRouter = new Hono();
+
+/**
+ * Load theme helpers and templates dynamically with fallback to default theme
+ */
+async function loadThemeModule(modulePath: string) {
+  try {
+    const fullPath = join(Deno.cwd(), modulePath);
+    const module = await import(`file://${fullPath}`);
+    return module;
+  } catch (error) {
+    console.error(`Error loading theme module ${modulePath}:`, error);
+    throw error;
+  }
+}
+
+async function getThemeHelpers() {
+  const activeTheme = await themeService.getActiveTheme();
+  const helpersPath = `src/themes/${activeTheme}/helpers/index.ts`;
+  return await loadThemeModule(helpersPath);
+}
+
+async function getThemeTemplate(templateName: string) {
+  const activeTheme = await themeService.getActiveTheme();
+
+  // Try active theme first
+  const templatePath = `src/themes/${activeTheme}/templates/${templateName}.tsx`;
+  const fullPath = join(Deno.cwd(), templatePath);
+
+  try {
+    // Check if template exists in active theme
+    await Deno.stat(fullPath);
+    const module = await loadThemeModule(templatePath);
+    return module.default;
+  } catch {
+    // Fallback to default theme if template doesn't exist
+    console.log(`Template ${templateName}.tsx not found in theme ${activeTheme}, falling back to default theme`);
+    const defaultTemplatePath = `src/themes/default/templates/${templateName}.tsx`;
+    const module = await loadThemeModule(defaultTemplatePath);
+    return module.default;
+  }
+}
 
 // ============= SERVIR ASSETS ESTÁTICOS =============
 
@@ -29,6 +67,9 @@ frontendRouter.get("/themes/*", serveStatic({ root: "./src" }));
  */
 frontendRouter.get("/", async (c) => {
   try {
+    const themeHelpers = await getThemeHelpers();
+    const HomeTemplate = await getThemeTemplate("home");
+
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
@@ -71,6 +112,9 @@ frontendRouter.get("/", async (c) => {
  */
 frontendRouter.get("/blog", async (c) => {
   try {
+    const themeHelpers = await getThemeHelpers();
+    const BlogTemplate = await getThemeTemplate("blog");
+
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
@@ -135,6 +179,9 @@ frontendRouter.get("/blog/page/:page", async (c) => {
     if (page === 1) {
       return c.redirect("/blog", 301);
     }
+
+    const themeHelpers = await getThemeHelpers();
+    const BlogTemplate = await getThemeTemplate("blog");
 
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
@@ -224,6 +271,9 @@ frontendRouter.get("/blog/:slug", async (c) => {
       return c.text("Post no encontrado", 404);
     }
 
+    const themeHelpers = await getThemeHelpers();
+    const PostTemplate = await getThemeTemplate("post");
+
     // Formatear datos del post
     const postData = {
       id: post.id,
@@ -281,6 +331,9 @@ frontendRouter.get("/category/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
+
     // TODO: Implementar filtrado por categoría
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
@@ -309,6 +362,9 @@ frontendRouter.get("/tag/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
+
     // TODO: Implementar filtrado por tag
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
@@ -336,6 +392,9 @@ frontendRouter.get("/tag/:slug", async (c) => {
 frontendRouter.get("/search", async (c) => {
   try {
     const query = c.req.query("q") || "";
+
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
 
     // TODO: Implementar búsqueda real
     const site = await themeHelpers.getSiteData();
