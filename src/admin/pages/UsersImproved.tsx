@@ -73,15 +73,15 @@ export const UsersPageImproved = (props: UsersPageProps) => {
     <div class="page-header">
       <div>
         <h1 class="page-title">Gestión de Usuarios</h1>
-        \${
+        ${
           stats
             ? html`
                 <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>Total: <strong>\${stats.total}</strong></span>
-                  <span>Activos: <strong class="text-green-600">\${stats.active}</strong></span>
-                  <span>Inactivos: <strong class="text-yellow-600">\${stats.inactive}</strong></span>
-                  <span>Suspendidos: <strong class="text-red-600">\${stats.suspended}</strong></span>
-                  <span>Con 2FA: <strong class="text-blue-600">\${stats.with2FA}</strong></span>
+                  <span>Total: <strong>${stats.total}</strong></span>
+                  <span>Activos: <strong class="text-green-600">${stats.active}</strong></span>
+                  <span>Inactivos: <strong class="text-yellow-600">${stats.inactive}</strong></span>
+                  <span>Suspendidos: <strong class="text-red-600">${stats.suspended}</strong></span>
+                  <span>Con 2FA: <strong class="text-blue-600">${stats.with2FA}</strong></span>
                 </div>
               `
             : ""
@@ -101,7 +101,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
 
     <!-- Filters and Search -->
     <div class="table-card mb-6">
-      <form method="GET" action="\${adminPath}/users" class="p-4">
+      <form method="GET" action="${adminPath}/users" class="p-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <!-- Search -->
           <div>
@@ -111,7 +111,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             <input
               type="text"
               name="search"
-              value="\${filters.search || ""}"
+              value="${filters.search || ""}"
               placeholder="Nombre o email..."
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100"
             />
@@ -127,9 +127,9 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Todos</option>
-              <option value="active" \${filters.status === "active" ? "selected" : ""}>Activo</option>
-              <option value="inactive" \${filters.status === "inactive" ? "selected" : ""}>Inactivo</option>
-              <option value="suspended" \${filters.status === "suspended" ? "selected" : ""}>
+              <option value="active" ${filters.status === "active" ? "selected" : ""}>Activo</option>
+              <option value="inactive" ${filters.status === "inactive" ? "selected" : ""}>Inactivo</option>
+              <option value="suspended" ${filters.status === "suspended" ? "selected" : ""}>
                 Suspendido
               </option>
             </select>
@@ -145,10 +145,10 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Todos los roles</option>
-              \${roles.map(
+              ${roles.map(
                 (r) => html`
-                  <option value="\${r.id}" \${filters.roleId === r.id ? "selected" : ""}>
-                    \${r.name}\${r.isSystem ? " (sistema)" : ""}
+                  <option value="${r.id}" ${filters.roleId === r.id ? "selected" : ""}>
+                    ${r.name}${r.isSystem ? " (sistema)" : ""}
                   </option>
                 `
               )}
@@ -164,7 +164,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               Filtrar
             </button>
             <a
-              href="\${adminPath}/users"
+              href="${adminPath}/users"
               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               Limpiar
@@ -227,7 +227,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
           </tr>
         </thead>
         <tbody>
-          \${
+          ${
             users.length === 0
               ? html`
                   <tr>
@@ -243,48 +243,48 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                         <input
                           type="checkbox"
                           class="userCheckbox"
-                          value="\${u.id}"
+                          value="${u.id}"
                           onchange="updateBulkActions()"
-                          \${u.id === 1 ? "disabled" : ""}
+                          ${u.id === 1 ? "disabled" : ""}
                         />
                       </td>
                       <td>
                         <div class="flex items-center">
                           <img
                             class="table-avatar"
-                            src="\${u.avatar ||
-                            `https://ui-avatars.com/api/?name=\${encodeURIComponent(u.name || u.email)}`}"
-                            alt="\${u.name}"
+                            src="${u.avatar ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email)}`}"
+                            alt="${u.name}"
                           />
                           <div class="ml-3">
                             <div class="font-medium text-gray-900 dark:text-gray-100">
-                              \${u.name || "Sin nombre"}
-                              \${u.id === 1 ? html`<span class="ml-2 badge-info text-xs">Superadmin</span>` : ""}
+                              ${u.name || "Sin nombre"}
+                              ${u.id === 1 ? html`<span class="ml-2 badge-info text-xs">Superadmin</span>` : ""}
                             </div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">\${u.email}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">${u.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td>\${getStatusBadge(u.status)}</td>
+                      <td>${getStatusBadge(u.status)}</td>
                       <td>
                         <span class="badge-info">
-                          \${u.role?.name || "Sin rol"}
-                          \${u.role?.isSystem ? html`<span class="ml-1 text-xs">(sistema)</span>` : ""}
+                          ${u.role?.name || "Sin rol"}
+                          ${u.role?.isSystem ? html`<span class="ml-1 text-xs">(sistema)</span>` : ""}
                         </span>
                       </td>
                       <td>
-                        \${u.twoFactorEnabled
+                        ${u.twoFactorEnabled
                           ? html`<span class="badge-success">Habilitado</span>`
                           : html`<span class="badge-secondary">Deshabilitado</span>`}
                       </td>
-                      <td class="text-sm text-gray-500 dark:text-gray-400">\${formatLastLogin(u.lastLoginAt)}</td>
+                      <td class="text-sm text-gray-500 dark:text-gray-400">${formatLastLogin(u.lastLoginAt)}</td>
                       <td class="text-sm text-gray-500 dark:text-gray-400">
-                        \${new Date(u.createdAt).toLocaleDateString("es-ES")}
+                        ${new Date(u.createdAt).toLocaleDateString("es-ES")}
                       </td>
                       <td>
                         <div class="flex gap-2">
                           <button
-                            onclick="editUser(\${u.id}, '\${u.name?.replace(/'/g, "\\\\'") || ""}', '\${u.email}', \${u.role?.id || "null"}, '\${u.status || "active"}')"
+                            onclick="editUser(${u.id}, '${u.name?.replace(/'/g, "\\\\'") || ""}', '${u.email}', ${u.role?.id || "null"}, '${u.status || "active"}')"
                             class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
                             title="Editar"
                           >
@@ -294,10 +294,10 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                               ></path>
                             </svg>
                           </button>
-                          \${u.email !== user.email && u.id !== 1
+                          ${u.email !== user.email && u.id !== 1
                             ? html`
                                 <button
-                                  onclick="deleteUser(\${u.id}, '\${u.email}')"
+                                  onclick="deleteUser(${u.id}, '${u.email}')"
                                   class="text-red-600 hover:text-red-800 dark:text-red-400"
                                   title="Eliminar"
                                 >
@@ -320,30 +320,30 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         </tbody>
       </table>
 
-      \${
+      ${
         pagination && pagination.total > pagination.limit
           ? html`
               <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                   <div class="text-sm text-gray-700 dark:text-gray-300">
-                    Mostrando \${pagination.offset + 1} a \${Math.min(pagination.offset + pagination.limit, pagination.total)}
-                    de \${pagination.total} resultados
+                    Mostrando ${pagination.offset + 1} a ${Math.min(pagination.offset + pagination.limit, pagination.total)}
+                    de ${pagination.total} resultados
                   </div>
                   <div class="flex gap-2">
-                    \${pagination.offset > 0
+                    ${pagination.offset > 0
                       ? html`
                           <a
-                            href="?offset=\${Math.max(0, pagination.offset - pagination.limit)}&limit=\${pagination.limit}"
+                            href="?offset=${Math.max(0, pagination.offset - pagination.limit)}&limit=${pagination.limit}"
                             class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300"
                           >
                             Anterior
                           </a>
                         `
                       : ""}
-                    \${pagination.hasMore
+                    ${pagination.hasMore
                       ? html`
                           <a
-                            href="?offset=\${pagination.offset + pagination.limit}&limit=\${pagination.limit}"
+                            href="?offset=${pagination.offset + pagination.limit}&limit=${pagination.limit}"
                             class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
                           >
                             Siguiente
@@ -383,8 +383,8 @@ export const UsersPageImproved = (props: UsersPageProps) => {
               <label for="roleId" class="form-label">Rol</label>
               <select id="roleId" name="roleId" class="form-input" required>
                 <option value="">Seleccionar rol...</option>
-                \${roles.map(
-                  (r) => html` <option value="\${r.id}">\${r.name}\${r.isSystem ? " (sistema)" : ""}</option> `
+                ${roles.map(
+                  (r) => html` <option value="${r.id}">${r.name}${r.isSystem ? " (sistema)" : ""}</option> `
                 )}
               </select>
             </div>
@@ -419,6 +419,8 @@ export const UsersPageImproved = (props: UsersPageProps) => {
     </div>
 
     <script>
+      const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
+
       // Select All functionality
       function toggleSelectAll(checkbox) {
         const checkboxes = document.querySelectorAll('.userCheckbox:not([disabled])');
@@ -451,12 +453,12 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm(`¿Estás seguro de cambiar el estado de \${ids.length} usuario(s) a "\${status}"?`)) {
+        if (!confirm('Estás seguro de cambiar el estado de ' + ids.length + ' usuario(s) a "' + status + '"?')) {
           return;
         }
 
         try {
-          const response = await fetch('\${adminPath}/users/bulk-status', {
+          const response = await fetch(ADMIN_BASE_PATH + '/users/bulk-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userIds: ids, status })
@@ -478,12 +480,12 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm(`¿Estás seguro de eliminar \${ids.length} usuario(s)? Esta acción no se puede deshacer.`)) {
+        if (!confirm('Estás seguro de eliminar ' + ids.length + ' usuario(s)? Esta acción no se puede deshacer.')) {
           return;
         }
 
         try {
-          const response = await fetch('\${adminPath}/users/bulk-delete', {
+          const response = await fetch(ADMIN_BASE_PATH + '/users/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userIds: ids })
@@ -503,7 +505,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       // Modal functions
       function showCreateModal() {
         document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
-        document.getElementById('userForm').action = '\${adminPath}/users/create';
+        document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/create';
         document.getElementById('userId').value = '';
         document.getElementById('name').value = '';
         document.getElementById('email').value = '';
@@ -516,7 +518,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
 
       function editUser(id, name, email, roleId, status) {
         document.getElementById('modalTitle').textContent = 'Editar Usuario';
-        document.getElementById('userForm').action = '\${adminPath}/users/edit/' + id;
+        document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/edit/' + id;
         document.getElementById('userId').value = id;
         document.getElementById('name').value = name;
         document.getElementById('email').value = email;
@@ -532,12 +534,12 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       }
 
       async function deleteUser(id, email) {
-        if (!confirm(`¿Estás seguro de eliminar el usuario "\${email}"?`)) {
+        if (!confirm('Estás seguro de eliminar el usuario "' + email + '"?')) {
           return;
         }
 
         try {
-          const response = await fetch('\${adminPath}/users/delete/' + id, {
+          const response = await fetch(ADMIN_BASE_PATH + '/users/delete/' + id, {
             method: 'POST'
           });
 
