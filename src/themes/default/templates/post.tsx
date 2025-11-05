@@ -10,6 +10,7 @@ import type { SiteData, PostData } from "../helpers/index.ts";
 interface PostProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   post: PostData;
   relatedPosts?: PostData[];
 }

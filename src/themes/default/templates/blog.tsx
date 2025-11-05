@@ -17,6 +17,7 @@ import type { SiteData, PostData, PaginationData } from "../helpers/index.ts";
 interface BlogProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   posts: PostData[];
   pagination: PaginationData;
   recentPosts?: PostData[];
@@ -125,6 +126,7 @@ export const BlogTemplate = (props: BlogProps) => {
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: `blog archive ${blogLayout}-layout ${sidebarEnabled ? 'has-sidebar' : 'no-sidebar'}`,
     children: content,
   });

@@ -12,12 +12,13 @@ import type { SiteData, PostData } from "../helpers/index.ts";
 interface HomeProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   featuredPosts: PostData[];
   categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, featuredPosts, categories = [] } = props;
+  const { site, custom, activeTheme, featuredPosts, categories = [] } = props;
 
   const heroTitle = custom.homepage_hero_title || "Convertimos la incertidumbre en decisiones estratégicas";
   const heroSubtitle = custom.homepage_hero_subtitle || "Acompañamos a líderes y organizaciones cuando el tiempo apremia y las decisiones impactan el futuro.";
@@ -366,6 +367,7 @@ export const HomeTemplate = (props: HomeProps) => {
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home front-page corporate-theme",
     children: content,
   });

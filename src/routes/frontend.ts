@@ -67,6 +67,7 @@ frontendRouter.get("/themes/*", serveStatic({ root: "./src" }));
  */
 frontendRouter.get("/", async (c) => {
   try {
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const HomeTemplate = await getThemeTemplate("home");
 
@@ -96,6 +97,7 @@ frontendRouter.get("/", async (c) => {
       HomeTemplate({
         site,
         custom,
+        activeTheme,
         featuredPosts,
         categories,
       })
@@ -112,6 +114,7 @@ frontendRouter.get("/", async (c) => {
  */
 frontendRouter.get("/blog", async (c) => {
   try {
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const BlogTemplate = await getThemeTemplate("blog");
 
@@ -154,6 +157,7 @@ frontendRouter.get("/blog", async (c) => {
       BlogTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
         recentPosts,
@@ -180,6 +184,7 @@ frontendRouter.get("/blog/page/:page", async (c) => {
       return c.redirect("/blog", 301);
     }
 
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const BlogTemplate = await getThemeTemplate("blog");
 
@@ -227,6 +232,7 @@ frontendRouter.get("/blog/page/:page", async (c) => {
       BlogTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
         recentPosts,
@@ -271,6 +277,7 @@ frontendRouter.get("/blog/:slug", async (c) => {
       return c.text("Post no encontrado", 404);
     }
 
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const PostTemplate = await getThemeTemplate("post");
 
@@ -313,6 +320,7 @@ frontendRouter.get("/blog/:slug", async (c) => {
       PostTemplate({
         site,
         custom,
+        activeTheme,
         post: postData,
         relatedPosts,
       })
@@ -331,6 +339,7 @@ frontendRouter.get("/category/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
@@ -344,6 +353,7 @@ frontendRouter.get("/category/:slug", async (c) => {
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
       })
@@ -362,6 +372,7 @@ frontendRouter.get("/tag/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
@@ -375,6 +386,7 @@ frontendRouter.get("/tag/:slug", async (c) => {
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
       })
@@ -393,6 +405,7 @@ frontendRouter.get("/search", async (c) => {
   try {
     const query = c.req.query("q") || "";
 
+    const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
@@ -406,6 +419,7 @@ frontendRouter.get("/search", async (c) => {
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
       })

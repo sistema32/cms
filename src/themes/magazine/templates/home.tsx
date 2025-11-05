@@ -13,12 +13,13 @@ import type { SiteData, PostData } from "../helpers/index.ts";
 interface HomeProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   featuredPosts: PostData[];
   categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, featuredPosts, categories = [] } = props;
+  const { site, custom, activeTheme, featuredPosts, categories = [] } = props;
 
   // El primer post es el hero principal
   const mainPost = featuredPosts[0];
@@ -395,6 +396,7 @@ export const HomeTemplate = (props: HomeProps) => {
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home front-page magazine-theme",
     children: content,
   });

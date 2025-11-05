@@ -10,6 +10,7 @@ import type { SiteData, PostData, PaginationData } from "../helpers/index.ts";
 interface IndexProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   posts: PostData[];
   pagination: PaginationData;
 }
@@ -120,6 +121,7 @@ export const IndexTemplate = (props: IndexProps) => {
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home blog",
     children: content
   });
