@@ -179,7 +179,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
               <datalist id="modulesList">
                 ${modules && modules.length > 0 ? modules.map(m => html`
                   <option value="${m}">${m}</option>
-                ') : grouped.map(g => html'
+                ') : grouped.map(g => html`
                   <option value="${g.module}">${g.module}</option>
                 `)}
               </datalist>
