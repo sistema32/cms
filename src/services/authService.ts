@@ -59,7 +59,10 @@ export async function register(data: RegisterInput): Promise<AuthResponse> {
     id: newUser.id,
     email: newUser.email,
     name: newUser.name,
+    avatar: newUser.avatar,
+    status: newUser.status,
     role: userWithRole?.role,
+    lastLoginAt: newUser.lastLoginAt,
     createdAt: newUser.createdAt,
     updatedAt: newUser.updatedAt,
   };
@@ -113,7 +116,10 @@ export async function login(
       id: user.id,
       email: user.email,
       name: user.name,
+      avatar: user.avatar,
+      status: user.status,
       role: user.role,
+      lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -134,12 +140,23 @@ export async function login(
   // Log de login exitoso
   await logLoginSuccess(user.id, user.email, ip, userAgent);
 
+  // Actualizar último login
+  await db
+    .update(users)
+    .set({
+      lastLoginAt: new Date(),
+    })
+    .where(eq(users.id, user.id));
+
   // Retornar usuario sin password
   const safeUser: SafeUser = {
     id: user.id,
     email: user.email,
     name: user.name,
+    avatar: user.avatar,
+    status: user.status,
     role: user.role,
+    lastLoginAt: new Date(),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

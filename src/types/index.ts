@@ -11,12 +11,16 @@ export interface SafeUser {
   id: number;
   email: string;
   name: string | null;
+  avatar?: string | null;
+  status?: string;
   role?: {
     id: number;
     name: string;
     description: string | null;
+    isSystem?: boolean;
     createdAt: Date;
   } | null;
+  lastLoginAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

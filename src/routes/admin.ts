@@ -11,8 +11,11 @@ import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
 import { CategoriesPage } from "../admin/pages/Categories.tsx";
 import { TagsPage } from "../admin/pages/Tags.tsx";
 import { UsersPage } from "../admin/pages/Users.tsx";
+import { UsersPageImproved } from "../admin/pages/UsersImproved.tsx";
 import { RolesPage } from "../admin/pages/RolesPage.tsx";
+import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
 import { PermissionsPage } from "../admin/pages/PermissionsPage.tsx";
+import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
@@ -48,6 +51,7 @@ import * as menuItemService from "../services/menuItemService.ts";
 import * as mediaService from "../services/mediaService.ts";
 import * as roleService from "../services/roleService.ts";
 import * as permissionService from "../services/permissionService.ts";
+import * as userService from "../services/userService.ts";
 import type { MenuItemWithChildren } from "../services/menuItemService.ts";
 
 function parseSettingValueForAdmin(value: string | null): unknown {
@@ -2044,22 +2048,42 @@ adminRouter.post("/tags/delete/:id", async (c) => {
 });
 
 /**
- * GET /users - Users list
+ * GET /users - Users list with filters and pagination
  */
 adminRouter.get("/users", async (c) => {
   try {
     const user = c.get("user");
-    const [usersData, rolesData] = await Promise.all([
-      db.query.users.findMany({ with: { role: true } }),
+    const query = c.req.query();
+
+    // Obtener filtros de la query
+    const filters: any = {};
+    if (query.search) filters.search = query.search;
+    if (query.status) filters.status = query.status;
+    if (query.roleId) filters.roleId = parseInt(query.roleId);
+    if (query.limit) filters.limit = parseInt(query.limit) || 20;
+    if (query.offset) filters.offset = parseInt(query.offset) || 0;
+
+    const [usersResult, rolesData, stats] = await Promise.all([
+      userService.getUsersWithFilters(filters),
       db.query.roles.findMany(),
+      userService.getUserStats(),
     ]);
 
-    return c.html(UsersPage({
+    return c.html(UsersPageImproved({
       user: { name: user.name || user.email, email: user.email },
-      users: usersData,
+      users: usersResult.users,
       roles: rolesData,
+      stats,
+      filters,
+      pagination: {
+        total: usersResult.total,
+        hasMore: usersResult.hasMore,
+        offset: filters.offset || 0,
+        limit: filters.limit || 20,
+      },
     }));
   } catch (error: any) {
+    console.error("Error loading users:", error);
     return c.text("Error al cargar usuarios", 500);
   }
 });
@@ -2075,10 +2099,12 @@ adminRouter.post("/users/create", async (c) => {
       email: body.email as string,
       password: hashedPassword,
       roleId: body.roleId ? parseInt(body.roleId as string) : null,
+      status: (body.status as string) || "active",
     });
     return c.redirect(`${env.ADMIN_PATH}/users`);
   } catch (error: any) {
-    return c.text("Error al crear usuario", 500);
+    console.error("Error creating user:", error);
+    return c.text("Error al crear usuario: " + error.message, 500);
   }
 });
 
@@ -2094,6 +2120,7 @@ adminRouter.post("/users/edit/:id", async (c) => {
       name: body.name as string,
       email: body.email as string,
       roleId: body.roleId ? parseInt(body.roleId as string) : null,
+      status: (body.status as string) || "active",
       updatedAt: new Date(),
     };
 
@@ -2107,30 +2134,75 @@ adminRouter.post("/users/edit/:id", async (c) => {
     return c.redirect(`${env.ADMIN_PATH}/users`);
   } catch (error: any) {
     console.error("Error updating user:", error);
-    return c.text("Error al actualizar usuario", 500);
+    return c.text("Error al actualizar usuario: " + error.message, 500);
   }
 });
 
 adminRouter.post("/users/delete/:id", async (c) => {
   try {
     const id = parseInt(c.req.param("id"));
-    await db.delete(users).where(eq(users.id, id));
+    await userService.deleteUser(id);
     return c.json({ success: true });
   } catch (error: any) {
-    return c.json({ success: false }, 500);
+    return c.json({ success: false, error: error.message }, 500);
   }
 });
 
 /**
- * GET /roles - Roles management
+ * POST /users/bulk-status - Bulk update user status
+ */
+adminRouter.post("/users/bulk-status", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userIds, status } = body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return c.json({ success: false, error: "No se especificaron usuarios" }, 400);
+    }
+
+    if (!["active", "inactive", "suspended"].includes(status)) {
+      return c.json({ success: false, error: "Estado inválido" }, 400);
+    }
+
+    const updated = await userService.bulkUpdateUserStatus(userIds, status);
+    return c.json({ success: true, updated });
+  } catch (error: any) {
+    console.error("Error bulk updating user status:", error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /users/bulk-delete - Bulk delete users
+ */
+adminRouter.post("/users/bulk-delete", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userIds } = body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return c.json({ success: false, error: "No se especificaron usuarios" }, 400);
+    }
+
+    const deleted = await userService.deleteUsers(userIds);
+    return c.json({ success: true, deleted });
+  } catch (error: any) {
+    console.error("Error bulk deleting users:", error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /roles - Roles management with statistics
  */
 adminRouter.get("/roles", async (c) => {
   try {
     const user = c.get("user");
 
-    const [rolesData, permissionsData] = await Promise.all([
-      roleService.getAllRoles(),
+    const [rolesData, permissionsData, stats] = await Promise.all([
+      roleService.getAllRolesWithStats(),
       permissionService.getAllPermissions(),
+      roleService.getRoleStats(),
     ]);
 
     const formattedRoles = rolesData
@@ -2138,16 +2210,16 @@ adminRouter.get("/roles", async (c) => {
         id: role.id,
         name: role.name,
         description: role.description,
+        isSystem: role.isSystem,
+        userCount: role.userCount,
+        permissionCount: role.permissionCount,
         createdAt: role.createdAt,
-        permissions: (role.rolePermissions || [])
-          .map((rp) => rp.permission)
-          .filter(Boolean)
-          .map((perm) => ({
-            id: perm!.id,
-            module: perm!.module,
-            action: perm!.action,
-            description: perm!.description,
-          })),
+        permissions: (role.permissions || []).map((perm) => ({
+          id: perm.id,
+          module: perm.module,
+          action: perm.action,
+          description: perm.description,
+        })),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "es-ES"));
 
@@ -2158,11 +2230,12 @@ adminRouter.get("/roles", async (c) => {
     });
 
     return c.html(
-      RolesPage({
+      RolesPageImproved({
         user: { name: user.name || user.email, email: user.email },
         roles: formattedRoles,
         permissions: sortedPermissions,
-      }),
+        stats,
+      })
     );
   } catch (error: any) {
     console.error("Error loading roles:", error);
@@ -2223,7 +2296,7 @@ adminRouter.post("/roles/delete/:id", async (c) => {
   try {
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
-      return c.json({ success: false, message: "ID inválido" }, 400);
+      return c.json({ success: false, error: "ID inválido" }, 400);
     }
 
     await roleService.deleteRole(id);
@@ -2234,12 +2307,40 @@ adminRouter.post("/roles/delete/:id", async (c) => {
     return c.json(
       {
         success: false,
-        message: error instanceof Error
+        error: error instanceof Error
           ? error.message
           : "Error al eliminar rol",
       },
       400,
     );
+  }
+});
+
+/**
+ * POST /roles/clone/:id - Clone a role with all its permissions
+ */
+adminRouter.post("/roles/clone/:id", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.text("ID inválido", 400);
+    }
+
+    const body = await c.req.parseBody();
+    const newName = parseStringField(body.newName);
+    const newDescription = parseNullableField(body.newDescription);
+
+    if (!newName) {
+      return c.text("El nombre del nuevo rol es obligatorio", 400);
+    }
+
+    await roleService.cloneRole(id, newName, newDescription || undefined);
+
+    return c.redirect(`${env.ADMIN_PATH}/roles`);
+  } catch (error: any) {
+    console.error("Error cloning role:", error);
+    const message = error instanceof Error ? error.message : "Error al clonar rol";
+    return c.text(message, 400);
   }
 });
 
@@ -2265,12 +2366,18 @@ adminRouter.post("/roles/:id/permissions", async (c) => {
 });
 
 /**
- * GET /permissions - Permissions management
+ * GET /permissions - Permissions management with grouping and stats
  */
 adminRouter.get("/permissions", async (c) => {
   try {
     const user = c.get("user");
-    const permissionsData = await permissionService.getAllPermissions();
+    const [permissionsData, permissionsByModule, modules, stats] = await Promise.all([
+      permissionService.getAllPermissions(),
+      permissionService.getPermissionsGroupedByModule(),
+      permissionService.getModules(),
+      permissionService.getPermissionStats(),
+    ]);
+
     const sortedPermissions = permissionsData.sort((a, b) => {
       const moduleCompare = a.module.localeCompare(b.module, "es-ES");
       if (moduleCompare !== 0) return moduleCompare;
@@ -2278,10 +2385,13 @@ adminRouter.get("/permissions", async (c) => {
     });
 
     return c.html(
-      PermissionsPage({
+      PermissionsPageImproved({
         user: { name: user.name || user.email, email: user.email },
         permissions: sortedPermissions,
-      }),
+        permissionsByModule,
+        modules,
+        stats,
+      })
     );
   } catch (error: any) {
     console.error("Error loading permissions:", error);
