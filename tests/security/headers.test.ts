@@ -1,0 +1,348 @@
+import {
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { describe, it } from "https://deno.land/std@0.224.0/testing/bdd.ts";
+import { app } from "../../src/app.ts";
+
+describe("Security Headers Tests", () => {
+  describe("HTTP Security Headers", () => {
+    it("should include security headers in responses", async () => {
+      const res = await app.request("/api/health");
+
+      // X-Content-Type-Options
+      const xContentType = res.headers.get("X-Content-Type-Options");
+      assertExists(xContentType);
+      assertEquals(xContentType, "nosniff");
+
+      // X-Frame-Options (protección contra clickjacking)
+      const xFrameOptions = res.headers.get("X-Frame-Options");
+      if (xFrameOptions) {
+        assertEquals(
+          xFrameOptions === "DENY" || xFrameOptions === "SAMEORIGIN",
+          true,
+        );
+      }
+
+      // X-XSS-Protection
+      const xXssProtection = res.headers.get("X-XSS-Protection");
+      if (xXssProtection) {
+        assertEquals(xXssProtection.includes("1"), true);
+      }
+      await res.text();
+    });
+
+    it("should not expose sensitive headers", async () => {
+      const res = await app.request("/api/health");
+
+      // No debería exponer versiones de servidor
+      const server = res.headers.get("Server");
+      const xPoweredBy = res.headers.get("X-Powered-By");
+
+      // Si existen, no deberían revelar información sensible
+      if (server) {
+        assertEquals(server.toLowerCase().includes("deno"), false);
+      }
+
+      if (xPoweredBy) {
+        assertEquals(xPoweredBy.toLowerCase().includes("deno"), false);
+      }
+      await res.text();
+    });
+
+    it("should set correct Content-Type headers", async () => {
+      const res = await app.request("/api/health");
+      const contentType = res.headers.get("Content-Type");
+
+      assertExists(contentType);
+      assertEquals(contentType?.includes("application/json"), true);
+      await res.text();
+    });
+
+    it("should include CORS headers if configured", async () => {
+      const req = new Request("http://localhost/api/health", {
+        headers: {
+          "Origin": "http://example.com",
+        },
+      });
+      const res = await app.request(req);
+
+      // Si CORS está configurado, debería incluir estos headers
+      const corsOrigin = res.headers.get("Access-Control-Allow-Origin");
+
+      // Puede estar configurado o no, pero si lo está, no debería ser "*" en producción
+      if (corsOrigin && Deno.env.get("DENO_ENV") === "production") {
+        assertEquals(corsOrigin === "*", false);
+      }
+      await res.text();
+    });
+  });
+
+  describe("Content Security Policy", () => {
+    it("should include CSP header if serving HTML", async () => {
+      // Si el API sirve HTML en algún endpoint, debería incluir CSP
+      const res = await app.request("/");
+
+      const csp = res.headers.get("Content-Security-Policy");
+
+      // Si hay CSP, debería ser restrictivo
+      if (csp) {
+        // No debería permitir 'unsafe-inline' o 'unsafe-eval' sin motivo
+        // (esto es una recomendación, puede variar según necesidades)
+        assertExists(csp);
+      }
+      await res.text();
+    });
+  });
+
+  describe("HTTPS Enforcement", () => {
+    it("should set Strict-Transport-Security in production", async () => {
+      const res = await app.request("/api/health");
+
+      // HSTS solo debería estar en producción con HTTPS
+      const hsts = res.headers.get("Strict-Transport-Security");
+
+      if (Deno.env.get("DENO_ENV") === "production") {
+        assertExists(hsts);
+        assertEquals(hsts?.includes("max-age"), true);
+      }
+      await res.text();
+    });
+  });
+
+  describe("Cache Control", () => {
+    it("should set appropriate cache headers for static files", async () => {
+      // Los archivos de media deberían tener cache largo
+      // (necesitamos tener un archivo de media para testearlo)
+    });
+
+    it("should set no-cache for API responses", async () => {
+      const res = await app.request("/api/health");
+
+      const cacheControl = res.headers.get("Cache-Control");
+
+      // Las respuestas de API no deberían cachearse
+      if (cacheControl) {
+        assertEquals(
+          cacheControl.includes("no-cache") ||
+            cacheControl.includes("no-store") ||
+            cacheControl.includes("max-age=0"),
+          true,
+        );
+      }
+      await res.text();
+    });
+  });
+
+  describe("Referrer Policy", () => {
+    it("should set Referrer-Policy header", async () => {
+      const res = await app.request("/api/health");
+
+      const referrerPolicy = res.headers.get("Referrer-Policy");
+
+      if (referrerPolicy) {
+        // Debería ser una política segura
+        const safePolicies = [
+          "no-referrer",
+          "no-referrer-when-downgrade",
+          "strict-origin",
+          "strict-origin-when-cross-origin",
+          "same-origin",
+        ];
+
+        assertEquals(safePolicies.includes(referrerPolicy), true);
+      }
+      await res.body?.cancel();
+    });
+  });
+
+  describe("Information Disclosure", () => {
+    it("should not expose stack traces in production", async () => {
+      // Intentar causar un error
+      const res = await app.request("/api/nonexistent-endpoint-123456");
+
+      assertEquals(res.status, 404);
+
+      const data = await res.json();
+
+      // En producción, no debería exponer stack traces
+      if (Deno.env.get("DENO_ENV") === "production") {
+        assertEquals(data.stack, undefined);
+        assertEquals(data.trace, undefined);
+      }
+    });
+
+    it("should return generic error messages", async () => {
+      const forwardedFor = crypto.randomUUID();
+      // Intentar login con credenciales inválidas
+      const req = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: JSON.stringify({
+          email: "nonexistent@example.com",
+          password: "wrongpassword",
+        }),
+      });
+      const res = await app.request(req);
+
+      assertEquals(res.status, 401);
+
+      const data = await res.json();
+
+      // El mensaje no debería revelar si el usuario existe o no
+      assertExists(data.error);
+      assertEquals(typeof data.error, "string");
+
+      // No debería incluir detalles del sistema
+      assertEquals(data.error.toLowerCase().includes("database"), false);
+      assertEquals(data.error.toLowerCase().includes("sql"), false);
+    });
+  });
+
+  describe("Request Validation", () => {
+    it("should reject requests with malformed JSON", async () => {
+      const forwardedFor = crypto.randomUUID();
+      const req = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: "{ invalid json }",
+      });
+      const res = await app.request(req);
+
+      // Debería retornar 400 Bad Request
+      assertEquals(res.status === 400 || res.status === 422, true);
+      await res.text();
+    });
+
+    it("should reject requests with invalid Content-Type", async () => {
+      const forwardedFor = crypto.randomUUID();
+      const req = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: JSON.stringify({
+          email: "test@test.com",
+          password: "password",
+        }),
+      });
+      const res = await app.request(req);
+
+      // Debería rechazar o al menos no procesarlo correctamente
+      assertEquals(res.status !== 200, true);
+      await res.text();
+    });
+
+    it("should validate request body size", async () => {
+      const forwardedFor = crypto.randomUUID();
+      // Intentar enviar un payload extremadamente grande
+      const largePayload = "A".repeat(10 * 1024 * 1024); // 10MB
+
+      const req = new Request("http://localhost/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: JSON.stringify({
+          email: "test@test.com",
+          password: "password",
+          name: largePayload,
+        }),
+      });
+      const res = await app.request(req);
+
+      // Debería rechazar payloads muy grandes
+      assertEquals(res.status !== 201, true);
+      await res.text();
+    });
+  });
+
+  describe("HTTP Methods", () => {
+    it("should reject unsupported HTTP methods", async () => {
+      let status: number | null = null;
+
+      try {
+        const req = new Request("http://localhost/api/auth/login", {
+          method: "TRACE",
+          headers: { "x-forwarded-for": crypto.randomUUID() },
+        });
+        const res = await app.request(req);
+        status = res.status;
+        await res.text();
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes("forbidden")) {
+          // Deno bloquea TRACE a nivel de cliente; considerar esto como rechazo válido
+          status = 405;
+        } else {
+          throw error;
+        }
+      }
+
+      // TRACE debería estar deshabilitado por seguridad
+      assertEquals(status === 405 || status === 404, true);
+    });
+
+    it("should require correct HTTP methods for endpoints", async () => {
+      // GET en un endpoint POST debería fallar
+      const req = new Request("http://localhost/api/auth/login", {
+        method: "GET",
+        headers: { "x-forwarded-for": crypto.randomUUID() },
+      });
+      const res = await app.request(req);
+
+      await res.text();
+
+      assertEquals(res.status === 405 || res.status === 404, true);
+    });
+  });
+
+  describe("Response Timing", () => {
+    it("should have consistent response times to prevent timing attacks", async () => {
+      // Login con usuario válido vs inválido debería tomar tiempo similar
+      const start1 = Date.now();
+      const forwardedFor = crypto.randomUUID();
+      const reqValid = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: JSON.stringify({
+          email: "valid@example.com",
+          password: "wrongpassword",
+        }),
+      });
+      const resValid = await app.request(reqValid);
+      const time1 = Date.now() - start1;
+      await resValid.text();
+
+      const start2 = Date.now();
+      const reqInvalid = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": forwardedFor,
+        },
+        body: JSON.stringify({
+          email: "invalid@example.com",
+          password: "wrongpassword",
+        }),
+      });
+      const resInvalid = await app.request(reqInvalid);
+      const time2 = Date.now() - start2;
+      await resInvalid.text();
+
+      // La diferencia no debería ser muy significativa (>500ms)
+      const timeDiff = Math.abs(time1 - time2);
+      assertEquals(timeDiff < 500, true);
+    });
+  });
+});

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(deno task:*)",
+      "Bash(/home/jano/.deno/bin/deno task db:generate)",
+      "Bash(npm install:*)",
+      "Bash(/home/jano/.deno/bin/deno run:*)",
+      "Bash(chmod:*)",
+      "Bash(bash:*)",
+      "Bash(/home/jano/.deno/bin/deno task:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(/dev/null)",
+      "Bash(pkill:*)",
+      "Bash(timeout 180 /home/jano/.deno/bin/deno task test:integration:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 120 /home/jano/.deno/bin/deno task test:security:*)",
+      "Bash(tree:*)",
+      "Bash(deno run:*)",
+      "Bash(timeout 5 /home/jano/.deno/bin/deno task:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:developer.wordpress.org)",
+      "WebFetch(domain:ghost.org)",
+      "WebFetch(domain:docs.ghost.org)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:windmillui.com)",
+      "WebFetch(domain:demo.windmillui.com)",
+      "Bash(sqlite3:*)",
+      "Bash(deno check:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexCMS API Playground</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 8px;
+        }
+
+        .auth-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .api-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .api-section.active {
+            display: block;
+        }
+
+        .response-container {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .user-info {
+            background-color: #e8f4fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .endpoint-info {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 3px solid #3498db;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LexCMS API Playground</h1>
+            <p>Prueba los endpoints de la API con autenticación JWT</p>
+        </header>
+
+        <div class="auth-section">
+            <h2 class="section-title">Autenticación</h2>
+            <div id="auth-status">Estado: No autenticado</div>
+            <div id="user-info" class="user-info hidden"></div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showAuthTab('login')">Iniciar Sesión</button>
+                <button class="tab" onclick="showAuthTab('register')">Registrarse</button>
+            </div>
+            
+            <div id="login-tab">
+                <div class="form-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña:</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button onclick="login()">Iniciar Sesión</button>
+            </div>
+            
+            <div id="register-tab" class="hidden">
+                <div class="form-group">
+                    <label for="register-name">Nombre:</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email:</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Contraseña:</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <button onclick="register()">Registrarse</button>
+            </div>
+        </div>
+
+        <div class="api-section" id="api-section">
+            <h2 class="section-title">Endpoints de API</h2>
+            
+            <div class="endpoint-info">
+                <strong>Base URL:</strong> http://localhost:8000 (configurable)<br>
+                <strong>Autenticación:</strong> Bearer Token en header Authorization
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showApiTab('users')">Usuarios</button>
+                <button class="tab" onclick="showApiTab('roles')">Roles</button>
+                <button class="tab" onclick="showApiTab('permissions')">Permisos</button>
+                <button class="tab" onclick="showApiTab('content')">Contenido</button>
+            </div>
+            
+            <!-- Users Tab -->
+            <div id="users-tab">
+                <h3>Usuarios</h3>
+                
+                <button onclick="getMe()">Obtener mi perfil</button>
+                <button onclick="getUsers()">Obtener todos los usuarios</button>
+                
+                <div class="form-group">
+                    <label for="user-id">ID de usuario (para operaciones específicas):</label>
+                    <input type="number" id="user-id" placeholder="ID del usuario">
+                </div>
+                
+                <button onclick="getUserById()">Obtener usuario por ID</button>
+                <button onclick="showUpdateForm()">Actualizar usuario</button>
+                <button onclick="deleteUser()">Eliminar usuario</button>
+                
+                <div id="update-form" class="hidden">
+                    <h4>Actualizar Usuario</h4>
+                    <div class="form-group">
+                        <label for="update-name">Nombre:</label>
+                        <input type="text" id="update-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-email">Email:</label>
+                        <input type="email" id="update-email">
+                    </div>
+                    <button onclick="updateUser()">Actualizar</button>
+                </div>
+            </div>
+            
+            <!-- Roles Tab -->
+            <div id="roles-tab" class="hidden">
+                <h3>Roles</h3>
+                
+                <button onclick="getRoles()">Obtener todos los roles</button>
+                <button onclick="showCreateRoleForm()">Crear rol</button>
+                
+                <div class="form-group">
+                    <label for="role-id">ID del rol (para operaciones específicas):</label>
+                    <input type="number" id="role-id" placeholder="ID del rol">
+                </div>
+                
+                <button onclick="getRoleById()">Obtener rol por ID</button>
+                <button onclick="showUpdateRoleForm()">Actualizar rol</button>
+                <button onclick="deleteRole()">Eliminar rol</button>
+                <button onclick="getRolePermissions()">Obtener permisos del rol</button>
+                <button onclick="showAssignPermissionsForm()">Asignar permisos a rol</button>
+                
+                <div id="create-role-form" class="hidden">
+                    <h4>Crear Rol</h4>
+                    <div class="form-group">
+                        <label for="create-role-name">Nombre:</label>
+                        <input type="text" id="create-role-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-role-description">Descripción:</label>
+                        <input type="text" id="create-role-description">
+                    </div>
+                    <button onclick="createRole()">Crear</button>
+                </div>
+                
+                <div id="update-role-form" class="hidden">
+                    <h4>Actualizar Rol</h4>
+                    <div class="form-group">
+                        <label for="update-role-name">Nombre:</label>
+                        <input type="text" id="update-role-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-role-description">Descripción:</label>
+                        <input type="text" id="update-role-description">
+                    </div>
+                    <button onclick="updateRole()">Actualizar</button>
+                </div>
+                
+                <div id="assign-permissions-form" class="hidden">
+                    <h4>Asignar Permisos a Rol</h4>
+                    <div class="form-group">
+                        <label for="permission-ids">IDs de permisos (separados por coma):</label>
+                        <input type="text" id="permission-ids" placeholder="1,2,3">
+                    </div>
+                    <button onclick="assignPermissionsToRole()">Asignar</button>
+                </div>
+            </div>
+            
+            <!-- Permissions Tab -->
+            <div id="permissions-tab" class="hidden">
+                <h3>Permisos</h3>
+                
+                <button onclick="getPermissions()">Obtener todos los permisos</button>
+                <button onclick="showCreatePermissionForm()">Crear permiso</button>
+                
+                <div class="form-group">
+                    <label for="permission-id">ID del permiso (para operaciones específicas):</label>
+                    <input type="number" id="permission-id" placeholder="ID del permiso">
+                </div>
+                
+                <div class="form-group">
+                    <label for="permission-module">Módulo (para filtrar permisos):</label>
+                    <input type="text" id="permission-module" placeholder="users, roles, etc">
+                </div>
+                
+                <button onclick="getPermissionById()">Obtener permiso por ID</button>
+                <button onclick="getPermissionsByModule()">Obtener permisos por módulo</button>
+                <button onclick="showUpdatePermissionForm()">Actualizar permiso</button>
+                <button onclick="deletePermission()">Eliminar permiso</button>
+                
+                <div id="create-permission-form" class="hidden">
+                    <h4>Crear Permiso</h4>
+                    <div class="form-group">
+                        <label for="create-permission-module">Módulo:</label>
+                        <input type="text" id="create-permission-module" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-permission-action">Acción:</label>
+                        <input type="text" id="create-permission-action" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-permission-description">Descripción:</label>
+                        <input type="text" id="create-permission-description">
+                    </div>
+                    <button onclick="createPermission()">Crear</button>
+                </div>
+                
+                <div id="update-permission-form" class="hidden">
+                    <h4>Actualizar Permiso</h4>
+                    <div class="form-group">
+                        <label for="update-permission-module">Módulo:</label>
+                        <input type="text" id="update-permission-module">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-permission-action">Acción:</label>
+                        <input type="text" id="update-permission-action">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-permission-description">Descripción:</label>
+                        <input type="text" id="update-permission-description">
+                    </div>
+                    <button onclick="updatePermission()">Actualizar</button>
+                </div>
+            </div>
+            
+            <!-- Content Tab -->
+            <div id="content-tab" class="hidden">
+                <h3>Contenido</h3>
+                
+                <button onclick="getContent()">Obtener todo el contenido</button>
+                <button onclick="showCreateContentForm()">Crear contenido</button>
+                
+                <div class="form-group">
+                    <label for="content-id">ID del contenido (para operaciones específicas):</label>
+                    <input type="number" id="content-id" placeholder="ID del contenido">
+                </div>
+                
+                <button onclick="getContentById()">Obtener contenido por ID</button>
+                <button onclick="showUpdateContentForm()">Actualizar contenido</button>
+                <button onclick="deleteContent()">Eliminar contenido</button>
+                <button onclick="publishContent()">Publicar contenido</button>
+                
+                <div class="form-group">
+                    <label for="content-type">Tipo de contenido (posts, pages, etc.):</label>
+                    <input type="text" id="content-type" placeholder="post, page, custom_type">
+                </div>
+                
+                <button onclick="getContentByType()">Obtener contenido por tipo</button>
+                <button onclick="getContentByCategory()">Obtener contenido por categoría</button>
+                <button onclick="getContentByTag()">Obtener contenido por tag</button>
+                
+                <div id="create-content-form" class="hidden">
+                    <h4>Crear Contenido</h4>
+                    <div class="form-group">
+                        <label for="create-content-title">Título:</label>
+                        <input type="text" id="create-content-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-slug">Slug:</label>
+                        <input type="text" id="create-content-slug">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-excerpt">Extracto:</label>
+                        <textarea id="create-content-excerpt"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-content">Contenido:</label>
+                        <textarea id="create-content-content"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-type-id">ID del tipo de contenido:</label>
+                        <input type="number" id="create-content-type-id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-status">Estado:</label>
+                        <select id="create-content-status">
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
+                            <option value="scheduled">Programado</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="trash">Papelera</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-content-visibility">Visibilidad:</label>
+                        <select id="create-content-visibility">
+                            <option value="public">Público</option>
+                            <option value="private">Privado</option>
+                            <option value="password">Protegido con contraseña</option>
+                        </select>
+                    </div>
+                    <button onclick="createContent()">Crear</button>
+                </div>
+                
+                <div id="update-content-form" class="hidden">
+                    <h4>Actualizar Contenido</h4>
+                    <div class="form-group">
+                        <label for="update-content-title">Título:</label>
+                        <input type="text" id="update-content-title">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-content-slug">Slug:</label>
+                        <input type="text" id="update-content-slug">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-content-excerpt">Extracto:</label>
+                        <textarea id="update-content-excerpt"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="update-content-content">Contenido:</label>
+                        <textarea id="update-content-content"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="update-content-status">Estado:</label>
+                        <select id="update-content-status">
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
+                            <option value="scheduled">Programado</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="trash">Papelera</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="update-content-visibility">Visibilidad:</label>
+                        <select id="update-content-visibility">
+                            <option value="public">Público</option>
+                            <option value="private">Privado</option>
+                            <option value="password">Protegido con contraseña</option>
+                        </select>
+                    </div>
+                    <button onclick="updateContent()">Actualizar</button>
+                </div>
+                
+                <h4>Categorías</h4>
+                <button onclick="getContentCategories()">Obtener categorías del contenido</button>
+                <button onclick="showAssignCategoriesForm()">Asignar categorías al contenido</button>
+                
+                <div id="assign-categories-form" class="hidden">
+                    <div class="form-group">
+                        <label for="category-ids">IDs de categorías (separados por coma):</label>
+                        <input type="text" id="category-ids" placeholder="1,2,3">
+                    </div>
+                    <button onclick="assignCategoriesToContent()">Asignar</button>
+                </div>
+                
+                <h4>Tags</h4>
+                <button onclick="getContentTags()">Obtener tags del contenido</button>
+                <button onclick="showAssignTagsForm()">Asignar tags al contenido</button>
+                
+                <div id="assign-tags-form" class="hidden">
+                    <div class="form-group">
+                        <label for="tag-ids">IDs de tags (separados por coma):</label>
+                        <input type="text" id="tag-ids" placeholder="1,2,3">
+                    </div>
+                    <button onclick="assignTagsToContent()">Asignar</button>
+                </div>
+                
+                <h4>SEO</h4>
+                <button onclick="getContentSeo()">Obtener datos SEO del contenido</button>
+                <button onclick="showUpdateSeoForm()">Actualizar datos SEO</button>
+                
+                <div id="update-seo-form" class="hidden">
+                    <div class="form-group">
+                        <label for="seo-meta-title">Título SEO:</label>
+                        <input type="text" id="seo-meta-title" placeholder="Título para SEO">
+                    </div>
+                    <div class="form-group">
+                        <label for="seo-meta-description">Descripción SEO:</label>
+                        <input type="text" id="seo-meta-description" placeholder="Descripción meta">
+                    </div>
+                    <div class="form-group">
+                        <label for="seo-meta-keywords">Keywords SEO:</label>
+                        <input type="text" id="seo-meta-keywords" placeholder="keywords, separados, por, coma">
+                    </div>
+                    <div class="form-group">
+                        <label for="seo-canonical-url">URL Canónica:</label>
+                        <input type="text" id="seo-canonical-url" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="seo-og-title">Título Open Graph:</label>
+                        <input type="text" id="seo-og-title" placeholder="Título para redes sociales">
+                    </div>
+                    <div class="form-group">
+                        <label for="seo-og-description">Descripción Open Graph:</label>
+                        <input type="text" id="seo-og-description" placeholder="Descripción para redes sociales">
+                    </div>
+                    <button onclick="updateContentSeo()">Actualizar SEO</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="response-container">
+            <h3>Respuesta de la API:</h3>
+            <pre id="api-response">Esperando solicitud...</pre>
+        </div>
+    </div>
+
+    <script>
+        // Configuración base de la API
+        const API_BASE = 'http://localhost:8000';
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+
+        // Inicializar la UI según el estado de autenticación
+        function initUI() {
+            if (authToken) {
+                document.getElementById('auth-status').textContent = 'Estado: Autenticado';
+                getMe(); // Cargar información del usuario
+            }
+        }
+
+        // Mostrar pestaña de autenticación
+        function showAuthTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab[onclick*="${tabName}"]`).classList.add('active');
+            
+            document.getElementById('login-tab').classList.add('hidden');
+            document.getElementById('register-tab').classList.add('hidden');
+            
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        }
+
+        // Mostrar pestaña de API
+        function showApiTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab[onclick*="${tabName}"]`).classList.add('active');
+            
+            document.getElementById('users-tab').classList.add('hidden');
+            document.getElementById('roles-tab').classList.add('hidden');
+            document.getElementById('permissions-tab').classList.add('hidden');
+            document.getElementById('content-tab').classList.add('hidden');
+            
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        }
+
+        // Función para mostrar mensajes de error
+        function showError(message) {
+            alert(`Error: ${message}`);
+            console.error(message);
+        }
+
+        // Manejar login
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.data.token; // El token está en data.data.token
+                    localStorage.setItem('authToken', authToken);
+                    document.getElementById('auth-status').textContent = 'Estado: Autenticado';
+                    
+                    // Mostrar información del usuario
+                    currentUser = data.data.user;
+                    showUserInfo(currentUser);
+                    
+                    // Mostrar sección de API
+                    document.getElementById('api-section').classList.add('active');
+                    
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    showError(data.error || 'Error al iniciar sesión');
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Manejar registro
+        async function register() {
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.data.token; // El token está en data.data.token
+                    localStorage.setItem('authToken', authToken);
+                    document.getElementById('auth-status').textContent = 'Estado: Autenticado';
+                    
+                    // Mostrar información del usuario
+                    currentUser = data.data.user;
+                    showUserInfo(currentUser);
+                    
+                    // Mostrar sección de API
+                    document.getElementById('api-section').classList.add('active');
+                    
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    showError(data.error || 'Error al registrarse');
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Mostrar información del usuario
+        function showUserInfo(user) {
+            const userInfoDiv = document.getElementById('user-info');
+            userInfoDiv.innerHTML = `
+                <strong>Usuario:</strong> ${user.name} (${user.email})<br>
+                <strong>Rol:</strong> ${user.role?.name || 'N/A'}<br>
+                <strong>ID:</strong> ${user.id}
+            `;
+            userInfoDiv.classList.remove('hidden');
+        }
+
+        // Función para hacer solicitudes autenticadas
+        async function authenticatedRequest(url, options = {}) {
+            if (!authToken) {
+                showError('No estás autenticado');
+                return null;
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${authToken}`,
+                ...options.headers
+            };
+
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            if (response.status === 401) {
+                showError('Token expirado o inválido. Por favor, inicia sesión nuevamente.');
+                localStorage.removeItem('authToken');
+                authToken = null;
+                document.getElementById('auth-status').textContent = 'Estado: No autenticado';
+                document.getElementById('api-section').classList.remove('active');
+                document.getElementById('user-info').classList.add('hidden');
+                return null;
+            }
+
+            return response;
+        }
+
+        // Obtener información del usuario actual
+        async function getMe() {
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/auth/me`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    
+                    if (response.ok) {
+                        currentUser = data.data;
+                        showUserInfo(currentUser);
+                    }
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Obtener todos los usuarios
+        async function getUsers() {
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/users`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Obtener usuario por ID
+        async function getUserById() {
+            const userId = document.getElementById('user-id').value;
+            
+            if (!userId) {
+                showError('Por favor, ingresa un ID de usuario');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/users/${userId}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Mostrar formulario de actualización
+        function showUpdateForm() {
+            document.getElementById('update-form').classList.remove('hidden');
+        }
+
+        // Actualizar usuario
+        async function updateUser() {
+            const userId = document.getElementById('user-id').value;
+            const name = document.getElementById('update-name').value;
+            const email = document.getElementById('update-email').value;
+            
+            if (!userId) {
+                showError('Por favor, ingresa un ID de usuario');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    
+                    if (response.ok && data.data.id == currentUser.id) {
+                        // Actualizar currentUser si se actualizó el perfil del usuario actual
+                        currentUser = data.data;
+                        showUserInfo(currentUser);
+                    }
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Eliminar usuario
+        async function deleteUser() {
+            const userId = document.getElementById('user-id').value;
+            
+            if (!userId) {
+                showError('Por favor, ingresa un ID de usuario');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Funciones para Roles
+        async function getRoles() {
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getRoleById() {
+            const roleId = document.getElementById('role-id').value;
+            
+            if (!roleId) {
+                showError('Por favor, ingresa un ID de rol');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles/${roleId}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showCreateRoleForm() {
+            document.getElementById('create-role-form').classList.remove('hidden');
+            document.getElementById('update-role-form').classList.add('hidden');
+            document.getElementById('assign-permissions-form').classList.add('hidden');
+        }
+
+        async function createRole() {
+            const name = document.getElementById('create-role-name').value;
+            const description = document.getElementById('create-role-description').value;
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    
+                    // Limpiar formulario
+                    document.getElementById('create-role-name').value = '';
+                    document.getElementById('create-role-description').value = '';
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showUpdateRoleForm() {
+            document.getElementById('update-role-form').classList.remove('hidden');
+            document.getElementById('create-role-form').classList.add('hidden');
+            document.getElementById('assign-permissions-form').classList.add('hidden');
+        }
+
+        async function updateRole() {
+            const roleId = document.getElementById('role-id').value;
+            const name = document.getElementById('update-role-name').value;
+            const description = document.getElementById('update-role-description').value;
+
+            if (!roleId) {
+                showError('Por favor, ingresa un ID de rol');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles/${roleId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function deleteRole() {
+            const roleId = document.getElementById('role-id').value;
+            
+            if (!roleId) {
+                showError('Por favor, ingresa un ID de rol');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de que deseas eliminar este rol? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles/${roleId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getRolePermissions() {
+            const roleId = document.getElementById('role-id').value;
+            
+            if (!roleId) {
+                showError('Por favor, ingresa un ID de rol');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles/${roleId}/permissions`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showAssignPermissionsForm() {
+            document.getElementById('assign-permissions-form').classList.remove('hidden');
+            document.getElementById('create-role-form').classList.add('hidden');
+            document.getElementById('update-role-form').classList.add('hidden');
+        }
+
+        async function assignPermissionsToRole() {
+            const roleId = document.getElementById('role-id').value;
+            const permissionIdsInput = document.getElementById('permission-ids').value;
+
+            if (!roleId) {
+                showError('Por favor, ingresa un ID de rol');
+                return;
+            }
+
+            if (!permissionIdsInput) {
+                showError('Por favor, ingresa los IDs de permisos');
+                return;
+            }
+
+            // Convertir el string de IDs en un array de números
+            const permissionIds = permissionIdsInput.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/roles/${roleId}/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ permissionIds })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Funciones para Permisos
+        async function getPermissions() {
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getPermissionById() {
+            const permissionId = document.getElementById('permission-id').value;
+            
+            if (!permissionId) {
+                showError('Por favor, ingresa un ID de permiso');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions/${permissionId}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getPermissionsByModule() {
+            const module = document.getElementById('permission-module').value;
+            
+            if (!module) {
+                showError('Por favor, ingresa un nombre de módulo');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions/module/${module}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showCreatePermissionForm() {
+            document.getElementById('create-permission-form').classList.remove('hidden');
+            document.getElementById('update-permission-form').classList.add('hidden');
+        }
+
+        async function createPermission() {
+            const module = document.getElementById('create-permission-module').value;
+            const action = document.getElementById('create-permission-action').value;
+            const description = document.getElementById('create-permission-description').value;
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ module, action, description })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    
+                    // Limpiar formulario
+                    document.getElementById('create-permission-module').value = '';
+                    document.getElementById('create-permission-action').value = '';
+                    document.getElementById('create-permission-description').value = '';
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showUpdatePermissionForm() {
+            document.getElementById('update-permission-form').classList.remove('hidden');
+            document.getElementById('create-permission-form').classList.add('hidden');
+        }
+
+        async function updatePermission() {
+            const permissionId = document.getElementById('permission-id').value;
+            const module = document.getElementById('update-permission-module').value;
+            const action = document.getElementById('update-permission-action').value;
+            const description = document.getElementById('update-permission-description').value;
+
+            if (!permissionId) {
+                showError('Por favor, ingresa un ID de permiso');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions/${permissionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ module, action, description })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function deletePermission() {
+            const permissionId = document.getElementById('permission-id').value;
+            
+            if (!permissionId) {
+                showError('Por favor, ingresa un ID de permiso');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de que deseas eliminar este permiso? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/permissions/${permissionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Funciones para Content
+        async function getContent() {
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentById() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showCreateContentForm() {
+            document.getElementById('create-content-form').classList.remove('hidden');
+            document.getElementById('update-content-form').classList.add('hidden');
+            document.getElementById('assign-categories-form').classList.add('hidden');
+            document.getElementById('assign-tags-form').classList.add('hidden');
+            document.getElementById('update-seo-form').classList.add('hidden');
+        }
+
+        async function createContent() {
+            const title = document.getElementById('create-content-title').value;
+            const slug = document.getElementById('create-content-slug').value;
+            const excerpt = document.getElementById('create-content-excerpt').value;
+            const content = document.getElementById('create-content-content').value;
+            const contentTypeId = document.getElementById('create-content-type-id').value;
+            const status = document.getElementById('create-content-status').value;
+            const visibility = document.getElementById('create-content-visibility').value;
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        title, 
+                        slug, 
+                        excerpt, 
+                        content, 
+                        content_type_id: parseInt(contentTypeId), 
+                        status, 
+                        visibility 
+                    })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                    
+                    // Limpiar formulario
+                    document.getElementById('create-content-title').value = '';
+                    document.getElementById('create-content-slug').value = '';
+                    document.getElementById('create-content-excerpt').value = '';
+                    document.getElementById('create-content-content').value = '';
+                    document.getElementById('create-content-type-id').value = '';
+                    document.getElementById('create-content-status').value = 'draft';
+                    document.getElementById('create-content-visibility').value = 'public';
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showUpdateContentForm() {
+            document.getElementById('update-content-form').classList.remove('hidden');
+            document.getElementById('create-content-form').classList.add('hidden');
+            document.getElementById('assign-categories-form').classList.add('hidden');
+            document.getElementById('assign-tags-form').classList.add('hidden');
+            document.getElementById('update-seo-form').classList.add('hidden');
+        }
+
+        async function updateContent() {
+            const contentId = document.getElementById('content-id').value;
+            const title = document.getElementById('update-content-title').value;
+            const slug = document.getElementById('update-content-slug').value;
+            const excerpt = document.getElementById('update-content-excerpt').value;
+            const content_text = document.getElementById('update-content-content').value;
+            const status = document.getElementById('update-content-status').value;
+            const visibility = document.getElementById('update-content-visibility').value;
+
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        title, 
+                        slug, 
+                        excerpt, 
+                        content: content_text, 
+                        status, 
+                        visibility 
+                    })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function deleteContent() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            if (!confirm('¿Estás seguro de que deseas eliminar este contenido? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function publishContent() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/publish`, {
+                    method: 'PATCH'
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentByType() {
+            const contentType = document.getElementById('content-type').value;
+            
+            if (!contentType) {
+                showError('Por favor, ingresa un tipo de contenido (post, page, etc.)');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/${contentType}`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentByCategory() {
+            const categoryId = document.getElementById('content-id').value; // Using content-id field temporarily
+            
+            if (!categoryId) {
+                showError('Por favor, ingresa un ID de categoría');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/categories/${categoryId}/content`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentByTag() {
+            const tagId = document.getElementById('content-id').value; // Using content-id field temporarily
+            
+            if (!tagId) {
+                showError('Por favor, ingresa un ID de tag');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/tags/${tagId}/content`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showAssignCategoriesForm() {
+            document.getElementById('assign-categories-form').classList.remove('hidden');
+            document.getElementById('create-content-form').classList.add('hidden');
+            document.getElementById('update-content-form').classList.add('hidden');
+            document.getElementById('assign-tags-form').classList.add('hidden');
+            document.getElementById('update-seo-form').classList.add('hidden');
+        }
+
+        async function assignCategoriesToContent() {
+            const contentId = document.getElementById('content-id').value;
+            const categoryIdsInput = document.getElementById('category-ids').value;
+
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            if (!categoryIdsInput) {
+                showError('Por favor, ingresa los IDs de categorías');
+                return;
+            }
+
+            // Convertir el string de IDs en un array de números
+            const categoryIds = categoryIdsInput.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ categoryIds })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentCategories() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/categories`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showAssignTagsForm() {
+            document.getElementById('assign-tags-form').classList.remove('hidden');
+            document.getElementById('create-content-form').classList.add('hidden');
+            document.getElementById('update-content-form').classList.add('hidden');
+            document.getElementById('assign-categories-form').classList.add('hidden');
+            document.getElementById('update-seo-form').classList.add('hidden');
+        }
+
+        async function assignTagsToContent() {
+            const contentId = document.getElementById('content-id').value;
+            const tagIdsInput = document.getElementById('tag-ids').value;
+
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            if (!tagIdsInput) {
+                showError('Por favor, ingresa los IDs de tags');
+                return;
+            }
+
+            // Convertir el string de IDs en un array de números
+            const tagIds = tagIdsInput.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/tags`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ tagIds })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function getContentTags() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/tags`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        function showUpdateSeoForm() {
+            document.getElementById('update-seo-form').classList.remove('hidden');
+            document.getElementById('create-content-form').classList.add('hidden');
+            document.getElementById('update-content-form').classList.add('hidden');
+            document.getElementById('assign-categories-form').classList.add('hidden');
+            document.getElementById('assign-tags-form').classList.add('hidden');
+        }
+
+        async function getContentSeo() {
+            const contentId = document.getElementById('content-id').value;
+            
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/seo`);
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        async function updateContentSeo() {
+            const contentId = document.getElementById('content-id').value;
+            const metaTitle = document.getElementById('seo-meta-title').value;
+            const metaDescription = document.getElementById('seo-meta-description').value;
+            const metaKeywords = document.getElementById('seo-meta-keywords').value;
+            const canonicalUrl = document.getElementById('seo-canonical-url').value;
+            const ogTitle = document.getElementById('seo-og-title').value;
+            const ogDescription = document.getElementById('seo-og-description').value;
+
+            if (!contentId) {
+                showError('Por favor, ingresa un ID de contenido');
+                return;
+            }
+
+            try {
+                const response = await authenticatedRequest(`${API_BASE}/api/content/${contentId}/seo`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        meta_title: metaTitle,
+                        meta_description: metaDescription,
+                        meta_keywords: metaKeywords,
+                        canonical_url: canonicalUrl,
+                        og_title: ogTitle,
+                        og_description: ogDescription
+                    })
+                });
+                
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('api-response').textContent = error.message;
+            }
+        }
+
+        // Inicializar la interfaz
+        window.onload = function() {
+            initUI();
+        };
+    </script>
+</body>
+</html>

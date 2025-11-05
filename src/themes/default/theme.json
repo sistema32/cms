@@ -1,0 +1,130 @@
+{
+  "name": "default",
+  "displayName": "LexCMS Default Theme",
+  "version": "1.0.0",
+  "description": "Clean and minimal theme for LexCMS with modern design",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "screenshots": {
+    "desktop": "assets/images/screenshot-desktop.jpg",
+    "mobile": "assets/images/screenshot-mobile.jpg"
+  },
+  "config": {
+    "posts_per_page": 10,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 },
+      "xlarge": { "width": 2000 }
+    },
+    "custom": {
+      "color_scheme": {
+        "type": "select",
+        "label": "Color Scheme",
+        "options": ["Light", "Dark", "Auto"],
+        "default": "Light",
+        "group": "design",
+        "description": "Choose the color scheme for your site"
+      },
+      "typography": {
+        "type": "select",
+        "label": "Typography",
+        "options": ["Modern sans-serif", "Elegant serif", "Monospace"],
+        "default": "Modern sans-serif",
+        "group": "design",
+        "description": "Font style for the site"
+      },
+      "header_style": {
+        "type": "select",
+        "label": "Header Style",
+        "options": ["Minimal", "Large", "Centered"],
+        "default": "Minimal",
+        "group": "homepage",
+        "description": "Style of the site header"
+      },
+      "show_sidebar": {
+        "type": "boolean",
+        "label": "Show Sidebar",
+        "default": true,
+        "group": "layout",
+        "description": "Display sidebar on pages and posts"
+      },
+      "primary_color": {
+        "type": "color",
+        "label": "Primary Color",
+        "default": "#0066cc",
+        "group": "design",
+        "description": "Main accent color for the theme"
+      },
+      "logo_image": {
+        "type": "image",
+        "label": "Custom Logo",
+        "group": "branding",
+        "description": "Upload a custom logo for your site"
+      },
+      "cta_text": {
+        "type": "text",
+        "label": "Call to Action Text",
+        "default": "Suscríbete a nuestro newsletter",
+        "group": "homepage",
+        "description": "Text for call-to-action buttons"
+      },
+      "show_author_bio": {
+        "type": "boolean",
+        "label": "Show Author Bio",
+        "default": true,
+        "group": "post",
+        "description": "Display author biography on posts",
+        "visibility": "show_sidebar:true"
+      },
+      "show_related_posts": {
+        "type": "boolean",
+        "label": "Show Related Posts",
+        "default": true,
+        "group": "post",
+        "description": "Display related posts at the end of articles"
+      },
+      "posts_layout": {
+        "type": "select",
+        "label": "Posts Layout",
+        "options": ["Grid", "List", "Masonry"],
+        "default": "Grid",
+        "group": "homepage",
+        "description": "Layout style for post listings"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": true,
+    "menus": ["header", "footer", "sidebar"],
+    "postFormats": ["standard", "video", "audio", "gallery"],
+    "customTemplates": true
+  },
+  "templates": {
+    "index": "templates/index.tsx",
+    "home": "templates/home.tsx",
+    "post": "templates/post.tsx",
+    "page": "templates/page.tsx",
+    "category": "templates/category.tsx",
+    "tag": "templates/tag.tsx",
+    "author": "templates/author.tsx",
+    "search": "templates/search.tsx",
+    "error": "templates/error.tsx",
+    "404": "templates/404.tsx"
+  },
+  "partials": {
+    "header": "partials/Header.tsx",
+    "footer": "partials/Footer.tsx",
+    "sidebar": "partials/Sidebar.tsx",
+    "post-card": "partials/PostCard.tsx",
+    "pagination": "partials/Pagination.tsx",
+    "menu": "partials/Menu.tsx",
+    "comments": "partials/Comments.tsx"
+  }
+}

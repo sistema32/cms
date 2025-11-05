@@ -1,0 +1,44 @@
+# Performance Audit Notes
+
+Fecha: 2025-11-01
+
+Este documento lista funciones cuya implementación actual puede degradar tiempos de respuesta o uso de recursos, junto con recomendaciones de mejora.
+
+## 1. Doble redimensionado en `uploadMedia`
+- **Ubicación**: `src/services/mediaService.ts:95` y `src/services/mediaService.ts:210` - **Problema**: Para archivos tipo imagen se invoca `imageProcessor.generateImageSizes` dos veces: una para 
+escribir los archivos en disco y otra para persistir metadatos en `mediaSizes`. Cada llamada vuelve a decodificar y escalar todas las variantes WebP, multiplicando CPU y memoria. - **Solución 
+sugerida**: Generar los tamaños una sola vez, reutilizando el `Map` tanto para guardar en disco como para registrar tamaños en la base. También se puede almacenar los bytes originales en memoria y 
+reusarlos en lugar de recalcularlos.
+
+## 2. `mergeCategories` hace consultas N+1
+- **Ubicación**: `src/services/categoryService.ts:442`
+- **Problema**: Por cada entrada de `content_categories` se lanza un `findFirst` y luego un `update/delete`, generando dos consultas por fila. Lo mismo ocurre con las subcategorías que se mueven una por una. Con categorías grandes, el merge puede saturar la base de datos.
+- **Solución sugerida**: Envolver el merge en una transacción y usar operaciones bulk (`UPDATE ... WHERE category_id = sourceId`, `DELETE ... WHERE ...`). También se puede obtener la lista de contenidos destino en un solo query para evitar el `findFirst` por fila.
+
+## 3. Búsqueda de ancestros y descendientes en menú
+- **Ubicaciones**:
+  - `src/services/menuItemService.ts:383` (`checkCircularReference`)
+  - `src/services/menuItemService.ts:411` (`getItemDescendants`)
+  - `src/services/menuItemService.ts:432` (`countMenuItems`)
+- **Problema**:
+  - `checkCircularReference` recorre la cadena de padres haciendo `findFirst` por cada salto.
+  - `getItemDescendants` realiza una consulta por nivel (recursión con I/O por nodo).
+  - `countMenuItems` carga todos los registros sólo para contar.
+- **Solución sugerida**: Obtener toda la jerarquía (o la rama relevante) en una sola consulta y construir el árbol en memoria. Para el conteo, usar `SELECT count(*)` directo. También se puede mantener una columna auxiliar (por ejemplo, `path` o `depth`) para resolver estas operaciones sin múltiples queries.
+
+## 4. `getContentList` ignora filtros
+- **Ubicación**: `src/services/contentService.ts:250`
+- **Problema**: El método acepta parámetros (`contentTypeId`, `status`, `authorId`, etc.) pero no los aplica. Produce cargas innecesarias de datos, especialmente en bases con mucho contenido, y obliga a filtrar client-side.
+- **Solución sugerida**: Construir dinámicamente un `WHERE` con Drizzle (similar a `searchCategories`) o exponer versiones filtradas específicas. Al menos, documentar y limitar el tamaño del lote mientras se implementa el filtrado real.
+
+## 5. Reordenamiento de categorías fila por fila
+- **Ubicación**: `src/services/categoryService.ts:693`
+- **Problema**: `reorderCategories` ejecuta un `SELECT` y un `UPDATE` por elemento. En operaciones de drag-and-drop con muchos nodos, el coste crece linealmente.
+- **Solución sugerida**: Usar un `UPDATE ... FROM` con `VALUES` (o un `CASE WHEN`) para aplicar todos los cambios en un solo roundtrip, o ejecutar `updateMany` dentro de una transacción para asegurar consistencia con menos viajes a la base.
+
+---
+
+### Recomendaciones generales
+1. Cuando sea posible, agrupar operaciones de escritura en transacciones y evitar N+1 queries.
+2. Para tareas de procesamiento de archivos (imágenes, video), cachear resultados intermedios en memoria en lugar de recalcularlos.
+3. Validar todos los parámetros de paginación/filtro y aplicarlos en la consulta SQL para reducir carga en el backend y la red.

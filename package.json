@@ -1,0 +1,39 @@
+{
+  "name": "deno-hono-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@ckeditor/ckeditor5-alignment": "^47.1.0",
+    "@ckeditor/ckeditor5-autoformat": "^47.1.0",
+    "@ckeditor/ckeditor5-basic-styles": "^47.1.0",
+    "@ckeditor/ckeditor5-block-quote": "^47.1.0",
+    "@ckeditor/ckeditor5-editor-classic": "^47.1.0",
+    "@ckeditor/ckeditor5-essentials": "^47.1.0",
+    "@ckeditor/ckeditor5-font": "^47.1.0",
+    "@ckeditor/ckeditor5-heading": "^47.1.0",
+    "@ckeditor/ckeditor5-highlight": "^47.1.0",
+    "@ckeditor/ckeditor5-horizontal-line": "^47.1.0",
+    "@ckeditor/ckeditor5-image": "^47.1.0",
+    "@ckeditor/ckeditor5-link": "^47.1.0",
+    "@ckeditor/ckeditor5-list": "^47.1.0",
+    "@ckeditor/ckeditor5-paragraph": "^47.1.0",
+    "@ckeditor/ckeditor5-paste-from-office": "^47.1.0",
+    "@ckeditor/ckeditor5-table": "^47.1.0",
+    "@ckeditor/ckeditor5-theme-lark": "^47.1.0",
+    "@ckeditor/ckeditor5-typing": "^47.1.0",
+    "@ckeditor/ckeditor5-ui": "^47.1.0",
+    "@ckeditor/ckeditor5-upload": "^47.1.0",
+    "@libsql/client": "^0.14.0",
+    "@mdi/js": "^7.4.47",
+    "@mdi/react": "^1.6.1",
+    "@types/react": "^19.2.2",
+    "@upstash/context7-mcp": "^1.0.26",
+    "caniuse-lite": "^1.0.30001753",
+    "drizzle-kit": "^0.30.6",
+    "drizzle-orm": "^0.44.7",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  }
+}

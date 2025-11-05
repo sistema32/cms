@@ -1,0 +1,588 @@
+import { db } from "../config/db.ts";
+import {
+  type Content,
+  content,
+  contentCategories,
+  contentMeta,
+  contentSeo,
+  contentTags,
+  type NewContent,
+  type NewContentMeta,
+  type NewContentSeo,
+} from "../db/schema.ts";
+import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+
+export interface CreateContentInput {
+  contentTypeId: number;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  body?: string;
+  featuredImageId?: number;
+  authorId: number;
+  status?: "draft" | "published" | "scheduled" | "archived";
+  visibility?: "public" | "private" | "password";
+  password?: string;
+  publishedAt?: Date;
+  scheduledAt?: Date;
+  categoryIds?: number[];
+  tagIds?: number[];
+  seo?: CreateContentSeoInput;
+  meta?: CreateContentMetaInput[];
+}
+
+export interface CreateContentSeoInput {
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  ogType?: string;
+  twitterCard?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
+  schemaJson?: string;
+  focusKeyword?: string;
+  noIndex?: boolean;
+  noFollow?: boolean;
+}
+
+export interface CreateContentMetaInput {
+  key: string;
+  value: string;
+  type?: "string" | "number" | "boolean" | "json";
+}
+
+export interface UpdateContentInput {
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  body?: string;
+  featuredImageId?: number;
+  status?: "draft" | "published" | "scheduled" | "archived";
+  visibility?: "public" | "private" | "password";
+  password?: string;
+  publishedAt?: Date;
+  scheduledAt?: Date;
+  categoryIds?: number[];
+  tagIds?: number[];
+  seo?: CreateContentSeoInput;
+  meta?: CreateContentMetaInput[];
+}
+
+export interface ContentFilters {
+  contentTypeId?: number;
+  status?: string;
+  authorId?: number;
+  categoryId?: number;
+  tagId?: number;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+type RawContent = Awaited<
+  ReturnType<typeof db.query.content.findFirst>
+>;
+
+function normalizeContent(
+  raw: RawContent,
+) {
+  if (!raw) return raw;
+
+  const categories = (raw as any).contentCategories?.map((item: any) =>
+    item.category
+  ).filter(
+    Boolean,
+  ) ?? [];
+  const tags = (raw as any).contentTags?.map((item: any) => item.tag).filter(
+    Boolean,
+  ) ?? [];
+
+  return {
+    ...raw,
+    categories,
+    tags,
+  };
+}
+
+// Generar slug automático desde título
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+    .replace(/[^a-z0-9\s-]/g, "") // Quitar caracteres especiales
+    .trim()
+    .replace(/\s+/g, "-") // Espacios a guiones
+    .replace(/-+/g, "-"); // Múltiples guiones a uno solo
+}
+
+// Crear contenido
+export async function createContent(
+  data: CreateContentInput,
+): Promise<Content> {
+  // Verificar que el slug sea único
+  const existing = await db.query.content.findFirst({
+    where: eq(content.slug, data.slug),
+  });
+
+  if (existing) {
+    throw new Error(`El contenido con slug '${data.slug}' ya existe`);
+  }
+
+  // Crear el contenido
+  const [newContent] = await db
+    .insert(content)
+    .values({
+      contentTypeId: data.contentTypeId,
+      title: data.title,
+      slug: data.slug,
+      excerpt: data.excerpt,
+      body: data.body,
+      featuredImageId: data.featuredImageId,
+      authorId: data.authorId,
+      status: data.status || "draft",
+      visibility: data.visibility || "public",
+      password: data.password,
+      publishedAt: data.publishedAt,
+      scheduledAt: data.scheduledAt,
+    })
+    .returning();
+
+  // Asignar categorías
+  if (data.categoryIds && data.categoryIds.length > 0) {
+    await db.insert(contentCategories).values(
+      data.categoryIds.map((categoryId) => ({
+        contentId: newContent.id,
+        categoryId,
+      })),
+    );
+  }
+
+  // Asignar tags
+  if (data.tagIds && data.tagIds.length > 0) {
+    await db.insert(contentTags).values(
+      data.tagIds.map((tagId) => ({
+        contentId: newContent.id,
+        tagId,
+      })),
+    );
+  }
+
+  // Crear SEO si se provee
+  if (data.seo) {
+    await db.insert(contentSeo).values({
+      contentId: newContent.id,
+      ...data.seo,
+    });
+  }
+
+  // Crear meta fields si se proveen
+  if (data.meta && data.meta.length > 0) {
+    await db.insert(contentMeta).values(
+      data.meta.map((m) => ({
+        contentId: newContent.id,
+        key: m.key,
+        value: m.value,
+        type: m.type || "string",
+      })),
+    );
+  }
+
+  return newContent;
+}
+
+// Obtener contenido con todas sus relaciones
+export async function getContentById(
+  id: number,
+  options: { incrementViews?: boolean } = {},
+) {
+  const result = await db.query.content.findFirst({
+    where: eq(content.id, id),
+    with: {
+      contentType: true,
+      featuredImage: true,
+      author: {
+        columns: {
+          password: false, // No incluir password
+        },
+      },
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+      seo: true,
+      meta: true,
+    },
+  });
+
+  if (!result) return null;
+
+  if (options.incrementViews !== false) {
+    await db
+      .update(content)
+      .set({
+        viewCount: sql`${content.viewCount} + 1`,
+      })
+      .where(eq(content.id, id));
+  }
+
+  return normalizeContent(result);
+}
+
+// Obtener contenido por slug
+export async function getContentBySlug(slug: string) {
+  const result = await db.query.content.findFirst({
+    where: eq(content.slug, slug),
+    with: {
+      contentType: true,
+      featuredImage: true,
+      author: {
+        columns: {
+          password: false,
+        },
+      },
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+      seo: true,
+      meta: true,
+    },
+  });
+
+  if (!result) return null;
+
+  // Incrementar view count
+  await db
+    .update(content)
+    .set({
+      viewCount: sql`${content.viewCount} + 1`,
+    })
+    .where(eq(content.slug, slug));
+
+  return normalizeContent(result);
+}
+
+// Obtener lista de contenido con filtros
+export async function getContentList(filters: ContentFilters = {}) {
+  const limit = filters.limit || 20;
+  const offset = filters.offset || 0;
+
+  const conditions = [];
+
+  if (filters.contentTypeId) {
+    conditions.push(eq(content.contentTypeId, filters.contentTypeId));
+  }
+
+  if (filters.status) {
+    conditions.push(eq(content.status, filters.status));
+  }
+
+  if (filters.authorId) {
+    conditions.push(eq(content.authorId, filters.authorId));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  let query = db.query.content.findMany({
+    with: {
+      contentType: true,
+      featuredImage: true,
+      author: {
+        columns: {
+          password: false,
+        },
+      },
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+    where: whereClause,
+    orderBy: (content, { desc }) => [
+      desc(content.publishedAt),
+      desc(content.createdAt),
+    ],
+    limit,
+    offset,
+  });
+
+  const results = await query;
+  return results.map((item) => normalizeContent(item));
+}
+
+export async function searchContent(query: string, limit = 20) {
+  const pattern = `%${query}%`;
+
+  if (!query.trim()) {
+    return [];
+  }
+
+  const results = await db.query.content.findMany({
+    where: and(
+      eq(content.status, "published"),
+      or(
+        like(content.title, pattern),
+        like(content.excerpt, pattern),
+        like(content.body, pattern),
+      ),
+    ),
+    with: {
+      contentType: true,
+      featuredImage: true,
+    },
+    limit,
+  });
+
+  return results.map((item) => normalizeContent(item));
+}
+
+// Actualizar contenido
+export async function updateContent(
+  id: number,
+  data: UpdateContentInput,
+): Promise<Content> {
+  const existing = await db.query.content.findFirst({
+    where: eq(content.id, id),
+  });
+
+  if (!existing) {
+    throw new Error("Contenido no encontrado");
+  }
+
+  // Verificar slug único si se cambia
+  if (data.slug && data.slug !== existing.slug) {
+    const slugExists = await db.query.content.findFirst({
+      where: eq(content.slug, data.slug),
+    });
+
+    if (slugExists) {
+      throw new Error(`El slug '${data.slug}' ya está en uso`);
+    }
+  }
+
+  // Actualizar contenido
+  const [updated] = await db
+    .update(content)
+    .set({
+      title: data.title,
+      slug: data.slug,
+      excerpt: data.excerpt,
+      body: data.body,
+      featuredImageId: data.featuredImageId,
+      status: data.status,
+      visibility: data.visibility,
+      password: data.password,
+      publishedAt: data.publishedAt,
+      scheduledAt: data.scheduledAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(content.id, id))
+    .returning();
+
+  if (data.categoryIds !== undefined) {
+    const current = await db.query.contentCategories.findMany({
+      where: eq(contentCategories.contentId, id),
+    });
+    const currentIds = new Set(current.map((c) => c.categoryId));
+    const newIds = new Set(data.categoryIds);
+
+    const toInsert = data.categoryIds.filter((categoryId) =>
+      !currentIds.has(categoryId)
+    );
+    const toDelete = current.filter((c) => !newIds.has(c.categoryId)).map((c) =>
+      c.categoryId
+    );
+
+    if (toDelete.length > 0) {
+      await db
+        .delete(contentCategories)
+        .where(
+          and(
+            eq(contentCategories.contentId, id),
+            inArray(contentCategories.categoryId, toDelete),
+          ),
+        );
+    }
+
+    if (toInsert.length > 0) {
+      await db.insert(contentCategories).values(
+        toInsert.map((categoryId) => ({
+          contentId: id,
+          categoryId,
+        })),
+      );
+    }
+  }
+
+  if (data.tagIds !== undefined) {
+    const current = await db.query.contentTags.findMany({
+      where: eq(contentTags.contentId, id),
+    });
+    const currentIds = new Set(current.map((t) => t.tagId));
+    const newIds = new Set(data.tagIds);
+
+    const toInsert = data.tagIds.filter((tagId) => !currentIds.has(tagId));
+    const toDelete = current.filter((t) => !newIds.has(t.tagId)).map((t) =>
+      t.tagId
+    );
+
+    if (toDelete.length > 0) {
+      await db
+        .delete(contentTags)
+        .where(
+          and(
+            eq(contentTags.contentId, id),
+            inArray(contentTags.tagId, toDelete),
+          ),
+        );
+    }
+
+    if (toInsert.length > 0) {
+      await db.insert(contentTags).values(
+        toInsert.map((tagId) => ({
+          contentId: id,
+          tagId,
+        })),
+      );
+    }
+  }
+
+  // Actualizar SEO si se provee
+  if (data.seo) {
+    const existingSeo = await db.query.contentSeo.findFirst({
+      where: eq(contentSeo.contentId, id),
+    });
+
+    if (existingSeo) {
+      await db
+        .update(contentSeo)
+        .set({
+          ...data.seo,
+          updatedAt: new Date(),
+        })
+        .where(eq(contentSeo.contentId, id));
+    } else {
+      await db.insert(contentSeo).values({
+        contentId: id,
+        ...data.seo,
+      });
+    }
+  }
+
+  // Actualizar meta si se provee
+  if (data.meta) {
+    await db.delete(contentMeta).where(eq(contentMeta.contentId, id));
+    if (data.meta.length > 0) {
+      await db.insert(contentMeta).values(
+        data.meta.map((m) => ({
+          contentId: id,
+          key: m.key,
+          value: m.value,
+          type: m.type || "string",
+        })),
+      );
+    }
+  }
+
+  return updated;
+}
+
+// Eliminar contenido
+export async function deleteContent(id: number): Promise<void> {
+  const existing = await db.query.content.findFirst({
+    where: eq(content.id, id),
+  });
+
+  if (!existing) {
+    throw new Error("Contenido no encontrado");
+  }
+
+  await db.delete(content).where(eq(content.id, id));
+}
+
+export async function upsertContentSeoEntry(
+  contentId: number,
+  data: CreateContentSeoInput,
+) {
+  const existingContent = await db.query.content.findFirst({
+    where: eq(content.id, contentId),
+  });
+
+  if (!existingContent) {
+    throw new Error("Contenido no encontrado");
+  }
+
+  const existingSeo = await db.query.contentSeo.findFirst({
+    where: eq(contentSeo.contentId, contentId),
+  });
+
+  if (existingSeo) {
+    await db
+      .update(contentSeo)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(contentSeo.contentId, contentId));
+  } else {
+    await db.insert(contentSeo).values({
+      contentId,
+      ...data,
+    });
+  }
+
+  return await db.query.contentSeo.findFirst({
+    where: eq(contentSeo.contentId, contentId),
+  });
+}
+
+export async function getContentSeoEntry(contentId: number) {
+  return await db.query.contentSeo.findFirst({
+    where: eq(contentSeo.contentId, contentId),
+  });
+}
+
+export async function createContentMetaEntry(
+  contentId: number,
+  meta: CreateContentMetaInput,
+) {
+  const existingContent = await db.query.content.findFirst({
+    where: eq(content.id, contentId),
+  });
+
+  if (!existingContent) {
+    throw new Error("Contenido no encontrado");
+  }
+
+  const [created] = await db.insert(contentMeta).values({
+    contentId,
+    key: meta.key,
+    value: meta.value,
+    type: meta.type || "string",
+  }).returning();
+
+  return created;
+}

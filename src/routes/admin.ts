@@ -1,0 +1,2603 @@
+import { Hono } from "hono";
+import { serveStatic } from "hono/deno";
+import { Context, Next } from "hono";
+import { env } from "../config/env.ts";
+import { DashboardPage } from "../admin/pages/Dashboard.tsx";
+import { LoginPage } from "../admin/pages/Login.tsx";
+import { ContentListPage } from "../admin/pages/ContentList.tsx";
+import { ContentFormPage } from "../admin/pages/ContentForm.tsx";
+import { PostFormPage } from "../admin/pages/PostFormPage.tsx";
+import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
+import { CategoriesPage } from "../admin/pages/Categories.tsx";
+import { TagsPage } from "../admin/pages/Tags.tsx";
+import { UsersPage } from "../admin/pages/Users.tsx";
+import { RolesPage } from "../admin/pages/RolesPage.tsx";
+import { PermissionsPage } from "../admin/pages/PermissionsPage.tsx";
+import { SettingsPage } from "../admin/pages/Settings.tsx";
+import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
+import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
+import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
+import { db } from "../config/db.ts";
+import {
+  categories,
+  comments,
+  content,
+  contentCategories,
+  contentSeo,
+  contentTags,
+  contentTypes,
+  roles,
+  tags,
+  users,
+} from "../db/schema.ts";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { generateToken, verifyToken } from "../utils/jwt.ts";
+import { comparePassword } from "../utils/password.ts";
+import { verifyTOTP } from "../services/twoFactorService.ts";
+import {
+  resolveFieldDefault,
+  SETTINGS_DEFINITIONS,
+  SETTINGS_FIELD_MAP,
+} from "../config/settingsDefinitions.ts";
+import { updateSetting as updateSettingService } from "../services/settingsService.ts";
+import * as contentService from "../services/contentService.ts";
+import * as themeService from "../services/themeService.ts";
+import * as menuService from "../services/menuService.ts";
+import * as menuItemService from "../services/menuItemService.ts";
+import * as mediaService from "../services/mediaService.ts";
+import * as roleService from "../services/roleService.ts";
+import * as permissionService from "../services/permissionService.ts";
+import type { MenuItemWithChildren } from "../services/menuItemService.ts";
+
+function parseSettingValueForAdmin(value: string | null): unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function parseIds(value: unknown): number[] {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .map((v) => parseInt(String(v), 10))
+    .filter((num) => Number.isFinite(num));
+}
+
+function parseStringField(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const str = Array.isArray(value)
+    ? String(value[value.length - 1])
+    : String(value);
+  const trimmed = str.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseNullableField(value: unknown): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
+  }
+  const str = Array.isArray(value)
+    ? String(value[value.length - 1])
+    : String(value);
+  const trimmed = str.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parseBooleanField(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  const values = Array.isArray(value) ? value : [value];
+  const last = String(values[values.length - 1]).toLowerCase();
+  return last === "true" || last === "1" || last === "on";
+}
+
+function extractSeoPayload(body: Record<string, unknown>) {
+  const seo = {
+    metaTitle: parseStringField(body.seo_metaTitle),
+    metaDescription: parseStringField(body.seo_metaDescription),
+    canonicalUrl: parseStringField(body.seo_canonicalUrl),
+    ogTitle: parseStringField(body.seo_ogTitle),
+    ogDescription: parseStringField(body.seo_ogDescription),
+    ogImage: parseStringField(body.seo_ogImage),
+    ogType: parseStringField(body.seo_ogType),
+    twitterCard: parseStringField(body.seo_twitterCard),
+    twitterTitle: parseStringField(body.seo_twitterTitle),
+    twitterDescription: parseStringField(body.seo_twitterDescription),
+    twitterImage: parseStringField(body.seo_twitterImage),
+    focusKeyword: parseStringField(body.seo_focusKeyword),
+    schemaJson: parseStringField(body.seo_schemaJson),
+    noIndex: parseBooleanField(body.seo_noIndex),
+    noFollow: parseBooleanField(body.seo_noFollow),
+  };
+
+  // Remove undefined properties to avoid overwriting with null
+  Object.keys(seo).forEach((key) => {
+    const typedKey = key as keyof typeof seo;
+    if (seo[typedKey] === undefined || seo[typedKey] === "") {
+      delete seo[typedKey];
+    }
+  });
+
+  return seo;
+}
+
+/**
+ * Admin Panel Routes
+ * Dashboard, content management, and settings
+ */
+
+/**
+ * Admin authentication middleware
+ * Checks for JWT token in cookies and redirects to login if not authenticated
+ */
+async function adminAuth(c: Context, next: Next) {
+  // Skip auth for static assets
+  const path = c.req.path;
+  if (path.startsWith(`${env.ADMIN_PATH}/assets/`)) {
+    return await next();
+  }
+
+  const token = getCookie(c, "auth_token");
+
+  if (!token) {
+    return c.redirect(`${env.ADMIN_PATH}/login`);
+  }
+
+  try {
+    const payload = await verifyToken(token);
+
+    // Verify user still exists in database
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, payload.userId),
+    });
+
+    if (!user) {
+      deleteCookie(c, "auth_token");
+      return c.redirect(`${env.ADMIN_PATH}/login?error=user_not_found`);
+    }
+
+    c.set("user", payload);
+    await next();
+  } catch (error) {
+    console.error("Admin auth failed:", error);
+    deleteCookie(c, "auth_token");
+    return c.redirect(`${env.ADMIN_PATH}/login?error=session_expired`);
+  }
+}
+
+const adminRouter = new Hono();
+
+async function getContentTypeBySlug(slug: string) {
+  let contentType = await db.query.contentTypes.findFirst({
+    where: eq(contentTypes.slug, slug),
+  });
+
+  if (!contentType && slug === "post") {
+    const [created] = await db.insert(contentTypes).values({
+      name: "Post",
+      slug: "post",
+      description: "Entradas de blog estándar",
+      icon: "📝",
+      isPublic: true,
+      hasCategories: true,
+      hasTags: true,
+      hasComments: true,
+    }).returning();
+    contentType = created;
+  }
+
+  if (!contentType && slug === "page") {
+    const [created] = await db.insert(contentTypes).values({
+      name: "Page",
+      slug: "page",
+      description: "Páginas estáticas del sitio",
+      icon: "📄",
+      isPublic: true,
+      hasCategories: false,
+      hasTags: false,
+      hasComments: false,
+    }).returning();
+    contentType = created;
+  }
+
+  if (!contentType) {
+    throw new Error(`Tipo de contenido '${slug}' no encontrado`);
+  }
+  return contentType;
+}
+
+function mapMenuItems(nodes: MenuItemWithChildren[]): any[] {
+  return nodes.map((item) => {
+    let type: "custom" | "content" | "category" | "tag" = "custom";
+    let reference: string | undefined;
+
+    if ((item as any).content) {
+      type = "content";
+      reference = (item as any).content.slug;
+    } else if ((item as any).category) {
+      type = "category";
+      reference = (item as any).category.slug;
+    } else if ((item as any).tag) {
+      type = "tag";
+      reference = (item as any).tag.slug;
+    }
+
+    return {
+      id: item.id,
+      label: item.label,
+      url: item.url,
+      type,
+      reference,
+      children: item.children ? mapMenuItems(item.children) : [],
+    };
+  });
+}
+
+/**
+ * GET /login - Show login form
+ */
+adminRouter.get("/login", async (c) => {
+  // If already authenticated, redirect to dashboard
+  const token = getCookie(c, "auth_token");
+  if (token) {
+    try {
+      await verifyToken(token);
+      return c.redirect(env.ADMIN_PATH);
+    } catch {
+      // Token invalid, continue to login
+    }
+  }
+
+  const error = c.req.query("error");
+  const errorMessages: Record<string, string> = {
+    invalid_credentials: "Email o contraseña incorrectos",
+    user_not_found: "Usuario no encontrado",
+    session_expired:
+      "Tu sesión ha expirado. Por favor, inicia sesión nuevamente",
+    invalid_2fa: "Código 2FA inválido",
+    requires_2fa: "Se requiere autenticación de dos factores",
+  };
+
+  return c.html(
+    LoginPage({
+      error: error ? errorMessages[error] : undefined,
+    }),
+  );
+});
+
+/**
+ * POST /login - Process login
+ */
+adminRouter.post("/login", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const email = body.email as string;
+    const password = body.password as string;
+
+    if (!email || !password) {
+      return c.html(
+        LoginPage({
+          error: "Email y contraseña son requeridos",
+          email,
+        }),
+      );
+    }
+
+    // Find user
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (!user) {
+      return c.html(
+        LoginPage({
+          error: "Email o contraseña incorrectos",
+          email,
+        }),
+      );
+    }
+
+    // Verify password
+    const isValidPassword = await comparePassword(password, user.password);
+    if (!isValidPassword) {
+      return c.html(
+        LoginPage({
+          error: "Email o contraseña incorrectos",
+          email,
+        }),
+      );
+    }
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled && user.twoFactorSecret) {
+      // Store userId temporarily in a short-lived cookie for 2FA verification
+      setCookie(c, "2fa_user_id", user.id.toString(), {
+        httpOnly: true,
+        secure: env.DENO_ENV === "production",
+        sameSite: "Lax",
+        maxAge: 300, // 5 minutes
+        path: env.ADMIN_PATH,
+      });
+
+      return c.html(
+        LoginPage({
+          email,
+          requires2FA: true,
+        }),
+      );
+    }
+
+    const token = await generateToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    setCookie(c, "auth_token", token, {
+      httpOnly: true,
+      secure: env.DENO_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    });
+
+    return c.redirect(env.ADMIN_PATH);
+  } catch (error) {
+    console.error("Login error:", error);
+    return c.html(
+      LoginPage({
+        error: "Error al iniciar sesión. Por favor, intenta de nuevo",
+      }),
+    );
+  }
+});
+
+/**
+ * POST /login/verify-2fa - Verify 2FA code
+ */
+adminRouter.post("/login/verify-2fa", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const email = body.email as string;
+    const code = body.code as string;
+    const userIdCookie = getCookie(c, "2fa_user_id");
+
+    if (!userIdCookie || !code) {
+      return c.redirect(`${env.ADMIN_PATH}/login?error=invalid_2fa`);
+    }
+
+    // Get user
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, parseInt(userIdCookie)),
+    });
+
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+      deleteCookie(c, "2fa_user_id");
+      return c.redirect(`${env.ADMIN_PATH}/login?error=invalid_2fa`);
+    }
+
+    // Verify 2FA code
+    const isValid = verifyTOTP(user.twoFactorSecret, code);
+
+    if (!isValid) {
+      return c.html(
+        LoginPage({
+          email,
+          requires2FA: true,
+          error: "Código 2FA inválido",
+        }),
+      );
+    }
+
+    // Delete temporary cookie
+    deleteCookie(c, "2fa_user_id");
+
+    // Generate token and set cookie
+    const token = await generateToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    setCookie(c, "auth_token", token, {
+      httpOnly: true,
+      secure: env.DENO_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    });
+
+    return c.redirect(env.ADMIN_PATH);
+  } catch (error) {
+    console.error("2FA verification error:", error);
+    return c.redirect(`${env.ADMIN_PATH}/login?error=invalid_2fa`);
+  }
+});
+
+/**
+ * POST /logout - Logout
+ */
+adminRouter.post("/logout", (c) => {
+  deleteCookie(c, "auth_token");
+  return c.redirect(`${env.ADMIN_PATH}/login`);
+});
+
+// Serve admin static assets (must be before auth middleware)
+adminRouter.get(
+  "/assets/*",
+  serveStatic({
+    root: "./src/admin",
+    rewriteRequestPath: (path) => path.replace(env.ADMIN_PATH, ""),
+  }),
+);
+
+// Protect all other admin routes with authentication
+adminRouter.use("/*", adminAuth);
+
+/**
+ * GET / - Dashboard home
+ */
+adminRouter.get("/", async (c) => {
+  try {
+    const user = c.get("user");
+
+    // Get statistics
+    const [
+      totalPostsResult,
+      totalUsersResult,
+      totalCommentsResult,
+    ] = await Promise.all([
+      db.select({ count: count() }).from(content),
+      db.select({ count: count() }).from(users),
+      db.select({ count: count() }).from(comments),
+    ]);
+
+    const stats = {
+      totalPosts: totalPostsResult[0]?.count || 0,
+      totalUsers: totalUsersResult[0]?.count || 0,
+      totalComments: totalCommentsResult[0]?.count || 0,
+      totalViews: 0, // TODO: Implement view tracking
+    };
+
+    // Get recent posts
+    const recentPostsData = await db.query.content.findMany({
+      limit: 10,
+      orderBy: [desc(content.createdAt)],
+      with: {
+        author: true,
+      },
+    });
+
+    const recentPosts = recentPostsData.map((post) => ({
+      id: post.id,
+      title: post.title,
+      author: post.author.name || post.author.email,
+      status: post.status,
+      createdAt: post.createdAt,
+    }));
+
+    return c.html(
+      DashboardPage({
+        user: {
+          name: user.name as string | null || user.email,
+          email: user.email,
+        },
+        stats,
+        recentPosts,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error rendering admin dashboard:", error);
+    return c.text("Error al cargar el dashboard", 500);
+  }
+});
+
+/**
+ * GET /content - Content list
+ */
+adminRouter.get("/content", async (c) => {
+  try {
+    const user = c.get("user");
+    const page = parseInt(c.req.query("page") || "1");
+    const status = c.req.query("status");
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
+    // Get content with filters
+    const whereClause = status ? eq(content.status, status) : undefined;
+
+    const [contents, totalResult] = await Promise.all([
+      db.query.content.findMany({
+        where: whereClause,
+        limit,
+        offset,
+        orderBy: [desc(content.createdAt)],
+        with: {
+          contentType: true,
+          author: true,
+        },
+      }),
+      db.select({ count: count() }).from(content).where(
+        whereClause || undefined,
+      ),
+    ]);
+
+    const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit);
+
+    return c.html(
+      ContentListPage({
+        user: { name: user.name as string | null, email: user.email },
+        contents: contents.map((item) => ({
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          status: item.status,
+          contentType: { name: item.contentType.name },
+          author: { name: item.author.name || "", email: item.author.email },
+          createdAt: item.createdAt,
+        })),
+        totalPages,
+        currentPage: page,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error rendering content list:", error);
+    return c.text("Error al cargar el contenido", 500);
+  }
+});
+
+/**
+ * GET /content/new - New content form
+ */
+adminRouter.get("/content/new", async (c) => {
+  try {
+    const user = c.get("user");
+
+    const [contentTypesData, categoriesData, tagsData] = await Promise.all([
+      db.query.contentTypes.findMany(),
+      db.query.categories.findMany(),
+      db.query.tags.findMany(),
+    ]);
+
+return c.html(
+      ContentFormPage({
+        user: { name: user.name as string | null, email: user.email },
+        contentTypes: contentTypesData,
+        categories: categoriesData,
+        tags: tagsData,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error rendering content form:", error);
+    return c.text("Error al cargar el formulario", 500);
+  }
+});
+
+/**
+ * POST /content/new - Create content
+ */
+adminRouter.post("/content/new", async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+
+    const [newContent] = await db.insert(content).values({
+      title: body.title as string,
+      slug: body.slug as string,
+      body: body.body as string,
+      excerpt: body.excerpt as string || null,
+      status: body.status as string,
+      contentTypeId: parseInt(body.contentTypeId as string),
+      authorId: user.userId,
+    }).returning();
+
+    // Handle categories - get array from form data
+    const categoryIds = Array.isArray(body.categories)
+      ? body.categories.map((id: any) => parseInt(id as string))
+      : body.categories
+      ? [parseInt(body.categories as string)]
+      : [];
+
+    if (categoryIds.length > 0) {
+      await db.insert(contentCategories).values(
+        categoryIds.map((categoryId) => ({
+          contentId: newContent.id,
+          categoryId,
+        })),
+      );
+    }
+
+    // Handle tags - get array from form data
+    const tagIds = Array.isArray(body.tags)
+      ? body.tags.map((id: any) => parseInt(id as string))
+      : body.tags
+      ? [parseInt(body.tags as string)]
+      : [];
+
+    if (tagIds.length > 0) {
+      await db.insert(contentTags).values(
+        tagIds.map((tagId) => ({
+          contentId: newContent.id,
+          tagId,
+        })),
+      );
+    }
+
+    return c.redirect(`${env.ADMIN_PATH}/content`);
+  } catch (error: any) {
+    console.error("Error creating content:", error);
+    return c.text("Error al crear el contenido", 500);
+  }
+});
+
+/**
+ * GET /content/edit/:id - Show content edit form
+ */
+adminRouter.get("/content/edit/:id", async (c) => {
+  try {
+    const user = c.get("user");
+    const id = parseInt(c.req.param("id"));
+
+    // Get content with relations
+    const contentItem = await db.query.content.findFirst({
+      where: eq(content.id, id),
+      with: {
+        contentType: true,
+        author: true,
+      },
+    });
+
+    if (!contentItem) {
+      return c.text("Contenido no encontrado", 404);
+    }
+
+    // Get selected categories
+    const selectedCategoriesData = await db.query.contentCategories.findMany({
+      where: eq(contentCategories.contentId, id),
+    });
+    const selectedCategories = selectedCategoriesData.map((c) => c.categoryId);
+
+    // Get selected tags
+    const selectedTagsData = await db.query.contentTags.findMany({
+      where: eq(contentTags.contentId, id),
+    });
+    const selectedTags = selectedTagsData.map((t) => t.tagId);
+
+    // Get all content types, categories, and tags for selects
+    const [contentTypesData, categoriesData, tagsData] = await Promise.all([
+      db.query.contentTypes.findMany(),
+      db.query.categories.findMany(),
+      db.query.tags.findMany(),
+    ]);
+
+    return c.html(ContentFormPage({
+      user: { name: user.name, email: user.email },
+      content: contentItem,
+      contentTypes: contentTypesData,
+      categories: categoriesData,
+      tags: tagsData,
+      selectedCategories,
+      selectedTags,
+    }));
+  } catch (error: any) {
+    console.error("Error loading content for edit:", error);
+    return c.text("Error al cargar el contenido", 500);
+  }
+});
+
+/**
+ * POST /content/edit/:id - Update content
+ */
+adminRouter.post("/content/edit/:id", async (c) => {
+  try {
+    const user = c.get("user");
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+
+    // Update content
+    await db.update(content).set({
+      title: body.title as string,
+      slug: body.slug as string,
+      body: body.body as string,
+      excerpt: body.excerpt as string || null,
+      status: body.status as string,
+      contentTypeId: parseInt(body.contentTypeId as string),
+      updatedAt: new Date(),
+    }).where(eq(content.id, id));
+
+    // Update categories - delete existing and insert new
+    await db.delete(contentCategories).where(
+      eq(contentCategories.contentId, id),
+    );
+
+    const categoryIds = Array.isArray(body.categories)
+      ? body.categories.map((id: any) => parseInt(id as string))
+      : body.categories
+      ? [parseInt(body.categories as string)]
+      : [];
+
+    if (categoryIds.length > 0) {
+      await db.insert(contentCategories).values(
+        categoryIds.map((categoryId) => ({
+          contentId: id,
+          categoryId,
+        })),
+      );
+    }
+
+    // Update tags - delete existing and insert new
+    await db.delete(contentTags).where(eq(contentTags.contentId, id));
+
+    const tagIds = Array.isArray(body.tags)
+      ? body.tags.map((id: any) => parseInt(id as string))
+      : body.tags
+      ? [parseInt(body.tags as string)]
+      : [];
+
+    if (tagIds.length > 0) {
+      await db.insert(contentTags).values(
+        tagIds.map((tagId) => ({
+          contentId: id,
+          tagId,
+        })),
+      );
+    }
+
+    return c.redirect(`${env.ADMIN_PATH}/content`);
+  } catch (error: any) {
+    console.error("Error updating content:", error);
+    return c.text("Error al actualizar el contenido", 500);
+  }
+});
+
+/**
+ * POST /content/delete/:id - Delete content
+ */
+adminRouter.post("/content/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    await db.delete(content).where(eq(content.id, id));
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting content:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /posts - Posts list
+ */
+adminRouter.get("/posts", async (c) => {
+  try {
+    const user = c.get("user");
+    const page = parseInt(c.req.query("page") || "1");
+    const status = c.req.query("status");
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
+    const postType = await getContentTypeBySlug("post");
+
+    const conditions = [eq(content.contentTypeId, postType.id)];
+    if (status) {
+      conditions.push(eq(content.status, status));
+    }
+
+    const whereClause = conditions.length > 1
+      ? and(...conditions)
+      : conditions[0];
+
+    const [posts, totalResult] = await Promise.all([
+      db.query.content.findMany({
+        where: whereClause,
+        limit,
+        offset,
+        orderBy: [desc(content.createdAt)],
+        with: {
+          contentType: true,
+          author: true,
+        },
+      }),
+      db.select({ count: count() }).from(content).where(whereClause),
+    ]);
+
+    const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit) || 1;
+
+    return c.html(ContentListPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      contents: posts.map((item) => ({
+        id: item.id,
+        title: item.title,
+        slug: item.slug,
+        status: item.status,
+        contentType: { name: item.contentType.name },
+        author: { name: item.author.name || "", email: item.author.email },
+        createdAt: item.createdAt,
+      })),
+      totalPages,
+      currentPage: page,
+      title: "Entradas",
+      createPath: `${env.ADMIN_PATH}/posts/new`,
+      createLabel: "Nueva Entrada",
+      basePath: `${env.ADMIN_PATH}/posts`,
+      showContentType: false,
+      activePage: "content.posts",
+    }));
+  } catch (error: any) {
+    console.error("Error rendering posts list:", error);
+    return c.text("Error al cargar las entradas", 500);
+  }
+});
+
+/**
+ * GET /posts/new - New post form
+ */
+adminRouter.get("/posts/new", async (c) => {
+  try {
+    const user = c.get("user");
+    const postType = await getContentTypeBySlug("post");
+
+    const [categoriesData, tagsData] = await Promise.all([
+      db.query.categories.findMany({
+        where: eq(categories.contentTypeId, postType.id),
+        orderBy: (categories, { asc }) => [asc(categories.name)],
+      }),
+      db.query.tags.findMany({
+        orderBy: (tags, { asc }) => [asc(tags.name)],
+      }),
+    ]);
+
+    return c.html(PostFormPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      categories: categoriesData,
+      tags: tagsData,
+      selectedCategories: [],
+      selectedTags: [],
+      seo: {},
+    }));
+  } catch (error: any) {
+    console.error("Error rendering new post form:", error);
+    return c.text("Error al cargar el formulario", 500);
+  }
+});
+
+/**
+ * POST /posts/new - Create post
+ */
+adminRouter.post("/posts/new", async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const postType = await getContentTypeBySlug("post");
+
+    const categoryIds = parseIds(
+      (body as any).categories ?? (body as any)["categories[]"],
+    );
+    const tagIds = parseIds((body as any).tags ?? (body as any)["tags[]"]);
+
+    const title = parseStringField(body.title);
+    const slug = parseStringField(body.slug);
+    const bodyContent = parseStringField(body.body);
+
+    if (!title || !slug || !bodyContent) {
+      return c.text("Título, slug y contenido son obligatorios", 400);
+    }
+
+    const status = parseStringField(body.status) as
+      | "draft"
+      | "published"
+      | "archived"
+      | undefined;
+
+    await contentService.createContent({
+      contentTypeId: postType.id,
+      title,
+      slug,
+      excerpt: parseNullableField(body.excerpt) ?? undefined,
+      body: bodyContent,
+      status: status && ["draft", "published", "archived"].includes(status)
+        ? status
+        : "draft",
+      authorId: user.userId,
+      categoryIds,
+      tagIds,
+      seo: extractSeoPayload(body as Record<string, unknown>),
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/posts`);
+  } catch (error: any) {
+    console.error("Error creating post:", error);
+    return c.text("Error al crear la entrada", 500);
+  }
+});
+
+/**
+ * GET /posts/edit/:id - Edit post form
+ */
+adminRouter.get("/posts/edit/:id", async (c) => {
+  try {
+    const user = c.get("user");
+    const id = parseInt(c.req.param("id"));
+    const postType = await getContentTypeBySlug("post");
+
+    const postItem = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, postType.id)),
+      with: {
+        contentType: true,
+        contentCategories: true,
+        contentTags: true,
+      },
+    });
+
+    if (!postItem) {
+      return c.text("Entrada no encontrada", 404);
+    }
+
+    const [categoriesData, tagsData, seoData] = await Promise.all([
+      db.query.categories.findMany({
+        where: eq(categories.contentTypeId, postType.id),
+        orderBy: (categories, { asc }) => [asc(categories.name)],
+      }),
+      db.query.tags.findMany({
+        orderBy: (tags, { asc }) => [asc(tags.name)],
+      }),
+      db.query.contentSeo.findFirst({ where: eq(contentSeo.contentId, id) }),
+    ]);
+
+    const selectedCategories = postItem.contentCategories?.map((cat) =>
+      cat.categoryId
+    ) ?? [];
+    const selectedTags = postItem.contentTags?.map((tag) => tag.tagId) ?? [];
+
+    const seo = seoData
+      ? {
+        metaTitle: seoData.metaTitle,
+        metaDescription: seoData.metaDescription,
+        canonicalUrl: seoData.canonicalUrl,
+        ogTitle: seoData.ogTitle,
+        ogDescription: seoData.ogDescription,
+        ogImage: seoData.ogImage,
+        ogType: seoData.ogType,
+        twitterCard: seoData.twitterCard,
+        twitterTitle: seoData.twitterTitle,
+        twitterDescription: seoData.twitterDescription,
+        twitterImage: seoData.twitterImage,
+        focusKeyword: seoData.focusKeyword,
+        schemaJson: seoData.schemaJson,
+        noIndex: seoData.noIndex,
+        noFollow: seoData.noFollow,
+      }
+      : {};
+
+    return c.html(PostFormPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      post: {
+        id: postItem.id,
+        title: postItem.title,
+        slug: postItem.slug,
+        excerpt: postItem.excerpt,
+        body: postItem.body,
+        status: postItem.status,
+      },
+      categories: categoriesData,
+      tags: tagsData,
+      selectedCategories,
+      selectedTags,
+      seo,
+    }));
+  } catch (error: any) {
+    console.error("Error loading post for edit:", error);
+    return c.text("Error al cargar la entrada", 500);
+  }
+});
+
+/**
+ * POST /posts/edit/:id - Update post
+ */
+adminRouter.post("/posts/edit/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    const postType = await getContentTypeBySlug("post");
+
+    const post = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, postType.id)),
+    });
+
+    if (!post) {
+      return c.text("Entrada no encontrada", 404);
+    }
+
+    const categoryIds = parseIds(
+      (body as any).categories ?? (body as any)["categories[]"],
+    );
+    const tagIds = parseIds((body as any).tags ?? (body as any)["tags[]"]);
+
+    const title = parseStringField(body.title) || post.title;
+    const slug = parseStringField(body.slug) || post.slug;
+    const status = parseStringField(body.status) as
+      | "draft"
+      | "published"
+      | "archived"
+      | undefined;
+
+    await contentService.updateContent(id, {
+      title,
+      slug,
+      excerpt: parseNullableField(body.excerpt),
+      body: parseStringField(body.body) || post.body || undefined,
+      status: status && ["draft", "published", "archived"].includes(status)
+        ? status
+        : post.status,
+      categoryIds,
+      tagIds,
+      seo: extractSeoPayload(body as Record<string, unknown>),
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/posts`);
+  } catch (error: any) {
+    console.error("Error updating post:", error);
+    return c.text("Error al actualizar la entrada", 500);
+  }
+});
+
+/**
+ * POST /posts/delete/:id - Delete post
+ */
+adminRouter.post("/posts/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const postType = await getContentTypeBySlug("post");
+
+    const post = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, postType.id)),
+    });
+
+    if (!post) {
+      return c.json({ success: false, error: "Entrada no encontrada" }, 404);
+    }
+
+    await contentService.deleteContent(id);
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting post:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /pages - Pages list
+ */
+adminRouter.get("/pages", async (c) => {
+  try {
+    const user = c.get("user");
+    const page = parseInt(c.req.query("page") || "1");
+    const status = c.req.query("status");
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
+    const pageType = await getContentTypeBySlug("page");
+
+    const conditions = [eq(content.contentTypeId, pageType.id)];
+    if (status) {
+      conditions.push(eq(content.status, status));
+    }
+    const whereClause = conditions.length > 1
+      ? and(...conditions)
+      : conditions[0];
+
+    const [pages, totalResult] = await Promise.all([
+      db.query.content.findMany({
+        where: whereClause,
+        limit,
+        offset,
+        orderBy: [desc(content.createdAt)],
+        with: {
+          contentType: true,
+          author: true,
+        },
+      }),
+      db.select({ count: count() }).from(content).where(whereClause),
+    ]);
+
+    const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit) || 1;
+
+    return c.html(ContentListPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      contents: pages.map((item) => ({
+        id: item.id,
+        title: item.title,
+        slug: item.slug,
+        status: item.status,
+        contentType: { name: item.contentType.name },
+        author: { name: item.author.name || "", email: item.author.email },
+        createdAt: item.createdAt,
+      })),
+      totalPages,
+      currentPage: page,
+      title: "Páginas",
+      createPath: `${env.ADMIN_PATH}/pages/new`,
+      createLabel: "Nueva Página",
+      basePath: `${env.ADMIN_PATH}/pages`,
+      showContentType: false,
+      activePage: "content.pages",
+    }));
+  } catch (error: any) {
+    console.error("Error rendering pages list:", error);
+    return c.text("Error al cargar las páginas", 500);
+  }
+});
+
+/**
+ * GET /pages/new - New page form
+ */
+adminRouter.get("/pages/new", async (c) => {
+  try {
+    const user = c.get("user");
+
+    return c.html(PageFormPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      seo: {},
+    }));
+  } catch (error: any) {
+    console.error("Error rendering new page form:", error);
+    return c.text("Error al cargar el formulario", 500);
+  }
+});
+
+/**
+ * POST /pages/new - Create page
+ */
+adminRouter.post("/pages/new", async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const pageType = await getContentTypeBySlug("page");
+
+    const title = parseStringField(body.title);
+    const slug = parseStringField(body.slug);
+    const bodyContent = parseStringField(body.body);
+
+    if (!title || !slug || !bodyContent) {
+      return c.text("Título, slug y contenido son obligatorios", 400);
+    }
+
+    const status = parseStringField(body.status) as
+      | "draft"
+      | "published"
+      | "archived"
+      | undefined;
+
+    await contentService.createContent({
+      contentTypeId: pageType.id,
+      title,
+      slug,
+      excerpt: parseNullableField(body.excerpt) ?? undefined,
+      body: bodyContent,
+      status: status && ["draft", "published", "archived"].includes(status)
+        ? status
+        : "draft",
+      authorId: user.userId,
+      seo: extractSeoPayload(body as Record<string, unknown>),
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/pages`);
+  } catch (error: any) {
+    console.error("Error creating page:", error);
+    return c.text("Error al crear la página", 500);
+  }
+});
+
+/**
+ * GET /pages/edit/:id - Edit page form
+ */
+adminRouter.get("/pages/edit/:id", async (c) => {
+  try {
+    const user = c.get("user");
+    const id = parseInt(c.req.param("id"));
+    const pageType = await getContentTypeBySlug("page");
+
+    const pageItem = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, pageType.id)),
+    });
+
+    if (!pageItem) {
+      return c.text("Página no encontrada", 404);
+    }
+
+    const seoData = await db.query.contentSeo.findFirst({
+      where: eq(contentSeo.contentId, id),
+    });
+
+    const seo = seoData
+      ? {
+        metaTitle: seoData.metaTitle,
+        metaDescription: seoData.metaDescription,
+        canonicalUrl: seoData.canonicalUrl,
+        ogTitle: seoData.ogTitle,
+        ogDescription: seoData.ogDescription,
+        ogImage: seoData.ogImage,
+        ogType: seoData.ogType,
+        twitterCard: seoData.twitterCard,
+        twitterTitle: seoData.twitterTitle,
+        twitterDescription: seoData.twitterDescription,
+        twitterImage: seoData.twitterImage,
+        focusKeyword: seoData.focusKeyword,
+        schemaJson: seoData.schemaJson,
+        noIndex: seoData.noIndex,
+        noFollow: seoData.noFollow,
+      }
+      : {};
+
+    return c.html(PageFormPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      page: {
+        id: pageItem.id,
+        title: pageItem.title,
+        slug: pageItem.slug,
+        excerpt: pageItem.excerpt,
+        body: pageItem.body,
+        status: pageItem.status,
+      },
+      seo,
+    }));
+  } catch (error: any) {
+    console.error("Error loading page for edit:", error);
+    return c.text("Error al cargar la página", 500);
+  }
+});
+
+/**
+ * POST /pages/edit/:id - Update page
+ */
+adminRouter.post("/pages/edit/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    const pageType = await getContentTypeBySlug("page");
+
+    const pageItem = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, pageType.id)),
+    });
+
+    if (!pageItem) {
+      return c.text("Página no encontrada", 404);
+    }
+
+    const title = parseStringField(body.title) || pageItem.title;
+    const slug = parseStringField(body.slug) || pageItem.slug;
+    const status = parseStringField(body.status) as
+      | "draft"
+      | "published"
+      | "archived"
+      | undefined;
+
+    await contentService.updateContent(id, {
+      title,
+      slug,
+      excerpt: parseNullableField(body.excerpt),
+      body: parseStringField(body.body) || pageItem.body || undefined,
+      status: status && ["draft", "published", "archived"].includes(status)
+        ? status
+        : pageItem.status,
+      seo: extractSeoPayload(body as Record<string, unknown>),
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/pages`);
+  } catch (error: any) {
+    console.error("Error updating page:", error);
+    return c.text("Error al actualizar la página", 500);
+  }
+});
+
+/**
+ * POST /pages/delete/:id - Delete page
+ */
+adminRouter.post("/pages/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const pageType = await getContentTypeBySlug("page");
+
+    const pageItem = await db.query.content.findFirst({
+      where: and(eq(content.id, id), eq(content.contentTypeId, pageType.id)),
+    });
+
+    if (!pageItem) {
+      return c.json({ success: false, error: "Página no encontrada" }, 404);
+    }
+
+    await contentService.deleteContent(id);
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting page:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /media - Media Library
+ */
+adminRouter.get("/media", async (c) => {
+  try {
+    const user = c.get("user");
+    const limit = Number(c.req.query("limit")) || 50;
+    const offset = Number(c.req.query("offset")) || 0;
+    const type = c.req.query("type");
+
+    const mediaList = await mediaService.listMedia(limit, offset, type);
+
+    return c.html(MediaLibraryPage({
+      user: { name: user.name || user.email, email: user.email },
+      media: mediaList as any[],
+      limit,
+      offset,
+    }));
+  } catch (error: any) {
+    console.error("Error loading media library:", error);
+    return c.text("Error al cargar biblioteca de medios", 500);
+  }
+});
+
+adminRouter.get("/media/data", async (c) => {
+  try {
+    const limit = Number(c.req.query("limit")) || 50;
+    const offset = Number(c.req.query("offset")) || 0;
+    const type = c.req.query("type");
+
+    const mediaList = await mediaService.listMedia(limit, offset, type);
+
+    return c.json({
+      media: mediaList,
+      limit,
+      offset,
+    });
+  } catch (error: any) {
+    console.error("Error loading media data:", error);
+    return c.json(
+      { error: "Error al cargar biblioteca de medios" },
+      500,
+    );
+  }
+});
+
+/**
+ * POST /media - Upload media from admin panel
+ */
+adminRouter.post("/media", async (c) => {
+  try {
+    const user = c.get("user");
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "No se proporcionó ningún archivo" }, 400);
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+
+    const media = await mediaService.uploadMedia({
+      data,
+      filename: file.name,
+      mimeType: file.type,
+      uploadedBy: user.userId,
+    });
+
+    const fullMedia = await mediaService.getMediaById(media.id);
+
+    return c.json({ media: fullMedia }, 201);
+  } catch (error: any) {
+    console.error("Error uploading media from admin:", error);
+
+    if (
+      error instanceof Error &&
+      (error.message.includes("no soportado") ||
+        error.message.includes("demasiado grande"))
+    ) {
+      return c.json({ error: error.message }, 400);
+    }
+
+    return c.json({
+      error: "Error al subir archivo",
+      details: error.message || String(error),
+    }, 500);
+  }
+});
+
+/**
+ * DELETE /media/:id - Delete media from admin panel
+ */
+adminRouter.delete("/media/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ error: "ID inválido" }, 400);
+    }
+
+    await mediaService.deleteMedia(id);
+
+    return c.json({ success: true, message: "Media eliminado exitosamente" });
+  } catch (error: any) {
+    console.error("Error deleting media from admin:", error);
+    return c.json({ error: error.message || "Error al eliminar media" }, 500);
+  }
+});
+
+/**
+ * GET /appearance/themes - Themes overview
+ */
+adminRouter.get("/appearance/themes", async (c) => {
+  try {
+    const user = c.get("user");
+    const settingsSaved = c.req.query("saved") === "1";
+    const activeTheme = await themeService.getActiveTheme();
+    const themeNames = await themeService.listAvailableThemes();
+
+    const themes = await Promise.all(
+      themeNames.map(async (name) => {
+        const config = await themeService.loadThemeConfig(name);
+        return {
+          name,
+          displayName: config?.displayName || config?.name || name,
+          version: config?.version,
+          description: config?.description,
+          author: config?.author
+            ? { name: config.author.name, url: config.author.url }
+            : undefined,
+          screenshots: config?.screenshots,
+          isActive: name === activeTheme,
+        };
+      }),
+    );
+
+    const activeConfig = await themeService.loadThemeConfig(activeTheme);
+    let customSettings: Array<{
+      key: string;
+      label: string;
+      type: string;
+      description?: string;
+      options?: string[];
+      group?: string;
+      defaultValue?: unknown;
+      value?: unknown;
+    }> = [];
+
+    if (activeConfig?.config?.custom) {
+      const savedSettings = await themeService.getThemeCustomSettings(
+        activeTheme,
+      );
+      customSettings = Object.entries(activeConfig.config.custom).map(
+        ([key, definition]: [string, any]) => {
+          const type = definition.type || "text";
+          let value = savedSettings[key];
+          if (value === undefined) {
+            value = definition.default ?? null;
+          }
+          return {
+            key,
+            label: definition.label || key,
+            type,
+            description: definition.description,
+            options: Array.isArray(definition.options)
+              ? definition.options
+              : undefined,
+            group: definition.group,
+            defaultValue: definition.default,
+            value,
+          };
+        },
+      );
+    }
+
+    return c.html(ThemesPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      themes,
+      activeTheme,
+      customSettings,
+      settingsSaved,
+    }));
+  } catch (error: any) {
+    console.error("Error rendering themes page:", error);
+    return c.text("Error al cargar los themes", 500);
+  }
+});
+
+/**
+ * POST /appearance/themes/activate - Activate theme
+ */
+adminRouter.post("/appearance/themes/activate", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const theme = parseStringField(body.theme);
+    if (!theme) {
+      return c.text("Theme inválido", 400);
+    }
+
+    await themeService.activateTheme(theme);
+    return c.redirect(`${env.ADMIN_PATH}/appearance/themes`);
+  } catch (error: any) {
+    console.error("Error activating theme:", error);
+    return c.text("Error al activar el theme", 500);
+  }
+});
+
+/**
+ * POST /appearance/themes/custom-settings - Update theme custom settings
+ */
+adminRouter.post("/appearance/themes/custom-settings", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const theme = parseStringField(body.theme) ||
+      await themeService.getActiveTheme();
+
+    const config = await themeService.loadThemeConfig(theme);
+    const customDefinitions = config?.config?.custom || {};
+
+    const updates: Record<string, unknown> = {};
+
+    for (const [key, definition] of Object.entries(customDefinitions)) {
+      const fieldName = `custom_${key}`;
+      const type = (definition as any).type || "text";
+      const value = (body as Record<string, unknown>)[fieldName];
+
+      switch (type) {
+        case "boolean":
+          updates[key] = parseBooleanField(value);
+          break;
+        case "select":
+        case "text":
+        case "image":
+        case "color":
+          updates[key] = parseNullableField(value) ?? null;
+          break;
+        default:
+          updates[key] = parseNullableField(value) ?? null;
+          break;
+      }
+    }
+
+    await themeService.updateThemeCustomSettings(theme, updates);
+    return c.redirect(`${env.ADMIN_PATH}/appearance/themes?saved=1`);
+  } catch (error: any) {
+    console.error("Error updating theme custom settings:", error);
+    return c.text("Error al guardar la configuración del theme", 500);
+  }
+});
+
+/**
+ * GET /appearance/menus - Menu manager
+ */
+adminRouter.get("/appearance/menus", async (c) => {
+  try {
+    const user = c.get("user");
+    const menusResult = await menuService.getAllMenus({
+      limit: 100,
+      orderBy: "name",
+      orderDirection: "asc",
+    });
+    const menuList = menusResult.menus.map((menu) => ({
+      id: menu.id,
+      name: menu.name,
+      slug: menu.slug,
+      description: menu.description,
+      isActive: menu.isActive,
+    }));
+
+    const requestedId = c.req.query("menuId");
+    let selectedMenu = menuList[0] || null;
+    if (requestedId) {
+      const match = menuList.find((menu) => menu.id === parseInt(requestedId));
+      if (match) {
+        selectedMenu = match;
+      }
+    }
+
+    let selectedMenuData: any = null;
+    if (selectedMenu) {
+      const hierarchy = await menuItemService.getMenuItemsHierarchy(
+        selectedMenu.id,
+      );
+      selectedMenuData = {
+        ...selectedMenu,
+        items: mapMenuItems(hierarchy),
+      };
+    }
+
+    let postType: typeof contentTypes.$inferSelect | null = null;
+    let pageType: typeof contentTypes.$inferSelect | null = null;
+    try {
+      postType = await getContentTypeBySlug("post");
+    } catch (error) {
+      console.warn("Content type 'post' not found:", error);
+    }
+    try {
+      pageType = await getContentTypeBySlug("page");
+    } catch (error) {
+      console.warn("Content type 'page' not found:", error);
+    }
+
+    const [categoriesData, postsData, pagesData] = await Promise.all([
+      db.query.categories.findMany({
+        columns: { id: true, name: true, slug: true },
+        orderBy: (categories, { asc }) => [asc(categories.name)],
+      }),
+      postType
+        ? db.query.content.findMany({
+          columns: { id: true, title: true, slug: true },
+          where: eq(content.contentTypeId, postType.id),
+          orderBy: [desc(content.createdAt)],
+          limit: 30,
+        })
+        : Promise.resolve([]),
+      pageType
+        ? db.query.content.findMany({
+          columns: { id: true, title: true, slug: true },
+          where: eq(content.contentTypeId, pageType.id),
+          orderBy: [desc(content.createdAt)],
+          limit: 30,
+        })
+        : Promise.resolve([]),
+    ]);
+
+    return c.html(AppearanceMenusPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      menus: menuList,
+      selectedMenu: selectedMenuData,
+      categories: categoriesData,
+      posts: postsData,
+      pages: pagesData,
+    }));
+  } catch (error: any) {
+    console.error("Error rendering appearance menus page:", error);
+    return c.text("Error al cargar los menús", 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/create - Create menu
+ */
+adminRouter.post("/appearance/menus/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const name = parseStringField(body.name);
+    const slug = parseStringField(body.slug);
+    const description = parseNullableField(body.description);
+
+    if (!name || !slug) {
+      return c.text("Nombre y slug son requeridos", 400);
+    }
+
+    const menu = await menuService.createMenu({
+      name,
+      slug,
+      description: description ?? null,
+      isActive: false,
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/appearance/menus?menuId=${menu.id}`);
+  } catch (error: any) {
+    console.error("Error creating menu:", error);
+    return c.text("Error al crear el menú", 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/:id/update - Update menu
+ */
+adminRouter.post("/appearance/menus/:id/update", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    const name = parseStringField(body.name);
+    const slug = parseStringField(body.slug);
+    const description = parseNullableField(body.description);
+    const isActive = parseBooleanField(body.isActive);
+
+    if (!name || !slug) {
+      return c.text("Nombre y slug son requeridos", 400);
+    }
+
+    await menuService.updateMenu(id, {
+      name,
+      slug,
+      description: description ?? null,
+      isActive,
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/appearance/menus?menuId=${id}`);
+  } catch (error: any) {
+    console.error("Error updating menu:", error);
+    return c.text("Error al actualizar el menú", 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/:id/delete - Delete menu
+ */
+adminRouter.post("/appearance/menus/:id/delete", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    await menuService.deleteMenu(id);
+    return c.redirect(`${env.ADMIN_PATH}/appearance/menus`);
+  } catch (error: any) {
+    console.error("Error deleting menu:", error);
+    return c.text("Error al eliminar el menú", 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/:id/items/add - Add items to menu
+ */
+adminRouter.post("/appearance/menus/:id/items/add", async (c) => {
+  try {
+    const menuId = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    const type = parseStringField(body.type);
+
+    const existingItems = await menuItemService.getMenuItems(menuId);
+    let order = existingItems.length > 0
+      ? Math.max(...existingItems.map((item) => item.order ?? 0)) + 1
+      : 0;
+
+    if (type === "category") {
+      const categoryIds = parseIds(
+        (body as any)["categoryIds"] ?? (body as any)["categoryIds[]"],
+      );
+      if (categoryIds.length > 0) {
+        const categoriesInfo = await db.query.categories.findMany({
+          where: inArray(categories.id, categoryIds),
+          columns: { id: true, name: true },
+        });
+        const categoryMap = new Map(
+          categoriesInfo.map((cat) => [cat.id, cat.name]),
+        );
+
+        for (const categoryId of categoryIds) {
+          await menuItemService.createMenuItem({
+            menuId,
+            label: categoryMap.get(categoryId) || `Categoría ${categoryId}`,
+            categoryId,
+            parentId: null,
+            order,
+            isVisible: true,
+          });
+          order++;
+        }
+      }
+    } else if (type === "page" || type === "post") {
+      const contentIds = parseIds(
+        (body as any)["contentIds"] ?? (body as any)["contentIds[]"],
+      );
+      if (contentIds.length > 0) {
+        const contentItems = await db.query.content.findMany({
+          where: inArray(content.id, contentIds),
+          columns: { id: true, title: true },
+        });
+        const contentMap = new Map(
+          contentItems.map((item) => [item.id, item.title]),
+        );
+
+        for (const contentId of contentIds) {
+          const title = contentMap.get(contentId);
+          if (!title) continue;
+          await menuItemService.createMenuItem({
+            menuId,
+            label: title,
+            contentId,
+            parentId: null,
+            order,
+            isVisible: true,
+          });
+          order++;
+        }
+      }
+    } else if (type === "custom") {
+      const label = parseStringField(body.label);
+      const url = parseStringField(body.url);
+      if (!label || !url) {
+        return c.text("Etiqueta y URL son requeridas", 400);
+      }
+      await menuItemService.createMenuItem({
+        menuId,
+        label,
+        url,
+        parentId: null,
+        order,
+        isVisible: true,
+      });
+    }
+
+    return c.redirect(`${env.ADMIN_PATH}/appearance/menus?menuId=${menuId}`);
+  } catch (error: any) {
+    console.error("Error adding menu items:", error);
+    return c.text("Error al agregar elementos al menú", 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/items/reorder - Reorder menu items
+ */
+adminRouter.post("/appearance/menus/items/reorder", async (c) => {
+  try {
+    const body = await c.req.json();
+    const items = Array.isArray(body.items) ? body.items : [];
+
+    for (const item of items) {
+      await menuItemService.updateMenuItem(item.id, {
+        parentId: item.parentId ?? null,
+        order: item.order,
+      });
+    }
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error reordering menu items:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/items/delete - Delete menu item
+ */
+adminRouter.post("/appearance/menus/items/delete", async (c) => {
+  try {
+    const body = await c.req.json();
+    const itemId = Number(body.itemId);
+    if (!itemId) {
+      return c.json({ success: false }, 400);
+    }
+    await menuItemService.deleteMenuItem(itemId);
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting menu item:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * POST /appearance/menus/items/update - Update menu item label
+ */
+adminRouter.post("/appearance/menus/items/update", async (c) => {
+  try {
+    const body = await c.req.json();
+    const itemId = Number(body.itemId);
+    const label = parseStringField(body.label);
+    if (!itemId || !label) {
+      return c.json({ success: false }, 400);
+    }
+
+    await menuItemService.updateMenuItem(itemId, { label });
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error updating menu item:", error);
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /categories - Categories list
+ */
+adminRouter.get("/categories", async (c) => {
+  try {
+    const user = c.get("user");
+    const categoriesData = await db.query.categories.findMany({
+      with: {
+        contentCategories: true,
+      },
+    });
+
+    // Map to include content count
+    const categoriesWithCount = categoriesData.map((cat) => ({
+      ...cat,
+      _count: { content: cat.contentCategories?.length || 0 },
+    }));
+
+    return c.html(CategoriesPage({
+      user: { name: user.name || user.email, email: user.email },
+      categories: categoriesWithCount,
+    }));
+  } catch (error: any) {
+    console.error("Error:", error);
+    return c.text("Error al cargar categorías", 500);
+  }
+});
+
+adminRouter.post("/categories/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    await db.insert(categories).values({
+      name: body.name as string,
+      slug: body.slug as string,
+      description: body.description as string || null,
+    });
+    return c.redirect(`${env.ADMIN_PATH}/categories`);
+  } catch (error: any) {
+    return c.text("Error al crear categoría", 500);
+  }
+});
+
+adminRouter.post("/categories/edit/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    await db.update(categories).set({
+      name: body.name as string,
+      slug: body.slug as string,
+      description: body.description as string || null,
+    }).where(eq(categories.id, id));
+    return c.redirect(`${env.ADMIN_PATH}/categories`);
+  } catch (error: any) {
+    return c.text("Error al actualizar", 500);
+  }
+});
+
+adminRouter.post("/categories/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    await db.delete(categories).where(eq(categories.id, id));
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /tags - Tags list
+ */
+adminRouter.get("/tags", async (c) => {
+  try {
+    const user = c.get("user");
+    const tagsData = await db.query.tags.findMany({
+      with: {
+        contentTags: true,
+      },
+    });
+
+    // Map to include content count
+    const tagsWithCount = tagsData.map((tag) => ({
+      ...tag,
+      _count: { content: tag.contentTags?.length || 0 },
+    }));
+
+    return c.html(TagsPage({
+      user: { name: user.name || user.email, email: user.email },
+      tags: tagsWithCount,
+    }));
+  } catch (error: any) {
+    return c.text("Error al cargar tags", 500);
+  }
+});
+
+adminRouter.post("/tags/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    await db.insert(tags).values({
+      name: body.name as string,
+      slug: body.slug as string,
+    });
+    return c.redirect(`${env.ADMIN_PATH}/tags`);
+  } catch (error: any) {
+    return c.text("Error al crear tag", 500);
+  }
+});
+
+adminRouter.post("/tags/edit/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+    await db.update(tags).set({
+      name: body.name as string,
+      slug: body.slug as string,
+    }).where(eq(tags.id, id));
+    return c.redirect(`${env.ADMIN_PATH}/tags`);
+  } catch (error: any) {
+    return c.text("Error al actualizar", 500);
+  }
+});
+
+adminRouter.post("/tags/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    await db.delete(tags).where(eq(tags.id, id));
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /users - Users list
+ */
+adminRouter.get("/users", async (c) => {
+  try {
+    const user = c.get("user");
+    const [usersData, rolesData] = await Promise.all([
+      db.query.users.findMany({ with: { role: true } }),
+      db.query.roles.findMany(),
+    ]);
+
+    return c.html(UsersPage({
+      user: { name: user.name || user.email, email: user.email },
+      users: usersData,
+      roles: rolesData,
+    }));
+  } catch (error: any) {
+    return c.text("Error al cargar usuarios", 500);
+  }
+});
+
+adminRouter.post("/users/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const { hashPassword } = await import("../utils/password.ts");
+    const hashedPassword = await hashPassword(body.password as string);
+
+    await db.insert(users).values({
+      name: body.name as string,
+      email: body.email as string,
+      password: hashedPassword,
+      roleId: body.roleId ? parseInt(body.roleId as string) : null,
+    });
+    return c.redirect(`${env.ADMIN_PATH}/users`);
+  } catch (error: any) {
+    return c.text("Error al crear usuario", 500);
+  }
+});
+
+/**
+ * POST /users/edit/:id - Update user
+ */
+adminRouter.post("/users/edit/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.parseBody();
+
+    const updateData: any = {
+      name: body.name as string,
+      email: body.email as string,
+      roleId: body.roleId ? parseInt(body.roleId as string) : null,
+      updatedAt: new Date(),
+    };
+
+    // Only update password if provided
+    if (body.password && (body.password as string).trim() !== "") {
+      const { hashPassword } = await import("../utils/password.ts");
+      updateData.password = await hashPassword(body.password as string);
+    }
+
+    await db.update(users).set(updateData).where(eq(users.id, id));
+    return c.redirect(`${env.ADMIN_PATH}/users`);
+  } catch (error: any) {
+    console.error("Error updating user:", error);
+    return c.text("Error al actualizar usuario", 500);
+  }
+});
+
+adminRouter.post("/users/delete/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    await db.delete(users).where(eq(users.id, id));
+    return c.json({ success: true });
+  } catch (error: any) {
+    return c.json({ success: false }, 500);
+  }
+});
+
+/**
+ * GET /roles - Roles management
+ */
+adminRouter.get("/roles", async (c) => {
+  try {
+    const user = c.get("user");
+
+    const [rolesData, permissionsData] = await Promise.all([
+      roleService.getAllRoles(),
+      permissionService.getAllPermissions(),
+    ]);
+
+    const formattedRoles = rolesData
+      .map((role) => ({
+        id: role.id,
+        name: role.name,
+        description: role.description,
+        createdAt: role.createdAt,
+        permissions: (role.rolePermissions || [])
+          .map((rp) => rp.permission)
+          .filter(Boolean)
+          .map((perm) => ({
+            id: perm!.id,
+            module: perm!.module,
+            action: perm!.action,
+            description: perm!.description,
+          })),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es-ES"));
+
+    const sortedPermissions = permissionsData.sort((a, b) => {
+      const moduleCompare = a.module.localeCompare(b.module, "es-ES");
+      if (moduleCompare !== 0) return moduleCompare;
+      return a.action.localeCompare(b.action, "es-ES");
+    });
+
+    return c.html(
+      RolesPage({
+        user: { name: user.name || user.email, email: user.email },
+        roles: formattedRoles,
+        permissions: sortedPermissions,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading roles:", error);
+    return c.text("Error al cargar roles", 500);
+  }
+});
+
+adminRouter.post("/roles/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const name = parseStringField(body.name);
+    const description = parseNullableField(body.description) ?? null;
+
+    if (!name) {
+      return c.text("El nombre del rol es obligatorio", 400);
+    }
+
+    await roleService.createRole({ name, description });
+
+    return c.redirect(`${env.ADMIN_PATH}/roles`);
+  } catch (error: any) {
+    console.error("Error creating role:", error);
+    const message = error instanceof Error
+      ? error.message
+      : "Error al crear rol";
+    return c.text(message, 400);
+  }
+});
+
+adminRouter.post("/roles/edit/:id", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.text("ID inválido", 400);
+    }
+
+    const body = await c.req.parseBody();
+    const name = parseStringField(body.name);
+    const description = parseNullableField(body.description) ?? null;
+
+    if (!name) {
+      return c.text("El nombre del rol es obligatorio", 400);
+    }
+
+    await roleService.updateRole(id, { name, description });
+
+    return c.redirect(`${env.ADMIN_PATH}/roles`);
+  } catch (error: any) {
+    console.error("Error updating role:", error);
+    const message = error instanceof Error
+      ? error.message
+      : "Error al actualizar rol";
+    return c.text(message, 400);
+  }
+});
+
+adminRouter.post("/roles/delete/:id", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.json({ success: false, message: "ID inválido" }, 400);
+    }
+
+    await roleService.deleteRole(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting role:", error);
+    return c.json(
+      {
+        success: false,
+        message: error instanceof Error
+          ? error.message
+          : "Error al eliminar rol",
+      },
+      400,
+    );
+  }
+});
+
+adminRouter.post("/roles/:id/permissions", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.text("ID inválido", 400);
+    }
+
+    const formData = await c.req.formData();
+    const permissionIds = formData.getAll("permissionIds[]")
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value)) as number[];
+
+    await roleService.assignPermissionsToRole(id, permissionIds);
+
+    return c.redirect(`${env.ADMIN_PATH}/roles`);
+  } catch (error: any) {
+    console.error("Error assigning permissions:", error);
+    return c.text("Error al asignar permisos al rol", 400);
+  }
+});
+
+/**
+ * GET /permissions - Permissions management
+ */
+adminRouter.get("/permissions", async (c) => {
+  try {
+    const user = c.get("user");
+    const permissionsData = await permissionService.getAllPermissions();
+    const sortedPermissions = permissionsData.sort((a, b) => {
+      const moduleCompare = a.module.localeCompare(b.module, "es-ES");
+      if (moduleCompare !== 0) return moduleCompare;
+      return a.action.localeCompare(b.action, "es-ES");
+    });
+
+    return c.html(
+      PermissionsPage({
+        user: { name: user.name || user.email, email: user.email },
+        permissions: sortedPermissions,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading permissions:", error);
+    return c.text("Error al cargar permisos", 500);
+  }
+});
+
+adminRouter.post("/permissions/create", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const moduleName = parseStringField(body.module);
+    const actionName = parseStringField(body.action);
+    const description = parseNullableField(body.description) ?? null;
+
+    if (!moduleName || !actionName) {
+      return c.text("Módulo y acción son obligatorios", 400);
+    }
+
+    await permissionService.createPermission({
+      module: moduleName,
+      action: actionName,
+      description,
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/permissions`);
+  } catch (error: any) {
+    console.error("Error creating permission:", error);
+    const message = error instanceof Error
+      ? error.message
+      : "Error al crear permiso";
+    return c.text(message, 400);
+  }
+});
+
+adminRouter.post("/permissions/edit/:id", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.text("ID inválido", 400);
+    }
+
+    const body = await c.req.parseBody();
+    const moduleName = parseStringField(body.module);
+    const actionName = parseStringField(body.action);
+    const description = parseNullableField(body.description) ?? null;
+
+    if (!moduleName || !actionName) {
+      return c.text("Módulo y acción son obligatorios", 400);
+    }
+
+    await permissionService.updatePermission(id, {
+      module: moduleName,
+      action: actionName,
+      description,
+    });
+
+    return c.redirect(`${env.ADMIN_PATH}/permissions`);
+  } catch (error: any) {
+    console.error("Error updating permission:", error);
+    const message = error instanceof Error
+      ? error.message
+      : "Error al actualizar permiso";
+    return c.text(message, 400);
+  }
+});
+
+adminRouter.post("/permissions/delete/:id", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) {
+      return c.json({ success: false, message: "ID inválido" }, 400);
+    }
+
+    await permissionService.deletePermission(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting permission:", error);
+    return c.json(
+      {
+        success: false,
+        message: error instanceof Error
+          ? error.message
+          : "Error al eliminar permiso",
+      },
+      400,
+    );
+  }
+});
+
+/**
+ * GET /settings - Settings page
+ */
+adminRouter.get("/settings", async (c) => {
+  try {
+    const user = c.get("user");
+    const requestedCategory = (c.req.query("category") || "general")
+      .toLowerCase();
+    const settingsData = await db.query.settings.findMany();
+
+    const storedValues: Record<string, unknown> = {};
+    for (const setting of settingsData) {
+      storedValues[setting.key] = parseSettingValueForAdmin(setting.value);
+    }
+
+    const resolvedSettings: Record<string, unknown> = {};
+    const categories = SETTINGS_DEFINITIONS.map((category) => {
+      const fields = category.fields.map((field) => {
+        const defaultValue = resolveFieldDefault(field);
+        const storedValue = storedValues[field.key];
+        const value = storedValue !== undefined ? storedValue : defaultValue;
+
+        if (value !== undefined) {
+          resolvedSettings[field.key] = value;
+        } else if (!(field.key in resolvedSettings)) {
+          resolvedSettings[field.key] = null;
+        }
+
+        return {
+          ...field,
+          defaultValue,
+        };
+      });
+
+      const hasValue = fields.some((field) => {
+        const value = resolvedSettings[field.key];
+        if (value === undefined || value === null) {
+          return false;
+        }
+        if (typeof value === "string") {
+          return value.trim().length > 0;
+        }
+        return true;
+      });
+
+      return {
+        id: category.id,
+        label: category.label,
+        fields,
+        available: hasValue || fields.length > 0,
+      };
+    });
+
+    for (const [key, value] of Object.entries(storedValues)) {
+      if (!(key in resolvedSettings)) {
+        resolvedSettings[key] = value;
+      }
+    }
+
+    const validCategoryIds = new Set(categories.map((category) => category.id));
+    const fallbackCategory = categories.find((category) =>
+      category.available
+    )?.id ??
+      categories[0]?.id ??
+      "general";
+    const selectedCategory = validCategoryIds.has(requestedCategory)
+      ? requestedCategory
+      : fallbackCategory;
+
+    return c.html(SettingsPage({
+      user: { name: user.name || user.email, email: user.email },
+      settings: resolvedSettings,
+      categories,
+      selectedCategory,
+    }));
+  } catch (error: any) {
+    return c.text("Error al cargar configuración", 500);
+  }
+});
+
+adminRouter.post("/settings/save", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+
+    for (const [key, value] of Object.entries(body)) {
+      if (key === "settings_category") {
+        continue;
+      }
+
+      const fieldDefinition = SETTINGS_FIELD_MAP.get(key);
+      if (!fieldDefinition) {
+        continue;
+      }
+
+      const rawValue = Array.isArray(value) ? value[value.length - 1] : value;
+
+      if (rawValue instanceof File) {
+        continue;
+      }
+
+      let normalizedValue: unknown = rawValue;
+      const fieldType = fieldDefinition.type ?? "text";
+
+      switch (fieldType) {
+        case "boolean": {
+          const stringValue = typeof rawValue === "string"
+            ? rawValue
+            : `${rawValue ?? ""}`;
+          normalizedValue = stringValue === "true" || stringValue === "1" ||
+            stringValue === "on";
+          break;
+        }
+        case "number": {
+          const stringValue = typeof rawValue === "string"
+            ? rawValue.trim()
+            : `${rawValue ?? ""}`.trim();
+          if (stringValue === "") {
+            normalizedValue = null;
+          } else {
+            const parsedValue = Number(stringValue);
+            normalizedValue = Number.isNaN(parsedValue) ? null : parsedValue;
+          }
+          break;
+        }
+        case "textarea": {
+          const stringValue = typeof rawValue === "string"
+            ? rawValue
+            : `${rawValue ?? ""}`;
+          normalizedValue = stringValue.trim().length > 0 ? stringValue : null;
+          break;
+        }
+        case "password": {
+          const stringValue = typeof rawValue === "string"
+            ? rawValue.trim()
+            : "";
+          if (stringValue.length === 0) {
+            continue;
+          }
+          normalizedValue = stringValue;
+          break;
+        }
+        case "select":
+        case "email":
+        case "url":
+        case "text": {
+          const stringValue = typeof rawValue === "string"
+            ? rawValue.trim()
+            : `${rawValue ?? ""}`.trim();
+          normalizedValue = stringValue.length > 0 ? stringValue : null;
+          break;
+        }
+        default: {
+          if (typeof rawValue === "string") {
+            const trimmed = rawValue.trim();
+            normalizedValue = trimmed.length > 0 ? trimmed : null;
+          } else {
+            normalizedValue = rawValue ?? null;
+          }
+        }
+      }
+
+      await updateSettingService(key, normalizedValue);
+    }
+
+    let redirectCategory: string | undefined;
+    const rawCategory = (body as Record<string, any>).settings_category;
+    if (typeof rawCategory === "string") {
+      redirectCategory = rawCategory;
+    } else if (Array.isArray(rawCategory)) {
+      redirectCategory = rawCategory[0];
+    }
+
+    const redirectUrl = redirectCategory
+      ? `${env.ADMIN_PATH}/settings?category=${redirectCategory}`
+      : `${env.ADMIN_PATH}/settings`;
+
+    return c.redirect(redirectUrl);
+  } catch (error: any) {
+    return c.text("Error al guardar configuración", 500);
+  }
+});
+
+/**
+ * POST /settings/clear-cache - Clear application cache
+ */
+adminRouter.post("/settings/clear-cache", async (c) => {
+  try {
+    // TODO: Implement actual cache clearing (Redis, memory cache, etc.)
+    // For now, just return success
+    console.log("Cache cleared (placeholder)");
+    return c.json({ success: true, message: "Cache limpiado exitosamente" });
+  } catch (error: any) {
+    console.error("Error clearing cache:", error);
+    return c.json({ success: false, message: "Error al limpiar cache" }, 500);
+  }
+});
+
+/**
+ * GET /settings/export - Export settings as JSON
+ */
+adminRouter.get("/settings/export", async (c) => {
+  try {
+    const settingsData = await db.query.settings.findMany();
+
+    // Convert to simple key-value object
+    const settingsExport: Record<string, any> = {};
+    settingsData.forEach((s) => {
+      settingsExport[s.key] = {
+        value: s.value,
+        category: s.category,
+        autoload: s.autoload,
+      };
+    });
+
+    // Set headers for file download
+    c.header("Content-Type", "application/json");
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="lexcms-settings-${Date.now()}.json"`,
+    );
+
+    return c.json(settingsExport, 200);
+  } catch (error: any) {
+    console.error("Error exporting settings:", error);
+    return c.text("Error al exportar configuración", 500);
+  }
+});
+
+export default adminRouter;

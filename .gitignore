@@ -1,0 +1,41 @@
+# Variables de entorno
+.env
+.env.local
+.env.production
+
+# Base de datos local
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Deno
+.deno/
+deno.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporal
+tmp/
+temp/
+
+# Node modules (si usas herramientas npm)
+node_modules/
+
+# Tailwind CSS
+.bin/
+src/themes/default/assets/css/main.css
+src/admin/assets/css/admin-compiled.css

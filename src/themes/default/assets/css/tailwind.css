@@ -1,0 +1,338 @@
+/**
+ * LexCMS Default Theme - Tailwind CSS Configuration
+ * Using Tailwind CSS v3
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============= BASE STYLES ============= */
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50;
+  }
+
+  /* Typography */
+  h1 {
+    @apply text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl;
+  }
+
+  h2 {
+    @apply text-3xl font-bold tracking-tight sm:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  h5 {
+    @apply text-lg font-semibold;
+  }
+
+  h6 {
+    @apply text-base font-semibold;
+  }
+
+  p {
+    @apply leading-relaxed text-gray-600 dark:text-gray-300;
+  }
+
+  a {
+    @apply text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors;
+  }
+
+  /* Form elements */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white;
+  }
+
+  button,
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+}
+
+/* ============= COMPONENT STYLES ============= */
+
+@layer components {
+  /* Container */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600;
+  }
+
+  .btn-outline {
+    @apply border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-900 dark:border-gray-800;
+  }
+
+  .card-hover {
+    @apply transition-all hover:shadow-xl hover:-translate-y-1;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+  }
+
+  .badge-gray {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200;
+  }
+
+  /* Site Header */
+  .site-header {
+    @apply py-16 text-center bg-gradient-to-br from-blue-600 to-blue-700 text-white;
+  }
+
+  .site-header.minimal {
+    @apply py-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800;
+  }
+
+  .site-header.minimal .container {
+    @apply flex items-center justify-between;
+  }
+
+  .site-logo {
+    @apply max-h-16 mx-auto mb-4;
+  }
+
+  .site-header.minimal .site-logo {
+    @apply max-h-10 m-0;
+  }
+
+  .site-title {
+    @apply text-4xl font-bold m-0 text-white;
+  }
+
+  .site-header.minimal .site-title {
+    @apply text-2xl text-gray-900 dark:text-white;
+  }
+
+  .site-description {
+    @apply text-xl mt-2 opacity-90;
+  }
+
+  .site-logo-link {
+    @apply flex items-center gap-4;
+  }
+
+  /* Main */
+  .site-main {
+    @apply py-16 min-h-screen;
+  }
+
+  /* Posts Grid */
+  .posts-grid {
+    @apply grid gap-8 mb-12;
+  }
+
+  .posts-grid.layout-grid {
+    @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .posts-grid.layout-list {
+    @apply grid-cols-1;
+  }
+
+  /* Post Card */
+  .post-card {
+    @apply card card-hover overflow-hidden;
+  }
+
+  .post-card-image {
+    @apply w-full h-48 object-cover;
+  }
+
+  .post-card-content {
+    @apply p-6;
+  }
+
+  .post-card-categories {
+    @apply flex gap-2 mb-3;
+  }
+
+  .post-card-category {
+    @apply badge badge-primary;
+  }
+
+  .post-card-title {
+    @apply text-2xl font-bold mb-3;
+  }
+
+  .post-card-title a {
+    @apply text-gray-900 dark:text-white no-underline hover:text-blue-600 dark:hover:text-blue-400;
+  }
+
+  .post-card-excerpt {
+    @apply text-gray-600 dark:text-gray-300 mb-4;
+  }
+
+  .post-card-meta {
+    @apply flex gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4;
+  }
+
+  .post-card-tags {
+    @apply flex gap-2 flex-wrap;
+  }
+
+  .post-card-tag {
+    @apply text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400;
+  }
+
+  /* Full Post */
+  .post-full-image {
+    @apply mb-8 rounded-lg overflow-hidden;
+  }
+
+  .post-full-header {
+    @apply mb-12;
+  }
+
+  .post-categories {
+    @apply flex gap-2 mb-4;
+  }
+
+  .post-category {
+    @apply badge badge-primary;
+  }
+
+  .post-full-title {
+    @apply text-5xl font-bold mb-6 leading-tight;
+  }
+
+  .post-full-meta {
+    @apply flex gap-6 text-gray-600 dark:text-gray-400 mb-4;
+  }
+
+  .post-tags {
+    @apply flex gap-3 flex-wrap;
+  }
+
+  .post-tag {
+    @apply text-gray-600 dark:text-gray-400 text-base hover:text-blue-600 dark:hover:text-blue-400;
+  }
+
+  .post-full-content {
+    @apply text-lg leading-relaxed mb-12 max-w-none;
+  }
+
+  .post-full-content img {
+    @apply my-8 rounded-lg;
+  }
+
+  /* Pagination */
+  .pagination {
+    @apply flex justify-between items-center py-8 border-t border-gray-200 dark:border-gray-800;
+  }
+
+  .pagination-prev,
+  .pagination-next {
+    @apply btn-primary;
+  }
+
+  .pagination-info {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    @apply sticky top-8 h-fit;
+  }
+
+  .widget {
+    @apply bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8;
+  }
+
+  .widget h3 {
+    @apply text-xl font-semibold mb-4;
+  }
+
+  .widget ul {
+    @apply list-none p-0;
+  }
+
+  .widget li {
+    @apply py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0;
+  }
+
+  /* Footer */
+  .site-footer {
+    @apply bg-gray-50 dark:bg-gray-900 py-12 text-center text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-800;
+  }
+
+  .site-footer p {
+    @apply my-2;
+  }
+
+  /* CTA Section */
+  .cta-section {
+    @apply bg-gradient-to-br from-blue-600 to-blue-700 py-16 text-center text-white;
+  }
+
+  .cta-section h2 {
+    @apply text-3xl font-bold mb-6;
+  }
+
+  /* No posts */
+  .no-posts {
+    @apply text-center py-16 text-gray-600 dark:text-gray-400;
+  }
+
+  .no-posts h2 {
+    @apply text-3xl font-bold mb-4 text-gray-900 dark:text-white;
+  }
+}
+
+/* ============= UTILITY CLASSES ============= */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
