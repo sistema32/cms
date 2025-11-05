@@ -423,6 +423,28 @@ export const contentRevisions = sqliteTable("content_revisions", {
     .default(sql`(unixepoch())`),
 });
 
+// ============= PLUGINS =============
+export const plugins = sqliteTable("plugins", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(), // Plugin unique identifier
+  version: text("version").notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
+  settings: text("settings"), // JSON settings
+  installedAt: integer("installed_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const pluginHooks = sqliteTable("plugin_hooks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  pluginId: integer("plugin_id").notNull().references(() => plugins.id, { onDelete: "cascade" }),
+  hookName: text("hook_name").notNull(),
+  priority: integer("priority").notNull().default(10),
+});
+
 // ============= RELATIONS =============
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -653,6 +675,17 @@ export const contentRevisionsRelations = relations(contentRevisions, ({ one }) =
   }),
 }));
 
+export const pluginsRelations = relations(plugins, ({ many }) => ({
+  hooks: many(pluginHooks),
+}));
+
+export const pluginHooksRelations = relations(pluginHooks, ({ one }) => ({
+  plugin: one(plugins, {
+    fields: [pluginHooks.pluginId],
+    references: [plugins.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -723,3 +756,9 @@ export type NewSetting = typeof settings.$inferInsert;
 
 export type ContentRevision = typeof contentRevisions.$inferSelect;
 export type NewContentRevision = typeof contentRevisions.$inferInsert;
+
+export type Plugin = typeof plugins.$inferSelect;
+export type NewPlugin = typeof plugins.$inferInsert;
+
+export type PluginHook = typeof pluginHooks.$inferSelect;
+export type NewPluginHook = typeof pluginHooks.$inferInsert;
