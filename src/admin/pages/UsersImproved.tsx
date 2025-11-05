@@ -65,11 +65,11 @@ export const UsersPageImproved = (props: UsersPageProps) => {
 
     if (diffDays === 0) return "Hoy";
     if (diffDays === 1) return "Ayer";
-    if (diffDays < 7) return \`Hace \${diffDays} días\`;
+    if (diffDays < 7) return `Hace ${diffDays} días`;
     return date.toLocaleDateString("es-ES");
   };
 
-  const content = html\`
+  const content = html`
     <div class="page-header">
       <div>
         <h1 class="page-title">Gestión de Usuarios</h1>
