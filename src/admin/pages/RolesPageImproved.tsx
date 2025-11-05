@@ -77,7 +77,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                   <span>Personalizados: <strong class="text-purple-600">${stats.customRoles}</strong></span>
                   <span>Usuarios: <strong>${stats.totalUsers}</strong></span>
                   ${stats.usersWithoutRole > 0
-                    ? html'<span class="text-yellow-600">Sin rol: <strong>${stats.usersWithoutRole}</strong></span>'
+                    ? html`<span class="text-yellow-600">Sin rol: <strong>${stats.usersWithoutRole}</strong></span>`
                     : ""}
                 </div>
               `
@@ -132,7 +132,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                             <div>
                               <div class="font-medium text-gray-900 dark:text-gray-100">
                                 ${role.name}
-                                ${role.isSystem ? html'<span class="ml-2 badge-info text-xs">Sistema</span>' : ""}
+                                ${role.isSystem ? html`<span class="ml-2 badge-info text-xs">Sistema</span>` : ""}
                               </div>
                               ${role.description
                                 ? html`<div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -143,8 +143,8 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                           </td>
                           <td>
                             ${role.isSystem
-                              ? html'<span class="badge-info">Sistema</span>'
-                              : html'<span class="badge-secondary">Personalizado</span>'}
+                              ? html`<span class="badge-info">Sistema</span>`
+                              : html`<span class="badge-secondary">Personalizado</span>`}
                           </td>
                           <td>
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -312,7 +312,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                               />
                               <span class="font-medium">${perm.action}</span>
                               ${perm.description
-                                ? html'<span class="text-xs text-gray-500 ml-1">- ${perm.description}</span>'
+                                ? html`<span class="text-xs text-gray-500 ml-1">- ${perm.description}</span>`
                                 : ""}
                             </label>
                           `
@@ -470,7 +470,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         const role = rolesData.find(r => r.id === roleId);
         if (!role) return;
 
-        document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "${role.name}"';
+        document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + role.name + '"';
 
         const permissions = ${JSON.stringify(permissions)};
         const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
@@ -484,24 +484,24 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         let content = '<div class="space-y-4">';
         for (const [module, perms] of Object.entries(grouped)) {
-          content += `
+          content += \`
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
               <div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm">
-                ${module} <span class="text-xs text-gray-500">(${perms.length})</span>
+                \${module} <span class="text-xs text-gray-500">(\${perms.length})</span>
               </div>
               <div class="p-3 space-y-1">
-                ${perms.map(p => `
+                \${perms.map(p => \`
                   <div class="flex items-center text-sm">
                     <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                     </svg>
-                    <span class="font-medium">${p.action}</span>
-                    ${p.description ? '<span class="text-xs text-gray-500 ml-2">- ${p.description}</span>' : ''}
+                    <span class="font-medium">\${p.action}</span>
+                    \${p.description ? \`<span class="text-xs text-gray-500 ml-2">- \${p.description}</span>\` : ''}
                   </div>
-                `).join('')}
+                \`).join('')}
               </div>
             </div>
-          `;
+          \`;
         }
         content += '</div>';
 
