@@ -138,6 +138,7 @@ export async function getRecentPosts(limit = 5): Promise<PostData[]> {
 
 /**
  * Obtiene posts paginados con offset/limit real
+ * Los posts sticky aparecen primero (solo en página 1)
  */
 export async function getPaginatedPosts(
   page: number = 1,
@@ -149,12 +150,197 @@ export async function getPaginatedPosts(
   // Obtener total de posts publicados
   const total = await getTotalPosts();
 
-  // Obtener posts de la página actual
-  const posts = await db.query.content.findMany({
+  let allPosts: PostData[] = [];
+
+  // En la primera página, obtener posts sticky primero
+  if (page === 1) {
+    // Obtener posts sticky
+    const stickyPosts = await db.query.content.findMany({
+      where: and(
+        eq(content.status, "published"),
+        eq(content.sticky, true)
+      ),
+      orderBy: [desc(content.publishedAt)],
+      with: {
+        author: true,
+        contentCategories: {
+          with: {
+            category: true,
+          },
+        },
+        contentTags: {
+          with: {
+            tag: true,
+          },
+        },
+        featuredImage: true,
+      },
+    });
+
+    const stickyData = stickyPosts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt || undefined,
+      body: post.body || undefined,
+      featureImage: post.featuredImage?.url || undefined,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      author: {
+        id: post.author.id,
+        name: post.author.name || post.author.email,
+        email: post.author.email,
+      },
+      categories: post.contentCategories.map((cc) => ({
+        id: cc.category.id,
+        name: cc.category.name,
+        slug: cc.category.slug,
+      })),
+      tags: post.contentTags.map((ct) => ({
+        id: ct.tag.id,
+        name: ct.tag.name,
+        slug: ct.tag.slug,
+      })),
+    }));
+
+    // Agregar sticky posts
+    allPosts.push(...stickyData);
+
+    // Calcular cuántos posts normales necesitamos
+    const remainingSlots = postsPerPage - stickyData.length;
+
+    if (remainingSlots > 0) {
+      // Obtener posts normales (no sticky)
+      const normalPosts = await db.query.content.findMany({
+        where: and(
+          eq(content.status, "published"),
+          eq(content.sticky, false)
+        ),
+        orderBy: [desc(content.publishedAt)],
+        limit: remainingSlots,
+        with: {
+          author: true,
+          contentCategories: {
+            with: {
+              category: true,
+            },
+          },
+          contentTags: {
+            with: {
+              tag: true,
+            },
+          },
+          featuredImage: true,
+        },
+      });
+
+      const normalData = normalPosts.map((post) => ({
+        id: post.id,
+        title: post.title,
+        slug: post.slug,
+        excerpt: post.excerpt || undefined,
+        body: post.body || undefined,
+        featureImage: post.featuredImage?.url || undefined,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        author: {
+          id: post.author.id,
+          name: post.author.name || post.author.email,
+          email: post.author.email,
+        },
+        categories: post.contentCategories.map((cc) => ({
+          id: cc.category.id,
+          name: cc.category.name,
+          slug: cc.category.slug,
+        })),
+        tags: post.contentTags.map((ct) => ({
+          id: ct.tag.id,
+          name: ct.tag.name,
+          slug: ct.tag.slug,
+        })),
+      }));
+
+      allPosts.push(...normalData);
+    }
+  } else {
+    // En páginas > 1, solo posts normales con offset ajustado
+    const posts = await db.query.content.findMany({
+      where: and(
+        eq(content.status, "published"),
+        eq(content.sticky, false)
+      ),
+      orderBy: [desc(content.publishedAt)],
+      limit: postsPerPage,
+      offset: offset,
+      with: {
+        author: true,
+        contentCategories: {
+          with: {
+            category: true,
+          },
+        },
+        contentTags: {
+          with: {
+            tag: true,
+          },
+        },
+        featuredImage: true,
+      },
+    });
+
+    allPosts = posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt || undefined,
+      body: post.body || undefined,
+      featureImage: post.featuredImage?.url || undefined,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      author: {
+        id: post.author.id,
+        name: post.author.name || post.author.email,
+        email: post.author.email,
+      },
+      categories: post.contentCategories.map((cc) => ({
+        id: cc.category.id,
+        name: cc.category.name,
+        slug: cc.category.slug,
+      })),
+      tags: post.contentTags.map((ct) => ({
+        id: ct.tag.id,
+        name: ct.tag.name,
+        slug: ct.tag.slug,
+      })),
+    }));
+  }
+
+  const totalPages = Math.ceil(total / postsPerPage);
+
+  return { posts: allPosts, total, totalPages };
+}
+
+/**
+ * Cuenta el total de posts publicados
+ */
+export async function getTotalPosts(): Promise<number> {
+  const result = await db.query.content.findMany({
     where: eq(content.status, "published"),
+  });
+  return result.length;
+}
+
+/**
+ * Obtiene posts destacados (featured)
+ */
+export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
+  const posts = await db.query.content.findMany({
+    where: and(
+      eq(content.status, "published"),
+      eq(content.featured, true)
+    ),
     orderBy: [desc(content.publishedAt)],
-    limit: postsPerPage,
-    offset,
+    limit,
     with: {
       author: true,
       contentCategories: {
@@ -171,7 +357,12 @@ export async function getPaginatedPosts(
     },
   });
 
-  const postData = posts.map((post) => ({
+  // Si no hay posts featured, retornar los más recientes
+  if (posts.length === 0) {
+    return await getRecentPosts(limit);
+  }
+
+  return posts.map((post) => ({
     id: post.id,
     title: post.title,
     slug: post.slug,
@@ -196,30 +387,6 @@ export async function getPaginatedPosts(
       slug: ct.tag.slug,
     })),
   }));
-
-  const totalPages = Math.ceil(total / postsPerPage);
-
-  return { posts: postData, total, totalPages };
-}
-
-/**
- * Cuenta el total de posts publicados
- */
-export async function getTotalPosts(): Promise<number> {
-  const result = await db.query.content.findMany({
-    where: eq(content.status, "published"),
-  });
-  return result.length;
-}
-
-/**
- * Obtiene posts destacados (featured)
- * TODO: Agregar campo 'featured' a la tabla content
- */
-export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
-  // Por ahora retorna los posts más recientes
-  // Una vez agregado el campo 'featured' filtrar por ese campo
-  return await getRecentPosts(limit);
 }
 
 // ============= DATE HELPERS =============
