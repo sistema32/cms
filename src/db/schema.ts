@@ -8,6 +8,7 @@ export const roles = sqliteTable("roles", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
+  isSystem: integer("is_system", { mode: "boolean" }).notNull().default(false), // roles del sistema no se pueden eliminar
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -38,9 +39,12 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
+  avatar: text("avatar"), // URL del avatar
+  status: text("status").notNull().default("active"), // active, inactive, suspended
   roleId: integer("role_id").references(() => roles.id),
   twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
   twoFactorSecret: text("two_factor_secret"),
+  lastLoginAt: integer("last_login_at", { mode: "timestamp" }), // Último login
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

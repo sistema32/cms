@@ -13,6 +13,7 @@ try {
     .values({
       name: "superadmin",
       description: "Super administrador con todos los permisos",
+      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -22,6 +23,7 @@ try {
     .values({
       name: "admin",
       description: "Administrador con permisos limitados",
+      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -31,6 +33,7 @@ try {
     .values({
       name: "user",
       description: "Usuario registrado estándar",
+      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -40,6 +43,7 @@ try {
     .values({
       name: "guest",
       description: "Usuario público sin autenticación",
+      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
