@@ -393,7 +393,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
       // Toggle module permissions
       function toggleModulePermissions(checkbox) {
         const module = checkbox.dataset.module;
-        const moduleCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="${module}"]');
+        const moduleCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="' + module + '"]');
         moduleCheckboxes.forEach(cb => cb.checked = checkbox.checked);
       }
 
@@ -402,8 +402,8 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         const modules = [...new Set(Array.from(document.querySelectorAll('.permission-checkbox')).map(cb => cb.dataset.module))];
 
         modules.forEach(module => {
-          const moduleCheckbox = document.querySelector('.module-checkbox[data-module="${module}"]');
-          const permissionCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="${module}"]');
+          const moduleCheckbox = document.querySelector('.module-checkbox[data-module="' + module + '"]');
+          const permissionCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="' + module + '"]');
           const checkedCount = Array.from(permissionCheckboxes).filter(cb => cb.checked).length;
 
           if (checkedCount === 0) {
@@ -450,7 +450,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
           // Check assigned permissions
           role.permissionIds.forEach(permId => {
-            const checkbox = document.querySelector('input[name="permissions[]"][value="${permId}"]');
+            const checkbox = document.querySelector('input[name="permissions[]"][value="' + permId + '"]');
             if (checkbox) checkbox.checked = true;
           });
 
@@ -531,7 +531,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
       // Delete role
       async function deleteRole(roleId, roleName) {
-        if (!confirm('¿Estás seguro de eliminar el rol "${roleName}"?')) {
+        if (!confirm('¿Estás seguro de eliminar el rol "' + roleName + '"?')) {
           return;
         }
 

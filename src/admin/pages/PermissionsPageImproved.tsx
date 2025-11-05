@@ -268,7 +268,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
       }
 
       async function deletePermission(id, name) {
-        if (!confirm('¿Estás seguro de eliminar el permiso "${name}"?\nEsto puede afectar a roles que tengan este permiso asignado.')) {
+        if (!confirm('¿Estás seguro de eliminar el permiso "' + name + '"?\nEsto puede afectar a roles que tengan este permiso asignado.')) {
           return;
         }
 
