@@ -136,6 +136,92 @@ export async function getRecentPosts(limit = 5): Promise<PostData[]> {
   }));
 }
 
+/**
+ * Obtiene posts paginados con offset/limit real
+ */
+export async function getPaginatedPosts(
+  page: number = 1,
+  perPage?: number
+): Promise<{ posts: PostData[]; total: number; totalPages: number }> {
+  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  const offset = (page - 1) * postsPerPage;
+
+  // Obtener total de posts publicados
+  const total = await getTotalPosts();
+
+  // Obtener posts de la página actual
+  const posts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    orderBy: [desc(content.publishedAt)],
+    limit: postsPerPage,
+    offset,
+    with: {
+      author: true,
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+      featuredImage: true,
+    },
+  });
+
+  const postData = posts.map((post) => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || undefined,
+    body: post.body || undefined,
+    featureImage: post.featuredImage?.url || undefined,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    author: {
+      id: post.author.id,
+      name: post.author.name || post.author.email,
+      email: post.author.email,
+    },
+    categories: post.contentCategories.map((cc) => ({
+      id: cc.category.id,
+      name: cc.category.name,
+      slug: cc.category.slug,
+    })),
+    tags: post.contentTags.map((ct) => ({
+      id: ct.tag.id,
+      name: ct.tag.name,
+      slug: ct.tag.slug,
+    })),
+  }));
+
+  const totalPages = Math.ceil(total / postsPerPage);
+
+  return { posts: postData, total, totalPages };
+}
+
+/**
+ * Cuenta el total de posts publicados
+ */
+export async function getTotalPosts(): Promise<number> {
+  const result = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+  });
+  return result.length;
+}
+
+/**
+ * Obtiene posts destacados (featured)
+ * TODO: Agregar campo 'featured' a la tabla content
+ */
+export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
+  // Por ahora retorna los posts más recientes
+  // Una vez agregado el campo 'featured' filtrar por ese campo
+  return await getRecentPosts(limit);
+}
+
 // ============= DATE HELPERS =============
 
 /**
@@ -272,6 +358,52 @@ export async function getPagination(
   };
 }
 
+/**
+ * Genera array de números de página para la paginación
+ * Ejemplo: [1, 2, 3, "...", 8, 9, 10]
+ */
+export function getPaginationNumbers(
+  currentPage: number,
+  totalPages: number,
+  delta: number = 2
+): (number | string)[] {
+  if (totalPages <= 1) return [1];
+
+  const range: (number | string)[] = [];
+  const rangeWithDots: (number | string)[] = [];
+
+  // Siempre incluir primera página
+  range.push(1);
+
+  // Incluir páginas alrededor de la actual
+  for (let i = currentPage - delta; i <= currentPage + delta; i++) {
+    if (i > 1 && i < totalPages) {
+      range.push(i);
+    }
+  }
+
+  // Siempre incluir última página
+  if (totalPages > 1) {
+    range.push(totalPages);
+  }
+
+  // Agregar puntos suspensivos donde haya gaps
+  let prev = 0;
+  for (const page of range) {
+    if (typeof page === "number") {
+      if (page - prev === 2) {
+        rangeWithDots.push(prev + 1);
+      } else if (page - prev !== 1) {
+        rangeWithDots.push("...");
+      }
+      rangeWithDots.push(page);
+      prev = page;
+    }
+  }
+
+  return rangeWithDots;
+}
+
 // ============= BODY CLASS HELPER (WordPress-style) =============
 
 /**
@@ -338,6 +470,9 @@ export const themeHelpers = {
 
   // Content
   getRecentPosts,
+  getPaginatedPosts,
+  getTotalPosts,
+  getFeaturedPosts,
 
   // Formatting
   formatDate,
@@ -352,6 +487,7 @@ export const themeHelpers = {
 
   // Pagination
   getPagination,
+  getPaginationNumbers,
 
   // CSS classes
   bodyClass,

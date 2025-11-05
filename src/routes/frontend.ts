@@ -1,15 +1,17 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { db } from "../config/db.ts";
-import { content } from "../db/schema.ts";
+import { content, categories as categoriesSchema, tags as tagsSchema } from "../db/schema.ts";
 import { eq, desc } from "drizzle-orm";
 import * as themeHelpers from "../themes/default/helpers/index.ts";
 import IndexTemplate from "../themes/default/templates/index.tsx";
+import HomeTemplate from "../themes/default/templates/home.tsx";
+import BlogTemplate from "../themes/default/templates/blog.tsx";
 import PostTemplate from "../themes/default/templates/post.tsx";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
- * Usa los templates del theme activo para renderizar páginas
+ * Sistema multi-theme tipo WordPress
  */
 
 const frontendRouter = new Hono();
@@ -22,30 +24,39 @@ frontendRouter.get("/themes/*", serveStatic({ root: "./src" }));
 // ============= RUTAS PÚBLICAS =============
 
 /**
- * GET / - Página principal (home)
+ * GET / - Homepage estática
+ * Usa home.tsx (front-page.tsx en WordPress)
  */
 frontendRouter.get("/", async (c) => {
   try {
-    // Obtener datos del sitio y custom settings
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
-    // Obtener posts
-    const posts = await themeHelpers.getRecentPosts(
-      custom.posts_per_page || 10
+    // Obtener posts destacados para la homepage
+    const featuredPosts = await themeHelpers.getFeaturedPosts(
+      custom.homepage_featured_count || 6
     );
 
-    // Calcular paginación
-    const totalPosts = posts.length; // TODO: Obtener total real de la BD
-    const pagination = await themeHelpers.getPagination(1, totalPosts);
+    // Obtener categorías para la sección de categorías
+    const allCategories = await db.query.categories.findMany({
+      limit: 6,
+      orderBy: [desc(categoriesSchema.id)],
+    });
 
-    // Renderizar template
+    const categories = allCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: 0, // TODO: Contar posts por categoría
+    }));
+
+    // Renderizar homepage
     return c.html(
-      IndexTemplate({
+      HomeTemplate({
         site,
         custom,
-        posts,
-        pagination,
+        featuredPosts,
+        categories,
       })
     );
   } catch (error: any) {
@@ -55,9 +66,138 @@ frontendRouter.get("/", async (c) => {
 });
 
 /**
- * GET /:slug - Post individual por slug
+ * GET /blog - Página de blog (página 1)
+ * Usa blog.tsx
  */
-frontendRouter.get("/:slug", async (c) => {
+frontendRouter.get("/blog", async (c) => {
+  try {
+    const site = await themeHelpers.getSiteData();
+    const custom = await themeHelpers.getCustomSettings();
+
+    // Obtener posts paginados
+    const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(1);
+
+    // Calcular paginación
+    const pagination = await themeHelpers.getPagination(1, total);
+
+    // Posts recientes para sidebar
+    const recentPosts = await themeHelpers.getRecentPosts(5);
+
+    // Categorías para sidebar
+    const allCategories = await db.query.categories.findMany({
+      limit: 10,
+    });
+    const categories = allCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: 0,
+    }));
+
+    // Tags para sidebar
+    const allTags = await db.query.tags.findMany({
+      limit: 20,
+    });
+    const tags = allTags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      count: 0,
+    }));
+
+    // Renderizar blog
+    return c.html(
+      BlogTemplate({
+        site,
+        custom,
+        posts,
+        pagination,
+        recentPosts,
+        categories,
+        tags,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error rendering blog:", error);
+    return c.text("Error al cargar el blog", 500);
+  }
+});
+
+/**
+ * GET /blog/page/:page - Paginación del blog
+ * Usa blog.tsx
+ */
+frontendRouter.get("/blog/page/:page", async (c) => {
+  try {
+    const page = parseInt(c.req.param("page")) || 1;
+
+    // Redirigir a /blog si es página 1
+    if (page === 1) {
+      return c.redirect("/blog", 301);
+    }
+
+    const site = await themeHelpers.getSiteData();
+    const custom = await themeHelpers.getCustomSettings();
+
+    // Obtener posts paginados
+    const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(page);
+
+    // Si la página no existe, 404
+    if (page > totalPages) {
+      return c.text("Página no encontrada", 404);
+    }
+
+    // Calcular paginación
+    const pagination = await themeHelpers.getPagination(page, total);
+
+    // Posts recientes para sidebar
+    const recentPosts = await themeHelpers.getRecentPosts(5);
+
+    // Categorías para sidebar
+    const allCategories = await db.query.categories.findMany({
+      limit: 10,
+    });
+    const categories = allCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: 0,
+    }));
+
+    // Tags para sidebar
+    const allTags = await db.query.tags.findMany({
+      limit: 20,
+    });
+    const tags = allTags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      count: 0,
+    }));
+
+    // Renderizar blog
+    return c.html(
+      BlogTemplate({
+        site,
+        custom,
+        posts,
+        pagination,
+        recentPosts,
+        categories,
+        tags,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error rendering page:", error);
+    return c.text("Error al cargar la página", 500);
+  }
+});
+
+/**
+ * GET /blog/:slug - Post individual
+ * Usa post.tsx
+ */
+frontendRouter.get("/blog/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
@@ -134,38 +274,8 @@ frontendRouter.get("/:slug", async (c) => {
 });
 
 /**
- * GET /page/:page - Paginación de posts
- */
-frontendRouter.get("/page/:page", async (c) => {
-  try {
-    const page = parseInt(c.req.param("page")) || 1;
-
-    const site = await themeHelpers.getSiteData();
-    const custom = await themeHelpers.getCustomSettings();
-
-    const postsPerPage = custom.posts_per_page || 10;
-
-    // TODO: Implementar paginación real con offset/limit
-    const posts = await themeHelpers.getRecentPosts(postsPerPage);
-    const totalPosts = posts.length;
-    const pagination = await themeHelpers.getPagination(page, totalPosts);
-
-    return c.html(
-      IndexTemplate({
-        site,
-        custom,
-        posts,
-        pagination,
-      })
-    );
-  } catch (error: any) {
-    console.error("Error rendering page:", error);
-    return c.text("Error al cargar la página", 500);
-  }
-});
-
-/**
  * GET /category/:slug - Archivo de categoría
+ * TODO: Crear template category.tsx
  */
 frontendRouter.get("/category/:slug", async (c) => {
   try {
@@ -193,6 +303,7 @@ frontendRouter.get("/category/:slug", async (c) => {
 
 /**
  * GET /tag/:slug - Archivo de tag
+ * TODO: Crear template tag.tsx
  */
 frontendRouter.get("/tag/:slug", async (c) => {
   try {
@@ -220,6 +331,7 @@ frontendRouter.get("/tag/:slug", async (c) => {
 
 /**
  * GET /search - Búsqueda
+ * TODO: Crear template search.tsx
  */
 frontendRouter.get("/search", async (c) => {
   try {
