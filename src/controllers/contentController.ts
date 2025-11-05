@@ -56,6 +56,7 @@ const contentMetaPayloadSchema = z.object({
 
 const createContentSchema = z.object({
   contentTypeId: z.number(),
+  parentId: z.number().optional(), // Para páginas hijas
   title: z.string().min(1),
   slug: z.string().min(1),
   excerpt: z.string().optional(),
@@ -273,6 +274,99 @@ export async function generateSlug(c: Context) {
 
     const slug = contentService.generateSlug(title);
     return c.json({ slug });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// ============= ENDPOINTS DE REVISIONES =============
+
+// Obtener todas las revisiones de un contenido
+export async function getContentRevisions(c: Context) {
+  try {
+    const contentId = Number(c.req.param("id"));
+    if (isNaN(contentId)) return c.json({ error: "ID inválido" }, 400);
+
+    const revisions = await contentService.getContentRevisions(contentId);
+    return c.json({ revisions });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// Obtener una revisión específica
+export async function getRevisionById(c: Context) {
+  try {
+    const revisionId = Number(c.req.param("revisionId"));
+    if (isNaN(revisionId)) return c.json({ error: "ID de revisión inválido" }, 400);
+
+    const revision = await contentService.getRevisionById(revisionId);
+    if (!revision) return c.json({ error: "Revisión no encontrada" }, 404);
+
+    return c.json({ revision });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// Restaurar una revisión
+export async function restoreRevision(c: Context) {
+  try {
+    const user = c.get("user");
+    const contentId = Number(c.req.param("id"));
+    const revisionId = Number(c.req.param("revisionId"));
+
+    if (isNaN(contentId) || isNaN(revisionId)) {
+      return c.json({ error: "IDs inválidos" }, 400);
+    }
+
+    const content = await contentService.restoreRevision(contentId, revisionId, user.userId);
+    return c.json({ content, message: "Revisión restaurada exitosamente" });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// Comparar dos revisiones
+export async function compareRevisions(c: Context) {
+  try {
+    const revisionId1 = Number(c.req.query("revision1"));
+    const revisionId2 = Number(c.req.query("revision2"));
+
+    if (isNaN(revisionId1) || isNaN(revisionId2)) {
+      return c.json({ error: "IDs de revisión inválidos" }, 400);
+    }
+
+    const comparison = await contentService.compareRevisions(revisionId1, revisionId2);
+    return c.json({ comparison });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// Eliminar una revisión
+export async function deleteRevision(c: Context) {
+  try {
+    const revisionId = Number(c.req.param("revisionId"));
+    if (isNaN(revisionId)) return c.json({ error: "ID de revisión inválido" }, 400);
+
+    await contentService.deleteRevision(revisionId);
+    return c.json({ message: "Revisión eliminada exitosamente" });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 400);
+  }
+}
+
+// ============= ENDPOINTS DE PÁGINAS HIJAS =============
+
+// Obtener páginas hijas de una página
+export async function getChildPages(c: Context) {
+  try {
+    const parentId = Number(c.req.param("id"));
+    if (isNaN(parentId)) return c.json({ error: "ID inválido" }, 400);
+
+    const children = await contentService.getChildPages(parentId);
+    return c.json({ children });
   } catch (error) {
     return c.json({ error: getErrorMessage(error) }, 400);
   }
