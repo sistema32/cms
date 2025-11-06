@@ -20,6 +20,7 @@ import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
+import { PluginsPage } from "../admin/pages/PluginsPage.tsx";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -52,6 +53,7 @@ import * as mediaService from "../services/mediaService.ts";
 import * as roleService from "../services/roleService.ts";
 import * as permissionService from "../services/permissionService.ts";
 import * as userService from "../services/userService.ts";
+import { pluginService } from "../services/pluginService.ts";
 import type { MenuItemWithChildren } from "../services/menuItemService.ts";
 
 function parseSettingValueForAdmin(value: string | null): unknown {
@@ -2707,6 +2709,68 @@ adminRouter.get("/settings/export", async (c) => {
   } catch (error: any) {
     console.error("Error exporting settings:", error);
     return c.text("Error al exportar configuración", 500);
+  }
+});
+
+/**
+ * GET /plugins - Plugins management page
+ */
+adminRouter.get("/plugins", async (c) => {
+  try {
+    const user = c.get("user");
+
+    const [installedPlugins, availablePlugins, stats] = await Promise.all([
+      pluginService.getAllPlugins(),
+      pluginService.getAvailablePlugins(),
+      pluginService.getPluginStats(),
+    ]);
+
+    // Map installed plugins to the format expected by the page
+    const formattedInstalledPlugins = installedPlugins.map((plugin) => ({
+      id: plugin.id,
+      name: plugin.name,
+      version: plugin.version,
+      displayName: plugin.name,
+      description: undefined,
+      author: undefined,
+      status: plugin.isActive ? "active" : "inactive",
+      isInstalled: true,
+    }));
+
+    // Load plugin details for installed plugins
+    const detailedPlugins = await Promise.all(
+      formattedInstalledPlugins.map(async (plugin) => {
+        try {
+          const details = await pluginService.getPluginDetails(plugin.name);
+          if (details && details.manifest) {
+            return {
+              ...plugin,
+              displayName: details.manifest.displayName || plugin.name,
+              description: details.manifest.description,
+              author: details.manifest.author,
+            };
+          }
+        } catch (error) {
+          console.error(`Error loading details for ${plugin.name}:`, error);
+        }
+        return plugin;
+      }),
+    );
+
+    return c.html(
+      PluginsPage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        installedPlugins: detailedPlugins as any[],
+        availablePlugins,
+        stats,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading plugins page:", error);
+    return c.text("Error al cargar plugins", 500);
   }
 });
 

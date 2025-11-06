@@ -16,6 +16,7 @@ import commentRoutes from "./comments.ts";
 import contentFilterRoutes from "./contentFilters.ts";
 import seoRoutes from "./seo.ts";
 import settingsRoutes from "./settings.ts";
+import pluginRoutes from "./plugins.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -33,7 +34,8 @@ export function registerRoutes(app: Hono) {
     captcha: "enabled",
     seoAi: "enabled",
     settings: "enabled",
-    themes: "enabled"
+    themes: "enabled",
+    plugins: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -74,6 +76,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Settings
   app.route("/api/settings", settingsRoutes);
+
+  // Registrar rutas de Plugins
+  app.route("/api/plugins", pluginRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);

@@ -13,6 +13,7 @@ import type { ProcessedImage } from "../utils/media/imageProcessor.ts";
 import * as videoProcessor from "../utils/media/videoProcessor.ts";
 import * as documentProcessor from "../utils/media/documentProcessor.ts";
 import { env } from "../config/env.ts";
+import { hookManager } from "../lib/plugin-system/index.ts";
 
 export interface UploadFileInput {
   data: Uint8Array;
@@ -251,6 +252,14 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
     });
   }
 
+  // 10. Trigger plugin hook: media:afterUpload
+  try {
+    await hookManager.doAction('media:afterUpload', newMedia);
+  } catch (error) {
+    console.error('Error in media:afterUpload hook:', error);
+    // Don't fail upload if plugin fails
+  }
+
   return newMedia;
 }
 
@@ -282,15 +291,36 @@ export async function getMediaById(id: number): Promise<MediaWithSizes | null> {
     }
     : undefined;
 
-  return {
-    media: mediaData,
-    sizes: mediaData.sizes.map((s) => ({
+  // Apply plugin filter: media:getUrl to allow URL transformation (e.g., CDN)
+  let mediaUrl = mediaData.url;
+  try {
+    mediaUrl = await hookManager.applyFilters('media:getUrl', mediaData.url, mediaData);
+  } catch (error) {
+    console.error('Error in media:getUrl filter:', error);
+    // Use original URL if filter fails
+  }
+
+  // Apply filter to size URLs as well
+  const sizes = await Promise.all(mediaData.sizes.map(async (s) => {
+    let sizeUrl = s.url;
+    try {
+      sizeUrl = await hookManager.applyFilters('media:getUrl', s.url, mediaData);
+    } catch (error) {
+      console.error('Error in media:getUrl filter for size:', error);
+    }
+
+    return {
       size: s.size,
       width: s.width,
       height: s.height,
-      url: s.url,
+      url: sizeUrl,
       fileSize: s.fileSize,
-    })),
+    };
+  }));
+
+  return {
+    media: { ...mediaData, url: mediaUrl },
+    sizes,
     seo,
   };
 }
@@ -329,6 +359,14 @@ export async function deleteMedia(id: number): Promise<void> {
 
   if (!mediaData) {
     throw new Error("Media no encontrado");
+  }
+
+  // Trigger plugin hook: media:beforeDelete
+  try {
+    await hookManager.doAction('media:beforeDelete', mediaData.media);
+  } catch (error) {
+    console.error('Error in media:beforeDelete hook:', error);
+    // Don't fail deletion if plugin fails
   }
 
   // Eliminar archivos físicos

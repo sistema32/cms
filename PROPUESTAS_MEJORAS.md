@@ -368,13 +368,937 @@ content_templates (id, name, description, structure, contentTypeId)
 
 ### 13. Sistema de Plugins/Extensiones
 
-**Propuesta:**
-- Arquitectura de plugins para extender funcionalidad
-- Hooks y filters (WordPress-style)
-- Plugin marketplace
-- Sandbox de ejecución segura
+**Problema:** Actualmente no hay forma de extender LexCMS sin modificar el código core, lo que dificulta la personalización, mantenimiento y escalabilidad.
 
-**Estimación:** 4-6 semanas
+---
+
+#### 🎯 Objetivos del Sistema de Plugins
+
+1. **Extensibilidad:** Permitir agregar funcionalidades sin modificar el core
+2. **Modularidad:** Plugins independientes y auto-contenidos
+3. **Seguridad:** Ejecución aislada y validación estricta
+4. **Compatibilidad:** Versionado y dependencias claras
+5. **Developer Experience:** API clara y bien documentada
+
+---
+
+#### 📦 Arquitectura de Plugins
+
+##### Estructura de un Plugin
+
+```
+plugins/
+├── cdn-cloudflare/
+│   ├── plugin.json          # Metadata y configuración
+│   ├── index.ts             # Entry point
+│   ├── hooks.ts             # Hooks implementation
+│   ├── admin/               # Admin UI components (opcional)
+│   │   └── settings.tsx
+│   ├── README.md
+│   └── package.json
+```
+
+##### plugin.json - Manifest
+
+```json
+{
+  "name": "cdn-cloudflare",
+  "version": "1.0.0",
+  "displayName": "Cloudflare CDN Integration",
+  "description": "Automatically upload and serve media from Cloudflare CDN",
+  "author": "LexCMS Team",
+  "license": "MIT",
+  "homepage": "https://github.com/lexcms/plugin-cdn-cloudflare",
+
+  "compatibility": {
+    "lexcms": ">=1.0.0",
+    "deno": ">=1.40.0"
+  },
+
+  "dependencies": {
+    "cloudflare-api": "^1.0.0"
+  },
+
+  "permissions": [
+    "media:read",
+    "media:write",
+    "settings:read",
+    "network:external"
+  ],
+
+  "hooks": [
+    "media:afterUpload",
+    "media:beforeDelete",
+    "media:getUrl"
+  ],
+
+  "settings": {
+    "schema": "./admin/settings-schema.json",
+    "component": "./admin/settings.tsx"
+  },
+
+  "category": "cdn",
+  "tags": ["media", "cdn", "cloudflare", "performance"]
+}
+```
+
+---
+
+#### 🪝 Sistema de Hooks y Filters
+
+##### Tipos de Hooks
+
+1. **Action Hooks:** Ejecutan código en momentos específicos
+2. **Filter Hooks:** Modifican datos antes de procesarlos
+3. **Async Hooks:** Operaciones asíncronas con await
+
+##### Hooks Disponibles
+
+```typescript
+// CONTENT HOOKS
+'content:beforeCreate'    // Antes de crear contenido
+'content:afterCreate'     // Después de crear contenido
+'content:beforeUpdate'    // Antes de actualizar
+'content:afterUpdate'     // Después de actualizar
+'content:beforeDelete'    // Antes de eliminar
+'content:afterDelete'     // Después de eliminar
+'content:beforePublish'   // Antes de publicar
+'content:afterPublish'    // Después de publicar
+'content:render'          // Al renderizar contenido (filter)
+
+// MEDIA HOOKS
+'media:beforeUpload'      // Antes de subir archivo
+'media:afterUpload'       // Después de subir archivo
+'media:beforeDelete'      // Antes de eliminar media
+'media:afterDelete'       // Después de eliminar media
+'media:getUrl'            // Obtener URL de media (filter - para CDN)
+'media:optimize'          // Optimizar imagen (filter)
+
+// USER HOOKS
+'user:beforeLogin'        // Antes de login
+'user:afterLogin'         // Después de login exitoso
+'user:beforeRegister'     // Antes de registrar usuario
+'user:afterRegister'      // Después de registrar
+'user:beforeUpdate'       // Antes de actualizar perfil
+'user:afterUpdate'        // Después de actualizar
+
+// COMMENT HOOKS
+'comment:beforeCreate'    // Antes de crear comentario
+'comment:afterCreate'     // Después de crear
+'comment:beforeModerate'  // Antes de moderar
+'comment:filterSpam'      // Detectar spam (filter)
+
+// THEME HOOKS
+'theme:beforeRender'      // Antes de renderizar página
+'theme:afterRender'       // Después de renderizar
+'theme:headScripts'       // Inyectar scripts en <head> (filter)
+'theme:footerScripts'     // Inyectar scripts antes de </body> (filter)
+'theme:css'               // Agregar CSS custom (filter)
+
+// ADMIN HOOKS
+'admin:menu'              // Agregar items al menú admin (filter)
+'admin:dashboard'         // Agregar widgets a dashboard (filter)
+'admin:routes'            // Agregar rutas admin (filter)
+
+// CAPTCHA HOOKS
+'captcha:verify'          // Verificar CAPTCHA (filter)
+'captcha:render'          // Renderizar CAPTCHA widget (filter)
+
+// SEO HOOKS
+'seo:metaTags'            // Modificar meta tags (filter)
+'seo:sitemap'             // Agregar URLs a sitemap (filter)
+'seo:robots'              // Modificar robots.txt (filter)
+
+// EMAIL HOOKS
+'email:beforeSend'        // Antes de enviar email
+'email:afterSend'         // Después de enviar
+'email:template'          // Modificar template de email (filter)
+
+// CACHE HOOKS
+'cache:get'               // Obtener del cache (filter)
+'cache:set'               // Guardar en cache
+'cache:invalidate'        // Invalidar cache
+
+// ANALYTICS HOOKS
+'analytics:track'         // Trackear evento
+'analytics:pageview'      // Registrar pageview
+
+// SEARCH HOOKS
+'search:query'            // Modificar query de búsqueda (filter)
+'search:results'          // Modificar resultados (filter)
+'search:index'            // Indexar contenido
+```
+
+---
+
+#### 💻 API de Plugins
+
+##### Core Plugin API
+
+```typescript
+// src/lib/plugin-system/PluginAPI.ts
+
+export class PluginAPI {
+  // Hook registration
+  addAction(hookName: string, callback: Function, priority: number = 10): void
+  addFilter(hookName: string, callback: Function, priority: number = 10): void
+  removeAction(hookName: string, callback: Function): void
+  removeFilter(hookName: string, callback: Function): void
+
+  // Hook execution
+  doAction(hookName: string, ...args: any[]): Promise<void>
+  applyFilters(hookName: string, value: any, ...args: any[]): Promise<any>
+
+  // Settings
+  getSetting(key: string, defaultValue?: any): any
+  setSetting(key: string, value: any): Promise<void>
+
+  // Database access (limitado por permisos)
+  query(sql: string, params?: any[]): Promise<any>
+
+  // HTTP utilities
+  fetch(url: string, options?: RequestInit): Promise<Response>
+
+  // Logging
+  log(message: string, level: 'info' | 'warn' | 'error'): void
+
+  // Cache
+  cache: {
+    get(key: string): Promise<any>
+    set(key: string, value: any, ttl?: number): Promise<void>
+    delete(key: string): Promise<void>
+  }
+
+  // Utilities
+  utils: {
+    sanitize(html: string): string
+    slugify(text: string): string
+    formatDate(date: Date, format: string): string
+  }
+}
+```
+
+---
+
+#### 🔌 Ejemplos de Plugins
+
+##### 1. Plugin CDN - Cloudflare
+
+```typescript
+// plugins/cdn-cloudflare/index.ts
+
+import { PluginAPI } from '@lexcms/plugin-api';
+
+export default class CloudflareCDNPlugin {
+  private api: PluginAPI;
+  private cloudflareApi: any;
+
+  constructor(api: PluginAPI) {
+    this.api = api;
+  }
+
+  async onActivate() {
+    // Inicializar Cloudflare API
+    const accountId = this.api.getSetting('cloudflare.accountId');
+    const apiToken = this.api.getSetting('cloudflare.apiToken');
+
+    this.cloudflareApi = new CloudflareAPI(accountId, apiToken);
+
+    // Registrar hooks
+    this.api.addAction('media:afterUpload', this.uploadToCDN.bind(this), 5);
+    this.api.addFilter('media:getUrl', this.getCDNUrl.bind(this), 5);
+    this.api.addAction('media:beforeDelete', this.deleteFromCDN.bind(this), 5);
+  }
+
+  async uploadToCDN(media: Media) {
+    try {
+      this.api.log(`Uploading ${media.filename} to Cloudflare CDN...`, 'info');
+
+      const file = await Deno.readFile(media.path);
+      const cdnUrl = await this.cloudflareApi.upload(media.filename, file);
+
+      // Guardar URL de CDN en metadata
+      await this.api.query(
+        'UPDATE media SET metadata = json_set(metadata, "$.cdnUrl", ?) WHERE id = ?',
+        [cdnUrl, media.id]
+      );
+
+      this.api.log(`Successfully uploaded to CDN: ${cdnUrl}`, 'info');
+    } catch (error) {
+      this.api.log(`CDN upload failed: ${error.message}`, 'error');
+    }
+  }
+
+  async getCDNUrl(url: string, media: Media) {
+    // Filtrar URL para servir desde CDN
+    const cdnUrl = media.metadata?.cdnUrl;
+    return cdnUrl || url;
+  }
+
+  async deleteFromCDN(media: Media) {
+    const cdnUrl = media.metadata?.cdnUrl;
+    if (cdnUrl) {
+      await this.cloudflareApi.delete(cdnUrl);
+      this.api.log(`Deleted from CDN: ${cdnUrl}`, 'info');
+    }
+  }
+
+  async onDeactivate() {
+    // Cleanup cuando se desactiva el plugin
+    this.api.removeAction('media:afterUpload', this.uploadToCDN);
+    this.api.removeFilter('media:getUrl', this.getCDNUrl);
+  }
+}
+```
+
+##### 2. Plugin CAPTCHA - hCaptcha
+
+```typescript
+// plugins/captcha-hcaptcha/index.ts
+
+import { PluginAPI } from '@lexcms/plugin-api';
+
+export default class HCaptchaPlugin {
+  private api: PluginAPI;
+
+  constructor(api: PluginAPI) {
+    this.api = api;
+  }
+
+  async onActivate() {
+    // Reemplazar sistema de CAPTCHA
+    this.api.addFilter('captcha:verify', this.verify.bind(this), 5);
+    this.api.addFilter('captcha:render', this.render.bind(this), 5);
+  }
+
+  async verify(isValid: boolean, token: string, ip: string) {
+    const siteSecret = this.api.getSetting('hcaptcha.secret');
+
+    const response = await this.api.fetch('https://hcaptcha.com/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: siteSecret,
+        response: token,
+        remoteip: ip
+      })
+    });
+
+    const data = await response.json();
+    return data.success;
+  }
+
+  render(html: string, formId: string) {
+    const siteKey = this.api.getSetting('hcaptcha.siteKey');
+
+    return `
+      <div class="h-captcha" data-sitekey="${siteKey}"></div>
+      <script src="https://hcaptcha.com/1/api.js" async defer></script>
+    `;
+  }
+}
+```
+
+##### 3. Plugin Theme Extension - Reading Time
+
+```typescript
+// plugins/reading-time/index.ts
+
+import { PluginAPI } from '@lexcms/plugin-api';
+
+export default class ReadingTimePlugin {
+  private api: PluginAPI;
+
+  constructor(api: PluginAPI) {
+    this.api = api;
+  }
+
+  async onActivate() {
+    // Agregar tiempo de lectura al contenido
+    this.api.addFilter('content:render', this.addReadingTime.bind(this));
+
+    // Agregar helper function para themes
+    this.api.addFilter('theme:helpers', this.addHelpers.bind(this));
+  }
+
+  calculateReadingTime(text: string): number {
+    const wordsPerMinute = 200;
+    const words = text.trim().split(/\s+/).length;
+    return Math.ceil(words / wordsPerMinute);
+  }
+
+  addReadingTime(content: Content) {
+    const readingTime = this.calculateReadingTime(content.body);
+    return {
+      ...content,
+      readingTime,
+      readingTimeText: `${readingTime} min read`
+    };
+  }
+
+  addHelpers(helpers: any) {
+    return {
+      ...helpers,
+      getReadingTime: (text: string) => this.calculateReadingTime(text)
+    };
+  }
+}
+```
+
+##### 4. Plugin Analytics - Google Analytics 4
+
+```typescript
+// plugins/analytics-ga4/index.ts
+
+import { PluginAPI } from '@lexcms/plugin-api';
+
+export default class GoogleAnalytics4Plugin {
+  private api: PluginAPI;
+
+  constructor(api: PluginAPI) {
+    this.api = api;
+  }
+
+  async onActivate() {
+    // Inyectar script de GA4 en el head
+    this.api.addFilter('theme:headScripts', this.injectScript.bind(this));
+
+    // Trackear pageviews
+    this.api.addAction('analytics:pageview', this.trackPageview.bind(this));
+  }
+
+  injectScript(scripts: string) {
+    const measurementId = this.api.getSetting('ga4.measurementId');
+
+    return scripts + `
+      <script async src="https://www.googletagmanager.com/gtag/js?id=${measurementId}"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${measurementId}');
+      </script>
+    `;
+  }
+
+  async trackPageview(data: { path: string, title: string }) {
+    // Server-side tracking via Measurement Protocol
+    const measurementId = this.api.getSetting('ga4.measurementId');
+    const apiSecret = this.api.getSetting('ga4.apiSecret');
+
+    await this.api.fetch(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${measurementId}&api_secret=${apiSecret}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          client_id: 'server',
+          events: [{
+            name: 'page_view',
+            params: {
+              page_location: data.path,
+              page_title: data.title
+            }
+          }]
+        })
+      }
+    );
+  }
+}
+```
+
+##### 5. Plugin AI - SEO Optimizer (OpenAI)
+
+```typescript
+// plugins/ai-seo-optimizer/index.ts
+
+import { PluginAPI } from '@lexcms/plugin-api';
+import OpenAI from 'openai';
+
+export default class AISeOOptimizerPlugin {
+  private api: PluginAPI;
+  private openai: OpenAI;
+
+  constructor(api: PluginAPI) {
+    this.api = api;
+  }
+
+  async onActivate() {
+    const apiKey = this.api.getSetting('openai.apiKey');
+    this.openai = new OpenAI({ apiKey });
+
+    // Agregar ruta API para generar sugerencias
+    this.api.addFilter('admin:routes', this.addRoutes.bind(this));
+  }
+
+  addRoutes(routes: any[]) {
+    return [
+      ...routes,
+      {
+        path: '/api/ai/seo-suggestions',
+        method: 'POST',
+        handler: this.generateSuggestions.bind(this)
+      }
+    ];
+  }
+
+  async generateSuggestions(req: Request) {
+    const { title, body } = await req.json();
+
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{
+        role: 'system',
+        content: 'You are an SEO expert. Provide meta description, focus keywords, and SEO improvements.'
+      }, {
+        role: 'user',
+        content: `Title: ${title}\n\nContent: ${body.substring(0, 1000)}...`
+      }]
+    });
+
+    return Response.json({
+      suggestions: completion.choices[0].message.content
+    });
+  }
+}
+```
+
+---
+
+#### 🛠️ Plugin Management
+
+##### Estructura en Base de Datos
+
+```sql
+CREATE TABLE plugins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  version TEXT NOT NULL,
+  isActive BOOLEAN DEFAULT FALSE,
+  settings TEXT, -- JSON
+  installedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME
+);
+
+CREATE TABLE plugin_hooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pluginId INTEGER REFERENCES plugins(id) ON DELETE CASCADE,
+  hookName TEXT NOT NULL,
+  priority INTEGER DEFAULT 10
+);
+```
+
+##### Admin UI - Plugin Manager
+
+```typescript
+// Endpoints de gestión
+GET    /api/plugins              // Listar plugins disponibles
+POST   /api/plugins/:name/install   // Instalar plugin
+POST   /api/plugins/:name/activate  // Activar plugin
+POST   /api/plugins/:name/deactivate // Desactivar
+DELETE /api/plugins/:name         // Desinstalar
+PATCH  /api/plugins/:name/settings // Actualizar configuración
+
+// Admin Panel
+/admincp/plugins                 // Lista de plugins
+/admincp/plugins/:name/settings  // Configuración del plugin
+/admincp/plugins/marketplace     // Plugin marketplace
+```
+
+##### CLI para Plugins
+
+```bash
+# Crear esqueleto de plugin
+deno task plugin:create my-plugin
+
+# Instalar plugin
+deno task plugin:install cdn-cloudflare
+
+# Activar/Desactivar
+deno task plugin:activate cdn-cloudflare
+deno task plugin:deactivate cdn-cloudflare
+
+# Listar plugins
+deno task plugin:list
+
+# Publicar plugin al marketplace
+deno task plugin:publish
+```
+
+---
+
+#### 🔒 Seguridad y Sandboxing
+
+##### Sistema de Permisos
+
+```typescript
+// Permisos disponibles
+const PLUGIN_PERMISSIONS = {
+  // Contenido
+  'content:read': 'Leer contenido',
+  'content:write': 'Crear/modificar contenido',
+  'content:delete': 'Eliminar contenido',
+
+  // Media
+  'media:read': 'Leer archivos',
+  'media:write': 'Subir archivos',
+  'media:delete': 'Eliminar archivos',
+
+  // Usuarios
+  'users:read': 'Leer usuarios',
+  'users:write': 'Modificar usuarios',
+
+  // Settings
+  'settings:read': 'Leer configuración',
+  'settings:write': 'Modificar configuración',
+
+  // Network
+  'network:external': 'Hacer peticiones HTTP externas',
+
+  // Database
+  'database:read': 'Consultas SELECT',
+  'database:write': 'Consultas INSERT/UPDATE/DELETE',
+
+  // System
+  'system:shell': 'Ejecutar comandos shell (muy peligroso)',
+  'system:files': 'Acceso al sistema de archivos'
+};
+```
+
+##### Validación de Permisos
+
+```typescript
+// src/lib/plugin-system/SecurityManager.ts
+
+class PluginSecurityManager {
+  validatePermission(plugin: Plugin, permission: string): boolean {
+    if (!plugin.manifest.permissions.includes(permission)) {
+      throw new Error(
+        `Plugin "${plugin.name}" does not have permission: ${permission}`
+      );
+    }
+    return true;
+  }
+
+  sandboxQuery(plugin: Plugin, sql: string) {
+    // Validar que solo haga queries permitidas
+    this.validatePermission(plugin, 'database:write');
+
+    // Prevenir SQL injection y queries peligrosas
+    const forbidden = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE TABLE'];
+    const upperSQL = sql.toUpperCase();
+
+    for (const keyword of forbidden) {
+      if (upperSQL.includes(keyword)) {
+        throw new Error(`Forbidden SQL keyword: ${keyword}`);
+      }
+    }
+
+    return sql;
+  }
+
+  sandboxFetch(plugin: Plugin, url: string) {
+    this.validatePermission(plugin, 'network:external');
+
+    // Prevenir SSRF (Server-Side Request Forgery)
+    const parsed = new URL(url);
+    const forbidden = ['localhost', '127.0.0.1', '0.0.0.0'];
+
+    if (forbidden.includes(parsed.hostname)) {
+      throw new Error('Forbidden hostname');
+    }
+
+    return url;
+  }
+}
+```
+
+##### Code Signing
+
+```typescript
+// Verificar firma digital de plugins
+interface PluginSignature {
+  signature: string;
+  publicKey: string;
+  algorithm: 'RSA-SHA256';
+}
+
+async function verifyPluginSignature(
+  pluginPath: string,
+  signature: PluginSignature
+): Promise<boolean> {
+  // Verificar que el código no ha sido modificado
+  const publicKey = await crypto.subtle.importKey(
+    'spki',
+    base64Decode(signature.publicKey),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+
+  const pluginCode = await Deno.readFile(pluginPath);
+  const signatureBytes = base64Decode(signature.signature);
+
+  return await crypto.subtle.verify(
+    'RSASSA-PKCS1-v1_5',
+    publicKey,
+    signatureBytes,
+    pluginCode
+  );
+}
+```
+
+---
+
+#### 📦 Plugin Marketplace
+
+##### Marketplace Features
+
+1. **Plugin Registry:**
+   - Búsqueda y filtrado de plugins
+   - Ratings y reviews
+   - Estadísticas de instalación
+   - Trending plugins
+
+2. **Categorías:**
+   - CDN & Media
+   - Analytics & Tracking
+   - SEO & Marketing
+   - Security
+   - Social Media
+   - E-commerce
+   - AI & ML
+   - Developer Tools
+
+3. **Calidad y Seguridad:**
+   - Code review automático
+   - Security scanning
+   - Performance benchmarks
+   - Compatibility testing
+   - Verified developers badge
+
+##### API del Marketplace
+
+```typescript
+// GET https://marketplace.lexcms.com/api/plugins
+{
+  "plugins": [
+    {
+      "id": "cdn-cloudflare",
+      "name": "Cloudflare CDN",
+      "version": "1.2.0",
+      "author": "LexCMS Team",
+      "downloads": 15420,
+      "rating": 4.8,
+      "verified": true,
+      "categories": ["cdn", "media"],
+      "price": "free",
+      "homepage": "https://github.com/lexcms/plugin-cdn-cloudflare"
+    }
+  ]
+}
+
+// GET https://marketplace.lexcms.com/api/plugins/:id
+{
+  "id": "cdn-cloudflare",
+  "readme": "...",
+  "changelog": "...",
+  "screenshots": [...],
+  "reviews": [...],
+  "compatibleVersions": ["^1.0.0"]
+}
+```
+
+---
+
+#### 📚 Documentación para Desarrolladores
+
+##### Plugin Developer Guide
+
+```markdown
+# Developing LexCMS Plugins
+
+## Quick Start
+
+1. Create plugin structure:
+   ```bash
+   deno task plugin:create my-awesome-plugin
+   ```
+
+2. Edit `plugin.json` with your metadata
+
+3. Implement `index.ts`:
+   ```typescript
+   export default class MyPlugin {
+     constructor(api: PluginAPI) {}
+
+     async onActivate() {
+       // Register hooks here
+     }
+
+     async onDeactivate() {
+       // Cleanup
+     }
+   }
+   ```
+
+4. Test locally:
+   ```bash
+   deno task plugin:dev my-awesome-plugin
+   ```
+
+5. Publish:
+   ```bash
+   deno task plugin:publish
+   ```
+
+## Best Practices
+
+- ✅ Always validate user input
+- ✅ Handle errors gracefully
+- ✅ Use semantic versioning
+- ✅ Document all hooks and filters
+- ✅ Write unit tests
+- ✅ Keep plugins focused (single responsibility)
+- ❌ Never access database directly without permissions
+- ❌ Never execute arbitrary code from user input
+```
+
+---
+
+#### 🎯 Casos de Uso - Plugins Sugeridos
+
+1. **CDN Providers:**
+   - Cloudflare
+   - AWS CloudFront
+   - BunnyCDN
+   - Fastly
+
+2. **CAPTCHA Providers:**
+   - hCaptcha
+   - Cloudflare Turnstile
+   - FriendlyCaptcha
+   - Altcha
+
+3. **Email Providers:**
+   - SendGrid
+   - Mailgun
+   - Resend
+   - Amazon SES
+   - Postmark
+
+4. **Storage Providers:**
+   - AWS S3
+   - Google Cloud Storage
+   - Azure Blob Storage
+   - Backblaze B2
+
+5. **Analytics:**
+   - Google Analytics 4
+   - Plausible Analytics
+   - Matomo
+   - Umami
+   - Fathom
+
+6. **SEO Tools:**
+   - Yoast SEO (clone)
+   - Schema.org generator
+   - Sitemap enhancer
+   - Redirect manager
+
+7. **Social Integration:**
+   - Auto-posting a Twitter/X
+   - Facebook sharing
+   - LinkedIn integration
+   - Discord webhooks
+
+8. **E-commerce:**
+   - Stripe payments
+   - PayPal integration
+   - WooCommerce-like functionality
+   - Digital downloads
+
+9. **AI & ML:**
+   - OpenAI content generation
+   - Automatic tagging
+   - Content summarization
+   - Translation services
+
+10. **Developer Tools:**
+    - API documentation generator
+    - GraphQL endpoint
+    - Webhook manager
+    - Custom post types generator
+
+---
+
+#### 🚀 Implementación Técnica
+
+##### Phase 1: Core Plugin System (Semanas 1-2)
+- ✅ Plugin manifest parser
+- ✅ Plugin loader
+- ✅ Hook/Filter system
+- ✅ Permission system
+- ✅ PluginAPI básica
+
+##### Phase 2: Security & Sandboxing (Semanas 3-4)
+- ✅ Permission validation
+- ✅ SQL query sanitization
+- ✅ Network request validation
+- ✅ Code signing
+- ✅ Audit logging
+
+##### Phase 3: Admin UI (Semanas 5-6)
+- ✅ Plugin manager interface
+- ✅ Install/Activate/Deactivate flows
+- ✅ Settings pages
+- ✅ Plugin search and filtering
+
+##### Phase 4: Marketplace (Semanas 7-8)
+- ✅ Marketplace API
+- ✅ Plugin submission system
+- ✅ Review and rating system
+- ✅ Automatic security scanning
+
+##### Phase 5: Developer Tools (Semanas 9-10)
+- ✅ CLI tool
+- ✅ Plugin template generator
+- ✅ Documentation
+- ✅ Testing framework
+- ✅ Example plugins
+
+---
+
+#### 📊 Métricas de Éxito
+
+1. **Adoption:**
+   - 50+ plugins en marketplace (año 1)
+   - 10,000+ instalaciones totales
+   - 100+ desarrolladores activos
+
+2. **Performance:**
+   - <5ms overhead por hook
+   - Plugin activation <500ms
+   - No memory leaks
+
+3. **Security:**
+   - 0 vulnerabilidades críticas
+   - 100% de plugins verificados
+   - Automatic security updates
+
+4. **Developer Experience:**
+   - <30 min para crear primer plugin
+   - 90%+ satisfacción de desarrolladores
+   - Comprehensive documentation
+
+---
+
+**Estimación Total:** 8-10 semanas
+
+**Prioridad:** Alta (Q4 2025 según roadmap)
+
+**Dependencias:** Ninguna (sistema independiente)
+
+**Impacto:** 🔥 **ALTO** - Transforma LexCMS en plataforma extensible
 
 ---
 
