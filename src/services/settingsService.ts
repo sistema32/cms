@@ -2,11 +2,10 @@ import { db } from "../config/db.ts";
 import { settings, type NewSetting, type Setting } from "../db/schema.ts";
 import { eq, sql } from "drizzle-orm";
 import { SETTINGS_CATEGORY_KEY_MAP, SETTINGS_FIELD_MAP, resolveFieldDefault } from "../config/settingsDefinitions.ts";
+import { getCache, CacheKeys, CacheTags, CacheTTL } from "../lib/cache/index.ts";
 
-// ============= CACHE AUTOLOAD (WordPress-style) =============
+// ============= CACHE AUTOLOAD (WordPress-style with centralized cache) =============
 
-// Cache para settings con autoload=true (optimización de performance)
-const autoloadCache = new Map<string, any>();
 let cacheInitialized = false;
 
 /**
@@ -16,16 +15,26 @@ let cacheInitialized = false;
 async function initializeCache() {
   if (cacheInitialized) return;
 
-  const autoloadSettings = await db.query.settings.findMany({
-    where: eq(settings.autoload, true),
-  });
+  try {
+    const cache = getCache();
+    const autoloadSettings = await db.query.settings.findMany({
+      where: eq(settings.autoload, true),
+    });
 
-  for (const setting of autoloadSettings) {
-    autoloadCache.set(setting.key, parseSettingValue(setting.value));
+    for (const setting of autoloadSettings) {
+      const value = parseSettingValue(setting.value);
+      await cache.set(CacheKeys.setting(setting.key), value, {
+        ttl: CacheTTL.DAY, // Settings cache for 24 hours
+        tags: [CacheTags.SETTING],
+      });
+    }
+
+    cacheInitialized = true;
+    console.log(`✅ Settings cache initialized with ${autoloadSettings.length} autoload settings`);
+  } catch (error) {
+    console.warn("⚠️ Failed to initialize settings cache:", error);
+    // Continue without cache
   }
-
-  cacheInitialized = true;
-  console.log(`✅ Settings cache initialized with ${autoloadCache.size} autoload settings`);
 }
 
 /**
@@ -72,28 +81,50 @@ export async function getSetting<T = any>(
 ): Promise<T> {
   await initializeCache();
 
-  // Verificar cache primero
-  if (autoloadCache.has(key)) {
-    return autoloadCache.get(key) as T;
+  try {
+    const cache = getCache();
+    const cacheKey = CacheKeys.setting(key);
+
+    // Verificar cache primero
+    const cachedValue = await cache.get<T>(cacheKey);
+    if (cachedValue !== null) {
+      return cachedValue;
+    }
+
+    // No está en cache, buscar en BD
+    const setting = await db.query.settings.findFirst({
+      where: eq(settings.key, key),
+    });
+
+    if (!setting) {
+      return defaultValue as T;
+    }
+
+    const value = parseSettingValue(setting.value);
+
+    // Si es autoload, guardar en cache para próxima vez
+    if (setting.autoload) {
+      await cache.set(cacheKey, value, {
+        ttl: CacheTTL.DAY,
+        tags: [CacheTags.SETTING],
+      });
+    }
+
+    return value as T;
+  } catch (error) {
+    console.warn("⚠️ Cache error in getSetting, falling back to DB:", error);
+
+    // Fallback: consultar directamente a BD
+    const setting = await db.query.settings.findFirst({
+      where: eq(settings.key, key),
+    });
+
+    if (!setting) {
+      return defaultValue as T;
+    }
+
+    return parseSettingValue(setting.value) as T;
   }
-
-  // No está en cache, buscar en BD
-  const setting = await db.query.settings.findFirst({
-    where: eq(settings.key, key),
-  });
-
-  if (!setting) {
-    return defaultValue as T;
-  }
-
-  const value = parseSettingValue(setting.value);
-
-  // Si es autoload, guardar en cache para próxima vez
-  if (setting.autoload) {
-    autoloadCache.set(key, value);
-  }
-
-  return value as T;
 }
 
 /**
@@ -172,10 +203,24 @@ export async function updateSetting(
     });
 
   // Actualizar cache
-  if (autoload) {
-    autoloadCache.set(key, value);
-  } else {
-    autoloadCache.delete(key);
+  try {
+    const cache = getCache();
+    const cacheKey = CacheKeys.setting(key);
+
+    if (autoload) {
+      await cache.set(cacheKey, value, {
+        ttl: CacheTTL.DAY,
+        tags: [CacheTags.SETTING],
+      });
+    } else {
+      await cache.delete(cacheKey);
+    }
+
+    // Invalidate settings list cache
+    await cache.delete(CacheKeys.settingsList());
+  } catch (error) {
+    console.warn("⚠️ Cache error in updateSetting:", error);
+    // Continue - cache is optional
   }
 }
 
@@ -211,8 +256,20 @@ export async function createSetting(
     .returning();
 
   // Agregar a cache si es autoload
-  if (autoload) {
-    autoloadCache.set(key, value);
+  try {
+    const cache = getCache();
+    if (autoload) {
+      await cache.set(CacheKeys.setting(key), value, {
+        ttl: CacheTTL.DAY,
+        tags: [CacheTags.SETTING],
+      });
+    }
+
+    // Invalidate settings list cache
+    await cache.delete(CacheKeys.settingsList());
+  } catch (error) {
+    console.warn("⚠️ Cache error in createSetting:", error);
+    // Continue - cache is optional
   }
 
   return newSetting;
@@ -227,7 +284,14 @@ export async function deleteSetting(key: string): Promise<void> {
   await db.delete(settings).where(eq(settings.key, key));
 
   // Remover de cache
-  autoloadCache.delete(key);
+  try {
+    const cache = getCache();
+    await cache.delete(CacheKeys.setting(key));
+    await cache.delete(CacheKeys.settingsList());
+  } catch (error) {
+    console.warn("⚠️ Cache error in deleteSetting:", error);
+    // Continue - cache is optional
+  }
 }
 
 // ============= CACHE MANAGEMENT =============
@@ -235,29 +299,42 @@ export async function deleteSetting(key: string): Promise<void> {
 /**
  * Limpiar cache completo (útil para testing o reload)
  */
-export function clearSettingsCache(): void {
-  autoloadCache.clear();
-  cacheInitialized = false;
-  console.log("🗑️  Settings cache cleared");
+export async function clearSettingsCache(): Promise<void> {
+  try {
+    const cache = getCache();
+    await cache.deleteByTag(CacheTags.SETTING);
+    cacheInitialized = false;
+    console.log("🗑️  Settings cache cleared");
+  } catch (error) {
+    console.warn("⚠️ Failed to clear settings cache:", error);
+  }
 }
 
 /**
  * Refrescar cache (recargar desde BD)
  */
 export async function refreshSettingsCache(): Promise<void> {
-  clearSettingsCache();
+  await clearSettingsCache();
   await initializeCache();
 }
 
 /**
  * Obtener estado del cache (para debugging)
  */
-export function getCacheStats() {
-  return {
-    initialized: cacheInitialized,
-    size: autoloadCache.size,
-    keys: Array.from(autoloadCache.keys()),
-  };
+export async function getCacheStats() {
+  try {
+    const cache = getCache();
+    const stats = await cache.getStats();
+    return {
+      initialized: cacheInitialized,
+      ...stats,
+    };
+  } catch (error) {
+    return {
+      initialized: cacheInitialized,
+      error: "Cache not available",
+    };
+  }
 }
 
 // ============= HELPERS ESPECÍFICOS =============

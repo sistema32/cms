@@ -50,6 +50,17 @@ const envSchema = z.object({
   HCAPTCHA_SECRET_KEY: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
   CAPTCHA_PROVIDER: z.enum(["recaptcha", "hcaptcha", "turnstile"]).optional(),
+  // Cache configuration
+  REDIS_ENABLED: z.string()
+    .transform((val) => val === "true")
+    .default("false"),
+  REDIS_HOST: z.string().default("localhost"),
+  REDIS_PORT: z.string().default("6379"),
+  REDIS_PASSWORD: z.string().optional(),
+  REDIS_DB: z.string().default("0"),
+  REDIS_KEY_PREFIX: z.string().default("lexcms:"),
+  CACHE_MEMORY_MAX_SIZE: z.string().default("10000"),
+  CACHE_MEMORY_CLEANUP_INTERVAL: z.string().default("60000"),
 });
 
 // Validar y exportar
@@ -68,6 +79,14 @@ export const env = envSchema.parse({
   HCAPTCHA_SECRET_KEY: Deno.env.get("HCAPTCHA_SECRET_KEY"),
   TURNSTILE_SECRET_KEY: Deno.env.get("TURNSTILE_SECRET_KEY"),
   CAPTCHA_PROVIDER: Deno.env.get("CAPTCHA_PROVIDER"),
+  REDIS_ENABLED: Deno.env.get("REDIS_ENABLED"),
+  REDIS_HOST: Deno.env.get("REDIS_HOST"),
+  REDIS_PORT: Deno.env.get("REDIS_PORT"),
+  REDIS_PASSWORD: Deno.env.get("REDIS_PASSWORD"),
+  REDIS_DB: Deno.env.get("REDIS_DB"),
+  REDIS_KEY_PREFIX: Deno.env.get("REDIS_KEY_PREFIX"),
+  CACHE_MEMORY_MAX_SIZE: Deno.env.get("CACHE_MEMORY_MAX_SIZE"),
+  CACHE_MEMORY_CLEANUP_INTERVAL: Deno.env.get("CACHE_MEMORY_CLEANUP_INTERVAL"),
 });
 
 export const isDevelopment = env.DENO_ENV === "development";
