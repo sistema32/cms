@@ -445,6 +445,36 @@ export const pluginHooks = sqliteTable("plugin_hooks", {
   priority: integer("priority").notNull().default(10),
 });
 
+// ============= AUDIT LOGS =============
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  // Who performed the action
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  userEmail: text("user_email"), // Store email in case user is deleted
+
+  // What action was performed
+  action: text("action").notNull(), // create, update, delete, login, logout, etc.
+  entity: text("entity").notNull(), // user, content, plugin, setting, etc.
+  entityId: text("entity_id"), // ID of the affected entity
+
+  // Details
+  description: text("description"), // Human-readable description
+  changes: text("changes"), // JSON with before/after values
+  metadata: text("metadata"), // JSON with additional context
+
+  // Request context
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+
+  // Severity level
+  level: text("level").notNull().default("info"), // debug, info, warning, error, critical
+
+  // Timestamp
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // ============= RELATIONS =============
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -686,6 +716,13 @@ export const pluginHooksRelations = relations(pluginHooks, ({ one }) => ({
   }),
 }));
 
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [auditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -762,3 +799,6 @@ export type NewPlugin = typeof plugins.$inferInsert;
 
 export type PluginHook = typeof pluginHooks.$inferSelect;
 export type NewPluginHook = typeof pluginHooks.$inferInsert;
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

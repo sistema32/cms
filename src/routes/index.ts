@@ -18,6 +18,7 @@ import seoRoutes from "./seo.ts";
 import settingsRoutes from "./settings.ts";
 import pluginRoutes from "./plugins.ts";
 import cacheRoutes from "./cache.ts";
+import auditRoutes from "./audit.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -37,7 +38,8 @@ export function registerRoutes(app: Hono) {
     settings: "enabled",
     themes: "enabled",
     plugins: "enabled",
-    cache: "enabled"
+    cache: "enabled",
+    audit: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -84,6 +86,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Cache
   app.route("/api/cache", cacheRoutes);
+
+  // Registrar rutas de Audit
+  app.route("/api/audit", auditRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
