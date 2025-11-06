@@ -28,11 +28,12 @@ interface PluginsPageProps {
   availablePlugins: string[];
   stats: PluginStats;
   selectedPlugin?: Plugin;
+  currentTab?: "installed" | "available";
 }
 
 export const PluginsPage = (props: PluginsPageProps) => {
-  const { user, installedPlugins, availablePlugins, stats, selectedPlugin } =
-    props;
+  const { user, installedPlugins, availablePlugins, stats, currentTab = "installed" } = props;
+  const basePath = "/admincp/plugins";
 
   return AdminLayout({
     title: "Plugins",
@@ -52,7 +53,7 @@ export const PluginsPage = (props: PluginsPageProps) => {
             </p>
           </div>
           <button
-            onclick="refreshPlugins()"
+            onclick="window.location.reload()"
             class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2"
           >
             <svg
@@ -104,101 +105,28 @@ export const PluginsPage = (props: PluginsPageProps) => {
         <div class="border-b border-gray-200 dark:border-gray-700">
           <nav class="-mb-px flex space-x-8">
             <a
-              href="#installed"
-              onclick="showTab('installed'); return false;"
-              id="tab-installed"
-              class="tab-link active border-purple-500 text-purple-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+              href="${basePath}"
+              class="${currentTab === "installed"
+                ? "border-purple-500 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
               Instalados (${stats.total})
             </a>
             <a
-              href="#available"
-              onclick="showTab('available'); return false;"
-              id="tab-available"
-              class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+              href="${basePath}/available"
+              class="${currentTab === "available"
+                ? "border-purple-500 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
             >
               Disponibles (${stats.available})
             </a>
           </nav>
         </div>
 
-        <!-- Installed Plugins Tab -->
-        <div id="content-installed" class="tab-content">
-          ${installedPlugins.length === 0
-            ? html`
-                <div
-                  class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-                >
-                  <svg
-                    class="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                    ></path>
-                  </svg>
-                  <h3
-                    class="mt-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    No hay plugins instalados
-                  </h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Instala plugins desde la pestaña "Disponibles"
-                  </p>
-                </div>
-              `
-            : html`
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  ${installedPlugins.map((plugin) =>
-                    renderInstalledPluginCard(plugin),
-                  )}
-                </div>
-              `}
-        </div>
-
-        <!-- Available Plugins Tab -->
-        <div id="content-available" class="tab-content hidden">
-          ${availablePlugins.length === 0
-            ? html`
-                <div
-                  class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-                >
-                  <svg
-                    class="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <h3
-                    class="mt-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Todos los plugins están instalados
-                  </h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    No hay plugins disponibles para instalar
-                  </p>
-                </div>
-              `
-            : html`
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  ${availablePlugins.map((pluginName) =>
-                    renderAvailablePluginCard(pluginName),
-                  )}
-                </div>
-              `}
-        </div>
+        <!-- Content -->
+        ${currentTab === "installed"
+          ? renderInstalledTab(installedPlugins)
+          : renderAvailableTab(availablePlugins)}
       </div>
 
       <!-- Settings Modal -->
@@ -243,28 +171,6 @@ export const PluginsPage = (props: PluginsPageProps) => {
       </div>
 
       <script>
-        // Tab switching
-        function showTab(tabName) {
-          // Hide all tabs
-          document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.add('hidden');
-          });
-
-          // Remove active class from all tab links
-          document.querySelectorAll('.tab-link').forEach(link => {
-            link.classList.remove('active', 'border-purple-500', 'text-purple-600');
-            link.classList.add('border-transparent', 'text-gray-500');
-          });
-
-          // Show selected tab
-          document.getElementById('content-' + tabName).classList.remove('hidden');
-
-          // Add active class to selected tab link
-          const activeTab = document.getElementById('tab-' + tabName);
-          activeTab.classList.add('active', 'border-purple-500', 'text-purple-600');
-          activeTab.classList.remove('border-transparent', 'text-gray-500');
-        }
-
         // Plugin actions
         async function activatePlugin(pluginName) {
           if (!confirm('¿Activar el plugin "' + pluginName + '"?')) return;
@@ -323,9 +229,10 @@ export const PluginsPage = (props: PluginsPageProps) => {
           }
         }
 
-        async function installPlugin(pluginName, activate = false) {
+        async function installPlugin(pluginName, activate) {
           const action = activate ? 'instalar y activar' : 'instalar';
-          if (!confirm('¿' + action.charAt(0).toUpperCase() + action.slice(1) + ' el plugin "' + pluginName + '"?')) return;
+          const actionCap = action.charAt(0).toUpperCase() + action.slice(1);
+          if (!confirm(actionCap + ' el plugin "' + pluginName + '"?')) return;
 
           try {
             const response = await fetch('/api/plugins/' + pluginName + '/install', {
@@ -333,7 +240,7 @@ export const PluginsPage = (props: PluginsPageProps) => {
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ activate })
+              body: JSON.stringify({ activate: activate })
             });
 
             if (response.ok) {
@@ -352,8 +259,8 @@ export const PluginsPage = (props: PluginsPageProps) => {
             const response = await fetch('/api/plugins/' + pluginName + '/settings');
 
             if (response.ok) {
-              const settings = await response.json();
-              showSettingsModal(pluginName, settings);
+              const data = await response.json();
+              showSettingsModal(pluginName, data.data || {});
             } else {
               alert('No se pudo cargar la configuración del plugin');
             }
@@ -365,29 +272,30 @@ export const PluginsPage = (props: PluginsPageProps) => {
         function showSettingsModal(pluginName, settings) {
           document.getElementById('modalTitle').textContent = 'Configuración: ' + pluginName;
 
-          let html = '<form onsubmit="saveSettings(event, \'' + pluginName + '\')" class="space-y-4">';
+          let htmlContent = '<form class="space-y-4" id="settingsForm">';
 
           if (Object.keys(settings).length === 0) {
-            html += '<p class="text-gray-600 dark:text-gray-400">Este plugin no tiene configuración disponible.</p>';
+            htmlContent += '<p class="text-gray-600 dark:text-gray-400">Este plugin no tiene configuración disponible.</p>';
           } else {
-            for (const [key, value] of Object.entries(settings)) {
-              html += '<div>';
-              html += '<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">' + key + '</label>';
-              html += '<input type="text" name="' + key + '" value="' + (value || '') + '" ';
-              html += 'class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" />';
-              html += '</div>';
+            for (const key in settings) {
+              const value = settings[key];
+              htmlContent += '<div>';
+              htmlContent += '<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">' + key + '</label>';
+              htmlContent += '<input type="text" name="' + key + '" value="' + (value || '') + '" ';
+              htmlContent += 'class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" />';
+              htmlContent += '</div>';
             }
           }
 
-          html += '<div class="flex justify-end gap-2 pt-4">';
-          html += '<button type="button" onclick="closeSettingsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>';
+          htmlContent += '<div class="flex justify-end gap-2 pt-4">';
+          htmlContent += '<button type="button" onclick="closeSettingsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>';
           if (Object.keys(settings).length > 0) {
-            html += '<button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">Guardar</button>';
+            htmlContent += '<button type="button" onclick="saveSettings(\\''+pluginName+'\\')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">Guardar</button>';
           }
-          html += '</div>';
-          html += '</form>';
+          htmlContent += '</div>';
+          htmlContent += '</form>';
 
-          document.getElementById('modalContent').innerHTML = html;
+          document.getElementById('modalContent').innerHTML = htmlContent;
           document.getElementById('settingsModal').classList.remove('hidden');
         }
 
@@ -395,14 +303,13 @@ export const PluginsPage = (props: PluginsPageProps) => {
           document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        async function saveSettings(event, pluginName) {
-          event.preventDefault();
-
-          const formData = new FormData(event.target);
+        async function saveSettings(pluginName) {
+          const form = document.getElementById('settingsForm');
+          const formData = new FormData(form);
           const settings = {};
 
-          for (const [key, value] of formData.entries()) {
-            settings[key] = value;
+          for (const pair of formData.entries()) {
+            settings[pair[0]] = pair[1];
           }
 
           try {
@@ -411,7 +318,7 @@ export const PluginsPage = (props: PluginsPageProps) => {
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify(settings)
+              body: JSON.stringify({ settings: settings })
             });
 
             if (response.ok) {
@@ -425,14 +332,84 @@ export const PluginsPage = (props: PluginsPageProps) => {
             alert('Error: ' + error.message);
           }
         }
-
-        function refreshPlugins() {
-          window.location.reload();
-        }
       </script>
     `,
   });
 };
+
+function renderInstalledTab(installedPlugins: Plugin[]) {
+  if (installedPlugins.length === 0) {
+    return html`
+      <div
+        class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        <svg
+          class="mx-auto h-12 w-12 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+          ></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+          No hay plugins instalados
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Instala plugins desde la pestaña "Disponibles"
+        </p>
+      </div>
+    `;
+  }
+
+  return html`
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${installedPlugins.map((plugin) => renderInstalledPluginCard(plugin))}
+    </div>
+  `;
+}
+
+function renderAvailableTab(availablePlugins: string[]) {
+  if (availablePlugins.length === 0) {
+    return html`
+      <div
+        class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      >
+        <svg
+          class="mx-auto h-12 w-12 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+          Todos los plugins están instalados
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          No hay plugins disponibles para instalar
+        </p>
+      </div>
+    `;
+  }
+
+  return html`
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${availablePlugins.map((pluginName) =>
+        renderAvailablePluginCard(pluginName),
+      )}
+    </div>
+  `;
+}
 
 function renderStatCard(
   label: string,

@@ -2766,6 +2766,70 @@ adminRouter.get("/plugins", async (c) => {
         installedPlugins: detailedPlugins as any[],
         availablePlugins,
         stats,
+        currentTab: "installed",
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading plugins page:", error);
+    return c.text("Error al cargar plugins", 500);
+  }
+});
+
+/**
+ * GET /plugins/available - Available plugins page
+ */
+adminRouter.get("/plugins/available", async (c) => {
+  try {
+    const user = c.get("user");
+
+    const [installedPlugins, availablePlugins, stats] = await Promise.all([
+      pluginService.getAllPlugins(),
+      pluginService.getAvailablePlugins(),
+      pluginService.getPluginStats(),
+    ]);
+
+    // Map installed plugins to the format expected by the page
+    const formattedInstalledPlugins = installedPlugins.map((plugin) => ({
+      id: plugin.id,
+      name: plugin.name,
+      version: plugin.version,
+      displayName: plugin.name,
+      description: undefined,
+      author: undefined,
+      status: plugin.isActive ? "active" : "inactive",
+      isInstalled: true,
+    }));
+
+    // Load plugin details for installed plugins
+    const detailedPlugins = await Promise.all(
+      formattedInstalledPlugins.map(async (plugin) => {
+        try {
+          const details = await pluginService.getPluginDetails(plugin.name);
+          if (details && details.manifest) {
+            return {
+              ...plugin,
+              displayName: details.manifest.displayName || plugin.name,
+              description: details.manifest.description,
+              author: details.manifest.author,
+            };
+          }
+        } catch (error) {
+          console.error(`Error loading details for ${plugin.name}:`, error);
+        }
+        return plugin;
+      }),
+    );
+
+    return c.html(
+      PluginsPage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        installedPlugins: detailedPlugins as any[],
+        availablePlugins,
+        stats,
+        currentTab: "available",
       }),
     );
   } catch (error: any) {
