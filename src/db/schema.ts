@@ -973,6 +973,30 @@ export const securityEventsRelations = relations(securityEvents, ({ one }) => ({
   }),
 }));
 
+// ============= API KEYS =============
+
+// API Keys for public REST API access
+export const apiKeys = sqliteTable("api_keys", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  key: text("key").notNull().unique(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permissions: text("permissions").notNull(), // JSON array of permission strings
+  rateLimit: integer("rate_limit"), // Requests per hour
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -1079,3 +1103,6 @@ export type NewIPBlockRule = typeof ipBlockRules.$inferInsert;
 
 export type SecurityEvent = typeof securityEvents.$inferSelect;
 export type NewSecurityEvent = typeof securityEvents.$inferInsert;
+
+export type APIKey = typeof apiKeys.$inferSelect;
+export type NewAPIKey = typeof apiKeys.$inferInsert;
