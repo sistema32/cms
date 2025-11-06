@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
 	`is_system` integer DEFAULT false NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `permissions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
 	`description` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `role_permissions` (
 	`role_id` integer NOT NULL,
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
 	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- Core: Users
 CREATE TABLE IF NOT EXISTS `users` (
@@ -51,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE no action
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `user_2fa` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -62,6 +66,7 @@ CREATE TABLE IF NOT EXISTS `user_2fa` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- Content Types and Taxonomy
 CREATE TABLE IF NOT EXISTS `content_types` (
@@ -77,6 +82,7 @@ CREATE TABLE IF NOT EXISTS `content_types` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `categories` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -93,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `categories` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_type_id`) REFERENCES `content_types`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `tags` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -102,6 +109,7 @@ CREATE TABLE IF NOT EXISTS `tags` (
 	`color` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 -- Media
 CREATE TABLE IF NOT EXISTS `media_folders` (
@@ -114,6 +122,7 @@ CREATE TABLE IF NOT EXISTS `media_folders` (
   `updated_at` integer,
   FOREIGN KEY (`parent_id`) REFERENCES `media_folders`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `media` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -137,6 +146,7 @@ CREATE TABLE IF NOT EXISTS `media` (
 	FOREIGN KEY (`uploaded_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`folder_id`) REFERENCES `media_folders`(`id`) ON UPDATE no action ON DELETE set null
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `media_sizes` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -150,6 +160,7 @@ CREATE TABLE IF NOT EXISTS `media_sizes` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`media_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `media_seo` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -165,6 +176,7 @@ CREATE TABLE IF NOT EXISTS `media_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`media_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- Content
 CREATE TABLE IF NOT EXISTS `content` (
@@ -195,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `content` (
 	FOREIGN KEY (`featured_image_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_categories` (
 	`content_id` integer NOT NULL,
@@ -203,6 +216,7 @@ CREATE TABLE IF NOT EXISTS `content_categories` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_tags` (
 	`content_id` integer NOT NULL,
@@ -211,6 +225,7 @@ CREATE TABLE IF NOT EXISTS `content_tags` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_meta` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -221,6 +236,7 @@ CREATE TABLE IF NOT EXISTS `content_meta` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_revisions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -242,6 +258,7 @@ CREATE TABLE IF NOT EXISTS `content_revisions` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_filters` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -256,6 +273,7 @@ CREATE TABLE IF NOT EXISTS `content_filters` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- SEO
 CREATE TABLE IF NOT EXISTS `content_seo` (
@@ -280,6 +298,7 @@ CREATE TABLE IF NOT EXISTS `content_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `category_seo` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -303,6 +322,7 @@ CREATE TABLE IF NOT EXISTS `category_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- Comments
 CREATE TABLE IF NOT EXISTS `comments` (
@@ -326,6 +346,7 @@ CREATE TABLE IF NOT EXISTS `comments` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
+--> statement-breakpoint
 
 -- Menus
 CREATE TABLE IF NOT EXISTS `menus` (
@@ -337,6 +358,7 @@ CREATE TABLE IF NOT EXISTS `menus` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `menu_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -361,6 +383,7 @@ CREATE TABLE IF NOT EXISTS `menu_items` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON UPDATE no action ON DELETE set null
 );
+--> statement-breakpoint
 
 -- Settings
 CREATE TABLE IF NOT EXISTS `settings` (
@@ -372,6 +395,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 -- Plugins
 CREATE TABLE IF NOT EXISTS `plugins` (
@@ -383,6 +407,7 @@ CREATE TABLE IF NOT EXISTS `plugins` (
 	`installed_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `plugin_hooks` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -391,6 +416,7 @@ CREATE TABLE IF NOT EXISTS `plugin_hooks` (
 	`priority` integer DEFAULT 10 NOT NULL,
 	FOREIGN KEY (`plugin_id`) REFERENCES `plugins`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
 
 -- Audit Logs
 CREATE TABLE IF NOT EXISTS `audit_logs` (
@@ -409,6 +435,7 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE SET NULL
 );
+--> statement-breakpoint
 
 -- Webhooks
 CREATE TABLE IF NOT EXISTS `webhooks` (
@@ -431,6 +458,7 @@ CREATE TABLE IF NOT EXISTS `webhooks` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `webhook_deliveries` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -449,6 +477,7 @@ CREATE TABLE IF NOT EXISTS `webhook_deliveries` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`webhook_id`) REFERENCES `webhooks`(`id`) ON UPDATE no action ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 -- Email and Notifications
 CREATE TABLE IF NOT EXISTS `email_queue` (
@@ -474,6 +503,7 @@ CREATE TABLE IF NOT EXISTS `email_queue` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `email_templates` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -488,6 +518,7 @@ CREATE TABLE IF NOT EXISTS `email_templates` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -509,6 +540,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -524,6 +556,7 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 -- Backups
 CREATE TABLE IF NOT EXISTS `backups` (
@@ -546,6 +579,7 @@ CREATE TABLE IF NOT EXISTS `backups` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
+--> statement-breakpoint
 
 -- Security
 CREATE TABLE IF NOT EXISTS `ip_block_rules` (
@@ -558,6 +592,7 @@ CREATE TABLE IF NOT EXISTS `ip_block_rules` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `security_events` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -572,6 +607,7 @@ CREATE TABLE IF NOT EXISTS `security_events` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
+--> statement-breakpoint
 
 -- API Keys
 CREATE TABLE IF NOT EXISTS `api_keys` (
@@ -588,6 +624,7 @@ CREATE TABLE IF NOT EXISTS `api_keys` (
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 -- Background Jobs
 CREATE TABLE IF NOT EXISTS `jobs` (
@@ -608,6 +645,7 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -621,6 +659,7 @@ CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
+--> statement-breakpoint
 
 -- I18N
 CREATE TABLE IF NOT EXISTS `languages` (
@@ -632,6 +671,7 @@ CREATE TABLE IF NOT EXISTS `languages` (
   `is_active` integer DEFAULT 1 NOT NULL,
   `created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_translations` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -649,6 +689,7 @@ CREATE TABLE IF NOT EXISTS `content_translations` (
   FOREIGN KEY (`language_code`) REFERENCES `languages`(`code`) ON DELETE CASCADE,
   UNIQUE(`content_id`, `language_code`)
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `category_translations` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -662,6 +703,7 @@ CREATE TABLE IF NOT EXISTS `category_translations` (
   FOREIGN KEY (`language_code`) REFERENCES `languages`(`code`) ON DELETE CASCADE,
   UNIQUE(`category_id`, `language_code`)
 );
+--> statement-breakpoint
 
 -- Workflows
 CREATE TABLE IF NOT EXISTS `workflows` (
@@ -673,6 +715,7 @@ CREATE TABLE IF NOT EXISTS `workflows` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`content_type_id`) REFERENCES `content_types`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_states` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -686,6 +729,7 @@ CREATE TABLE IF NOT EXISTS `workflow_states` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`workflow_id`) REFERENCES `workflows`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_transitions` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -701,6 +745,7 @@ CREATE TABLE IF NOT EXISTS `workflow_transitions` (
   FOREIGN KEY (`to_state_id`) REFERENCES `workflow_states`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`required_role_id`) REFERENCES `roles`(`id`) ON DELETE SET NULL
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_history` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -715,6 +760,7 @@ CREATE TABLE IF NOT EXISTS `workflow_history` (
   FOREIGN KEY (`to_state_id`) REFERENCES `workflow_states`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
+--> statement-breakpoint
 
 -- Forms
 CREATE TABLE IF NOT EXISTS `forms` (
@@ -731,6 +777,7 @@ CREATE TABLE IF NOT EXISTS `forms` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `form_submissions` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -744,6 +791,7 @@ CREATE TABLE IF NOT EXISTS `form_submissions` (
   FOREIGN KEY (`form_id`) REFERENCES `forms`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
+--> statement-breakpoint
 --> statement-breakpoint
 
 -- ============================================================================
@@ -920,6 +968,7 @@ VALUES (
   'Welcome email sent to new users after registration'
 );
 --> statement-breakpoint
+--> statement-breakpoint
 
 INSERT OR IGNORE INTO `email_templates` (`name`, `subject`, `text_template`, `html_template`, `variables`, `category`, `description`)
 VALUES (
@@ -931,6 +980,7 @@ VALUES (
   'auth',
   'Password reset email with secure link'
 );
+--> statement-breakpoint
 --> statement-breakpoint
 
 INSERT OR IGNORE INTO `email_templates` (`name`, `subject`, `text_template`, `html_template`, `variables`, `category`, `description`)
@@ -944,6 +994,7 @@ VALUES (
   'Notification sent when someone comments on user content'
 );
 --> statement-breakpoint
+--> statement-breakpoint
 
 INSERT OR IGNORE INTO `email_templates` (`name`, `subject`, `text_template`, `html_template`, `variables`, `category`, `description`)
 VALUES (
@@ -955,6 +1006,7 @@ VALUES (
   'notification',
   'Notification sent when someone replies to user comment'
 );
+--> statement-breakpoint
 --> statement-breakpoint
 
 INSERT OR IGNORE INTO languages (code, name, native_name, is_default, is_active) VALUES
