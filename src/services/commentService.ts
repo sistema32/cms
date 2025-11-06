@@ -5,6 +5,8 @@ import type { NewComment } from "../db/schema.ts";
 import { applyCensorship } from "./censorshipService.ts";
 import { sanitizeHTML, escapeHTML, sanitizeURL } from "../utils/sanitization.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
+import { notificationService } from "../lib/email/index.ts";
+import { env } from "../config/env.ts";
 
 /**
  * Interfaz para crear un comentario
@@ -182,6 +184,71 @@ export async function createComment(
     });
   } catch (error) {
     console.warn("Failed to dispatch comment.created webhook:", error);
+  }
+
+  // Create notifications
+  try {
+    const contentData = await db.query.content.findFirst({
+      where: eq(content.id, data.contentId),
+      columns: {
+        id: true,
+        title: true,
+        slug: true,
+        authorId: true,
+      },
+    });
+
+    if (contentData) {
+      // If this is a reply, notify the parent comment author
+      if (data.parentId) {
+        const parentComment = await db.query.comments.findFirst({
+          where: eq(comments.id, data.parentId),
+          columns: {
+            authorId: true,
+            body: true,
+          },
+        });
+
+        if (parentComment?.authorId && parentComment.authorId !== data.authorId) {
+          await notificationService.create({
+            userId: parentComment.authorId,
+            type: "comment.reply",
+            title: "New reply to your comment",
+            message: `${data.authorName || "Someone"} replied to your comment on "${contentData.title}"`,
+            link: `/content/${contentData.slug}#comment-${comment.id}`,
+            actionLabel: "View Reply",
+            actionUrl: `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
+            priority: "normal",
+            sendEmail: true,
+            data: {
+              commentId: comment.id,
+              contentId: contentData.id,
+              contentSlug: contentData.slug,
+            },
+          });
+        }
+      } else if (contentData.authorId && contentData.authorId !== data.authorId) {
+        // Notify content author about new comment
+        await notificationService.create({
+          userId: contentData.authorId,
+          type: "comment.new",
+          title: "New comment on your post",
+          message: `${data.authorName || "Someone"} commented on "${contentData.title}"`,
+          link: `/content/${contentData.slug}#comment-${comment.id}`,
+          actionLabel: "View Comment",
+          actionUrl: `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
+          priority: "normal",
+          sendEmail: true,
+          data: {
+            commentId: comment.id,
+            contentId: contentData.id,
+            contentSlug: contentData.slug,
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to create comment notifications:", error);
   }
 
   return comment;

@@ -61,6 +61,23 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default("lexcms:"),
   CACHE_MEMORY_MAX_SIZE: z.string().default("10000"),
   CACHE_MEMORY_CLEANUP_INTERVAL: z.string().default("60000"),
+  // Email configuration
+  EMAIL_PROVIDER: z.string().default("console"),
+  EMAIL_FROM: z.string().default("noreply@lexcms.local"),
+  EMAIL_FROM_NAME: z.string().default("LexCMS"),
+  // SMTP
+  SMTP_HOST: z.string().default("localhost"),
+  SMTP_PORT: z.string().default("587"),
+  SMTP_SECURE: z.string().default("false"),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  // SendGrid
+  SENDGRID_API_KEY: z.string().optional(),
+  // Mailgun
+  MAILGUN_API_KEY: z.string().optional(),
+  MAILGUN_DOMAIN: z.string().optional(),
+  // Resend
+  RESEND_API_KEY: z.string().optional(),
 });
 
 // Validar y exportar
@@ -87,6 +104,19 @@ export const env = envSchema.parse({
   REDIS_KEY_PREFIX: Deno.env.get("REDIS_KEY_PREFIX"),
   CACHE_MEMORY_MAX_SIZE: Deno.env.get("CACHE_MEMORY_MAX_SIZE"),
   CACHE_MEMORY_CLEANUP_INTERVAL: Deno.env.get("CACHE_MEMORY_CLEANUP_INTERVAL"),
+  // Email
+  EMAIL_PROVIDER: Deno.env.get("EMAIL_PROVIDER"),
+  EMAIL_FROM: Deno.env.get("EMAIL_FROM"),
+  EMAIL_FROM_NAME: Deno.env.get("EMAIL_FROM_NAME"),
+  SMTP_HOST: Deno.env.get("SMTP_HOST"),
+  SMTP_PORT: Deno.env.get("SMTP_PORT"),
+  SMTP_SECURE: Deno.env.get("SMTP_SECURE"),
+  SMTP_USER: Deno.env.get("SMTP_USER"),
+  SMTP_PASS: Deno.env.get("SMTP_PASS"),
+  SENDGRID_API_KEY: Deno.env.get("SENDGRID_API_KEY"),
+  MAILGUN_API_KEY: Deno.env.get("MAILGUN_API_KEY"),
+  MAILGUN_DOMAIN: Deno.env.get("MAILGUN_DOMAIN"),
+  RESEND_API_KEY: Deno.env.get("RESEND_API_KEY"),
 });
 
 export const isDevelopment = env.DENO_ENV === "development";

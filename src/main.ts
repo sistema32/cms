@@ -2,6 +2,7 @@ import { app } from "./app.ts";
 import { env } from "./config/env.ts";
 import { pluginManager } from "./lib/plugin-system/index.ts";
 import { cacheManager } from "./lib/cache/index.ts";
+import { emailManager } from "./lib/email/index.ts";
 
 const port = env.PORT;
 
@@ -20,6 +21,22 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize plugin system:', error);
   // Continue anyway - plugins are optional
+}
+
+// Initialize email system
+console.log('\n📧 Initializing email system...');
+try {
+  // Email manager initializes automatically on first getInstance()
+  // Just verify the connection
+  const isConnected = await emailManager.verifyConnection();
+  if (isConnected) {
+    console.log('✅ Email provider verified');
+  } else {
+    console.warn('⚠️ Email provider verification failed - emails may not be sent');
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize email system:', error);
+  // Continue anyway - email is optional
 }
 
 console.log(`

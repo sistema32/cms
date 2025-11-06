@@ -808,6 +808,102 @@ export const webhookDeliveriesRelations = relations(webhookDeliveries, ({ one })
   }),
 }));
 
+// ============= EMAIL QUEUE =============
+export const emailQueue = sqliteTable("email_queue", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  to: text("to").notNull(), // JSON array of recipients
+  from: text("from"), // JSON object
+  subject: text("subject").notNull(),
+  text: text("text"),
+  html: text("html"),
+  attachments: text("attachments"), // JSON array
+  headers: text("headers"), // JSON object
+  priority: text("priority").notNull().default("normal"), // high, normal, low
+  status: text("status").notNull().default("pending"), // pending, processing, sent, failed, cancelled
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  lastAttemptAt: integer("last_attempt_at", { mode: "timestamp" }),
+  nextRetryAt: integer("next_retry_at", { mode: "timestamp" }),
+  sentAt: integer("sent_at", { mode: "timestamp" }),
+  error: text("error"),
+  provider: text("provider"), // smtp, sendgrid, mailgun, etc.
+  providerMessageId: text("provider_message_id"),
+  metadata: text("metadata"), // JSON object
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// ============= EMAIL TEMPLATES =============
+export const emailTemplates = sqliteTable("email_templates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  subject: text("subject").notNull(),
+  textTemplate: text("text_template").notNull(),
+  htmlTemplate: text("html_template").notNull(),
+  variables: text("variables"), // JSON array of variable names
+  description: text("description"),
+  category: text("category"), // auth, notification, system, etc.
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// ============= NOTIFICATIONS =============
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // comment.new, mention, content.published, etc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  icon: text("icon"),
+  link: text("link"),
+  actionLabel: text("action_label"),
+  actionUrl: text("action_url"),
+  data: text("data"), // JSON additional data
+  isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+  readAt: integer("read_at", { mode: "timestamp" }),
+  emailSent: integer("email_sent", { mode: "boolean" }).notNull().default(false),
+  emailSentAt: integer("email_sent_at", { mode: "timestamp" }),
+  priority: text("priority").notNull().default("normal"), // low, normal, high
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// ============= NOTIFICATION PREFERENCES =============
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  emailNotifications: integer("email_notifications", { mode: "boolean" }).notNull().default(true),
+  emailDigest: text("email_digest").notNull().default("daily"), // never, daily, weekly
+  notifyComments: integer("notify_comments", { mode: "boolean" }).notNull().default(true),
+  notifyReplies: integer("notify_replies", { mode: "boolean" }).notNull().default(true),
+  notifyMentions: integer("notify_mentions", { mode: "boolean" }).notNull().default(true),
+  notifyContentPublished: integer("notify_content_published", { mode: "boolean" }).notNull().default(true),
+  notifySystemAlerts: integer("notify_system_alerts", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// ============= EMAIL & NOTIFICATION RELATIONS =============
+
+export const emailQueueRelations = relations(emailQueue, ({ }) => ({}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ }) => ({}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const notificationPreferencesRelations = relations(notificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [notificationPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -893,3 +989,15 @@ export type NewWebhook = typeof webhooks.$inferInsert;
 
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type NewWebhookDelivery = typeof webhookDeliveries.$inferInsert;
+
+export type EmailQueue = typeof emailQueue.$inferSelect;
+export type NewEmailQueue = typeof emailQueue.$inferInsert;
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type NewEmailTemplate = typeof emailTemplates.$inferInsert;
+
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
+
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type NewNotificationPreference = typeof notificationPreferences.$inferInsert;
