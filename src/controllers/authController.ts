@@ -3,6 +3,8 @@ import * as authService from "../services/authService.ts";
 import { loginSchema, registerSchema } from "../utils/validation.ts";
 import { auditLogger, extractAuditContext } from "../lib/audit/index.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
+import { emailManager, notificationService } from "../lib/email/index.ts";
+import { env } from "../config/env.ts";
 
 /**
  * POST /api/auth/register
@@ -46,6 +48,41 @@ export async function register(c: Context) {
       });
     } catch (error) {
       console.warn("Failed to dispatch user.created webhook:", error);
+    }
+
+    // Send welcome email
+    try {
+      await emailManager.queueWithTemplate(
+        "welcome",
+        { email: result.user.email, name: result.user.name || undefined },
+        {
+          name: result.user.name || result.user.email,
+          email: result.user.email,
+          site_name: "LexCMS",
+          login_url: `${env.BASE_URL}/login`,
+        },
+        "normal",
+      );
+    } catch (error) {
+      console.warn("Failed to send welcome email:", error);
+    }
+
+    // Create welcome notification
+    try {
+      await notificationService.create({
+        userId: result.user.id,
+        type: "user.welcome",
+        title: "Welcome to LexCMS!",
+        message: "Your account has been successfully created. Start exploring and creating amazing content!",
+        icon: "🎉",
+        link: "/dashboard",
+        actionLabel: "Go to Dashboard",
+        actionUrl: `${env.BASE_URL}/dashboard`,
+        priority: "normal",
+        sendEmail: false, // Already sent welcome email above
+      });
+    } catch (error) {
+      console.warn("Failed to create welcome notification:", error);
     }
 
     return c.json(
