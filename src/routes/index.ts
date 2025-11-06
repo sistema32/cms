@@ -24,6 +24,7 @@ import notificationRoutes from "./notifications.ts";
 import backupRoutes from "./backups.ts";
 import dashboardRoutes from "./dashboard.ts";
 import securityRoutes from "./security.ts";
+import seoAdvancedRoutes from "./seo-advanced.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -51,7 +52,10 @@ export function registerRoutes(app: Hono) {
     backups: "enabled",
     dashboard: "enabled",
     analytics: "enabled",
-    security: "enabled"
+    security: "enabled",
+    seoAdvanced: "enabled",
+    sitemap: "enabled",
+    structuredData: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -119,6 +123,9 @@ export function registerRoutes(app: Hono) {
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
+
+  // Registrar rutas de SEO Avanzado (sitemap.xml, robots.txt, etc.)
+  app.route("/", seoAdvancedRoutes);
 
   // Registrar rutas del Admin Panel (antes del frontend)
   app.route(env.ADMIN_PATH, adminRouter);
