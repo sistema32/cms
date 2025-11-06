@@ -52,6 +52,7 @@ export async function register(data: RegisterInput): Promise<AuthResponse> {
   const token = await generateToken({
     userId: newUser.id,
     email: newUser.email,
+    roleId: newUser.roleId ?? undefined,
   });
 
   // Retornar usuario sin password
@@ -109,6 +110,7 @@ export async function login(
     const tempToken = await generateToken({
       userId: user.id,
       email: user.email,
+      roleId: user.roleId ?? undefined,
       temp2FA: true,
     });
 
@@ -135,6 +137,7 @@ export async function login(
   const token = await generateToken({
     userId: user.id,
     email: user.email,
+    roleId: user.roleId ?? undefined,
   });
 
   // Log de login exitoso

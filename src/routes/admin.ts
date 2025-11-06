@@ -2055,6 +2055,13 @@ adminRouter.post("/tags/delete/:id", async (c) => {
 adminRouter.get("/users", async (c) => {
   try {
     const user = c.get("user");
+
+    // Verificar permiso para ver usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver usuarios</p>`, 403);
+    }
+
     const query = c.req.query();
 
     // Obtener filtros de la query
@@ -2065,10 +2072,11 @@ adminRouter.get("/users", async (c) => {
     if (query.limit) filters.limit = parseInt(query.limit) || 20;
     if (query.offset) filters.offset = parseInt(query.offset) || 0;
 
-    const [usersResult, rolesData, stats] = await Promise.all([
+    const [usersResult, rolesData, stats, userPermissions] = await Promise.all([
       userService.getUsersWithFilters(filters),
       db.query.roles.findMany(),
       userService.getUserStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     return c.html(UsersPageImproved({
@@ -2083,6 +2091,7 @@ adminRouter.get("/users", async (c) => {
         offset: filters.offset || 0,
         limit: filters.limit || 20,
       },
+      userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
     }));
   } catch (error: any) {
     console.error("Error loading users:", error);
@@ -2092,6 +2101,14 @@ adminRouter.get("/users", async (c) => {
 
 adminRouter.post("/users/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para crear usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "create");
+    if (!hasPermission) {
+      return c.text("No tienes permiso para crear usuarios", 403);
+    }
+
     const body = await c.req.parseBody();
     const { hashPassword } = await import("../utils/password.ts");
     const hashedPassword = await hashPassword(body.password as string);
@@ -2115,6 +2132,14 @@ adminRouter.post("/users/create", async (c) => {
  */
 adminRouter.post("/users/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para actualizar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    if (!hasPermission) {
+      return c.text("No tienes permiso para actualizar usuarios", 403);
+    }
+
     const id = parseInt(c.req.param("id"));
     const body = await c.req.parseBody();
 
@@ -2142,6 +2167,14 @@ adminRouter.post("/users/edit/:id", async (c) => {
 
 adminRouter.post("/users/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para eliminar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+    }
+
     const id = parseInt(c.req.param("id"));
     await userService.deleteUser(id);
     return c.json({ success: true });
@@ -2155,6 +2188,14 @@ adminRouter.post("/users/delete/:id", async (c) => {
  */
 adminRouter.post("/users/bulk-status", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para actualizar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para actualizar usuarios" }, 403);
+    }
+
     const body = await c.req.json();
     const { userIds, status } = body;
 
@@ -2179,6 +2220,14 @@ adminRouter.post("/users/bulk-status", async (c) => {
  */
 adminRouter.post("/users/bulk-delete", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para eliminar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+    }
+
     const body = await c.req.json();
     const { userIds } = body;
 
@@ -2201,10 +2250,17 @@ adminRouter.get("/roles", async (c) => {
   try {
     const user = c.get("user");
 
-    const [rolesData, permissionsData, stats] = await Promise.all([
+    // Verificar permiso para ver roles
+    const hasPermission = await permissionService.userHasPermission(user.userId, "roles", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver roles</p>`, 403);
+    }
+
+    const [rolesData, permissionsData, stats, userPermissions] = await Promise.all([
       roleService.getAllRolesWithStats(),
       permissionService.getAllPermissions(),
       roleService.getRoleStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     const formattedRoles = rolesData
@@ -2237,6 +2293,7 @@ adminRouter.get("/roles", async (c) => {
         roles: formattedRoles,
         permissions: sortedPermissions,
         stats,
+        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
       })
     );
   } catch (error: any) {
@@ -2247,6 +2304,15 @@ adminRouter.get("/roles", async (c) => {
 
 adminRouter.post("/roles/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede crear roles", 403);
+    }
+
     const body = await c.req.parseBody();
     const name = parseStringField(body.name);
     const description = parseNullableField(body.description) ?? null;
@@ -2269,6 +2335,15 @@ adminRouter.post("/roles/create", async (c) => {
 
 adminRouter.post("/roles/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede actualizar roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2296,6 +2371,15 @@ adminRouter.post("/roles/edit/:id", async (c) => {
 
 adminRouter.post("/roles/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "delete");
+    if (!isSuperAdmin) {
+      return c.json({ success: false, error: "Solo superadmin puede eliminar roles" }, 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.json({ success: false, error: "ID inválido" }, 400);
@@ -2323,6 +2407,15 @@ adminRouter.post("/roles/delete/:id", async (c) => {
  */
 adminRouter.post("/roles/clone/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede clonar roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2348,6 +2441,15 @@ adminRouter.post("/roles/clone/:id", async (c) => {
 
 adminRouter.post("/roles/:id/permissions", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "role_permissions", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede asignar permisos a roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2373,11 +2475,19 @@ adminRouter.post("/roles/:id/permissions", async (c) => {
 adminRouter.get("/permissions", async (c) => {
   try {
     const user = c.get("user");
-    const [permissionsData, permissionsByModule, modules, stats] = await Promise.all([
+
+    // Verificar permiso para ver permisos
+    const hasPermission = await permissionService.userHasPermission(user.userId, "permissions", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver permisos</p>`, 403);
+    }
+
+    const [permissionsData, permissionsByModule, modules, stats, userPermissions] = await Promise.all([
       permissionService.getAllPermissions(),
       permissionService.getPermissionsGroupedByModule(),
       permissionService.getModules(),
       permissionService.getPermissionStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     const sortedPermissions = permissionsData.sort((a, b) => {
@@ -2393,6 +2503,7 @@ adminRouter.get("/permissions", async (c) => {
         permissionsByModule,
         modules,
         stats,
+        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
       })
     );
   } catch (error: any) {
@@ -2403,6 +2514,15 @@ adminRouter.get("/permissions", async (c) => {
 
 adminRouter.post("/permissions/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede crear permisos", 403);
+    }
+
     const body = await c.req.parseBody();
     const moduleName = parseStringField(body.module);
     const actionName = parseStringField(body.action);
@@ -2430,6 +2550,15 @@ adminRouter.post("/permissions/create", async (c) => {
 
 adminRouter.post("/permissions/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede actualizar permisos", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2462,6 +2591,15 @@ adminRouter.post("/permissions/edit/:id", async (c) => {
 
 adminRouter.post("/permissions/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "delete");
+    if (!isSuperAdmin) {
+      return c.json({ success: false, message: "Solo superadmin puede eliminar permisos" }, 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.json({ success: false, message: "ID inválido" }, 400);

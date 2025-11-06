@@ -6,6 +6,7 @@ import { env } from "../config/env.ts";
 export interface JWTPayload extends Payload {
   userId: number;
   email: string;
+  roleId?: number;
 }
 
 // Función helper para crear la clave

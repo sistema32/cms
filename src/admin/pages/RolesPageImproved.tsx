@@ -34,11 +34,19 @@ interface RolesPageProps {
     totalUsers: number;
     usersWithoutRole: number;
   };
+  userPermissions?: string[];
 }
 
 export const RolesPageImproved = (props: RolesPageProps) => {
-  const { user, roles, permissions, stats } = props;
+  const { user, roles, permissions, stats, userPermissions = [] } = props;
   const adminPath = env.ADMIN_PATH;
+
+  // Helper para verificar permisos
+  const hasPermission = (permission: string) => userPermissions.includes(permission);
+  const canCreate = hasPermission("roles:create");
+  const canUpdate = hasPermission("roles:update");
+  const canDelete = hasPermission("roles:delete");
+  const canManagePermissions = hasPermission("role_permissions:update");
 
   const permissionsByModule = Array.from(
     permissions.reduce((acc, perm) => {
@@ -85,14 +93,16 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         }
       </div>
       <div class="page-actions">
-        <button onclick="openRoleModal('create')" class="btn-action">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 8h-2V6a1 1 0 10-2 0v2h-2a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2z"
-            ></path>
-          </svg>
-          Nuevo Rol
-        </button>
+        ${canCreate ? html`
+          <button onclick="openRoleModal('create')" class="btn-action">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 8h-2V6a1 1 0 10-2 0v2h-2a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2z"
+              ></path>
+            </svg>
+            Nuevo Rol
+          </button>
+        ` : ""}
       </div>
     </div>
 
@@ -172,32 +182,36 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                   ></path>
                                 </svg>
                               </button>
-                              <button
-                                onclick="openRoleModal('edit', ${role.id})"
-                                class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
-                                title="Editar"
-                              >
+                              ${(canUpdate || canManagePermissions) ? html`
+                                <button
+                                  onclick="openRoleModal('edit', ${role.id})"
+                                  class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                                  title="Editar"
+                                >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path
                                     d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
                                   ></path>
                                 </svg>
                               </button>
-                              <button
-                                onclick="cloneRole(${role.id})"
-                                class="text-green-600 hover:text-green-800 dark:text-green-400"
-                                title="Clonar rol"
-                              >
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path
-                                    d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
-                                  ></path>
-                                  <path
-                                    d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"
-                                  ></path>
-                                </svg>
-                              </button>
-                              ${!role.isSystem
+                              ` : ""}
+                              ${canCreate ? html`
+                                <button
+                                  onclick="cloneRole(${role.id})"
+                                  class="text-green-600 hover:text-green-800 dark:text-green-400"
+                                  title="Clonar rol"
+                                >
+                                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
+                                    ></path>
+                                    <path
+                                      d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"
+                                    ></path>
+                                  </svg>
+                                </button>
+                              ` : ""}
+                              ${!role.isSystem && canDelete
                                 ? html`
                                     <button
                                       onclick="deleteRole(${role.id}, '${role.name}')"
