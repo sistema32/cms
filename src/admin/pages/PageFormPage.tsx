@@ -14,7 +14,15 @@ interface PageFormPageProps {
     body?: string | null;
     status: string;
     featuredImageId?: number | null;
+    parentId?: number | null;
+    visibility?: string | null;
+    password?: string | null;
+    scheduledAt?: string | null;
+    publishedAt?: string | null;
   };
+  availableParents?: Array<
+    { id: number; name: string; slug?: string }
+  >;
   categories?: Array<
     { id: number; name: string; slug?: string; parentId?: number | null }
   >;
@@ -33,6 +41,7 @@ export const PageFormPage = (props: PageFormPageProps) => {
   const {
     user,
     page,
+    availableParents = [],
     categories = [],
     tags = [],
     selectedCategories = [],
@@ -58,12 +67,18 @@ export const PageFormPage = (props: PageFormPageProps) => {
       content: "Escribe la página aquí...",
     },
     data: {
+      id: page?.id,
       title: page?.title,
       slug: page?.slug,
       excerpt: page?.excerpt || "",
       body: page?.body || "",
       status: page?.status || "draft",
       featuredImageId: page?.featuredImageId || featuredImage?.id || null,
+      parentId: page?.parentId,
+      visibility: page?.visibility || "public",
+      password: page?.password,
+      scheduledAt: page?.scheduledAt,
+      publishedAt: page?.publishedAt,
     },
     errors,
     showSeo: true,
@@ -77,6 +92,13 @@ export const PageFormPage = (props: PageFormPageProps) => {
     showTags: tags.length > 0,
     tags,
     selectedTags,
+    // Nuevas funcionalidades
+    showRevisionHistory: isEdit, // Solo en modo edición
+    showParentSelector: true, // Mostrar selector de página padre
+    availableParents, // Páginas disponibles como padre
+    showVisibility: true, // Mostrar selector de visibilidad
+    showScheduling: true, // Mostrar programación de publicación
+    showCommentsControl: false, // Las páginas normalmente no tienen comentarios
   });
 };
 

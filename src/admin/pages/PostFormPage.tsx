@@ -14,6 +14,11 @@ interface PostFormPageProps {
     body?: string | null;
     status: string;
     featuredImageId?: number | null;
+    visibility?: string | null;
+    password?: string | null;
+    scheduledAt?: string | null;
+    publishedAt?: string | null;
+    commentsEnabled?: boolean;
   };
   categories: Array<
     { id: number; name: string; slug?: string; parentId?: number | null }
@@ -58,12 +63,18 @@ export const PostFormPage = (props: PostFormPageProps) => {
       content: "Escribe la entrada aquí...",
     },
     data: {
+      id: post?.id,
       title: post?.title,
       slug: post?.slug,
       excerpt: post?.excerpt || "",
       body: post?.body || "",
       status: post?.status || "draft",
       featuredImageId: post?.featuredImageId || featuredImage?.id || null,
+      visibility: post?.visibility || "public",
+      password: post?.password,
+      scheduledAt: post?.scheduledAt,
+      publishedAt: post?.publishedAt,
+      commentsEnabled: post?.commentsEnabled ?? true, // Posts tienen comentarios habilitados por defecto
     },
     errors,
     showSeo: true,
@@ -77,6 +88,11 @@ export const PostFormPage = (props: PostFormPageProps) => {
     showTags: tags.length > 0,
     tags,
     selectedTags,
+    // Nuevas funcionalidades
+    showRevisionHistory: isEdit, // Solo en modo edición
+    showVisibility: true, // Mostrar selector de visibilidad
+    showScheduling: true, // Mostrar programación de publicación
+    showCommentsControl: true, // Mostrar control de comentarios
   });
 };
 
