@@ -5,6 +5,7 @@ import { cacheManager } from "./lib/cache/index.ts";
 import { emailManager } from "./lib/email/index.ts";
 import { backupManager } from "./lib/backup/index.ts";
 import { securityManager } from "./lib/security/index.ts";
+import { initializeSearchIndexes } from "./services/searchService.ts";
 
 const port = env.PORT;
 
@@ -61,6 +62,14 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize security system:', error);
   // Continue anyway - security features will still work
+}
+
+// Initialize search indexes
+try {
+  await initializeSearchIndexes();
+} catch (error) {
+  console.error('❌ Failed to initialize search indexes:', error);
+  // Continue anyway - search will work but without indexed data
 }
 
 console.log(`

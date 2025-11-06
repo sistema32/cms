@@ -28,6 +28,7 @@ import seoAdvancedRoutes from "./seo-advanced.ts";
 import apiKeysRoutes from "./api-keys.ts";
 import apiDocsRoutes from "./api-docs.ts";
 import publicAPIRoutes from "./api-public.ts";
+import searchRoutes from "./search.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -61,7 +62,8 @@ export function registerRoutes(app: Hono) {
     structuredData: "enabled",
     publicAPI: "enabled",
     apiKeys: "enabled",
-    openAPI: "enabled"
+    openAPI: "enabled",
+    search: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -135,6 +137,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Public API v1
   app.route("/api/v1", publicAPIRoutes);
+
+  // Registrar rutas de Search
+  app.route("/api/search", searchRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
