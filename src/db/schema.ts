@@ -932,6 +932,47 @@ export const backupsRelations = relations(backups, ({ one }) => ({
   }),
 }));
 
+// ============= SECURITY =============
+
+// IP Block Rules
+export const ipBlockRules = sqliteTable("ip_block_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ip: text("ip").notNull().unique(),
+  type: text("type").notNull(), // block, whitelist
+  reason: text("reason"),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// Security Events
+export const securityEvents = sqliteTable("security_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(),
+  ip: text("ip").notNull(),
+  userAgent: text("user_agent"),
+  path: text("path"),
+  method: text("method"),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  details: text("details"), // JSON
+  severity: text("severity").notNull().default("low"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const ipBlockRulesRelations = relations(ipBlockRules, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [ipBlockRules.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const securityEventsRelations = relations(securityEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [securityEvents.userId],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -1032,3 +1073,9 @@ export type NewNotificationPreference = typeof notificationPreferences.$inferIns
 
 export type Backup = typeof backups.$inferSelect;
 export type NewBackup = typeof backups.$inferInsert;
+
+export type IPBlockRule = typeof ipBlockRules.$inferSelect;
+export type NewIPBlockRule = typeof ipBlockRules.$inferInsert;
+
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type NewSecurityEvent = typeof securityEvents.$inferInsert;

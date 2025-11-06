@@ -4,6 +4,7 @@ import { pluginManager } from "./lib/plugin-system/index.ts";
 import { cacheManager } from "./lib/cache/index.ts";
 import { emailManager } from "./lib/email/index.ts";
 import { backupManager } from "./lib/backup/index.ts";
+import { securityManager } from "./lib/security/index.ts";
 
 const port = env.PORT;
 
@@ -49,6 +50,17 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize backup system:', error);
   // Continue anyway - backups are optional
+}
+
+// Initialize security system
+console.log('\n🔒 Initializing security system...');
+try {
+  // Security manager initializes automatically on first getInstance()
+  const stats = await securityManager.getSecurityStats();
+  console.log(`✅ Security system initialized (${stats.ipRules.total} IP rules, ${stats.events.last24h} events in last 24h)`);
+} catch (error) {
+  console.error('❌ Failed to initialize security system:', error);
+  // Continue anyway - security features will still work
 }
 
 console.log(`

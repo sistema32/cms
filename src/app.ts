@@ -6,10 +6,9 @@ import { errorHandler } from "./middleware/errorHandler.ts";
 import { env, isDevelopment } from "./config/env.ts";
 import {
   blockUnsafeMethods,
-  rateLimit,
-  securityHeaders,
   validateJSON,
 } from "./middleware/security.ts";
+import { securityMiddleware } from "./middlewares/securityMiddleware.ts";
 
 export const app = new Hono();
 
@@ -22,11 +21,12 @@ const allowedOrigins = env.CORS_ALLOWED_ORIGINS
 const allowAllOrigins = allowedOrigins.includes("*") ||
   (isDevelopment && allowedOrigins.length === 0);
 
+// Apply basic security checks
 app.use("*", blockUnsafeMethods);
-app.use("*", securityHeaders);
 app.use("*", validateJSON);
 
-app.use("/api/auth/*", rateLimit(10, 60000));
+// Apply comprehensive security middleware (headers, IP blocking, rate limiting, request inspection)
+app.use("*", securityMiddleware);
 
 app.use("*", logger());
 app.use(
