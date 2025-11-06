@@ -30,6 +30,7 @@ import apiDocsRoutes from "./api-docs.ts";
 import publicAPIRoutes from "./api-public.ts";
 import searchRoutes from "./search.ts";
 import jobsRoutes from "./jobs.ts";
+import importExportRoutes from "./import-export.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -65,7 +66,8 @@ export function registerRoutes(app: Hono) {
     apiKeys: "enabled",
     openAPI: "enabled",
     search: "enabled",
-    backgroundJobs: "enabled"
+    backgroundJobs: "enabled",
+    importExport: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -145,6 +147,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Jobs
   app.route("/api/jobs", jobsRoutes);
+
+  // Registrar rutas de Import/Export
+  app.route("/api/import-export", importExportRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
