@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 import { securityManager } from "../lib/security/SecurityManager.ts";
 import { z } from "zod";
 

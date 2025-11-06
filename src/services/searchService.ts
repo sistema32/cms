@@ -3,7 +3,7 @@
  * Integrates search engine with database content
  */
 
-import { db } from "../db/db.ts";
+import { db } from "../config/db.ts";
 import { content, categories, tags } from "../db/schema.ts";
 import { searchEngine } from "../lib/search/SearchEngine.ts";
 import type { SearchQuery, SearchResult } from "../lib/search/types.ts";

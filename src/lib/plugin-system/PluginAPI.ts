@@ -6,7 +6,7 @@
 import type { HookCallback, PluginAPIContext, PluginPermission } from './types.ts';
 import { hookManager } from './HookManager.ts';
 import { PluginSecurityManager } from './SecurityManager.ts';
-import { sanitizeHtml } from '../../utils/sanitization.ts';
+import { sanitizeHTML } from '../../utils/sanitization.ts';
 
 export class PluginAPI {
   private context: PluginAPIContext;
@@ -191,7 +191,7 @@ export class PluginAPI {
      * Sanitize HTML to prevent XSS
      */
     sanitize(html: string): string {
-      return sanitizeHtml(html);
+      return sanitizeHTML(html);
     },
 
     /**

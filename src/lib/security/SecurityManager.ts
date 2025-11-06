@@ -345,7 +345,7 @@ export class SecurityManager {
   detectPathTraversal(input: string): boolean {
     const patterns = [
       /\.\.\//g,
-      /\.\.\\/ g,
+      /\.\.\\/g,
       /%2e%2e/gi,
       /\.\./g,
     ];

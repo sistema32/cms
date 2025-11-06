@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 import { apiKeyManager, openAPIGenerator } from "../lib/api/index.ts";
 import { API_PERMISSIONS } from "../lib/api/types.ts";
 import { z } from "zod";
