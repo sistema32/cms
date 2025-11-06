@@ -48,13 +48,29 @@ try {
             await db.run(sql.raw(statement));
             successCount++;
           } catch (error) {
+            // Obtener todo el stack trace y mensajes de error incluyendo causas
+            let fullErrorText = "";
+            if (error instanceof Error) {
+              fullErrorText = error.toString() + "\n" + (error.stack || "");
+
+              // Buscar en la cadena de causas
+              let cause = (error as any).cause;
+              while (cause) {
+                fullErrorText += "\n" + (cause.toString() || "");
+                fullErrorText += "\n" + (cause.stack || "");
+                cause = (cause as any).cause;
+              }
+            } else {
+              fullErrorText = String(error);
+            }
+
             // Verificar si es un error de "tabla ya existe" o "índice ya existe"
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            if (
-              errorMessage.includes("already exists") ||
-              errorMessage.includes("SQLITE_ERROR: table") ||
-              errorMessage.includes("SQLITE_ERROR: index")
-            ) {
+            const isTableExists = /table\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
+            const isIndexExists = /index\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
+            const isSqliteTableError = fullErrorText.includes("SQLITE_ERROR") &&
+                                        fullErrorText.includes("already exists");
+
+            if (isTableExists || isIndexExists || isSqliteTableError) {
               // Tratar como advertencia y continuar
               hasWarnings = true;
               skipCount++;
