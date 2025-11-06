@@ -1,0 +1,27 @@
+{
+  "name": "hello-world",
+  "version": "1.0.0",
+  "displayName": "Hello World Plugin",
+  "description": "A simple example plugin that demonstrates the plugin system. Perfect for testing and learning how plugins work.",
+  "author": "LexCMS Team",
+  "license": "MIT",
+  "homepage": "https://github.com/lexcms/plugin-hello-world",
+
+  "compatibility": {
+    "lexcms": ">=1.0.0",
+    "deno": ">=1.40.0"
+  },
+
+  "dependencies": {},
+
+  "permissions": [],
+
+  "hooks": [
+    "content:beforeCreate"
+  ],
+
+  "settings": {},
+
+  "category": "example",
+  "tags": ["example", "demo", "hello-world", "tutorial"]
+}
