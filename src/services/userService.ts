@@ -3,6 +3,7 @@ import { db } from "../config/db.ts";
 import { users } from "../db/schema.ts";
 import type { SafeUser } from "../types/index.ts";
 import type { UpdateUserInput } from "../utils/validation.ts";
+import { webhookManager } from "../lib/webhooks/index.ts";
 
 export interface UserFilters {
   search?: string;
@@ -192,6 +193,22 @@ export async function updateUser(
 
   // Obtener usuario actualizado con rol
   const userWithRole = await getUserById(userId);
+
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("user.updated", {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      status: updatedUser.status,
+      roleId: updatedUser.roleId,
+      updatedAt: updatedUser.updatedAt,
+      changes: data,
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch user.updated webhook:", error);
+  }
+
   return userWithRole!;
 }
 
@@ -231,7 +248,25 @@ export async function deleteUser(userId: number): Promise<void> {
     throw new Error("No se puede eliminar el superadmin principal");
   }
 
+  // Get user data before deletion
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+
   await db.delete(users).where(eq(users.id, userId));
+
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("user.deleted", {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      deletedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch user.deleted webhook:", error);
+  }
 }
 
 /**

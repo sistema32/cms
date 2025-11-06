@@ -14,6 +14,7 @@ import * as videoProcessor from "../utils/media/videoProcessor.ts";
 import * as documentProcessor from "../utils/media/documentProcessor.ts";
 import { env } from "../config/env.ts";
 import { hookManager } from "../lib/plugin-system/index.ts";
+import { webhookManager } from "../lib/webhooks/index.ts";
 
 export interface UploadFileInput {
   data: Uint8Array;
@@ -258,6 +259,23 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
   } catch (error) {
     console.error('Error in media:afterUpload hook:', error);
     // Don't fail upload if plugin fails
+  }
+
+  // 11. Dispatch webhook event
+  try {
+    await webhookManager.dispatch("media.uploaded", {
+      id: newMedia.id,
+      filename: newMedia.filename,
+      originalFilename: newMedia.originalFilename,
+      mimeType: newMedia.mimeType,
+      type: newMedia.type,
+      size: newMedia.size,
+      url: newMedia.url,
+      uploadedBy: newMedia.uploadedBy,
+      uploadedAt: newMedia.createdAt,
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch media.uploaded webhook:", error);
   }
 
   return newMedia;
