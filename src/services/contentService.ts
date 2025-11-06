@@ -13,6 +13,7 @@ import {
   type NewContentRevision,
 } from "../db/schema.ts";
 import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { webhookManager } from "../lib/webhooks/index.ts";
 
 export interface CreateContentInput {
   contentTypeId: number;
@@ -213,6 +214,21 @@ export async function createContent(
         type: m.type || "string",
       })),
     );
+  }
+
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("content.created", {
+      id: newContent.id,
+      title: newContent.title,
+      slug: newContent.slug,
+      status: newContent.status,
+      contentTypeId: newContent.contentTypeId,
+      authorId: newContent.authorId,
+      createdAt: newContent.createdAt,
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch content.created webhook:", error);
   }
 
   return newContent;
@@ -559,6 +575,28 @@ export async function updateContent(
     }
   }
 
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("content.updated", {
+      id: updated.id,
+      title: updated.title,
+      slug: updated.slug,
+      status: updated.status,
+      contentTypeId: updated.contentTypeId,
+      authorId: updated.authorId,
+      updatedAt: updated.updatedAt,
+      changes: {
+        title: data.title !== undefined,
+        body: data.body !== undefined,
+        status: data.status !== undefined,
+        categoryIds: data.categoryIds !== undefined,
+        tagIds: data.tagIds !== undefined,
+      },
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch content.updated webhook:", error);
+  }
+
   return updated;
 }
 
@@ -573,6 +611,19 @@ export async function deleteContent(id: number): Promise<void> {
   }
 
   await db.delete(content).where(eq(content.id, id));
+
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("content.deleted", {
+      id: existing.id,
+      title: existing.title,
+      slug: existing.slug,
+      contentTypeId: existing.contentTypeId,
+      deletedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch content.deleted webhook:", error);
+  }
 }
 
 export async function upsertContentSeoEntry(

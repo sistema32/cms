@@ -4,6 +4,7 @@ import { comments, content, contentTypes } from "../db/schema.ts";
 import type { NewComment } from "../db/schema.ts";
 import { applyCensorship } from "./censorshipService.ts";
 import { sanitizeHTML, escapeHTML, sanitizeURL } from "../utils/sanitization.ts";
+import { webhookManager } from "../lib/webhooks/index.ts";
 
 /**
  * Interfaz para crear un comentario
@@ -165,6 +166,22 @@ export async function createComment(
   // Incrementar contador solo si es comentario principal (no respuesta)
   if (!data.parentId) {
     await incrementCommentCount(data.contentId);
+  }
+
+  // Dispatch webhook event
+  try {
+    await webhookManager.dispatch("comment.created", {
+      id: comment.id,
+      contentId: comment.contentId,
+      authorId: comment.authorId,
+      authorName: comment.authorName,
+      authorEmail: comment.authorEmail,
+      parentId: comment.parentId,
+      status: comment.status,
+      createdAt: comment.createdAt,
+    });
+  } catch (error) {
+    console.warn("Failed to dispatch comment.created webhook:", error);
   }
 
   return comment;
@@ -367,6 +384,22 @@ export async function moderateComment(
 
   if (!moderated) {
     throw new Error("Comentario no encontrado");
+  }
+
+  // Dispatch webhook event for approved comments
+  if (status === "approved") {
+    try {
+      await webhookManager.dispatch("comment.approved", {
+        id: moderated.id,
+        contentId: moderated.contentId,
+        authorId: moderated.authorId,
+        authorName: moderated.authorName,
+        authorEmail: moderated.authorEmail,
+        approvedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.warn("Failed to dispatch comment.approved webhook:", error);
+    }
   }
 
   return moderated;

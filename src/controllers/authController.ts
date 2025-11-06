@@ -2,6 +2,7 @@ import { Context } from "hono";
 import * as authService from "../services/authService.ts";
 import { loginSchema, registerSchema } from "../utils/validation.ts";
 import { auditLogger, extractAuditContext } from "../lib/audit/index.ts";
+import { webhookManager } from "../lib/webhooks/index.ts";
 
 /**
  * POST /api/auth/register
@@ -33,6 +34,19 @@ export async function register(c: Context) {
       entityId: result.user.id,
       description: `User registered: ${result.user.email}`,
     });
+
+    // Dispatch webhook event
+    try {
+      await webhookManager.dispatch("user.created", {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        roleId: result.user.role?.id,
+        createdAt: result.user.createdAt,
+      });
+    } catch (error) {
+      console.warn("Failed to dispatch user.created webhook:", error);
+    }
 
     return c.json(
       {
@@ -91,6 +105,19 @@ export async function login(c: Context) {
         entityId: result.user.id,
         description: `User logged in: ${result.user.email}`,
       });
+
+      // Dispatch webhook event
+      try {
+        await webhookManager.dispatch("user.login", {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          loginAt: new Date().toISOString(),
+          ipAddress: ip,
+        });
+      } catch (error) {
+        console.warn("Failed to dispatch user.login webhook:", error);
+      }
     }
 
     return c.json({

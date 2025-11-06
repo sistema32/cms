@@ -475,6 +475,80 @@ export const auditLogs = sqliteTable("audit_logs", {
     .default(sql`(unixepoch())`),
 });
 
+// ============= WEBHOOKS =============
+export const webhooks = sqliteTable("webhooks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // Configuration
+  name: text("name").notNull(), // User-friendly name
+  url: text("url").notNull(), // Target URL
+  secret: text("secret"), // Secret for signature verification
+
+  // Events to listen to
+  events: text("events").notNull(), // JSON array of event names
+
+  // Status
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+
+  // Retry configuration
+  maxRetries: integer("max_retries").notNull().default(3),
+  retryDelay: integer("retry_delay").notNull().default(60), // seconds
+
+  // Statistics
+  totalDeliveries: integer("total_deliveries").notNull().default(0),
+  successfulDeliveries: integer("successful_deliveries").notNull().default(0),
+  failedDeliveries: integer("failed_deliveries").notNull().default(0),
+  lastDeliveryAt: integer("last_delivery_at", { mode: "timestamp" }),
+  lastSuccessAt: integer("last_success_at", { mode: "timestamp" }),
+  lastFailureAt: integer("last_failure_at", { mode: "timestamp" }),
+
+  // Metadata
+  description: text("description"),
+  metadata: text("metadata"), // JSON for additional config
+
+  // Timestamps
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const webhookDeliveries = sqliteTable("webhook_deliveries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  // Reference
+  webhookId: integer("webhook_id").notNull().references(() => webhooks.id, { onDelete: "cascade" }),
+
+  // Event data
+  event: text("event").notNull(), // Event name (e.g., "content.created")
+  payload: text("payload").notNull(), // JSON payload sent
+
+  // Delivery attempt
+  attempt: integer("attempt").notNull().default(1), // Current attempt number
+  status: text("status").notNull(), // pending, success, failed, cancelled
+
+  // Response
+  responseStatus: integer("response_status"), // HTTP status code
+  responseBody: text("response_body"), // Response body (truncated)
+  responseTime: integer("response_time"), // Response time in ms
+
+  // Error details
+  errorMessage: text("error_message"),
+
+  // Timestamps
+  scheduledAt: integer("scheduled_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  deliveredAt: integer("delivered_at", { mode: "timestamp" }),
+  nextRetryAt: integer("next_retry_at", { mode: "timestamp" }),
+
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // ============= RELATIONS =============
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -723,6 +797,17 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
+export const webhooksRelations = relations(webhooks, ({ many }) => ({
+  deliveries: many(webhookDeliveries),
+}));
+
+export const webhookDeliveriesRelations = relations(webhookDeliveries, ({ one }) => ({
+  webhook: one(webhooks, {
+    fields: [webhookDeliveries.webhookId],
+    references: [webhooks.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -802,3 +887,9 @@ export type NewPluginHook = typeof pluginHooks.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type Webhook = typeof webhooks.$inferSelect;
+export type NewWebhook = typeof webhooks.$inferInsert;
+
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+export type NewWebhookDelivery = typeof webhookDeliveries.$inferInsert;

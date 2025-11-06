@@ -19,6 +19,7 @@ import settingsRoutes from "./settings.ts";
 import pluginRoutes from "./plugins.ts";
 import cacheRoutes from "./cache.ts";
 import auditRoutes from "./audit.ts";
+import webhookRoutes from "./webhooks.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -39,7 +40,8 @@ export function registerRoutes(app: Hono) {
     themes: "enabled",
     plugins: "enabled",
     cache: "enabled",
-    audit: "enabled"
+    audit: "enabled",
+    webhooks: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -89,6 +91,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Audit
   app.route("/api/audit", auditRoutes);
+
+  // Registrar rutas de Webhooks
+  app.route("/api/webhooks", webhookRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
