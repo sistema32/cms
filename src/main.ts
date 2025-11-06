@@ -3,6 +3,7 @@ import { env } from "./config/env.ts";
 import { pluginManager } from "./lib/plugin-system/index.ts";
 import { cacheManager } from "./lib/cache/index.ts";
 import { emailManager } from "./lib/email/index.ts";
+import { backupManager } from "./lib/backup/index.ts";
 
 const port = env.PORT;
 
@@ -37,6 +38,17 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize email system:', error);
   // Continue anyway - email is optional
+}
+
+// Initialize backup system
+console.log('\n💾 Initializing backup system...');
+try {
+  // Backup manager initializes automatically on first getInstance()
+  const stats = await backupManager.getStats();
+  console.log(`✅ Backup system initialized (${stats.totalBackups} backups, ${stats.successfulBackups} successful)`);
+} catch (error) {
+  console.error('❌ Failed to initialize backup system:', error);
+  // Continue anyway - backups are optional
 }
 
 console.log(`

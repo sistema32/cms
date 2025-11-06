@@ -904,6 +904,34 @@ export const notificationPreferencesRelations = relations(notificationPreference
   }),
 }));
 
+// ============= BACKUPS =============
+export const backups = sqliteTable("backups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  filename: text("filename").notNull(),
+  type: text("type").notNull(), // full, database, media, config
+  size: integer("size").notNull(), // bytes
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed, failed
+  storageProvider: text("storage_provider").notNull().default("local"), // local, s3
+  storagePath: text("storage_path").notNull(),
+  compressed: integer("compressed", { mode: "boolean" }).notNull().default(true),
+  includesMedia: integer("includes_media", { mode: "boolean" }).notNull().default(false),
+  includesDatabase: integer("includes_database", { mode: "boolean" }).notNull().default(false),
+  includesConfig: integer("includes_config", { mode: "boolean" }).notNull().default(false),
+  checksum: text("checksum").notNull(), // SHA-256
+  error: text("error"),
+  startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const backupsRelations = relations(backups, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [backups.createdBy],
+    references: [users.id],
+  }),
+}));
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -1001,3 +1029,6 @@ export type NewNotification = typeof notifications.$inferInsert;
 
 export type NotificationPreference = typeof notificationPreferences.$inferSelect;
 export type NewNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+export type Backup = typeof backups.$inferSelect;
+export type NewBackup = typeof backups.$inferInsert;
