@@ -5,7 +5,7 @@
 
 import { Hono } from "hono";
 import * as dashboardService from "../services/dashboardService.ts";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 
 const dashboard = new Hono();
 

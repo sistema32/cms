@@ -5,7 +5,8 @@
 
 import { Hono } from "hono";
 import { backupManager } from "../lib/backup/index.ts";
-import { authMiddleware, requirePermission } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
+import { requirePermission } from "../middleware/permission.ts";
 
 const backupRoutes = new Hono();
 

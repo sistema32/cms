@@ -5,7 +5,7 @@
 
 import { Hono } from "hono";
 import { notificationService } from "../lib/email/index.ts";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 
 const notifications = new Hono();
 
