@@ -185,7 +185,7 @@ export const HomeTemplate = (props: HomeProps) => {
                   Insights y tendencias que están moldeando el futuro de la industria.
                 </p>
               </div>
-              <a href="/blog" class="inline-flex items-center text-sm font-semibold text-slate-200 transition hover:text-white">
+              <a href="${blogUrl || /blog}" class="inline-flex items-center text-sm font-semibold text-slate-200 transition hover:text-white">
                 Ver todo el blog
                 <svg class="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />

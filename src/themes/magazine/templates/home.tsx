@@ -114,7 +114,7 @@ export const HomeTemplate = (props: HomeProps) => {
             </div>
 
             <div class="section-footer">
-              <a href="/blog" class="btn btn-magazine">
+              <a href="${blogUrl || /blog}" class="btn btn-magazine">
                 Ver todos los artículos →
               </a>
             </div>

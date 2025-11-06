@@ -8,10 +8,11 @@ import type { SiteData } from "../helpers/index.ts";
 interface HeaderProps {
   site: SiteData;
   custom: Record<string, any>;
+  blogUrl?: string;
 }
 
 export const Header = (props: HeaderProps) => {
-  const { site, custom } = props;
+  const { site, custom, blogUrl = "/blog" } = props;
 
   const logoText = custom.logo_text || site.name || "LX";
   const tagline = custom.header_tagline || "Professional Services";
@@ -31,7 +32,7 @@ export const Header = (props: HeaderProps) => {
 
         <div class="hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex" id="primaryNav">
           <a class="relative nav-indicator transition hover:text-white" href="/">Inicio</a>
-          <a class="relative nav-indicator transition hover:text-white" href="/blog">Blog</a>
+          <a class="relative nav-indicator transition hover:text-white" href="${blogUrl}">Blog</a>
           <a class="relative nav-indicator transition hover:text-white" href="#servicios">Servicios</a>
           <a class="relative nav-indicator transition hover:text-white" href="#contacto">Contacto</a>
         </div>
@@ -83,7 +84,7 @@ export const Header = (props: HeaderProps) => {
       >
         <nav class="flex flex-col gap-3 font-medium">
           <a class="rounded-full px-4 py-2 transition hover:bg-white/10" href="/">Inicio</a>
-          <a class="rounded-full px-4 py-2 transition hover:bg-white/10" href="/blog">Blog</a>
+          <a class="rounded-full px-4 py-2 transition hover:bg-white/10" href="${blogUrl}">Blog</a>
           <a class="rounded-full px-4 py-2 transition hover:bg-white/10" href="#servicios">Servicios</a>
           <a class="rounded-full px-4 py-2 transition hover:bg-white/10" href="#contacto">Contacto</a>
           <a class="rounded-full border border-primary-400/60 bg-primary-500/20 px-4 py-2 text-sm font-semibold text-primary-100 transition hover:bg-primary-500/30" href="#contacto">Contáctanos</a>

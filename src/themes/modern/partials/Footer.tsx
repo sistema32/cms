@@ -8,10 +8,11 @@ import type { SiteData } from "../helpers/index.ts";
 interface FooterProps {
   site: SiteData;
   custom: Record<string, any>;
+  blogUrl?: string;
 }
 
 export const Footer = (props: FooterProps) => {
-  const { site } = props;
+  const { site, blogUrl = "/blog" } = props;
   const currentYear = new Date().getFullYear();
 
   return html`
@@ -40,7 +41,7 @@ export const Footer = (props: FooterProps) => {
                 <a href="#features" class="text-sm text-slate-600 transition hover:text-slate-900">Features</a>
               </li>
               <li>
-                <a href="/blog" class="text-sm text-slate-600 transition hover:text-slate-900">Blog</a>
+                <a href="${blogUrl}" class="text-sm text-slate-600 transition hover:text-slate-900">Blog</a>
               </li>
               <li>
                 <a href="#pricing" class="text-sm text-slate-600 transition hover:text-slate-900">Pricing</a>

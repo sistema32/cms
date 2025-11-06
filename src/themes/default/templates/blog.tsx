@@ -23,10 +23,11 @@ interface BlogProps {
   recentPosts?: PostData[];
   categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
   tags?: Array<{ id: number; name: string; slug: string; count?: number }>;
+  blogBase?: string;
 }
 
 export const BlogTemplate = (props: BlogProps) => {
-  const { site, custom, posts, pagination, recentPosts = [], categories = [], tags = [] } = props;
+  const { site, custom, posts, pagination, recentPosts = [], categories = [], tags = [], blogBase = "blog" } = props;
 
   // Settings del blog
   const blogTitle = custom.blog_title || "Blog";
@@ -37,7 +38,7 @@ export const BlogTemplate = (props: BlogProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom })}
+    ${Header({ site, custom, blogUrl })}
 
     <!-- Main Content -->
     <main class="site-main blog-page">
@@ -87,7 +88,7 @@ export const BlogTemplate = (props: BlogProps) => {
               <!-- Paginación -->
               ${pagination.totalPages > 1 ? Pagination({
                 pagination,
-                baseUrl: "/blog/page",
+                baseUrl: `/${blogBase}/page`,
               }) : ''}
             ` : html`
               <!-- No hay posts -->
@@ -120,7 +121,7 @@ export const BlogTemplate = (props: BlogProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom })}
+    ${Footer({ site, custom, blogUrl })}
   `;
 
   return Layout({

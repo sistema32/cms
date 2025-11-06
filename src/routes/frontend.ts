@@ -4,6 +4,7 @@ import { db } from "../config/db.ts";
 import { content, categories as categoriesSchema, tags as tagsSchema } from "../db/schema.ts";
 import { eq, desc } from "drizzle-orm";
 import * as themeService from "../services/themeService.ts";
+import * as settingsService from "../services/settingsService.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /**
@@ -12,6 +13,13 @@ import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
  */
 
 const frontendRouter = new Hono();
+
+/**
+ * Get blog base path from settings
+ */
+async function getBlogBase(): Promise<string> {
+  return await settingsService.getSetting("blog_base", "blog");
+}
 
 /**
  * Load theme helpers and templates dynamically with fallback to default theme
@@ -28,9 +36,10 @@ async function loadThemeModule(modulePath: string) {
 }
 
 async function getThemeHelpers() {
-  const activeTheme = await themeService.getActiveTheme();
-  const helpersPath = `src/themes/${activeTheme}/helpers/index.ts`;
-  return await loadThemeModule(helpersPath);
+  // Always use default theme helpers for core functions like getPaginatedPosts
+  // Theme-specific helpers can be added per theme but core functions should be consistent
+  const defaultHelpersPath = `src/themes/default/helpers/index.ts`;
+  return await loadThemeModule(defaultHelpersPath);
 }
 
 async function getThemeTemplate(templateName: string) {
@@ -73,6 +82,7 @@ frontendRouter.get("/", async (c) => {
 
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
 
     // Obtener posts destacados para la homepage
     const featuredPosts = await themeHelpers.getFeaturedPosts(
@@ -100,6 +110,7 @@ frontendRouter.get("/", async (c) => {
         activeTheme,
         featuredPosts,
         categories,
+        blogUrl,
       })
     );
   } catch (error: any) {
@@ -109,10 +120,18 @@ frontendRouter.get("/", async (c) => {
 });
 
 /**
- * GET /blog - Página de blog (página 1)
+ * GET /:blogBase - Página de blog (página 1)
  * Usa blog.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog", async (c) => {
+frontendRouter.get("/:blogBase", async (c) => {
+  const pathSegment = c.req.param("blogBase");
+  const blogBase = await getBlogBase();
+
+  // Verificar si esta ruta es para el blog
+  if (pathSegment !== blogBase) {
+    return c.notFound();
+  }
   try {
     const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
@@ -163,6 +182,7 @@ frontendRouter.get("/blog", async (c) => {
         recentPosts,
         categories,
         tags,
+        blogBase,
       })
     );
   } catch (error: any) {
@@ -172,16 +192,25 @@ frontendRouter.get("/blog", async (c) => {
 });
 
 /**
- * GET /blog/page/:page - Paginación del blog
+ * GET /:blogBase/page/:page - Paginación del blog
  * Usa blog.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog/page/:page", async (c) => {
+frontendRouter.get("/:blogBase/page/:page", async (c) => {
   try {
+    const pathSegment = c.req.param("blogBase");
+    const blogBase = await getBlogBase();
+
+    // Verificar si esta ruta es para el blog
+    if (pathSegment !== blogBase) {
+      return c.notFound();
+    }
+
     const page = parseInt(c.req.param("page")) || 1;
 
-    // Redirigir a /blog si es página 1
+    // Redirigir a /:blogBase si es página 1
     if (page === 1) {
-      return c.redirect("/blog", 301);
+      return c.redirect(`/${blogBase}`, 301);
     }
 
     const activeTheme = await themeService.getActiveTheme();
@@ -238,6 +267,7 @@ frontendRouter.get("/blog/page/:page", async (c) => {
         recentPosts,
         categories,
         tags,
+        blogBase,
       })
     );
   } catch (error: any) {
@@ -247,12 +277,26 @@ frontendRouter.get("/blog/page/:page", async (c) => {
 });
 
 /**
- * GET /blog/:slug - Post individual
+ * GET /:blogBase/:slug - Post individual
  * Usa post.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog/:slug", async (c) => {
+frontendRouter.get("/:blogBase/:slug", async (c) => {
   try {
+    const pathSegment = c.req.param("blogBase");
+    const blogBase = await getBlogBase();
+
+    // Verificar si esta ruta es para el blog
+    if (pathSegment !== blogBase) {
+      return c.notFound();
+    }
+
     const { slug } = c.req.param();
+
+    // Si slug está vacío o es "page", redirigir al blog principal
+    if (!slug || slug === '' || slug === 'page') {
+      return c.redirect(`/${blogBase}`, 301);
+    }
 
     // Buscar el post por slug
     const post = await db.query.content.findFirst({
