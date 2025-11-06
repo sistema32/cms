@@ -1,14 +1,16 @@
 -- ============================================================================
 -- LexCMS Database Schema - Unified Migration
 -- Created: 2025-01-06
--- Description: Complete database schema for LexCMS including all tables,
---              indexes, and initial data
+-- Updated: 2025-01-06 (Fixed execution order)
+-- Description: Complete database schema for LexCMS
+--              STRUCTURE: All CREATE TABLE first, then CREATE INDEX, then INSERT
 -- ============================================================================
 
 -- ============================================================================
--- CORE TABLES: Roles, Permissions, Users
+-- PHASE 1: CREATE ALL TABLES
 -- ============================================================================
 
+-- Core: Roles and Permissions
 CREATE TABLE IF NOT EXISTS `roles` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -16,9 +18,6 @@ CREATE TABLE IF NOT EXISTS `roles` (
 	`is_system` integer DEFAULT false NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `roles_name_unique` ON `roles` (`name`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `permissions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -27,7 +26,6 @@ CREATE TABLE IF NOT EXISTS `permissions` (
 	`description` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `role_permissions` (
 	`role_id` integer NOT NULL,
@@ -36,8 +34,8 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
 	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
+-- Core: Users
 CREATE TABLE IF NOT EXISTS `users` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`email` text NOT NULL,
@@ -53,9 +51,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE no action
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `user_2fa` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -67,14 +62,8 @@ CREATE TABLE IF NOT EXISTS `user_2fa` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `user_2fa_user_id_unique` ON `user_2fa` (`user_id`);
---> statement-breakpoint
 
--- ============================================================================
--- CONTENT TYPES AND TAXONOMY
--- ============================================================================
-
+-- Content Types and Taxonomy
 CREATE TABLE IF NOT EXISTS `content_types` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -88,11 +77,6 @@ CREATE TABLE IF NOT EXISTS `content_types` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `content_types_name_unique` ON `content_types` (`name`);
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `content_types_slug_unique` ON `content_types` (`slug`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `categories` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -109,9 +93,6 @@ CREATE TABLE IF NOT EXISTS `categories` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_type_id`) REFERENCES `content_types`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `categories_slug_unique` ON `categories` (`slug`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `tags` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -121,15 +102,18 @@ CREATE TABLE IF NOT EXISTS `tags` (
 	`color` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `tags_name_unique` ON `tags` (`name`);
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `tags_slug_unique` ON `tags` (`slug`);
---> statement-breakpoint
 
--- ============================================================================
--- MEDIA MANAGEMENT
--- ============================================================================
+-- Media
+CREATE TABLE IF NOT EXISTS `media_folders` (
+  `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  `name` text NOT NULL,
+  `slug` text NOT NULL UNIQUE,
+  `parent_id` integer,
+  `path` text NOT NULL,
+  `created_at` integer DEFAULT (unixepoch()) NOT NULL,
+  `updated_at` integer,
+  FOREIGN KEY (`parent_id`) REFERENCES `media_folders`(`id`) ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS `media` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -150,13 +134,9 @@ CREATE TABLE IF NOT EXISTS `media` (
 	`uploaded_by` integer NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`uploaded_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`uploaded_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`folder_id`) REFERENCES `media_folders`(`id`) ON UPDATE no action ON DELETE set null
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `media_hash_unique` ON `media` (`hash`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `media_folder_id_idx` ON `media` (`folder_id`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `media_sizes` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -170,7 +150,6 @@ CREATE TABLE IF NOT EXISTS `media_sizes` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`media_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `media_seo` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -186,30 +165,8 @@ CREATE TABLE IF NOT EXISTS `media_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`media_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `media_seo_media_id_unique` ON `media_seo` (`media_id`);
---> statement-breakpoint
 
-CREATE TABLE IF NOT EXISTS `media_folders` (
-  `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  `name` text NOT NULL,
-  `slug` text NOT NULL UNIQUE,
-  `parent_id` integer,
-  `path` text NOT NULL,
-  `created_at` integer DEFAULT (unixepoch()) NOT NULL,
-  `updated_at` integer,
-  FOREIGN KEY (`parent_id`) REFERENCES `media_folders`(`id`) ON DELETE CASCADE
-);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `media_folders_parent_id_idx` ON `media_folders` (`parent_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `media_folders_path_idx` ON `media_folders` (`path`);
---> statement-breakpoint
-
--- ============================================================================
--- CONTENT MANAGEMENT
--- ============================================================================
-
+-- Content
 CREATE TABLE IF NOT EXISTS `content` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`content_type_id` integer NOT NULL,
@@ -238,9 +195,6 @@ CREATE TABLE IF NOT EXISTS `content` (
 	FOREIGN KEY (`featured_image_id`) REFERENCES `media`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `content_slug_unique` ON `content` (`slug`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_categories` (
 	`content_id` integer NOT NULL,
@@ -249,7 +203,6 @@ CREATE TABLE IF NOT EXISTS `content_categories` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_tags` (
 	`content_id` integer NOT NULL,
@@ -258,7 +211,6 @@ CREATE TABLE IF NOT EXISTS `content_tags` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_meta` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -269,7 +221,6 @@ CREATE TABLE IF NOT EXISTS `content_meta` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_revisions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -291,7 +242,6 @@ CREATE TABLE IF NOT EXISTS `content_revisions` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_filters` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -306,12 +256,8 @@ CREATE TABLE IF NOT EXISTS `content_filters` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
--- ============================================================================
 -- SEO
--- ============================================================================
-
 CREATE TABLE IF NOT EXISTS `content_seo` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`content_id` integer NOT NULL,
@@ -334,9 +280,6 @@ CREATE TABLE IF NOT EXISTS `content_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `content_seo_content_id_unique` ON `content_seo` (`content_id`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `category_seo` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -360,14 +303,8 @@ CREATE TABLE IF NOT EXISTS `category_seo` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `category_seo_category_id_unique` ON `category_seo` (`category_id`);
---> statement-breakpoint
 
--- ============================================================================
--- COMMENTS
--- ============================================================================
-
+-- Comments
 CREATE TABLE IF NOT EXISTS `comments` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`content_id` integer NOT NULL,
@@ -389,12 +326,8 @@ CREATE TABLE IF NOT EXISTS `comments` (
 	FOREIGN KEY (`content_id`) REFERENCES `content`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
---> statement-breakpoint
 
--- ============================================================================
--- MENUS
--- ============================================================================
-
+-- Menus
 CREATE TABLE IF NOT EXISTS `menus` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -404,9 +337,6 @@ CREATE TABLE IF NOT EXISTS `menus` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `menus_slug_unique` ON `menus` (`slug`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `menu_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -431,12 +361,8 @@ CREATE TABLE IF NOT EXISTS `menu_items` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON UPDATE no action ON DELETE set null
 );
---> statement-breakpoint
 
--- ============================================================================
--- SETTINGS
--- ============================================================================
-
+-- Settings
 CREATE TABLE IF NOT EXISTS `settings` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`key` text NOT NULL,
@@ -446,14 +372,8 @@ CREATE TABLE IF NOT EXISTS `settings` (
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `settings_key_unique` ON `settings` (`key`);
---> statement-breakpoint
 
--- ============================================================================
--- PLUGINS
--- ============================================================================
-
+-- Plugins
 CREATE TABLE IF NOT EXISTS `plugins` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -463,9 +383,6 @@ CREATE TABLE IF NOT EXISTS `plugins` (
 	`installed_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `plugins_name_unique` ON `plugins` (`name`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `plugin_hooks` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -474,15 +391,11 @@ CREATE TABLE IF NOT EXISTS `plugin_hooks` (
 	`priority` integer DEFAULT 10 NOT NULL,
 	FOREIGN KEY (`plugin_id`) REFERENCES `plugins`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
 
--- ============================================================================
--- AUDIT LOGS
--- ============================================================================
-
+-- Audit Logs
 CREATE TABLE IF NOT EXISTS `audit_logs` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  `user_id` integer REFERENCES `users`(`id`) ON DELETE SET NULL,
+  `user_id` integer,
   `user_email` text,
   `action` text NOT NULL,
   `entity` text NOT NULL,
@@ -493,24 +406,11 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   `ip_address` text,
   `user_agent` text,
   `level` text DEFAULT 'info' NOT NULL,
-  `created_at` integer DEFAULT (unixepoch()) NOT NULL
+  `created_at` integer DEFAULT (unixepoch()) NOT NULL,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE SET NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `audit_logs_user_id_idx` ON `audit_logs` (`user_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `audit_logs_entity_idx` ON `audit_logs` (`entity`, `entity_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `audit_logs_action_idx` ON `audit_logs` (`action`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `audit_logs_level_idx` ON `audit_logs` (`level`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `audit_logs_created_at_idx` ON `audit_logs` (`created_at` DESC);
---> statement-breakpoint
 
--- ============================================================================
--- WEBHOOKS
--- ============================================================================
-
+-- Webhooks
 CREATE TABLE IF NOT EXISTS `webhooks` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `name` text NOT NULL,
@@ -531,11 +431,10 @@ CREATE TABLE IF NOT EXISTS `webhooks` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `webhook_deliveries` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  `webhook_id` integer NOT NULL REFERENCES `webhooks`(`id`) ON DELETE CASCADE,
+  `webhook_id` integer NOT NULL,
   `event` text NOT NULL,
   `payload` text NOT NULL,
   `attempt` integer DEFAULT 1 NOT NULL,
@@ -547,28 +446,11 @@ CREATE TABLE IF NOT EXISTS `webhook_deliveries` (
   `scheduled_at` integer DEFAULT (unixepoch()) NOT NULL,
   `delivered_at` integer,
   `next_retry_at` integer,
-  `created_at` integer DEFAULT (unixepoch()) NOT NULL
+  `created_at` integer DEFAULT (unixepoch()) NOT NULL,
+  FOREIGN KEY (`webhook_id`) REFERENCES `webhooks`(`id`) ON UPDATE no action ON DELETE CASCADE
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhooks_is_active_idx` ON `webhooks` (`is_active`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhooks_events_idx` ON `webhooks` (`events`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhook_deliveries_webhook_id_idx` ON `webhook_deliveries` (`webhook_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhook_deliveries_status_idx` ON `webhook_deliveries` (`status`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhook_deliveries_next_retry_idx` ON `webhook_deliveries` (`next_retry_at`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhook_deliveries_event_idx` ON `webhook_deliveries` (`event`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `webhook_deliveries_created_at_idx` ON `webhook_deliveries` (`created_at` DESC);
---> statement-breakpoint
 
--- ============================================================================
--- EMAIL AND NOTIFICATIONS
--- ============================================================================
-
+-- Email and Notifications
 CREATE TABLE IF NOT EXISTS `email_queue` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `to` text NOT NULL,
@@ -592,15 +474,6 @@ CREATE TABLE IF NOT EXISTS `email_queue` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_queue_status_idx` ON `email_queue` (`status`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_queue_priority_idx` ON `email_queue` (`priority`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_queue_next_retry_idx` ON `email_queue` (`next_retry_at`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_queue_created_at_idx` ON `email_queue` (`created_at` DESC);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `email_templates` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -615,13 +488,6 @@ CREATE TABLE IF NOT EXISTS `email_templates` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_templates_name_idx` ON `email_templates` (`name`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_templates_category_idx` ON `email_templates` (`category`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `email_templates_is_active_idx` ON `email_templates` (`is_active`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -643,17 +509,6 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notifications_user_id_idx` ON `notifications` (`user_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notifications_type_idx` ON `notifications` (`type`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notifications_is_read_idx` ON `notifications` (`is_read`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notifications_priority_idx` ON `notifications` (`priority`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notifications_created_at_idx` ON `notifications` (`created_at` DESC);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -669,14 +524,8 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `notification_preferences_user_id_idx` ON `notification_preferences` (`user_id`);
---> statement-breakpoint
 
--- ============================================================================
--- BACKUPS
--- ============================================================================
-
+-- Backups
 CREATE TABLE IF NOT EXISTS `backups` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `filename` text NOT NULL,
@@ -697,20 +546,8 @@ CREATE TABLE IF NOT EXISTS `backups` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `backups_type_idx` ON `backups` (`type`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `backups_status_idx` ON `backups` (`status`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `backups_created_at_idx` ON `backups` (`created_at` DESC);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `backups_storage_provider_idx` ON `backups` (`storage_provider`);
---> statement-breakpoint
 
--- ============================================================================
--- SECURITY
--- ============================================================================
-
+-- Security
 CREATE TABLE IF NOT EXISTS `ip_block_rules` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `ip` text NOT NULL UNIQUE,
@@ -721,13 +558,6 @@ CREATE TABLE IF NOT EXISTS `ip_block_rules` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `ip_block_rules_ip_idx` ON `ip_block_rules` (`ip`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `ip_block_rules_type_idx` ON `ip_block_rules` (`type`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `ip_block_rules_expires_at_idx` ON `ip_block_rules` (`expires_at`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `security_events` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -742,20 +572,8 @@ CREATE TABLE IF NOT EXISTS `security_events` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `security_events_type_idx` ON `security_events` (`type`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `security_events_ip_idx` ON `security_events` (`ip`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `security_events_severity_idx` ON `security_events` (`severity`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `security_events_created_at_idx` ON `security_events` (`created_at` DESC);
---> statement-breakpoint
 
--- ============================================================================
--- API KEYS
--- ============================================================================
-
+-- API Keys
 CREATE TABLE IF NOT EXISTS `api_keys` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `name` text NOT NULL,
@@ -770,20 +588,8 @@ CREATE TABLE IF NOT EXISTS `api_keys` (
   `updated_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `api_keys_key_idx` ON `api_keys` (`key`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `api_keys_user_id_idx` ON `api_keys` (`user_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `api_keys_is_active_idx` ON `api_keys` (`is_active`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `api_keys_expires_at_idx` ON `api_keys` (`expires_at`);
---> statement-breakpoint
 
--- ============================================================================
--- BACKGROUND JOBS
--- ============================================================================
-
+-- Background Jobs
 CREATE TABLE IF NOT EXISTS `jobs` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `name` text NOT NULL,
@@ -802,17 +608,6 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `jobs_status_idx` ON `jobs` (`status`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `jobs_name_idx` ON `jobs` (`name`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `jobs_priority_idx` ON `jobs` (`priority`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `jobs_scheduled_for_idx` ON `jobs` (`scheduled_for`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `jobs_created_at_idx` ON `jobs` (`created_at` DESC);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -826,16 +621,8 @@ CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `scheduled_jobs_enabled_idx` ON `scheduled_jobs` (`enabled`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `scheduled_jobs_next_run_at_idx` ON `scheduled_jobs` (`next_run_at`);
---> statement-breakpoint
 
--- ============================================================================
--- INTERNATIONALIZATION (I18N)
--- ============================================================================
-
+-- I18N
 CREATE TABLE IF NOT EXISTS `languages` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `code` text NOT NULL UNIQUE,
@@ -845,7 +632,6 @@ CREATE TABLE IF NOT EXISTS `languages` (
   `is_active` integer DEFAULT 1 NOT NULL,
   `created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `content_translations` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -863,13 +649,6 @@ CREATE TABLE IF NOT EXISTS `content_translations` (
   FOREIGN KEY (`language_code`) REFERENCES `languages`(`code`) ON DELETE CASCADE,
   UNIQUE(`content_id`, `language_code`)
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `content_translations_content_id_idx` ON `content_translations` (`content_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `content_translations_language_code_idx` ON `content_translations` (`language_code`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `content_translations_slug_idx` ON `content_translations` (`slug`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `category_translations` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -883,16 +662,8 @@ CREATE TABLE IF NOT EXISTS `category_translations` (
   FOREIGN KEY (`language_code`) REFERENCES `languages`(`code`) ON DELETE CASCADE,
   UNIQUE(`category_id`, `language_code`)
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `category_translations_category_id_idx` ON `category_translations` (`category_id`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `category_translations_language_code_idx` ON `category_translations` (`language_code`);
---> statement-breakpoint
 
--- ============================================================================
--- WORKFLOWS
--- ============================================================================
-
+-- Workflows
 CREATE TABLE IF NOT EXISTS `workflows` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `name` text NOT NULL,
@@ -902,7 +673,6 @@ CREATE TABLE IF NOT EXISTS `workflows` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`content_type_id`) REFERENCES `content_types`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_states` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -916,7 +686,6 @@ CREATE TABLE IF NOT EXISTS `workflow_states` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`workflow_id`) REFERENCES `workflows`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_transitions` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -932,7 +701,6 @@ CREATE TABLE IF NOT EXISTS `workflow_transitions` (
   FOREIGN KEY (`to_state_id`) REFERENCES `workflow_states`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`required_role_id`) REFERENCES `roles`(`id`) ON DELETE SET NULL
 );
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `workflow_history` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -947,14 +715,8 @@ CREATE TABLE IF NOT EXISTS `workflow_history` (
   FOREIGN KEY (`to_state_id`) REFERENCES `workflow_states`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `workflow_history_content_id_idx` ON `workflow_history` (`content_id`);
---> statement-breakpoint
 
--- ============================================================================
--- FORMS BUILDER
--- ============================================================================
-
+-- Forms
 CREATE TABLE IF NOT EXISTS `forms` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
   `name` text NOT NULL,
@@ -969,11 +731,6 @@ CREATE TABLE IF NOT EXISTS `forms` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `forms_slug_idx` ON `forms` (`slug`);
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `forms_is_active_idx` ON `forms` (`is_active`);
---> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS `form_submissions` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -988,6 +745,159 @@ CREATE TABLE IF NOT EXISTS `form_submissions` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 --> statement-breakpoint
+
+-- ============================================================================
+-- PHASE 2: CREATE ALL INDEXES
+-- ============================================================================
+
+CREATE UNIQUE INDEX IF NOT EXISTS `roles_name_unique` ON `roles` (`name`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `user_2fa_user_id_unique` ON `user_2fa` (`user_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `content_types_name_unique` ON `content_types` (`name`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `content_types_slug_unique` ON `content_types` (`slug`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `categories_slug_unique` ON `categories` (`slug`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `tags_name_unique` ON `tags` (`name`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `tags_slug_unique` ON `tags` (`slug`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `media_folders_parent_id_idx` ON `media_folders` (`parent_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `media_folders_path_idx` ON `media_folders` (`path`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `media_hash_unique` ON `media` (`hash`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `media_folder_id_idx` ON `media` (`folder_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `media_seo_media_id_unique` ON `media_seo` (`media_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `content_slug_unique` ON `content` (`slug`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `content_seo_content_id_unique` ON `content_seo` (`content_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `category_seo_category_id_unique` ON `category_seo` (`category_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `menus_slug_unique` ON `menus` (`slug`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `settings_key_unique` ON `settings` (`key`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `plugins_name_unique` ON `plugins` (`name`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_logs_user_id_idx` ON `audit_logs` (`user_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_logs_entity_idx` ON `audit_logs` (`entity`, `entity_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_logs_action_idx` ON `audit_logs` (`action`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_logs_level_idx` ON `audit_logs` (`level`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `audit_logs_created_at_idx` ON `audit_logs` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhooks_is_active_idx` ON `webhooks` (`is_active`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhooks_events_idx` ON `webhooks` (`events`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_deliveries_webhook_id_idx` ON `webhook_deliveries` (`webhook_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_deliveries_status_idx` ON `webhook_deliveries` (`status`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_deliveries_next_retry_idx` ON `webhook_deliveries` (`next_retry_at`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_deliveries_event_idx` ON `webhook_deliveries` (`event`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `webhook_deliveries_created_at_idx` ON `webhook_deliveries` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_queue_status_idx` ON `email_queue` (`status`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_queue_priority_idx` ON `email_queue` (`priority`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_queue_next_retry_idx` ON `email_queue` (`next_retry_at`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_queue_created_at_idx` ON `email_queue` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_templates_name_idx` ON `email_templates` (`name`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_templates_category_idx` ON `email_templates` (`category`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `email_templates_is_active_idx` ON `email_templates` (`is_active`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notifications_user_id_idx` ON `notifications` (`user_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notifications_type_idx` ON `notifications` (`type`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notifications_is_read_idx` ON `notifications` (`is_read`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notifications_priority_idx` ON `notifications` (`priority`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notifications_created_at_idx` ON `notifications` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `notification_preferences_user_id_idx` ON `notification_preferences` (`user_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `backups_type_idx` ON `backups` (`type`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `backups_status_idx` ON `backups` (`status`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `backups_created_at_idx` ON `backups` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `backups_storage_provider_idx` ON `backups` (`storage_provider`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `ip_block_rules_ip_idx` ON `ip_block_rules` (`ip`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `ip_block_rules_type_idx` ON `ip_block_rules` (`type`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `ip_block_rules_expires_at_idx` ON `ip_block_rules` (`expires_at`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `security_events_type_idx` ON `security_events` (`type`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `security_events_ip_idx` ON `security_events` (`ip`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `security_events_severity_idx` ON `security_events` (`severity`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `security_events_created_at_idx` ON `security_events` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `api_keys_key_idx` ON `api_keys` (`key`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `api_keys_user_id_idx` ON `api_keys` (`user_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `api_keys_is_active_idx` ON `api_keys` (`is_active`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `api_keys_expires_at_idx` ON `api_keys` (`expires_at`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `jobs_status_idx` ON `jobs` (`status`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `jobs_name_idx` ON `jobs` (`name`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `jobs_priority_idx` ON `jobs` (`priority`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `jobs_scheduled_for_idx` ON `jobs` (`scheduled_for`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `jobs_created_at_idx` ON `jobs` (`created_at` DESC);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `scheduled_jobs_enabled_idx` ON `scheduled_jobs` (`enabled`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `scheduled_jobs_next_run_at_idx` ON `scheduled_jobs` (`next_run_at`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `content_translations_content_id_idx` ON `content_translations` (`content_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `content_translations_language_code_idx` ON `content_translations` (`language_code`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `content_translations_slug_idx` ON `content_translations` (`slug`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `category_translations_category_id_idx` ON `category_translations` (`category_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `category_translations_language_code_idx` ON `category_translations` (`language_code`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `workflow_history_content_id_idx` ON `workflow_history` (`content_id`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `forms_slug_idx` ON `forms` (`slug`);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `forms_is_active_idx` ON `forms` (`is_active`);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS `form_submissions_form_id_idx` ON `form_submissions` (`form_id`);
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS `form_submissions_status_idx` ON `form_submissions` (`status`);
@@ -996,7 +906,7 @@ CREATE INDEX IF NOT EXISTS `form_submissions_created_at_idx` ON `form_submission
 --> statement-breakpoint
 
 -- ============================================================================
--- INITIAL DATA: Email Templates
+-- PHASE 3: INSERT INITIAL DATA
 -- ============================================================================
 
 INSERT OR IGNORE INTO `email_templates` (`name`, `subject`, `text_template`, `html_template`, `variables`, `category`, `description`)
@@ -1046,10 +956,6 @@ VALUES (
   'Notification sent when someone replies to user comment'
 );
 --> statement-breakpoint
-
--- ============================================================================
--- INITIAL DATA: Languages
--- ============================================================================
 
 INSERT OR IGNORE INTO languages (code, name, native_name, is_default, is_active) VALUES
   ('en', 'English', 'English', 1, 1),
