@@ -20,7 +20,13 @@ export class PluginLoader {
   private loadedPlugins: Map<string, Plugin> = new Map();
 
   constructor(pluginsDir: string = './plugins') {
-    this.pluginsDir = pluginsDir;
+    // Convert relative path to absolute path
+    if (!pluginsDir.startsWith('/')) {
+      this.pluginsDir = join(Deno.cwd(), pluginsDir);
+    } else {
+      this.pluginsDir = pluginsDir;
+    }
+    console.log(`📁 Plugin directory: ${this.pluginsDir}`);
   }
 
   /**
@@ -119,8 +125,8 @@ export class PluginLoader {
       throw new Error(`Plugin entry point not found: ${pluginPath}`);
     }
 
-    // Dynamic import
-    const module = await import(`file://${Deno.cwd()}/${pluginPath}`);
+    // Dynamic import - pluginPath is already absolute
+    const module = await import(`file://${pluginPath}`);
 
     // Get plugin class (default export)
     const PluginClass = module.default;
