@@ -37,11 +37,18 @@ interface UsersPageProps {
     offset: number;
     limit: number;
   };
+  userPermissions?: string[];
 }
 
 export const UsersPageImproved = (props: UsersPageProps) => {
-  const { user, users, roles, stats, filters = {}, pagination } = props;
+  const { user, users, roles, stats, filters = {}, pagination, userPermissions = [] } = props;
   const adminPath = env.ADMIN_PATH;
+
+  // Helper para verificar permisos
+  const hasPermission = (permission: string) => userPermissions.includes(permission);
+  const canCreate = hasPermission("users:create");
+  const canUpdate = hasPermission("users:update");
+  const canDelete = hasPermission("users:delete");
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -88,14 +95,16 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         }
       </div>
       <div class="page-actions">
-        <button onclick="showCreateModal()" class="btn-action">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"
-            ></path>
-          </svg>
-          Nuevo Usuario
-        </button>
+        ${canCreate ? html`
+          <button onclick="showCreateModal()" class="btn-action">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"
+              ></path>
+            </svg>
+            Nuevo Usuario
+          </button>
+        ` : ""}
       </div>
     </div>
 
@@ -175,39 +184,45 @@ export const UsersPageImproved = (props: UsersPageProps) => {
     </div>
 
     <!-- Bulk Actions -->
-    <div id="bulkActions" class="hidden table-card mb-6 p-4 bg-purple-50 dark:bg-purple-900/20">
-      <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-          <span id="selectedCount">0</span> usuario(s) seleccionado(s)
-        </span>
-        <div class="flex gap-2">
-          <button
-            onclick="bulkUpdateStatus('active')"
-            class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Activar
-          </button>
-          <button
-            onclick="bulkUpdateStatus('inactive')"
-            class="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
-          >
-            Desactivar
-          </button>
-          <button
-            onclick="bulkUpdateStatus('suspended')"
-            class="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
-          >
-            Suspender
-          </button>
-          <button
-            onclick="bulkDelete()"
-            class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Eliminar
-          </button>
+    ${(canUpdate || canDelete) ? html`
+      <div id="bulkActions" class="hidden table-card mb-6 p-4 bg-purple-50 dark:bg-purple-900/20">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span id="selectedCount">0</span> usuario(s) seleccionado(s)
+          </span>
+          <div class="flex gap-2">
+            ${canUpdate ? html`
+              <button
+                onclick="bulkUpdateStatus('active')"
+                class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Activar
+              </button>
+              <button
+                onclick="bulkUpdateStatus('inactive')"
+                class="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+              >
+                Desactivar
+              </button>
+              <button
+                onclick="bulkUpdateStatus('suspended')"
+                class="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+              >
+                Suspender
+              </button>
+            ` : ""}
+            ${canDelete ? html`
+              <button
+                onclick="bulkDelete()"
+                class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Eliminar
+              </button>
+            ` : ""}
+          </div>
         </div>
       </div>
-    </div>
+    ` : ""}
 
     <!-- Users Table -->
     <div class="table-card">
@@ -283,18 +298,20 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                       </td>
                       <td>
                         <div class="flex gap-2">
-                          <button
-                            onclick="editUser(${u.id}, '${u.name?.replace(/'/g, "\\\\'") || ""}', '${u.email}', ${u.role?.id || "null"}, '${u.status || "active"}')"
-                            class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
-                            title="Editar"
-                          >
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                              ></path>
-                            </svg>
-                          </button>
-                          ${u.email !== user.email && u.id !== 1
+                          ${canUpdate ? html`
+                            <button
+                              onclick="editUser(${u.id}, '${u.name?.replace(/'/g, "\\\\'") || ""}', '${u.email}', ${u.role?.id || "null"}, '${u.status || "active"}')"
+                              class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                              title="Editar"
+                            >
+                              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                  d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+                                ></path>
+                              </svg>
+                            </button>
+                          ` : ""}
+                          ${canDelete && u.email !== user.email && u.id !== 1
                             ? html`
                                 <button
                                   onclick="deleteUser(${u.id}, '${u.email}')"
@@ -311,6 +328,9 @@ export const UsersPageImproved = (props: UsersPageProps) => {
                                 </button>
                               `
                             : ""}
+                          ${!canUpdate && !canDelete ? html`
+                            <span class="text-xs text-gray-400">Sin permisos</span>
+                          ` : ""}
                         </div>
                       </td>
                     </tr>
