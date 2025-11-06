@@ -46,14 +46,7 @@ export const Header = (props: HeaderProps) => {
             </button>
 
             <ul class="nav-menu">
-              <li class="nav-item">
-                <a href="/" class="nav-link">Inicio</a>
-              </li>
-              <li class="nav-item">
-                <a href="${blogUrl}" class="nav-link">Blog</a>
-              </li>
-
-              ${menu.map((item) => html`
+              ${menu.length > 0 ? menu.map((item) => html`
                 <li class="nav-item ${item.children && item.children.length > 0 ? 'has-children' : ''}">
                   <a
                     href="${item.url}"
@@ -73,9 +66,13 @@ export const Header = (props: HeaderProps) => {
                         <li class="nav-subitem">
                           <a
                             href="${child.url}"
-                            class="nav-sublink"
+                            class="nav-sublink ${child.cssClass || ''}"
                             ${child.target ? `target="${child.target}"` : ''}
+                            ${child.title ? `title="${child.title}"` : ''}
                           >
+                            ${child.icon ? html`
+                              <span class="nav-icon">${child.icon}</span>
+                            ` : ''}
                             ${child.label}
                           </a>
                         </li>
@@ -83,7 +80,15 @@ export const Header = (props: HeaderProps) => {
                     </ul>
                   ` : ''}
                 </li>
-              `)}
+              `) : html`
+                <!-- Default menu when no menu is configured -->
+                <li class="nav-item">
+                  <a href="/" class="nav-link">Inicio</a>
+                </li>
+                <li class="nav-item">
+                  <a href="${blogUrl}" class="nav-link">Blog</a>
+                </li>
+              `}
             </ul>
 
             <!-- Búsqueda -->

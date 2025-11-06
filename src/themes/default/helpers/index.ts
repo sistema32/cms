@@ -1,7 +1,9 @@
 import * as settingsService from "../../../services/settingsService.ts";
+import * as menuService from "../../../services/menuService.ts";
+import * as menuItemService from "../../../services/menuItemService.ts";
 import { db } from "../../../config/db.ts";
 import { content, users, categories, tags } from "../../../db/schema.ts";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 /**
  * Theme Helpers - Funciones auxiliares para templates
@@ -57,12 +59,69 @@ export interface MenuItem {
 }
 
 /**
- * Obtiene un menú por slug
+ * Construye la URL de un item de menú según su tipo
+ */
+function buildMenuItemUrl(item: any): string {
+  // Si tiene URL manual, usarla directamente
+  if (item.url) {
+    return item.url;
+  }
+
+  // Si está vinculado a contenido
+  if (item.contentId && item.content) {
+    return `/${item.content.slug}`;
+  }
+
+  // Si está vinculado a categoría
+  if (item.categoryId && item.category) {
+    return `/category/${item.category.slug}`;
+  }
+
+  // Si está vinculado a tag
+  if (item.tagId && item.tag) {
+    return `/tag/${item.tag.slug}`;
+  }
+
+  // Fallback
+  return "#";
+}
+
+/**
+ * Convierte items de menú del servicio al formato esperado por los templates
+ */
+function convertMenuItems(items: any[]): MenuItem[] {
+  return items.map(item => ({
+    id: item.id,
+    label: item.label,
+    url: buildMenuItemUrl(item),
+    title: item.title || undefined,
+    icon: item.icon || undefined,
+    cssClass: item.cssClass || undefined,
+    target: item.target || undefined,
+    children: item.children ? convertMenuItems(item.children) : undefined,
+  }));
+}
+
+/**
+ * Obtiene un menú por slug con estructura jerárquica
  */
 export async function getMenu(slug: string): Promise<MenuItem[]> {
-  // TODO: Implementar cuando tengamos el servicio de menús
-  // Por ahora retornamos array vacío
-  return [];
+  try {
+    const menu = await menuService.getMenuBySlug(slug);
+
+    if (!menu || !menu.items) {
+      return [];
+    }
+
+    // Construir jerarquía de items
+    const hierarchy = await menuItemService.getMenuItemsHierarchy(menu.id);
+
+    // Convertir al formato esperado
+    return convertMenuItems(hierarchy);
+  } catch (error) {
+    console.error(`Error loading menu '${slug}':`, error);
+    return [];
+  }
 }
 
 // ============= CONTENT HELPERS =============
@@ -633,6 +692,102 @@ export function postClass(post: {
   return classes.join(" ");
 }
 
+// ============= CATEGORY & TAG HELPERS =============
+
+export interface CategoryData {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  count?: number;
+}
+
+/**
+ * Obtiene todas las categorías
+ */
+export async function getCategories(limit?: number): Promise<CategoryData[]> {
+  const allCategories = await db.query.categories.findMany({
+    orderBy: [desc(categories.name)],
+  });
+
+  // Contar posts por categoría
+  const categoriesWithCount = await Promise.all(
+    allCategories.map(async (cat) => {
+      const posts = await db.query.content.findMany({
+        where: eq(content.status, "published"),
+        with: {
+          contentCategories: {
+            where: (contentCategories, { eq }) => eq(contentCategories.categoryId, cat.id),
+          },
+        },
+      });
+
+      return {
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description || undefined,
+        count: posts.filter(p => p.contentCategories.length > 0).length,
+      };
+    })
+  );
+
+  // Filtrar categorías con posts y ordenar por cantidad de posts
+  const categoriesWithPosts = categoriesWithCount
+    .filter(cat => cat.count && cat.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
+
+  if (limit) {
+    return categoriesWithPosts.slice(0, limit);
+  }
+
+  return categoriesWithPosts;
+}
+
+export interface TagData {
+  id: number;
+  name: string;
+  slug: string;
+  count?: number;
+}
+
+/**
+ * Obtiene tags populares
+ */
+export async function getPopularTags(limit = 10): Promise<TagData[]> {
+  const allTags = await db.query.tags.findMany({
+    orderBy: [desc(tags.name)],
+  });
+
+  // Contar posts por tag
+  const tagsWithCount = await Promise.all(
+    allTags.map(async (tag) => {
+      const posts = await db.query.content.findMany({
+        where: eq(content.status, "published"),
+        with: {
+          contentTags: {
+            where: (contentTags, { eq }) => eq(contentTags.tagId, tag.id),
+          },
+        },
+      });
+
+      return {
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        count: posts.filter(p => p.contentTags.length > 0).length,
+      };
+    })
+  );
+
+  // Filtrar tags con posts y ordenar por cantidad
+  const tagsWithPosts = tagsWithCount
+    .filter(tag => tag.count && tag.count > 0)
+    .sort((a, b) => (b.count || 0) - (a.count || 0));
+
+  return tagsWithPosts.slice(0, limit);
+}
+
 // ============= EXPORT ALL HELPERS =============
 
 export const themeHelpers = {
@@ -648,6 +803,10 @@ export const themeHelpers = {
   getPaginatedPosts,
   getTotalPosts,
   getFeaturedPosts,
+
+  // Categories & Tags
+  getCategories,
+  getPopularTags,
 
   // Formatting
   formatDate,

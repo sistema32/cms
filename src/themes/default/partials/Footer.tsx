@@ -1,5 +1,5 @@
 import { html } from "hono/html";
-import type { SiteData } from "../helpers/index.ts";
+import type { SiteData, MenuItem, CategoryData } from "../helpers/index.ts";
 
 /**
  * Footer - Footer global del sitio
@@ -9,10 +9,12 @@ interface FooterProps {
   site: SiteData;
   custom?: Record<string, any>;
   blogUrl?: string;
+  footerMenu?: MenuItem[];
+  categories?: CategoryData[];
 }
 
 export const Footer = (props: FooterProps) => {
-  const { site, custom = {}, blogUrl = "/blog" } = props;
+  const { site, custom = {}, blogUrl = "/blog", footerMenu = [], categories = [] } = props;
   const currentYear = new Date().getFullYear();
 
   return html`
@@ -27,27 +29,44 @@ export const Footer = (props: FooterProps) => {
             </p>
           </div>
 
-          <!-- Columna 2: Links Rápidos -->
+          <!-- Columna 2: Links Rápidos (desde menú footer o default) -->
           <div class="footer-col">
             <h3 class="footer-title">Enlaces</h3>
             <ul class="footer-links">
-              <li><a href="/">Inicio</a></li>
-              <li><a href="${blogUrl}">Blog</a></li>
-              <li><a href="/about">Acerca de</a></li>
-              <li><a href="/contact">Contacto</a></li>
+              ${footerMenu.length > 0 ? footerMenu.map((item) => html`
+                <li>
+                  <a
+                    href="${item.url}"
+                    ${item.target ? `target="${item.target}"` : ''}
+                    ${item.title ? `title="${item.title}"` : ''}
+                  >
+                    ${item.icon ? html`<span class="link-icon">${item.icon}</span> ` : ''}${item.label}
+                  </a>
+                </li>
+              `) : html`
+                <!-- Default links when no footer menu is configured -->
+                <li><a href="/">Inicio</a></li>
+                <li><a href="${blogUrl}">Blog</a></li>
+              `}
             </ul>
           </div>
 
-          <!-- Columna 3: Categorías -->
-          <div class="footer-col">
-            <h3 class="footer-title">Categorías</h3>
-            <ul class="footer-links">
-              <!-- TODO: Obtener categorías dinámicamente -->
-              <li><a href="/category/tecnologia">Tecnología</a></li>
-              <li><a href="/category/diseno">Diseño</a></li>
-              <li><a href="/category/negocios">Negocios</a></li>
-            </ul>
-          </div>
+          <!-- Columna 3: Categorías (dinámicas) -->
+          ${categories.length > 0 ? html`
+            <div class="footer-col">
+              <h3 class="footer-title">Categorías</h3>
+              <ul class="footer-links">
+                ${categories.map((cat) => html`
+                  <li>
+                    <a href="/category/${cat.slug}">
+                      ${cat.name}
+                      ${cat.count ? html` <span class="count">(${cat.count})</span>` : ''}
+                    </a>
+                  </li>
+                `)}
+              </ul>
+            </div>
+          ` : ''}
 
           <!-- Columna 4: Social / Newsletter -->
           <div class="footer-col">

@@ -63,6 +63,26 @@ async function getThemeTemplate(templateName: string) {
   }
 }
 
+/**
+ * Load common data needed by all templates (menus, categories, etc.)
+ */
+async function loadCommonTemplateData() {
+  const themeHelpers = await getThemeHelpers();
+
+  // Load menus (main header menu and footer menu)
+  const headerMenu = await themeHelpers.getMenu("main");
+  const footerMenu = await themeHelpers.getMenu("footer");
+
+  // Load categories (top 6 by post count)
+  const categories = await themeHelpers.getCategories(6);
+
+  return {
+    headerMenu,
+    footerMenu,
+    categories,
+  };
+}
+
 // ============= SERVIR ASSETS ESTÁTICOS =============
 
 // Servir archivos estáticos del theme
@@ -84,23 +104,13 @@ frontendRouter.get("/", async (c) => {
     const custom = await themeHelpers.getCustomSettings();
     const blogUrl = await getBlogBase().then(base => `/${base}`);
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Obtener posts destacados para la homepage
     const featuredPosts = await themeHelpers.getFeaturedPosts(
       custom.homepage_featured_count || 6
     );
-
-    // Obtener categorías para la sección de categorías
-    const allCategories = await db.query.categories.findMany({
-      limit: 6,
-      orderBy: [desc(categoriesSchema.id)],
-    });
-
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0, // TODO: Contar posts por categoría
-    }));
 
     // Renderizar homepage
     return c.html(
@@ -109,8 +119,10 @@ frontendRouter.get("/", async (c) => {
         custom,
         activeTheme,
         featuredPosts,
-        categories,
+        categories: commonData.categories,
         blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -140,6 +152,9 @@ frontendRouter.get("/:blogBase", async (c) => {
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Obtener posts paginados
     const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(1);
 
@@ -149,27 +164,8 @@ frontendRouter.get("/:blogBase", async (c) => {
     // Posts recientes para sidebar
     const recentPosts = await themeHelpers.getRecentPosts(5);
 
-    // Categorías para sidebar
-    const allCategories = await db.query.categories.findMany({
-      limit: 10,
-    });
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0,
-    }));
-
     // Tags para sidebar
-    const allTags = await db.query.tags.findMany({
-      limit: 20,
-    });
-    const tags = allTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      count: 0,
-    }));
+    const tags = await themeHelpers.getPopularTags(20);
 
     // Renderizar blog
     return c.html(
@@ -180,9 +176,11 @@ frontendRouter.get("/:blogBase", async (c) => {
         posts,
         pagination,
         recentPosts,
-        categories,
+        categories: commonData.categories,
         tags,
         blogBase,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -231,30 +229,14 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
     // Calcular paginación
     const pagination = await themeHelpers.getPagination(page, total);
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Posts recientes para sidebar
     const recentPosts = await themeHelpers.getRecentPosts(5);
 
-    // Categorías para sidebar
-    const allCategories = await db.query.categories.findMany({
-      limit: 10,
-    });
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0,
-    }));
-
     // Tags para sidebar
-    const allTags = await db.query.tags.findMany({
-      limit: 20,
-    });
-    const tags = allTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      count: 0,
-    }));
+    const tags = await themeHelpers.getPopularTags(20);
 
     // Renderizar blog
     return c.html(
@@ -265,9 +247,11 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
         posts,
         pagination,
         recentPosts,
-        categories,
+        categories: commonData.categories,
         tags,
         blogBase,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -356,8 +340,13 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Obtener posts relacionados (por ahora, posts recientes)
     const relatedPosts = await themeHelpers.getRecentPosts(3);
+
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
 
     // Renderizar template
     return c.html(
@@ -367,6 +356,10 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         activeTheme,
         post: postData,
         relatedPosts,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
@@ -393,6 +386,10 @@ frontendRouter.get("/category/:slug", async (c) => {
     const posts = await themeHelpers.getRecentPosts(10);
     const pagination = await themeHelpers.getPagination(1, posts.length);
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
+
     return c.html(
       IndexTemplate({
         site,
@@ -400,6 +397,10 @@ frontendRouter.get("/category/:slug", async (c) => {
         activeTheme,
         posts,
         pagination,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
@@ -423,6 +424,10 @@ frontendRouter.get("/tag/:slug", async (c) => {
     // TODO: Implementar filtrado por tag
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
     const posts = await themeHelpers.getRecentPosts(10);
     const pagination = await themeHelpers.getPagination(1, posts.length);
 
@@ -433,6 +438,10 @@ frontendRouter.get("/tag/:slug", async (c) => {
         activeTheme,
         posts,
         pagination,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
