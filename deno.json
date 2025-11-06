@@ -16,6 +16,7 @@
     "db:push": "deno run -A npm:drizzle-kit push",
     "db:studio": "deno run -A npm:drizzle-kit studio",
     "db:seed": "deno run --allow-all src/db/seed.ts",
+    "db:setup": "deno run --allow-all src/db/setup.ts",
     "test": "deno test --allow-all tests/",
     "test:unit": "deno test --allow-all tests/unit/",
     "test:security": "deno test --allow-all tests/security/",
