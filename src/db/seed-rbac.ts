@@ -13,7 +13,6 @@ try {
     .values({
       name: "superadmin",
       description: "Super administrador con todos los permisos",
-      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -23,7 +22,6 @@ try {
     .values({
       name: "admin",
       description: "Administrador con permisos limitados",
-      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -33,7 +31,6 @@ try {
     .values({
       name: "user",
       description: "Usuario registrado estándar",
-      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -43,7 +40,6 @@ try {
     .values({
       name: "guest",
       description: "Usuario público sin autenticación",
-      isSystem: true,
     })
     .onConflictDoNothing()
     .returning();
@@ -118,6 +114,12 @@ try {
     { module: "menu_items", action: "read", description: "Leer items de menú" },
     { module: "menu_items", action: "update", description: "Actualizar items de menú" },
     { module: "menu_items", action: "delete", description: "Eliminar items de menú" },
+
+    // Permisos de SETTINGS
+    { module: "settings", action: "create", description: "Crear configuraciones" },
+    { module: "settings", action: "read", description: "Leer configuraciones" },
+    { module: "settings", action: "update", description: "Actualizar configuraciones" },
+    { module: "settings", action: "delete", description: "Eliminar configuraciones" },
   ];
 
   const createdPermissions = await db
@@ -144,7 +146,7 @@ try {
     console.log(`   ✓ Superadmin: ${allPermissions.length} permisos`);
   }
 
-  // ADMIN: Permisos de lectura y gestión de usuarios, contenido y menús
+  // ADMIN: Permisos de lectura y gestión de usuarios, contenido, menús y settings
   if (adminRole) {
     const adminPerms = allPermissions.filter(
       (p) =>
@@ -156,6 +158,7 @@ try {
         p.module === "media" ||
         p.module === "menus" ||
         p.module === "menu_items" ||
+        p.module === "settings" ||
         (p.module === "roles" && p.action === "read") ||
         (p.module === "permissions" && p.action === "read")
     );
