@@ -132,22 +132,33 @@ CREATE DATABASE lexcms;
 
 ### 4. Configurar Base de Datos
 
+**Opción 1: Setup Automático (Recomendado para primera instalación)**
+
 ```bash
-# Generar archivos de migración desde el esquema
+# Este comando ejecuta migraciones y seed automáticamente
+deno task db:setup
+```
+
+**Opción 2: Setup Manual (paso a paso)**
+
+```bash
+# 1. Generar archivos de migración desde el esquema (solo si modificaste schema.ts)
 deno task db:generate
 
-# Aplicar las migraciones a la base de datos
+# 2. Aplicar las migraciones a la base de datos (REQUERIDO antes de seed)
 deno task db:migrate
 
-# (Opcional) Insertar datos de prueba
+# 3. Insertar datos de prueba y usuario admin
 deno task db:seed
 ```
 
+> **Nota Importante**: Debes ejecutar `db:migrate` antes de `db:seed`, o la operación fallará con error "no such table: users".
+
 > **Nota**: Para SQLite local, usa `db:migrate` en lugar de `db:push`. El comando `db:push` solo funciona con PostgreSQL.
 
-**Credenciales de administrador por defecto** (después de ejecutar `db:seed`):
-- **Email**: `admin@lexcms.com`
-- **Password**: `Admin123!`
+**Credenciales de administrador por defecto** (después de ejecutar `db:seed` o `db:setup`):
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
 
 > ⚠️ **Importante**: Cambia estas credenciales inmediatamente después del primer login.
 
@@ -359,6 +370,7 @@ deno task start            # Servidor en modo producción
 deno task css:build        # Compilar CSS minificado
 
 # Base de Datos
+deno task db:setup         # Setup completo: migraciones + seed (recomendado primera vez)
 deno task db:generate      # Generar archivos SQL de migración desde el schema
 deno task db:migrate       # Aplicar migraciones a la base de datos
 deno task db:push          # Push directo del schema (solo PostgreSQL, no usar con SQLite)
