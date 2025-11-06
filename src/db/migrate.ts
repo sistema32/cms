@@ -38,9 +38,31 @@ try {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
+      let hasWarnings = false;
+      let successCount = 0;
+      let skipCount = 0;
+
       for (const statement of statements) {
         if (statement && !statement.startsWith("--")) {
-          await db.run(sql.raw(statement));
+          try {
+            await db.run(sql.raw(statement));
+            successCount++;
+          } catch (error) {
+            // Verificar si es un error de "tabla ya existe" o "índice ya existe"
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (
+              errorMessage.includes("already exists") ||
+              errorMessage.includes("SQLITE_ERROR: table") ||
+              errorMessage.includes("SQLITE_ERROR: index")
+            ) {
+              // Tratar como advertencia y continuar
+              hasWarnings = true;
+              skipCount++;
+            } else {
+              // Re-lanzar otros tipos de errores
+              throw error;
+            }
+          }
         }
       }
 
@@ -48,7 +70,12 @@ try {
       await db.run(
         sql`INSERT INTO __drizzle_migrations (hash) VALUES (${hash})`
       );
-      console.log(`  ✅ ${file} aplicada`);
+
+      if (hasWarnings) {
+        console.log(`  ⚠️  ${file} aplicada con advertencias (${successCount} exitosos, ${skipCount} ya existían)`);
+      } else {
+        console.log(`  ✅ ${file} aplicada`);
+      }
     } else {
       console.log(`  ⏭️  ${file} ya aplicada`);
     }
