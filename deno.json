@@ -13,6 +13,7 @@
     "bundle:ckeditor": "sh -c \"cp node_modules/ckeditor5/dist/ckeditor5.css src/admin/assets/css/ckeditor.css && ./node_modules/.bin/esbuild src/admin/assets/js/ckeditor-entry.ts --bundle --format=esm --platform=browser --target=es2018 --outfile=src/admin/assets/js/ckeditor-bundle.js --loader:.svg=text --loader:.ttf=dataurl --loader:.woff=dataurl --loader:.woff2=dataurl && rm -f src/admin/assets/js/ckeditor-bundle.css\"",
     "db:generate": "deno run -A npm:drizzle-kit generate",
     "db:migrate": "deno run --allow-all src/db/migrate.ts",
+    "db:reset-migrations": "deno run --allow-all src/db/reset-migrations.ts",
     "db:push": "deno run -A npm:drizzle-kit push",
     "db:studio": "deno run -A npm:drizzle-kit studio",
     "db:seed": "deno run --allow-all src/db/seed.ts",
