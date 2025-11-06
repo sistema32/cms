@@ -89,6 +89,19 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
       />
     </form>
 
+    <!-- Drag & Drop Zone -->
+    <div
+      id="dropZone"
+      class="mb-6 hidden border-4 border-dashed border-purple-400 bg-purple-50 dark:bg-purple-900 rounded-lg p-8 text-center"
+    >
+      <svg class="mx-auto h-16 w-16 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+      <p class="mt-4 text-lg font-medium text-purple-700 dark:text-purple-300">
+        Suelta los archivos aquí para subirlos
+      </p>
+    </div>
+
     <!-- Upload Progress -->
     <div id="uploadProgress" class="mb-6 hidden">
       <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
@@ -206,7 +219,27 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           </div>
 
           <!-- Action Overlay -->
-          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+            ${!pickerMode && item.type === "image" ? html`
+              <button
+                onclick="event.stopPropagation(); openImageEditor(${item.id}, '${item.url}')"
+                class="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                title="Editar imagen"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                onclick="event.stopPropagation(); openSeoEditor(${item.id})"
+                class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title="Editar SEO"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </button>
+            ` : ""}
             ${!pickerMode ? html`
               <button
                 onclick="event.stopPropagation(); deleteMedia(${item.id}, '${item.originalFilename}')"
@@ -250,11 +283,122 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
       </div>
     ` : ""}
 
+    <!-- SEO Editor Modal -->
+    <div id="seoEditorModal" class="modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center">
+      <div class="modal-container max-w-2xl w-full">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="modal-title">Editar Metadatos SEO</h3>
+          <button
+            type="button"
+            onclick="closeSeoEditor()"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form id="seoForm" class="space-y-4">
+          <input type="hidden" id="seoMediaId" />
+
+          <div>
+            <label class="form-label">Texto Alternativo (Alt)</label>
+            <input type="text" id="seoAlt" class="form-input" placeholder="Descripción de la imagen" />
+            <p class="text-xs text-gray-500 mt-1">Importante para accesibilidad y SEO</p>
+          </div>
+
+          <div>
+            <label class="form-label">Título</label>
+            <input type="text" id="seoTitle" class="form-input" placeholder="Título de la imagen" />
+          </div>
+
+          <div>
+            <label class="form-label">Leyenda/Caption</label>
+            <textarea id="seoCaption" class="form-input" rows="2" placeholder="Leyenda de la imagen"></textarea>
+          </div>
+
+          <div>
+            <label class="form-label">Descripción</label>
+            <textarea id="seoDescription" class="form-input" rows="3" placeholder="Descripción detallada"></textarea>
+          </div>
+
+          <div>
+            <label class="form-label">Palabra Clave Focus</label>
+            <input type="text" id="seoFocusKeyword" class="form-input" placeholder="Palabra clave principal" />
+          </div>
+
+          <div>
+            <label class="form-label">Créditos</label>
+            <input type="text" id="seoCredits" class="form-input" placeholder="Autor/Fotógrafo" />
+          </div>
+
+          <div>
+            <label class="form-label">Copyright</label>
+            <input type="text" id="seoCopyright" class="form-input" placeholder="© 2025 ..." />
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" onclick="closeSeoEditor()" class="btn-secondary">
+              Cancelar
+            </button>
+            <button type="button" onclick="saveSeoData()" class="btn-action">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
+
+      // Drag and drop setup
+      let dragCounter = 0;
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const dropZone = document.getElementById('dropZone');
+
+        body.addEventListener('dragenter', (e) => {
+          e.preventDefault();
+          dragCounter++;
+          if (dragCounter === 1) {
+            dropZone.classList.remove('hidden');
+          }
+        });
+
+        body.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          dragCounter--;
+          if (dragCounter === 0) {
+            dropZone.classList.add('hidden');
+          }
+        });
+
+        body.addEventListener('dragover', (e) => {
+          e.preventDefault();
+        });
+
+        body.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dragCounter = 0;
+          dropZone.classList.add('hidden');
+
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            handleFilesUpload(Array.from(files));
+          }
+        });
+      });
+
       // Upload handling
       async function handleFileUpload(event) {
-        const files = event.target.files;
+        const files = Array.from(event.target.files);
+        await handleFilesUpload(files);
+      }
+
+      async function handleFilesUpload(files) {
         if (!files || files.length === 0) return;
 
         const uploadProgress = document.getElementById('uploadProgress');
@@ -338,6 +482,397 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             previewWindow.opener = null;
           }
         }
+      }
+
+      // SEO Editor functions
+      async function openSeoEditor(mediaId) {
+        document.getElementById('seoMediaId').value = mediaId;
+
+        // Fetch current SEO data
+        try {
+          const response = await fetch(\`\${ADMIN_BASE_PATH}/media/\${mediaId}\`, {
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const seo = data.media.seo || {};
+
+            document.getElementById('seoAlt').value = seo.alt || '';
+            document.getElementById('seoTitle').value = seo.title || '';
+            document.getElementById('seoCaption').value = seo.caption || '';
+            document.getElementById('seoDescription').value = seo.description || '';
+            document.getElementById('seoFocusKeyword').value = seo.focusKeyword || '';
+            document.getElementById('seoCredits').value = seo.credits || '';
+            document.getElementById('seoCopyright').value = seo.copyright || '';
+          }
+        } catch (error) {
+          console.error('Error loading SEO data:', error);
+        }
+
+        document.getElementById('seoEditorModal').classList.remove('hidden');
+      }
+
+      function closeSeoEditor() {
+        document.getElementById('seoEditorModal').classList.add('hidden');
+        document.getElementById('seoForm').reset();
+      }
+
+      async function saveSeoData() {
+        const mediaId = document.getElementById('seoMediaId').value;
+
+        const seoData = {
+          alt: document.getElementById('seoAlt').value,
+          title: document.getElementById('seoTitle').value,
+          caption: document.getElementById('seoCaption').value,
+          description: document.getElementById('seoDescription').value,
+          focusKeyword: document.getElementById('seoFocusKeyword').value,
+          credits: document.getElementById('seoCredits').value,
+          copyright: document.getElementById('seoCopyright').value
+        };
+
+        try {
+          const response = await fetch(\`\${ADMIN_BASE_PATH}/api/media/\${mediaId}/seo\`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(seoData)
+          });
+
+          if (!response.ok) {
+            throw new Error('Error al guardar los datos SEO');
+          }
+
+          closeSeoEditor();
+          alert('Metadatos SEO guardados exitosamente');
+        } catch (error) {
+          alert('Error al guardar los datos SEO: ' + error.message);
+        }
+      }
+
+      // Image Editor - similar to MediaPicker
+      function openImageEditor(mediaId, mediaUrl) {
+        const editorModalHtml = \`
+          <div id="imageEditorModal" class="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center">
+            <div class="modal-container max-w-7xl w-full max-h-[95vh] overflow-hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="modal-title">Editor de Imágenes</h3>
+                <button
+                  type="button"
+                  onclick="closeImageEditor()"
+                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(95vh-8rem)]">
+                <div class="lg:col-span-3 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center relative">
+                  <canvas id="imageEditorCanvas" class="max-w-full max-h-full"></canvas>
+                  <div id="imageEditorLoading" class="absolute inset-0 flex items-center justify-center bg-gray-900">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg overflow-y-auto space-y-4">
+                  <div class="space-y-3">
+                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Transformar</h4>
+                    <button onclick="imgEditor.rotate(-90)" class="btn-secondary w-full">Rotar Izquierda</button>
+                    <button onclick="imgEditor.rotate(90)" class="btn-secondary w-full">Rotar Derecha</button>
+                    <button onclick="imgEditor.flipHorizontal()" class="btn-secondary w-full">Voltear Horizontal</button>
+                    <button onclick="imgEditor.flipVertical()" class="btn-secondary w-full">Voltear Vertical</button>
+                  </div>
+
+                  <hr class="border-gray-200 dark:border-gray-700" />
+
+                  <div class="space-y-3">
+                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Ajustes</h4>
+                    <div>
+                      <label class="text-xs text-gray-600 dark:text-gray-400">
+                        Brillo: <span id="brightnessValue">0</span>
+                      </label>
+                      <input type="range" id="brightness" min="-100" max="100" value="0" class="w-full" oninput="imgEditor.setBrightness(this.value)" />
+                    </div>
+                    <div>
+                      <label class="text-xs text-gray-600 dark:text-gray-400">
+                        Contraste: <span id="contrastValue">0</span>
+                      </label>
+                      <input type="range" id="contrast" min="-100" max="100" value="0" class="w-full" oninput="imgEditor.setContrast(this.value)" />
+                    </div>
+                    <div>
+                      <label class="text-xs text-gray-600 dark:text-gray-400">
+                        Saturación: <span id="saturationValue">0</span>
+                      </label>
+                      <input type="range" id="saturation" min="-100" max="100" value="0" class="w-full" oninput="imgEditor.setSaturation(this.value)" />
+                    </div>
+                  </div>
+
+                  <hr class="border-gray-200 dark:border-gray-700" />
+
+                  <div class="space-y-3">
+                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Filtros</h4>
+                    <button onclick="imgEditor.applyFilter('grayscale')" class="btn-secondary w-full text-sm">Blanco y Negro</button>
+                    <button onclick="imgEditor.applyFilter('sepia')" class="btn-secondary w-full text-sm">Sepia</button>
+                    <button onclick="imgEditor.applyFilter('invert')" class="btn-secondary w-full text-sm">Invertir</button>
+                    <button onclick="imgEditor.applyFilter('blur')" class="btn-secondary w-full text-sm">Desenfocar</button>
+                  </div>
+
+                  <hr class="border-gray-200 dark:border-gray-700" />
+
+                  <div class="space-y-3">
+                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Recortar</h4>
+                    <button onclick="imgEditor.enableCrop()" id="cropButton" class="btn-secondary w-full">Activar Recorte</button>
+                    <button onclick="imgEditor.applyCrop()" id="applyCropButton" class="btn-action w-full hidden">Aplicar Recorte</button>
+                    <button onclick="imgEditor.cancelCrop()" id="cancelCropButton" class="btn-secondary w-full hidden">Cancelar Recorte</button>
+                  </div>
+
+                  <hr class="border-gray-200 dark:border-gray-700" />
+
+                  <button onclick="imgEditor.reset()" class="btn-secondary w-full">Restablecer</button>
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3 mt-4">
+                <button onclick="closeImageEditor()" class="btn-secondary">Cancelar</button>
+                <button onclick="imgEditor.save()" class="btn-action">Guardar Cambios</button>
+              </div>
+            </div>
+          </div>
+        \`;
+
+        document.body.insertAdjacentHTML('beforeend', editorModalHtml);
+        initializeImageEditor(mediaUrl);
+      }
+
+      function initializeImageEditor(imageUrl) {
+        const canvas = document.getElementById('imageEditorCanvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('imageEditorLoading');
+
+        let originalImage = null;
+        let currentImage = null;
+        let rotation = 0;
+        let flipH = false;
+        let flipV = false;
+        let brightness = 0;
+        let contrast = 0;
+        let saturation = 0;
+        let cropMode = false;
+        let cropStart = null;
+        let cropEnd = null;
+        let cropRect = null;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          originalImage = img;
+          currentImage = img;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          render();
+          loading.style.display = 'none';
+        };
+        img.onerror = () => {
+          loading.innerHTML = '<p class="text-red-500">Error al cargar la imagen</p>';
+        };
+        img.src = imageUrl;
+
+        function render() {
+          if (!currentImage) return;
+
+          ctx.save();
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+          ctx.filter = \`brightness(\${100 + brightness}%) contrast(\${100 + contrast}%) saturate(\${100 + saturation}%)\`;
+          ctx.drawImage(currentImage, -currentImage.width / 2, -currentImage.height / 2);
+          ctx.restore();
+
+          if (cropMode && cropRect) {
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
+            ctx.setLineDash([]);
+          }
+        }
+
+        window.imgEditor = {
+          rotate: (degrees) => { rotation = (rotation + degrees) % 360; render(); },
+          flipHorizontal: () => { flipH = !flipH; render(); },
+          flipVertical: () => { flipV = !flipV; render(); },
+          setBrightness: (value) => { brightness = parseInt(value); document.getElementById('brightnessValue').textContent = value; render(); },
+          setContrast: (value) => { contrast = parseInt(value); document.getElementById('contrastValue').textContent = value; render(); },
+          setSaturation: (value) => { saturation = parseInt(value); document.getElementById('saturationValue').textContent = value; render(); },
+          applyFilter: (filterType) => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+            const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            switch (filterType) {
+              case 'grayscale':
+                for (let i = 0; i < data.length; i += 4) {
+                  const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                  data[i] = data[i + 1] = data[i + 2] = avg;
+                }
+                break;
+              case 'sepia':
+                for (let i = 0; i < data.length; i += 4) {
+                  const r = data[i], g = data[i + 1], b = data[i + 2];
+                  data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+                  data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+                  data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+                }
+                break;
+              case 'invert':
+                for (let i = 0; i < data.length; i += 4) {
+                  data[i] = 255 - data[i];
+                  data[i + 1] = 255 - data[i + 1];
+                  data[i + 2] = 255 - data[i + 2];
+                }
+                break;
+              case 'blur':
+                const radius = 2;
+                const tempData = new Uint8ClampedArray(data);
+                for (let y = 0; y < canvas.height; y++) {
+                  for (let x = 0; x < canvas.width; x++) {
+                    let r = 0, g = 0, b = 0, count = 0;
+                    for (let dy = -radius; dy <= radius; dy++) {
+                      for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
+                          const idx = (ny * canvas.width + nx) * 4;
+                          r += tempData[idx];
+                          g += tempData[idx + 1];
+                          b += tempData[idx + 2];
+                          count++;
+                        }
+                      }
+                    }
+                    const idx = (y * canvas.width + x) * 4;
+                    data[idx] = r / count;
+                    data[idx + 1] = g / count;
+                    data[idx + 2] = b / count;
+                  }
+                }
+                break;
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            const newImg = new Image();
+            newImg.onload = () => { currentImage = newImg; render(); };
+            newImg.src = tempCanvas.toDataURL();
+          },
+          enableCrop: () => {
+            cropMode = true;
+            document.getElementById('cropButton').classList.add('hidden');
+            document.getElementById('applyCropButton').classList.remove('hidden');
+            document.getElementById('cancelCropButton').classList.remove('hidden');
+            canvas.style.cursor = 'crosshair';
+            canvas.onmousedown = (e) => {
+              if (!cropMode) return;
+              const rect = canvas.getBoundingClientRect();
+              cropStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+              canvas.onmousemove = (e) => {
+                if (!cropStart) return;
+                const rect = canvas.getBoundingClientRect();
+                cropEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                cropRect = {
+                  x: Math.min(cropStart.x, cropEnd.x),
+                  y: Math.min(cropStart.y, cropEnd.y),
+                  width: Math.abs(cropEnd.x - cropStart.x),
+                  height: Math.abs(cropEnd.y - cropStart.y)
+                };
+                render();
+              };
+              canvas.onmouseup = () => {
+                canvas.onmousemove = null;
+                canvas.onmouseup = null;
+              };
+            };
+          },
+          applyCrop: () => {
+            if (!cropRect) return;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cropRect.width;
+            tempCanvas.height = cropRect.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, cropRect.x, cropRect.y, cropRect.width, cropRect.height, 0, 0, cropRect.width, cropRect.height);
+            const newImg = new Image();
+            newImg.onload = () => {
+              currentImage = newImg;
+              canvas.width = newImg.width;
+              canvas.height = newImg.height;
+              window.imgEditor.cancelCrop();
+              render();
+            };
+            newImg.src = tempCanvas.toDataURL();
+          },
+          cancelCrop: () => {
+            cropMode = false;
+            cropStart = null;
+            cropEnd = null;
+            cropRect = null;
+            canvas.style.cursor = 'default';
+            canvas.onmousedown = null;
+            document.getElementById('cropButton').classList.remove('hidden');
+            document.getElementById('applyCropButton').classList.add('hidden');
+            document.getElementById('cancelCropButton').classList.add('hidden');
+            render();
+          },
+          reset: () => {
+            rotation = 0;
+            flipH = false;
+            flipV = false;
+            brightness = 0;
+            contrast = 0;
+            saturation = 0;
+            currentImage = originalImage;
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+            document.getElementById('brightness').value = 0;
+            document.getElementById('contrast').value = 0;
+            document.getElementById('saturation').value = 0;
+            document.getElementById('brightnessValue').textContent = 0;
+            document.getElementById('contrastValue').textContent = 0;
+            document.getElementById('saturationValue').textContent = 0;
+            window.imgEditor.cancelCrop();
+            render();
+          },
+          save: async () => {
+            try {
+              const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.9));
+              const formData = new FormData();
+              formData.append('file', blob, 'edited-image.webp');
+              const response = await fetch(ADMIN_BASE_PATH + '/media', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+              if (!response.ok) throw new Error('Error al guardar la imagen');
+              const data = await response.json();
+              closeImageEditor();
+              window.location.reload();
+            } catch (error) {
+              alert('Error al guardar la imagen: ' + error.message);
+            }
+          }
+        };
+      }
+
+      function closeImageEditor() {
+        const modal = document.getElementById('imageEditorModal');
+        if (modal) modal.remove();
+        delete window.imgEditor;
       }
 
       // Filter by type
