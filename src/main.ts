@@ -6,6 +6,8 @@ import { emailManager } from "./lib/email/index.ts";
 import { backupManager } from "./lib/backup/index.ts";
 import { securityManager } from "./lib/security/index.ts";
 import { initializeSearchIndexes } from "./services/searchService.ts";
+import { jobQueue } from "./lib/jobs/index.ts";
+import { registerBuiltInHandlers } from "./lib/jobs/handlers.ts";
 
 const port = env.PORT;
 
@@ -70,6 +72,18 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize search indexes:', error);
   // Continue anyway - search will work but without indexed data
+}
+
+// Initialize job queue
+console.log('\n⚙️  Initializing job queue...');
+try {
+  registerBuiltInHandlers();
+  jobQueue.start();
+  const stats = await jobQueue.getStats();
+  console.log(`✅ Job queue started (${stats.waiting} waiting, ${stats.active} active)`);
+} catch (error) {
+  console.error('❌ Failed to initialize job queue:', error);
+  // Continue anyway - jobs won't be processed
 }
 
 console.log(`

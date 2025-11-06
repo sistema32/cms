@@ -997,6 +997,42 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   }),
 }));
 
+// ============= JOBS =============
+
+// Background Jobs Queue
+export const jobs = sqliteTable("jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(), // Job type
+  data: text("data").notNull(), // JSON payload
+  status: text("status").notNull().default("pending"), // pending, active, completed, failed, delayed, cancelled
+  priority: text("priority").notNull().default("normal"), // low, normal, high, critical
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  progress: integer("progress").notNull().default(0), // 0-100
+  result: text("result"), // JSON result
+  error: text("error"),
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+  failedAt: integer("failed_at", { mode: "timestamp" }),
+  scheduledFor: integer("scheduled_for", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
+// Scheduled Jobs (cron-like)
+export const scheduledJobs = sqliteTable("scheduled_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  schedule: text("schedule").notNull(), // Cron expression
+  jobName: text("job_name").notNull(), // Job type to create
+  jobData: text("job_data").notNull(), // JSON data
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  lastRunAt: integer("last_run_at", { mode: "timestamp" }),
+  nextRunAt: integer("next_run_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -1106,3 +1142,9 @@ export type NewSecurityEvent = typeof securityEvents.$inferInsert;
 
 export type APIKey = typeof apiKeys.$inferSelect;
 export type NewAPIKey = typeof apiKeys.$inferInsert;
+
+export type Job = typeof jobs.$inferSelect;
+export type NewJob = typeof jobs.$inferInsert;
+
+export type ScheduledJob = typeof scheduledJobs.$inferSelect;
+export type NewScheduledJob = typeof scheduledJobs.$inferInsert;
