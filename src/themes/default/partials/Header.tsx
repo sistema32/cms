@@ -10,10 +10,11 @@ interface HeaderProps {
   site: SiteData;
   menu?: MenuItem[];
   custom?: Record<string, any>;
+  blogUrl?: string;
 }
 
 export const Header = (props: HeaderProps) => {
-  const { site, menu = [], custom = {} } = props;
+  const { site, menu = [], custom = {}, blogUrl = "/blog" } = props;
 
   return html`
     <header class="site-header">
@@ -49,7 +50,7 @@ export const Header = (props: HeaderProps) => {
                 <a href="/" class="nav-link">Inicio</a>
               </li>
               <li class="nav-item">
-                <a href="/blog" class="nav-link">Blog</a>
+                <a href="${blogUrl}" class="nav-link">Blog</a>
               </li>
 
               ${menu.map((item) => html`

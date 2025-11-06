@@ -8,10 +8,11 @@ import type { SiteData } from "../helpers/index.ts";
 interface HeaderProps {
   site: SiteData;
   custom: Record<string, any>;
+  blogUrl?: string;
 }
 
 export const Header = (props: HeaderProps) => {
-  const { site } = props;
+  const { site, blogUrl = "/blog" } = props;
 
   return html`
     <header class="sticky top-0 z-50 border-b border-slate-200/50 bg-white/80 backdrop-blur-xl">
@@ -36,7 +37,7 @@ export const Header = (props: HeaderProps) => {
               Home
             </a>
             <a
-              href="/blog"
+              href="${blogUrl}"
               class="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
             >
               Blog
@@ -89,7 +90,7 @@ export const Header = (props: HeaderProps) => {
               Home
             </a>
             <a
-              href="/blog"
+              href="${blogUrl}"
               class="block rounded-lg px-3 py-2 text-base font-medium text-slate-700 transition hover:bg-slate-100"
             >
               Blog

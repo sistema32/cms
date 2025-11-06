@@ -38,7 +38,7 @@ export const BlogTemplate = (props: BlogProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom })}
+    ${Header({ site, custom, blogUrl })}
 
     <!-- Main Content -->
     <main class="site-main blog-page">
@@ -121,7 +121,7 @@ export const BlogTemplate = (props: BlogProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom })}
+    ${Footer({ site, custom, blogUrl })}
   `;
 
   return Layout({

@@ -19,16 +19,17 @@ interface HomeProps {
   activeTheme?: string;
   featuredPosts: PostData[];
   categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
+  blogUrl?: string;
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, activeTheme, featuredPosts, categories = [] } = props;
+  const { site, custom, activeTheme, featuredPosts, categories = [], blogUrl = "/blog" } = props;
 
   // Settings de la homepage
   const heroTitle = custom.homepage_hero_title || `Bienvenido a ${site.name}`;
   const heroSubtitle = custom.homepage_hero_subtitle || site.description || "Descubre contenido increíble";
   const heroCtaText = custom.homepage_hero_cta_text || "Ver Blog";
-  const heroCtaUrl = custom.homepage_hero_cta_url || "/blog";
+  const heroCtaUrl = custom.homepage_hero_cta_url || blogUrl;
   const heroBackgroundImage = custom.homepage_hero_background;
   const heroStyle = custom.homepage_hero_style || "default";
   const showFeaturedPosts = custom.homepage_show_featured !== false;
@@ -37,7 +38,7 @@ export const HomeTemplate = (props: HomeProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom })}
+    ${Header({ site, custom, blogUrl })}
 
     <!-- Hero Section -->
     ${Hero({
@@ -77,7 +78,7 @@ export const HomeTemplate = (props: HomeProps) => {
             </div>
 
             <div class="section-footer">
-              <a href="/blog" class="btn btn-secondary">
+              <a href="${blogUrl}" class="btn btn-secondary">
                 Ver todos los artículos
                 <svg class="icon" width="16" height="16" viewBox="0 0 24 24">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -170,7 +171,7 @@ export const HomeTemplate = (props: HomeProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom })}
+    ${Footer({ site, custom, blogUrl })}
   `;
 
   return Layout({

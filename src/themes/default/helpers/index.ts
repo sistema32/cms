@@ -474,6 +474,14 @@ export async function postUrl(slug: string): Promise<string> {
 }
 
 /**
+ * Genera URL para el blog
+ */
+export async function blogUrl(): Promise<string> {
+  const blogBase = await settingsService.getSetting("blog_base", "blog");
+  return `/${blogBase}`;
+}
+
+/**
  * Genera URL para una categoría
  */
 export async function categoryUrl(slug: string): Promise<string> {
@@ -649,6 +657,7 @@ export const themeHelpers = {
   // URLs
   imgUrl,
   postUrl,
+  blogUrl,
   categoryUrl,
   tagUrl,
 

@@ -82,6 +82,7 @@ frontendRouter.get("/", async (c) => {
 
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
 
     // Obtener posts destacados para la homepage
     const featuredPosts = await themeHelpers.getFeaturedPosts(
@@ -109,6 +110,7 @@ frontendRouter.get("/", async (c) => {
         activeTheme,
         featuredPosts,
         categories,
+        blogUrl,
       })
     );
   } catch (error: any) {
