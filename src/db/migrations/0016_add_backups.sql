@@ -22,8 +22,11 @@ CREATE TABLE `backups` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX `backups_type_idx` ON `backups` (`type`);
+--> statement-breakpoint
 CREATE INDEX `backups_status_idx` ON `backups` (`status`);
+--> statement-breakpoint
 CREATE INDEX `backups_created_at_idx` ON `backups` (`created_at` DESC);
+--> statement-breakpoint
 CREATE INDEX `backups_storage_provider_idx` ON `backups` (`storage_provider`);

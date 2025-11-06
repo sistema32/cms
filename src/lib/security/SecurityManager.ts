@@ -345,12 +345,47 @@ export class SecurityManager {
   detectPathTraversal(input: string): boolean {
     const patterns = [
       /\.\.\//g,
-      /\.\.\\/ g,
+      /\.\.\\/g,
       /%2e%2e/gi,
       /\.\./g,
     ];
 
     return patterns.some((pattern) => pattern.test(input));
+  }
+
+  /**
+   * Get security statistics
+   */
+  async getSecurityStats(): Promise<{
+    ipRules: { total: number; blocked: number; whitelisted: number };
+    events: { total: number; last24h: number; lastWeek: number };
+  }> {
+    // Get IP rules stats
+    const allRules = await db.select().from(ipBlockRules);
+    const blockedCount = allRules.filter(r => r.type === 'block').length;
+    const whitelistedCount = allRules.filter(r => r.type === 'whitelist').length;
+
+    // Get events stats
+    const now = Date.now() / 1000; // Unix timestamp in seconds
+    const oneDayAgo = now - (24 * 60 * 60);
+    const oneWeekAgo = now - (7 * 24 * 60 * 60);
+
+    const allEvents = await db.select().from(securityEvents);
+    const last24hCount = allEvents.filter(e => e.createdAt >= oneDayAgo).length;
+    const lastWeekCount = allEvents.filter(e => e.createdAt >= oneWeekAgo).length;
+
+    return {
+      ipRules: {
+        total: allRules.length,
+        blocked: blockedCount,
+        whitelisted: whitelistedCount,
+      },
+      events: {
+        total: allEvents.length,
+        last24h: last24hCount,
+        lastWeek: lastWeekCount,
+      },
+    };
   }
 }
 

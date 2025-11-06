@@ -20,7 +20,7 @@ import type {
   BackupListFilter,
   BackupVerificationResult,
 } from "./types.ts";
-import { compressGzip, decompressGzip } from "https://deno.land/x/compress@v0.4.5/gzip/mod.ts";
+import { gzip, gunzip } from "https://deno.land/x/compress@v0.4.5/gzip/mod.ts";
 import { crypto } from "https://deno.land/std@0.208.0/crypto/mod.ts";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 
@@ -334,7 +334,7 @@ export class BackupManager {
    */
   private async compressFile(sourcePath: string, targetPath: string): Promise<void> {
     const data = await Deno.readFile(sourcePath);
-    const compressed = compressGzip(data);
+    const compressed = gzip(data);
     await Deno.writeFile(targetPath, compressed);
   }
 

@@ -13,7 +13,7 @@ import type {
   JobEvent,
   JobEventListener,
 } from "./types.ts";
-import { db } from "../../db/db.ts";
+import { db } from "../../config/db.ts";
 import { jobs } from "../../db/schema.ts";
 import { eq, and, lte, or } from "drizzle-orm";
 

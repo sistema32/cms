@@ -11,7 +11,7 @@ import {
   structuredDataGenerator,
   seoHelper,
 } from "../lib/seo/index.ts";
-import { db } from "../db/db.ts";
+import { db } from "../config/db.ts";
 import { content, users } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

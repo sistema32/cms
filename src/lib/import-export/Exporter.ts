@@ -3,7 +3,7 @@
  * Export content to JSON, CSV, XML formats
  */
 
-import { db } from "../../db/db.ts";
+import { db } from "../../config/db.ts";
 import { content, categories, tags, users, contentCategories, contentTags } from "../../db/schema.ts";
 import { eq, and, gte, lte } from "drizzle-orm";
 import type { ExportOptions, ExportResult } from "./types.ts";

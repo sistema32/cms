@@ -3,7 +3,7 @@
  * Manages API keys for public REST API access
  */
 
-import { db } from "../../db/db.ts";
+import { db } from "../../config/db.ts";
 import { apiKeys } from "../../db/schema.ts";
 import { eq, and } from "drizzle-orm";
 import type { APIKey, APIPermission, APIRateLimitResult } from "./types.ts";

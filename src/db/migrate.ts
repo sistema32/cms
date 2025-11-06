@@ -43,9 +43,15 @@ try {
       let skipCount = 0;
 
       for (const statement of statements) {
-        if (statement && !statement.startsWith("--")) {
+        // Remove comment lines and check if there's actual SQL code
+        const sqlOnly = statement.split('\n')
+          .filter(line => !line.trim().startsWith('--'))
+          .join('\n')
+          .trim();
+
+        if (sqlOnly) {
           try {
-            await db.run(sql.raw(statement));
+            await db.run(sql.raw(sqlOnly));
             successCount++;
           } catch (error) {
             // Obtener todo el stack trace y mensajes de error incluyendo causas

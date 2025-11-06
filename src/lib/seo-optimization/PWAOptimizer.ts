@@ -406,13 +406,13 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
       font-size: 80px;
       margin-bottom: 20px;
     }
-    ${logoUrl ? \`
+    ${logoUrl ? `
     .offline-logo {
       width: 120px;
       height: 120px;
       margin-bottom: 20px;
     }
-    \` : ""}
+    ` : ""}
     h1 {
       font-size: 32px;
       margin: 0 0 16px;
@@ -443,7 +443,7 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
 </head>
 <body>
   <div class="offline-container">
-    ${logoUrl ? \`<img src="\${logoUrl}" alt="Logo" class="offline-logo">\` : '<div class="offline-icon">📡</div>'}
+    ${logoUrl ? `<img src="${logoUrl}" alt="Logo" class="offline-logo">` : '<div class="offline-icon">📡</div>'}
     <h1>${title}</h1>
     <p>${message}</p>
     <button class="retry-button" onclick="location.reload()">Try Again</button>

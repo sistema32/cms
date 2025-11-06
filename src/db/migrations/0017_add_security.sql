@@ -12,11 +12,13 @@ CREATE TABLE `ip_block_rules` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX `ip_block_rules_ip_idx` ON `ip_block_rules` (`ip`);
+--> statement-breakpoint
 CREATE INDEX `ip_block_rules_type_idx` ON `ip_block_rules` (`type`);
+--> statement-breakpoint
 CREATE INDEX `ip_block_rules_expires_at_idx` ON `ip_block_rules` (`expires_at`);
-
+--> statement-breakpoint
 -- ============= SECURITY EVENTS =============
 CREATE TABLE `security_events` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -31,8 +33,11 @@ CREATE TABLE `security_events` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX `security_events_type_idx` ON `security_events` (`type`);
+--> statement-breakpoint
 CREATE INDEX `security_events_ip_idx` ON `security_events` (`ip`);
+--> statement-breakpoint
 CREATE INDEX `security_events_severity_idx` ON `security_events` (`severity`);
+--> statement-breakpoint
 CREATE INDEX `security_events_created_at_idx` ON `security_events` (`created_at` DESC);
