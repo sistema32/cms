@@ -904,6 +904,135 @@ export const notificationPreferencesRelations = relations(notificationPreference
   }),
 }));
 
+// ============= BACKUPS =============
+export const backups = sqliteTable("backups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  filename: text("filename").notNull(),
+  type: text("type").notNull(), // full, database, media, config
+  size: integer("size").notNull(), // bytes
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed, failed
+  storageProvider: text("storage_provider").notNull().default("local"), // local, s3
+  storagePath: text("storage_path").notNull(),
+  compressed: integer("compressed", { mode: "boolean" }).notNull().default(true),
+  includesMedia: integer("includes_media", { mode: "boolean" }).notNull().default(false),
+  includesDatabase: integer("includes_database", { mode: "boolean" }).notNull().default(false),
+  includesConfig: integer("includes_config", { mode: "boolean" }).notNull().default(false),
+  checksum: text("checksum").notNull(), // SHA-256
+  error: text("error"),
+  startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const backupsRelations = relations(backups, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [backups.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// ============= SECURITY =============
+
+// IP Block Rules
+export const ipBlockRules = sqliteTable("ip_block_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ip: text("ip").notNull().unique(),
+  type: text("type").notNull(), // block, whitelist
+  reason: text("reason"),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+// Security Events
+export const securityEvents = sqliteTable("security_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(),
+  ip: text("ip").notNull(),
+  userAgent: text("user_agent"),
+  path: text("path"),
+  method: text("method"),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  details: text("details"), // JSON
+  severity: text("severity").notNull().default("low"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const ipBlockRulesRelations = relations(ipBlockRules, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [ipBlockRules.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const securityEventsRelations = relations(securityEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [securityEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============= API KEYS =============
+
+// API Keys for public REST API access
+export const apiKeys = sqliteTable("api_keys", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  key: text("key").notNull().unique(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permissions: text("permissions").notNull(), // JSON array of permission strings
+  rateLimit: integer("rate_limit"), // Requests per hour
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============= JOBS =============
+
+// Background Jobs Queue
+export const jobs = sqliteTable("jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(), // Job type
+  data: text("data").notNull(), // JSON payload
+  status: text("status").notNull().default("pending"), // pending, active, completed, failed, delayed, cancelled
+  priority: text("priority").notNull().default("normal"), // low, normal, high, critical
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  progress: integer("progress").notNull().default(0), // 0-100
+  result: text("result"), // JSON result
+  error: text("error"),
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
+  failedAt: integer("failed_at", { mode: "timestamp" }),
+  scheduledFor: integer("scheduled_for", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
+// Scheduled Jobs (cron-like)
+export const scheduledJobs = sqliteTable("scheduled_jobs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  schedule: text("schedule").notNull(), // Cron expression
+  jobName: text("job_name").notNull(), // Job type to create
+  jobData: text("job_data").notNull(), // JSON data
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  lastRunAt: integer("last_run_at", { mode: "timestamp" }),
+  nextRunAt: integer("next_run_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
 // ============= TYPES =============
 
 export type Role = typeof roles.$inferSelect;
@@ -1001,3 +1130,21 @@ export type NewNotification = typeof notifications.$inferInsert;
 
 export type NotificationPreference = typeof notificationPreferences.$inferSelect;
 export type NewNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+export type Backup = typeof backups.$inferSelect;
+export type NewBackup = typeof backups.$inferInsert;
+
+export type IPBlockRule = typeof ipBlockRules.$inferSelect;
+export type NewIPBlockRule = typeof ipBlockRules.$inferInsert;
+
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type NewSecurityEvent = typeof securityEvents.$inferInsert;
+
+export type APIKey = typeof apiKeys.$inferSelect;
+export type NewAPIKey = typeof apiKeys.$inferInsert;
+
+export type Job = typeof jobs.$inferSelect;
+export type NewJob = typeof jobs.$inferInsert;
+
+export type ScheduledJob = typeof scheduledJobs.$inferSelect;
+export type NewScheduledJob = typeof scheduledJobs.$inferInsert;

@@ -21,6 +21,15 @@ import cacheRoutes from "./cache.ts";
 import auditRoutes from "./audit.ts";
 import webhookRoutes from "./webhooks.ts";
 import notificationRoutes from "./notifications.ts";
+import backupRoutes from "./backups.ts";
+import dashboardRoutes from "./dashboard.ts";
+import securityRoutes from "./security.ts";
+import seoAdvancedRoutes from "./seo-advanced.ts";
+import apiKeysRoutes from "./api-keys.ts";
+import apiDocsRoutes from "./api-docs.ts";
+import publicAPIRoutes from "./api-public.ts";
+import searchRoutes from "./search.ts";
+import jobsRoutes from "./jobs.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -44,7 +53,19 @@ export function registerRoutes(app: Hono) {
     audit: "enabled",
     webhooks: "enabled",
     notifications: "enabled",
-    email: "enabled"
+    email: "enabled",
+    backups: "enabled",
+    dashboard: "enabled",
+    analytics: "enabled",
+    security: "enabled",
+    seoAdvanced: "enabled",
+    sitemap: "enabled",
+    structuredData: "enabled",
+    publicAPI: "enabled",
+    apiKeys: "enabled",
+    openAPI: "enabled",
+    search: "enabled",
+    backgroundJobs: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -101,8 +122,35 @@ export function registerRoutes(app: Hono) {
   // Registrar rutas de Notifications
   app.route("/api/notifications", notificationRoutes);
 
+  // Registrar rutas de Backups
+  app.route("/api/backups", backupRoutes);
+
+  // Registrar rutas de Dashboard
+  app.route("/api/dashboard", dashboardRoutes);
+
+  // Registrar rutas de Security
+  app.route("/api/security", securityRoutes);
+
+  // Registrar rutas de API Keys
+  app.route("/api/api-keys", apiKeysRoutes);
+
+  // Registrar rutas de API Documentation
+  app.route("/api/docs", apiDocsRoutes);
+
+  // Registrar rutas de Public API v1
+  app.route("/api/v1", publicAPIRoutes);
+
+  // Registrar rutas de Search
+  app.route("/api/search", searchRoutes);
+
+  // Registrar rutas de Jobs
+  app.route("/api/jobs", jobsRoutes);
+
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);
+
+  // Registrar rutas de SEO Avanzado (sitemap.xml, robots.txt, etc.)
+  app.route("/", seoAdvancedRoutes);
 
   // Registrar rutas del Admin Panel (antes del frontend)
   app.route(env.ADMIN_PATH, adminRouter);
