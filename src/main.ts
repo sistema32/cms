@@ -1,8 +1,17 @@
 import { app } from "./app.ts";
 import { env } from "./config/env.ts";
 import { pluginManager } from "./lib/plugin-system/index.ts";
+import { cacheManager } from "./lib/cache/index.ts";
 
 const port = env.PORT;
+
+// Initialize cache system
+try {
+  await cacheManager.initialize();
+} catch (error) {
+  console.error('❌ Failed to initialize cache system:', error);
+  // Continue anyway - cache is optional
+}
 
 // Initialize plugin system
 console.log('\n🔌 Initializing plugin system...');
