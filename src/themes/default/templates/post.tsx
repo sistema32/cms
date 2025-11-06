@@ -1,6 +1,8 @@
 import { html } from "hono/html";
 import { Layout } from "./Layout.tsx";
-import type { SiteData, PostData } from "../helpers/index.ts";
+import { Header } from "../partials/Header.tsx";
+import { Footer } from "../partials/Footer.tsx";
+import type { SiteData, PostData, MenuItem, CategoryData } from "../helpers/index.ts";
 
 /**
  * Post Template - Template para posts individuales
@@ -13,26 +15,21 @@ interface PostProps {
   activeTheme?: string;
   post: PostData;
   relatedPosts?: PostData[];
+  blogUrl?: string;
+  menu?: MenuItem[];
+  footerMenu?: MenuItem[];
+  categories?: CategoryData[];
 }
 
 export const PostTemplate = (props: PostProps) => {
-  const { site, custom, post, relatedPosts = [] } = props;
+  const { site, custom, post, relatedPosts = [], blogUrl = "/blog", menu = [], footerMenu = [], categories = [] } = props;
   const showSidebar = custom.show_sidebar;
   const showAuthorBio = custom.show_author_bio && showSidebar;
   const showRelatedPosts = custom.show_related_posts;
 
   const content = html`
     <!-- Header -->
-    <header class="site-header minimal">
-      <div class="container">
-        <a href="/" class="site-logo-link">
-          ${custom.logo_image ? html`
-            <img src="${custom.logo_image}" alt="${site.name}" class="site-logo" />
-          ` : ''}
-          <span class="site-title">${site.name}</span>
-        </a>
-      </div>
-    </header>
+    ${Header({ site, custom, blogUrl, menu })}
 
     <!-- Main Content -->
     <main class="site-main">
@@ -158,12 +155,7 @@ export const PostTemplate = (props: PostProps) => {
     </main>
 
     <!-- Footer -->
-    <footer class="site-footer">
-      <div class="container">
-        <p>© ${new Date().getFullYear()} ${site.name}. Todos los derechos reservados.</p>
-        <p>Powered by <a href="https://lexcms.com">LexCMS</a></p>
-      </div>
-    </footer>
+    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
   `;
 
   return Layout({

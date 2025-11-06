@@ -4,7 +4,7 @@ import { Hero } from "../partials/Hero.tsx";
 import { PostCard } from "../partials/PostCard.tsx";
 import { Header } from "../partials/Header.tsx";
 import { Footer } from "../partials/Footer.tsx";
-import type { SiteData, PostData } from "../helpers/index.ts";
+import type { SiteData, PostData, MenuItem, CategoryData } from "../helpers/index.ts";
 
 /**
  * Home Template - Homepage estática personalizable
@@ -18,12 +18,14 @@ interface HomeProps {
   custom: Record<string, any>;
   activeTheme?: string;
   featuredPosts: PostData[];
-  categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
+  categories?: CategoryData[];
   blogUrl?: string;
+  menu?: MenuItem[];
+  footerMenu?: MenuItem[];
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, activeTheme, featuredPosts, categories = [], blogUrl = "/blog" } = props;
+  const { site, custom, activeTheme, featuredPosts, categories = [], blogUrl = "/blog", menu = [], footerMenu = [] } = props;
 
   // Settings de la homepage
   const heroTitle = custom.homepage_hero_title || `Bienvenido a ${site.name}`;
@@ -38,7 +40,7 @@ export const HomeTemplate = (props: HomeProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom, blogUrl })}
+    ${Header({ site, custom, blogUrl, menu })}
 
     <!-- Hero Section -->
     ${Hero({
@@ -171,7 +173,7 @@ export const HomeTemplate = (props: HomeProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom, blogUrl })}
+    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
   `;
 
   return Layout({

@@ -5,7 +5,7 @@ import { Pagination } from "../partials/Pagination.tsx";
 import { Sidebar } from "../partials/Sidebar.tsx";
 import { Header } from "../partials/Header.tsx";
 import { Footer } from "../partials/Footer.tsx";
-import type { SiteData, PostData, PaginationData } from "../helpers/index.ts";
+import type { SiteData, PostData, PaginationData, MenuItem, CategoryData, TagData } from "../helpers/index.ts";
 
 /**
  * Blog Template - Página de listado de posts con paginación
@@ -21,13 +21,16 @@ interface BlogProps {
   posts: PostData[];
   pagination: PaginationData;
   recentPosts?: PostData[];
-  categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
-  tags?: Array<{ id: number; name: string; slug: string; count?: number }>;
+  categories?: CategoryData[];
+  tags?: TagData[];
   blogBase?: string;
+  menu?: MenuItem[];
+  footerMenu?: MenuItem[];
 }
 
 export const BlogTemplate = (props: BlogProps) => {
-  const { site, custom, posts, pagination, recentPosts = [], categories = [], tags = [], blogBase = "blog" } = props;
+  const { site, custom, posts, pagination, recentPosts = [], categories = [], tags = [], blogBase = "blog", menu = [], footerMenu = [] } = props;
+  const blogUrl = `/${blogBase}`;
 
   // Settings del blog
   const blogTitle = custom.blog_title || "Blog";
@@ -38,7 +41,7 @@ export const BlogTemplate = (props: BlogProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom, blogUrl })}
+    ${Header({ site, custom, blogUrl, menu })}
 
     <!-- Main Content -->
     <main class="site-main blog-page">
@@ -121,7 +124,7 @@ export const BlogTemplate = (props: BlogProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom, blogUrl })}
+    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
   `;
 
   return Layout({
