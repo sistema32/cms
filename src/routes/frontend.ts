@@ -28,9 +28,10 @@ async function loadThemeModule(modulePath: string) {
 }
 
 async function getThemeHelpers() {
-  const activeTheme = await themeService.getActiveTheme();
-  const helpersPath = `src/themes/${activeTheme}/helpers/index.ts`;
-  return await loadThemeModule(helpersPath);
+  // Always use default theme helpers for core functions like getPaginatedPosts
+  // Theme-specific helpers can be added per theme but core functions should be consistent
+  const defaultHelpersPath = `src/themes/default/helpers/index.ts`;
+  return await loadThemeModule(defaultHelpersPath);
 }
 
 async function getThemeTemplate(templateName: string) {
@@ -253,6 +254,11 @@ frontendRouter.get("/blog/page/:page", async (c) => {
 frontendRouter.get("/blog/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
+
+    // Si slug está vacío, redirigir a /blog
+    if (!slug || slug === '') {
+      return c.redirect("/blog", 301);
+    }
 
     // Buscar el post por slug
     const post = await db.query.content.findFirst({
