@@ -1653,6 +1653,97 @@ adminRouter.post("/api/admin/themes/cache/warmup", async (c) => {
 });
 
 /**
+ * GET /api/admin/themes/config/export - Export theme configuration
+ */
+adminRouter.get("/api/admin/themes/config/export", async (c) => {
+  try {
+    const themeName = c.req.query("theme");
+    const includeMenus = c.req.query("includeMenus") === "true";
+
+    const { exportThemeConfig, formatExport, generateExportFilename } = await import(
+      "../services/themeConfigService.ts"
+    );
+
+    const activeTheme = themeName || await themeService.getActiveTheme();
+    const exportData = await exportThemeConfig(activeTheme, {
+      includeMenus,
+      metadata: { exportedBy: "LexCMS Admin" },
+    });
+
+    const jsonContent = formatExport(exportData, true);
+    const filename = generateExportFilename(activeTheme);
+
+    // Set headers for download
+    c.header("Content-Type", "application/json");
+    c.header("Content-Disposition", `attachment; filename="${filename}"`);
+
+    return c.body(jsonContent);
+  } catch (error: any) {
+    console.error("Error exporting theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/config/import - Import theme configuration
+ */
+adminRouter.post("/api/admin/themes/config/import", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { config, options } = body;
+
+    if (!config) {
+      return c.json({ error: "Configuration data is required" }, 400);
+    }
+
+    const { importThemeConfig, validateThemeConfigExport } = await import(
+      "../services/themeConfigService.ts"
+    );
+
+    // Validate first
+    const validation = await validateThemeConfigExport(config);
+    if (!validation.valid) {
+      return c.json({
+        error: "Invalid configuration",
+        errors: validation.errors,
+        warnings: validation.warnings,
+      }, 400);
+    }
+
+    // Import
+    const result = await importThemeConfig(config, options);
+
+    return c.json(result);
+  } catch (error: any) {
+    console.error("Error importing theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/config/validate - Validate theme configuration
+ */
+adminRouter.post("/api/admin/themes/config/validate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { config } = body;
+
+    if (!config) {
+      return c.json({ error: "Configuration data is required" }, 400);
+    }
+
+    const { validateThemeConfigExport } = await import("../services/themeConfigService.ts");
+
+    const validation = await validateThemeConfigExport(config);
+
+    return c.json(validation);
+  } catch (error: any) {
+    console.error("Error validating theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * GET /appearance/menus - Menu manager
  */
 adminRouter.get("/appearance/menus", async (c) => {

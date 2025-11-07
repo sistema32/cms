@@ -84,8 +84,22 @@ export {
   truncateWords,
 } from "./helpers.ts";
 
-// Export hooks system (cuando esté implementado)
-// export { registerAction, doAction, registerFilter, applyFilters } from "./hooks.ts";
+// Export hooks system
+export {
+  applyFilters,
+  AVAILABLE_HOOKS,
+  doAction,
+  filterPostContent,
+  filterThemeSettings,
+  hasHook,
+  onThemeActivated,
+  onThemeSetup,
+  registerAction,
+  registerFilter,
+  removeAllHooks,
+  removeHook,
+  themeHooks,
+} from "./hooks.ts";
 
 /**
  * SDK version
