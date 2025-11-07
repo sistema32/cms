@@ -63,24 +63,24 @@ export const RolesPageImproved = (props: RolesPageProps) => {
     permissionIds: role.permissions.map((perm) => perm.id),
   }));
 
-  const content = html\`
+  const content = html`
     <div class="page-header">
       <div>
         <h1 class="page-title">Roles y Permisos</h1>
         <p class="page-subtitle">Define conjuntos de permisos reutilizables y asígnalos a tus usuarios.</p>
-        \${
+        ${
           stats
-            ? html\`
+            ? html`
                 <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>Total: <strong>\${stats.totalRoles}</strong></span>
-                  <span>Sistema: <strong class="text-blue-600">\${stats.systemRoles}</strong></span>
-                  <span>Personalizados: <strong class="text-purple-600">\${stats.customRoles}</strong></span>
-                  <span>Usuarios: <strong>\${stats.totalUsers}</strong></span>
-                  \${stats.usersWithoutRole > 0
-                    ? html\`<span class="text-yellow-600">Sin rol: <strong>\${stats.usersWithoutRole}</strong></span>\`
+                  <span>Total: <strong>${stats.totalRoles}</strong></span>
+                  <span>Sistema: <strong class="text-blue-600">${stats.systemRoles}</strong></span>
+                  <span>Personalizados: <strong class="text-purple-600">${stats.customRoles}</strong></span>
+                  <span>Usuarios: <strong>${stats.totalUsers}</strong></span>
+                  ${stats.usersWithoutRole > 0
+                    ? html`<span class="text-yellow-600">Sin rol: <strong>${stats.usersWithoutRole}</strong></span>`
                     : ""}
                 </div>
-              \`
+              `
             : ""
         }
       </div>
@@ -101,7 +101,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
       <div class="table-card">
         <div class="table-card-header">
           <h2 class="table-card-title">Roles configurados</h2>
-          <p class="table-card-subtitle">\${roles.length} rol\${roles.length === 1 ? "" : "es"} disponibles</p>
+          <p class="table-card-subtitle">${roles.length} rol${roles.length === 1 ? "" : "es"} disponibles</p>
         </div>
 
         <div class="table-container">
@@ -116,50 +116,50 @@ export const RolesPageImproved = (props: RolesPageProps) => {
               </tr>
             </thead>
             <tbody>
-              \${
+              ${
                 roles.length === 0
-                  ? html\`
+                  ? html`
                       <tr>
                         <td colspan="5" class="text-center py-8 text-gray-500 dark:text-gray-400">
                           No hay roles para mostrar
                         </td>
                       </tr>
-                    \`
+                    `
                   : roles.map(
-                      (role) => html\`
+                      (role) => html`
                         <tr>
                           <td>
                             <div>
                               <div class="font-medium text-gray-900 dark:text-gray-100">
-                                \${role.name}
-                                \${role.isSystem ? html\`<span class="ml-2 badge-info text-xs">Sistema</span>\` : ""}
+                                ${role.name}
+                                ${role.isSystem ? html`<span class="ml-2 badge-info text-xs">Sistema</span>` : ""}
                               </div>
-                              \${role.description
-                                ? html\`<div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    \${role.description}
-                                  </div>\`
+                              ${role.description
+                                ? html`<div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    ${role.description}
+                                  </div>`
                                 : ""}
                             </div>
                           </td>
                           <td>
-                            \${role.isSystem
-                              ? html\`<span class="badge-info">Sistema</span>\`
-                              : html\`<span class="badge-secondary">Personalizado</span>\`}
+                            ${role.isSystem
+                              ? html`<span class="badge-info">Sistema</span>`
+                              : html`<span class="badge-secondary">Personalizado</span>`}
                           </td>
                           <td>
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              \${role.userCount !== undefined ? role.userCount : "-"} usuario\${role.userCount === 1 ? "" : "s"}
+                              ${role.userCount !== undefined ? role.userCount : "-"} usuario${role.userCount === 1 ? "" : "s"}
                             </span>
                           </td>
                           <td>
                             <span class="text-sm font-medium text-purple-600 dark:text-purple-400">
-                              \${role.permissions.length} permiso\${role.permissions.length === 1 ? "" : "s"}
+                              ${role.permissions.length} permiso${role.permissions.length === 1 ? "" : "s"}
                             </span>
                           </td>
                           <td>
                             <div class="flex gap-2">
                               <button
-                                onclick="viewRolePermissions(\${role.id})"
+                                onclick="viewRolePermissions(${role.id})"
                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400"
                                 title="Ver permisos"
                               >
@@ -173,7 +173,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                 </svg>
                               </button>
                               <button
-                                onclick="openRoleModal('edit', \${role.id})"
+                                onclick="openRoleModal('edit', ${role.id})"
                                 class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
                                 title="Editar"
                               >
@@ -184,7 +184,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                 </svg>
                               </button>
                               <button
-                                onclick="cloneRole(\${role.id})"
+                                onclick="cloneRole(${role.id})"
                                 class="text-green-600 hover:text-green-800 dark:text-green-400"
                                 title="Clonar rol"
                               >
@@ -197,10 +197,10 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                   ></path>
                                 </svg>
                               </button>
-                              \${!role.isSystem
-                                ? html\`
+                              ${!role.isSystem
+                                ? html`
                                     <button
-                                      onclick="deleteRole(\${role.id}, '\${role.name}')"
+                                      onclick="deleteRole(${role.id}, '${role.name}')"
                                       class="text-red-600 hover:text-red-800 dark:text-red-400"
                                       title="Eliminar"
                                     >
@@ -212,12 +212,12 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                         ></path>
                                       </svg>
                                     </button>
-                                  \`
+                                  `
                                 : ""}
                             </div>
                           </td>
                         </tr>
-                      \`
+                      `
                     )
               }
             </tbody>
@@ -229,29 +229,29 @@ export const RolesPageImproved = (props: RolesPageProps) => {
       <div class="table-card">
         <div class="table-card-header">
           <h2 class="table-card-title">Permisos disponibles</h2>
-          <p class="table-card-subtitle">\${permissions.length} permisos en \${permissionsByModule.length} módulos</p>
+          <p class="table-card-subtitle">${permissions.length} permisos en ${permissionsByModule.length} módulos</p>
         </div>
 
         <div class="p-4 space-y-4 max-h-[600px] overflow-y-auto">
-          \${permissionsByModule.map(
-            (group) => html\`
+          ${permissionsByModule.map(
+            (group) => html`
               <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm text-gray-700 dark:text-gray-300">
-                  \${group.module}
-                  <span class="ml-2 text-xs text-gray-500">(\${group.permissions.length})</span>
+                  ${group.module}
+                  <span class="ml-2 text-xs text-gray-500">(${group.permissions.length})</span>
                 </div>
                 <div class="p-3 space-y-1">
-                  \${group.permissions.map(
-                    (perm) => html\`
+                  ${group.permissions.map(
+                    (perm) => html`
                       <div class="flex items-center justify-between text-sm py-1">
-                        <span class="text-gray-700 dark:text-gray-300">\${perm.action}</span>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">\${perm.description || ""}</span>
+                        <span class="text-gray-700 dark:text-gray-300">${perm.action}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${perm.description || ""}</span>
                       </div>
-                    \`
+                    `
                   )}
                 </div>
               </div>
-            \`
+            `
           )}
         </div>
       </div>
@@ -283,43 +283,43 @@ export const RolesPageImproved = (props: RolesPageProps) => {
             <div class="form-group">
               <label class="form-label mb-3">Permisos</label>
               <div class="space-y-3 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                \${permissionsByModule.map(
-                  (group) => html\`
+                ${permissionsByModule.map(
+                  (group) => html`
                     <div class="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0">
                       <div class="flex items-center justify-between mb-2">
                         <label class="font-medium text-sm text-gray-900 dark:text-gray-100">
                           <input
                             type="checkbox"
                             class="mr-2 module-checkbox"
-                            data-module="\${group.module}"
+                            data-module="${group.module}"
                             onchange="toggleModulePermissions(this)"
                           />
-                          \${group.module}
+                          ${group.module}
                         </label>
-                        <span class="text-xs text-gray-500">(\${group.permissions.length} permisos)</span>
+                        <span class="text-xs text-gray-500">(${group.permissions.length} permisos)</span>
                       </div>
                       <div class="ml-6 grid grid-cols-2 gap-2">
-                        \${group.permissions.map(
-                          (perm) => html\`
+                        ${group.permissions.map(
+                          (perm) => html`
                             <label class="flex items-center text-sm text-gray-700 dark:text-gray-300">
                               <input
                                 type="checkbox"
                                 name="permissions[]"
-                                value="\${perm.id}"
+                                value="${perm.id}"
                                 class="mr-2 permission-checkbox"
-                                data-module="\${group.module}"
+                                data-module="${group.module}"
                                 onchange="updateModuleCheckbox()"
                               />
-                              <span class="font-medium">\${perm.action}</span>
-                              \${perm.description
-                                ? html\`<span class="text-xs text-gray-500 ml-1">- \${perm.description}</span>\`
+                              <span class="font-medium">${perm.action}</span>
+                              ${perm.description
+                                ? html`<span class="text-xs text-gray-500 ml-1">- ${perm.description}</span>`
                                 : ""}
                             </label>
-                          \`
+                          `
                         )}
                       </div>
                     </div>
-                  \`
+                  `
                 )}
               </div>
             </div>
@@ -387,7 +387,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
     <script>
       // Store roles data
-      const rolesData = ${JSON.stringify(rolesForScript)};
+      const rolesData = \${JSON.stringify(rolesForScript)};
 
       // Toggle module permissions
       function toggleModulePermissions(checkbox) {
@@ -471,7 +471,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         document.getElementById('viewPermissionsTitle').textContent = \`Permisos de "\${role.name}"\`;
 
-        const permissions = ${JSON.stringify(permissions)};
+        const permissions = \${JSON.stringify(permissions)};
         const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
 
         // Group by module
@@ -568,7 +568,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         });
       });
     </script>
-  \`;
+  `;
 
   return AdminLayout({ user, content, title: "Roles y Permisos" });
 };

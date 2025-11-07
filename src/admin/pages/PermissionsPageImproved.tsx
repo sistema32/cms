@@ -49,19 +49,19 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     count: perms.length,
   })).sort((a, b) => a.module.localeCompare(b.module));
 
-  const content = html\`
+  const content = html`
     <div class="page-header">
       <div>
         <h1 class="page-title">Gestión de Permisos</h1>
         <p class="page-subtitle">
           Define permisos específicos para módulos y acciones del sistema
         </p>
-        \${stats ? html\`
+        ${stats ? html`
           <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <span>Total: <strong>\${stats.totalPermissions}</strong></span>
-            <span>Módulos: <strong class="text-purple-600">\${stats.totalModules}</strong></span>
+            <span>Total: <strong>${stats.totalPermissions}</strong></span>
+            <span>Módulos: <strong class="text-purple-600">${stats.totalModules}</strong></span>
           </div>
-        \` : ""}
+        ` : ""}
       </div>
       <div class="page-actions">
         <button onclick="showCreateModal()" class="btn-action">
@@ -74,33 +74,33 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     </div>
 
     <!-- Stats Cards -->
-    \${stats && stats.moduleBreakdown.length > 0 ? html\`
+    ${stats && stats.moduleBreakdown.length > 0 ? html`
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        \${stats.moduleBreakdown.slice(0, 4).map(item => html\`
+        ${stats.moduleBreakdown.slice(0, 4).map(item => html`
           <div class="table-card p-4">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-              \${item.module}
+              ${item.module}
             </div>
             <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              \${item.count}
+              ${item.count}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400">
-              permiso\${item.count === 1 ? '' : 's'}
+              permiso${item.count === 1 ? '' : 's'}
             </div>
           </div>
-        \`)}
+        `)}
       </div>
-    \` : ""}
+    ` : ""}
 
     <!-- Permissions by Module -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      \${grouped.map(group => html\`
+      ${grouped.map(group => html`
         <div class="table-card">
           <div class="table-card-header">
             <h2 class="table-card-title">
-              Módulo: \${group.module}
+              Módulo: ${group.module}
             </h2>
-            <span class="badge-info">\${group.count} permiso\${group.count === 1 ? '' : 's'}</span>
+            <span class="badge-info">${group.count} permiso${group.count === 1 ? '' : 's'}</span>
           </div>
 
           <div class="table-container">
@@ -113,20 +113,20 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                 </tr>
               </thead>
               <tbody>
-                \${group.permissions.map(perm => html\`
+                ${group.permissions.map(perm => html`
                   <tr>
                     <td>
                       <span class="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">
-                        \${perm.action}
+                        ${perm.action}
                       </span>
                     </td>
                     <td class="text-sm text-gray-600 dark:text-gray-400">
-                      \${perm.description || '-'}
+                      ${perm.description || '-'}
                     </td>
                     <td>
                       <div class="flex gap-2">
                         <button
-                          onclick="editPermission(\${perm.id}, '\${perm.module}', '\${perm.action}', '\${perm.description || ''}')"
+                          onclick="editPermission(${perm.id}, '${perm.module}', '${perm.action}', '${perm.description || ''}')"
                           class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
                           title="Editar"
                         >
@@ -135,7 +135,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                           </svg>
                         </button>
                         <button
-                          onclick="deletePermission(\${perm.id}, '\${perm.module}:\${perm.action}')"
+                          onclick="deletePermission(${perm.id}, '${perm.module}:${perm.action}')"
                           class="text-red-600 hover:text-red-800 dark:text-red-400"
                           title="Eliminar"
                         >
@@ -146,12 +146,12 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                       </div>
                     </td>
                   </tr>
-                \`)}
+                `)}
               </tbody>
             </table>
           </div>
         </div>
-      \`)}
+      `)}
     </div>
 
     <!-- Create/Edit Modal -->
@@ -177,11 +177,11 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                 placeholder="ej: users, posts, media..."
               />
               <datalist id="modulesList">
-                \${modules && modules.length > 0 ? modules.map(m => html\`
-                  <option value="\${m}">\${m}</option>
-                \`) : grouped.map(g => html\`
-                  <option value="\${g.module}">\${g.module}</option>
-                \`)}
+                ${modules && modules.length > 0 ? modules.map(m => html`
+                  <option value="${m}">${m}</option>
+                `) : grouped.map(g => html`
+                  <option value="${g.module}">${g.module}</option>
+                `)}
               </datalist>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Nombre del módulo o sección del sistema
@@ -301,7 +301,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
         }
       });
     </script>
-  \`;
+  `;
 
   return AdminLayout({ user, content, title: "Permisos" });
 };
