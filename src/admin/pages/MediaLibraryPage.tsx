@@ -133,8 +133,8 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="mb-6 flex gap-4">
+    <!-- Filters and View Controls -->
+    <div class="mb-6 flex gap-4 items-center">
       <select
         id="typeFilter"
         class="form-input w-48"
@@ -153,6 +153,50 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
         placeholder="Buscar por nombre de archivo..."
         onkeyup="searchMedia(this.value)"
       />
+
+      <!-- View Toggle -->
+      <div class="flex gap-2 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+        <button
+          onclick="switchView('grid')"
+          id="gridViewBtn"
+          class="p-2 rounded bg-purple-600 text-white"
+          title="Vista de cuadrícula"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        <button
+          onclick="switchView('list')"
+          id="listViewBtn"
+          class="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Vista de lista"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div id="bulkActionsBar" class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg hidden">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+          <span id="selectedCount">0</span> elementos seleccionados
+        </span>
+        <div class="flex gap-2">
+          <button onclick="bulkDelete()" class="btn-secondary text-sm">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Eliminar
+          </button>
+          <button onclick="clearSelection()" class="btn-secondary text-sm">
+            Cancelar
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Media Grid -->
@@ -181,6 +225,18 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           data-filename="${item.originalFilename}"
           onclick="${pickerMode ? `selectMedia(${item.id}, '${item.url}', '${item.originalFilename}')` : "viewMediaDetails(this)"}"
         >
+          <!-- Bulk Selection Checkbox -->
+          ${!pickerMode ? html`
+            <div class="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+              <input
+                type="checkbox"
+                class="media-checkbox w-5 h-5 text-purple-600 bg-white dark:bg-gray-700 border-gray-300 rounded focus:ring-purple-500"
+                data-media-id="${item.id}"
+                onclick="event.stopPropagation(); toggleMediaSelection(${item.id}, this.checked)"
+              />
+            </div>
+          ` : ""}
+
           <div class="aspect-square bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
             ${item.type === "image" ? html`
               <img
@@ -252,6 +308,103 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
               </button>
             ` : ""}
           </div>
+        </div>
+      `)}
+    </div>
+
+    <!-- Media List View -->
+    <div id="mediaList" class="hidden space-y-2 mb-6">
+      ${media.length === 0 ? html`
+        <div class="text-center py-12">
+          <p class="text-gray-600 dark:text-gray-400">No hay archivos en la biblioteca</p>
+        </div>
+      ` : media.map((item) => html`
+        <div
+          class="media-list-item flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-transparent hover:border-purple-400"
+          data-id="${item.id}"
+          data-url="${item.url}"
+          data-type="${item.type}"
+          data-filename="${item.originalFilename}"
+          onclick="${pickerMode ? `selectMedia(${item.id}, '${item.url}', '${item.originalFilename}')` : "viewMediaDetails(this)"}"
+        >
+          <!-- Checkbox -->
+          ${!pickerMode ? html`
+            <input
+              type="checkbox"
+              class="media-checkbox w-5 h-5 text-purple-600 bg-white dark:bg-gray-700 border-gray-300 rounded focus:ring-purple-500"
+              data-media-id="${item.id}"
+              onclick="event.stopPropagation(); toggleMediaSelection(${item.id}, this.checked)"
+            />
+          ` : ""}
+
+          <!-- Thumbnail -->
+          <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+            ${item.type === "image" ? html`
+              <img src="${item.url}" alt="${item.originalFilename}" class="w-full h-full object-cover" loading="lazy" />
+            ` : html`
+              <div class="text-gray-400 dark:text-gray-500">
+                ${item.type === "video" ? html`
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                ` : item.type === "audio" ? html`
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                ` : html`
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                `}
+              </div>
+            `}
+          </div>
+
+          <!-- File Info -->
+          <div class="flex-1 min-w-0">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">${item.originalFilename}</h4>
+            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <span class="capitalize">${item.type}</span>
+              <span>${formatFileSize(item.size)}</span>
+              ${item.width && item.height ? html`<span>${item.width} × ${item.height}</span>` : ""}
+              <span>${formatDate(item.createdAt)}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          ${!pickerMode ? html`
+            <div class="flex items-center gap-2">
+              ${item.type === "image" ? html`
+                <button
+                  onclick="event.stopPropagation(); openImageEditor(${item.id}, '${item.url}')"
+                  class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded transition-colors"
+                  title="Editar imagen"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onclick="event.stopPropagation(); openSeoEditor(${item.id})"
+                  class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition-colors"
+                  title="Editar SEO"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </button>
+              ` : ""}
+              <button
+                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${item.originalFilename}')"
+                class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
+                title="Eliminar"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          ` : ""}
         </div>
       `)}
     </div>
@@ -347,6 +500,129 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Media Details Modal -->
+    <div id="mediaDetailsModal" class="modal-backdrop hidden fixed inset-0 z-50 flex items-center justify-center">
+      <div class="modal-container max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="modal-title">Detalles del Archivo</h3>
+          <button
+            type="button"
+            onclick="closeMediaDetails()"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Preview -->
+          <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+            <div id="mediaPreview"></div>
+          </div>
+
+          <!-- Details -->
+          <div class="space-y-4">
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Información del Archivo</h4>
+              <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-gray-600 dark:text-gray-400">Nombre:</dt>
+                  <dd class="font-medium text-gray-900 dark:text-gray-100" id="detailFilename"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-gray-600 dark:text-gray-400">Tipo:</dt>
+                  <dd class="font-medium text-gray-900 dark:text-gray-100" id="detailType"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-gray-600 dark:text-gray-400">Tamaño:</dt>
+                  <dd class="font-medium text-gray-900 dark:text-gray-100" id="detailSize"></dd>
+                </div>
+                <div class="flex justify-between" id="detailDimensionsContainer">
+                  <dt class="text-gray-600 dark:text-gray-400">Dimensiones:</dt>
+                  <dd class="font-medium text-gray-900 dark:text-gray-100" id="detailDimensions"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-gray-600 dark:text-gray-400">Subido:</dt>
+                  <dd class="font-medium text-gray-900 dark:text-gray-100" id="detailDate"></dd>
+                </div>
+              </dl>
+            </div>
+
+            <hr class="border-gray-200 dark:border-gray-700" />
+
+            <!-- URLs Section -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URLs</h4>
+              <div class="space-y-2" id="urlsList"></div>
+            </div>
+
+            <hr class="border-gray-200 dark:border-gray-700" />
+
+            <!-- SEO Metadata -->
+            <div id="seoMetadataSection">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Metadatos SEO</h4>
+              <dl class="space-y-2 text-sm" id="seoMetadataList"></dl>
+            </div>
+
+            <hr class="border-gray-200 dark:border-gray-700" />
+
+            <!-- HTML Snippets -->
+            <div id="htmlSnippetsSection">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Snippets HTML</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs text-gray-600 dark:text-gray-400">Imagen básica:</label>
+                  <div class="flex gap-2">
+                    <input
+                      type="text"
+                      id="snippetBasic"
+                      readonly
+                      class="form-input text-xs font-mono flex-1"
+                    />
+                    <button
+                      onclick="copyToClipboard('snippetBasic')"
+                      class="btn-secondary text-xs px-3"
+                      title="Copiar"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-600 dark:text-gray-400">Imagen con alt (SEO):</label>
+                  <div class="flex gap-2">
+                    <input
+                      type="text"
+                      id="snippetWithAlt"
+                      readonly
+                      class="form-input text-xs font-mono flex-1"
+                    />
+                    <button
+                      onclick="copyToClipboard('snippetWithAlt')"
+                      class="btn-secondary text-xs px-3"
+                      title="Copiar"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button onclick="closeMediaDetails()" class="btn-secondary">Cerrar</button>
+        </div>
       </div>
     </div>
 
@@ -471,17 +747,179 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
         }
       }
 
-      // View details (placeholder)
-      function viewMediaDetails(element) {
+      // View details
+      async function viewMediaDetails(element) {
         if (!element) return;
-        const mediaUrl = element.dataset.url;
+        const mediaId = element.dataset.id;
 
-        if (mediaUrl) {
-          const previewWindow = window.open(mediaUrl, '_blank');
-          if (previewWindow) {
-            previewWindow.opener = null;
+        try {
+          const response = await fetch(\`\${ADMIN_BASE_PATH}/media/\${mediaId}\`, {
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            throw new Error('Error al cargar los detalles del archivo');
           }
+
+          const data = await response.json();
+          showMediaDetailsModal(data.media);
+        } catch (error) {
+          console.error('Error loading media details:', error);
+          alert('Error al cargar los detalles del archivo');
         }
+      }
+
+      function showMediaDetailsModal(mediaData) {
+        const modal = document.getElementById('mediaDetailsModal');
+        const preview = document.getElementById('mediaPreview');
+
+        // Populate preview
+        if (mediaData.type === 'image') {
+          preview.innerHTML = \`<img src="\${mediaData.url}" alt="\${mediaData.originalFilename}" class="max-w-full max-h-[400px] rounded-lg" />\`;
+        } else if (mediaData.type === 'video') {
+          preview.innerHTML = \`<video src="\${mediaData.url}" controls class="max-w-full max-h-[400px] rounded-lg"></video>\`;
+        } else if (mediaData.type === 'audio') {
+          preview.innerHTML = \`<audio src="\${mediaData.url}" controls class="w-full"></audio>\`;
+        } else {
+          preview.innerHTML = \`
+            <div class="text-center">
+              <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Documento</p>
+            </div>
+          \`;
+        }
+
+        // Populate file info
+        document.getElementById('detailFilename').textContent = mediaData.originalFilename;
+        document.getElementById('detailType').textContent = mediaData.type;
+        document.getElementById('detailSize').textContent = formatFileSize(mediaData.size);
+
+        if (mediaData.width && mediaData.height) {
+          document.getElementById('detailDimensions').textContent = \`\${mediaData.width} × \${mediaData.height}\`;
+          document.getElementById('detailDimensionsContainer').style.display = 'flex';
+        } else {
+          document.getElementById('detailDimensionsContainer').style.display = 'none';
+        }
+
+        document.getElementById('detailDate').textContent = new Date(mediaData.createdAt).toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Populate URLs
+        const urlsList = document.getElementById('urlsList');
+        let urlsHtml = \`
+          <div class="space-y-2">
+            <div>
+              <label class="text-xs text-gray-600 dark:text-gray-400">URL Original:</label>
+              <div class="flex gap-2">
+                <input type="text" value="\${mediaData.url}" readonly class="form-input text-xs flex-1" id="urlOriginal" />
+                <button onclick="copyToClipboard('urlOriginal')" class="btn-secondary text-xs px-3" title="Copiar">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+        \`;
+
+        // Add sizes if available
+        if (mediaData.sizes && mediaData.sizes.length > 0) {
+          mediaData.sizes.forEach((size, index) => {
+            urlsHtml += \`
+              <div>
+                <label class="text-xs text-gray-600 dark:text-gray-400">URL \${size.size} (\${size.width}×\${size.height}):</label>
+                <div class="flex gap-2">
+                  <input type="text" value="\${size.url}" readonly class="form-input text-xs flex-1" id="urlSize\${index}" />
+                  <button onclick="copyToClipboard('urlSize\${index}')" class="btn-secondary text-xs px-3" title="Copiar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            \`;
+          });
+        }
+
+        urlsHtml += '</div>';
+        urlsList.innerHTML = urlsHtml;
+
+        // Populate SEO metadata
+        const seoSection = document.getElementById('seoMetadataSection');
+        const seoList = document.getElementById('seoMetadataList');
+
+        if (mediaData.seo) {
+          const seo = mediaData.seo;
+          let seoHtml = '';
+
+          if (seo.alt) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Alt:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.alt}</dd></div>\`;
+          if (seo.title) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Título:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.title}</dd></div>\`;
+          if (seo.caption) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Leyenda:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.caption}</dd></div>\`;
+          if (seo.description) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Descripción:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.description}</dd></div>\`;
+          if (seo.credits) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Créditos:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.credits}</dd></div>\`;
+          if (seo.copyright) seoHtml += \`<div class="flex justify-between"><dt class="text-gray-600 dark:text-gray-400">Copyright:</dt><dd class="font-medium text-gray-900 dark:text-gray-100">\${seo.copyright}</dd></div>\`;
+
+          if (seoHtml) {
+            seoList.innerHTML = seoHtml;
+            seoSection.style.display = 'block';
+          } else {
+            seoSection.style.display = 'none';
+          }
+        } else {
+          seoSection.style.display = 'none';
+        }
+
+        // Populate HTML snippets (only for images)
+        const snippetsSection = document.getElementById('htmlSnippetsSection');
+        if (mediaData.type === 'image') {
+          const altText = mediaData.seo?.alt || mediaData.originalFilename;
+          document.getElementById('snippetBasic').value = \`<img src="\${mediaData.url}" />\`;
+          document.getElementById('snippetWithAlt').value = \`<img src="\${mediaData.url}" alt="\${altText}" />\`;
+          snippetsSection.style.display = 'block';
+        } else {
+          snippetsSection.style.display = 'none';
+        }
+
+        modal.classList.remove('hidden');
+      }
+
+      function closeMediaDetails() {
+        document.getElementById('mediaDetailsModal').classList.add('hidden');
+      }
+
+      function copyToClipboard(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        input.select();
+        input.setSelectionRange(0, 99999); // For mobile devices
+
+        try {
+          document.execCommand('copy');
+
+          // Show feedback
+          const btn = event.target.closest('button');
+          const originalHTML = btn.innerHTML;
+          btn.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>';
+
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+          }, 1000);
+        } catch (err) {
+          console.error('Error copying to clipboard:', err);
+        }
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return \`\${bytes} B\`;
+        if (bytes < 1024 * 1024) return \`\${(bytes / 1024).toFixed(1)} KB\`;
+        return \`\${(bytes / (1024 * 1024)).toFixed(1)} MB\`;
       }
 
       // SEO Editor functions
@@ -908,6 +1346,100 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           window.opener.handleMediaSelected({ id, url, filename });
           window.close();
         }
+      }
+
+      // View switching
+      let selectedMediaIds = new Set();
+
+      function switchView(view) {
+        const gridView = document.getElementById('mediaGrid');
+        const listView = document.getElementById('mediaList');
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+
+        if (view === 'grid') {
+          gridView.classList.remove('hidden');
+          listView.classList.add('hidden');
+          gridBtn.classList.add('bg-purple-600', 'text-white');
+          gridBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+          listBtn.classList.remove('bg-purple-600', 'text-white');
+          listBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        } else {
+          gridView.classList.add('hidden');
+          listView.classList.remove('hidden');
+          listBtn.classList.add('bg-purple-600', 'text-white');
+          listBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+          gridBtn.classList.remove('bg-purple-600', 'text-white');
+          gridBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+        }
+      }
+
+      // Bulk selection
+      function toggleMediaSelection(mediaId, isSelected) {
+        if (isSelected) {
+          selectedMediaIds.add(mediaId);
+        } else {
+          selectedMediaIds.delete(mediaId);
+        }
+        updateBulkActionsBar();
+      }
+
+      function updateBulkActionsBar() {
+        const bulkActionsBar = document.getElementById('bulkActionsBar');
+        const selectedCount = document.getElementById('selectedCount');
+
+        selectedCount.textContent = selectedMediaIds.size;
+
+        if (selectedMediaIds.size > 0) {
+          bulkActionsBar.classList.remove('hidden');
+        } else {
+          bulkActionsBar.classList.add('hidden');
+        }
+      }
+
+      function clearSelection() {
+        selectedMediaIds.clear();
+        const checkboxes = document.querySelectorAll('.media-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateBulkActionsBar();
+      }
+
+      async function bulkDelete() {
+        const count = selectedMediaIds.size;
+        if (count === 0) return;
+
+        if (!confirm(\`¿Estás seguro de que deseas eliminar \${count} archivo(s)?\`)) {
+          return;
+        }
+
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        let errors = [];
+
+        for (const mediaId of selectedMediaIds) {
+          try {
+            const response = await fetch(\`\${ADMIN_BASE_PATH}/media/\${mediaId}\`, {
+              method: 'DELETE',
+              credentials: 'include',
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              errors.push(\`ID \${mediaId}: \${error.error || 'Error desconocido'}\`);
+            }
+          } catch (error) {
+            errors.push(\`ID \${mediaId}: \${error.message}\`);
+          }
+        }
+
+        if (errors.length > 0) {
+          errorText.textContent = 'Errores al eliminar algunos archivos: ' + errors.join(', ');
+          errorMessage.classList.remove('hidden');
+          setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+        }
+
+        // Reload page after deletion
+        window.location.reload();
       }
     </script>
   `;
