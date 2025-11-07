@@ -455,9 +455,46 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
         <form id="seoForm" class="space-y-4">
           <input type="hidden" id="seoMediaId" />
 
+          <!-- AI Connection Warning -->
+          <div id="aiConnectionWarning" class="hidden p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">No se pudo conectar con el servicio de IA</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Por favor, agrega el texto alternativo manualmente.</p>
+              </div>
+              <button type="button" onclick="dismissAiWarning()" class="text-yellow-600 hover:text-yellow-800 dark:text-yellow-500 dark:hover:text-yellow-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <div>
-            <label class="form-label">Texto Alternativo (Alt)</label>
-            <input type="text" id="seoAlt" class="form-input" placeholder="Descripción de la imagen" />
+            <div class="flex items-center justify-between mb-1">
+              <label class="form-label mb-0">Texto Alternativo (Alt)</label>
+              <button
+                type="button"
+                id="generateAltBtn"
+                onclick="generateAltWithAI()"
+                class="text-xs px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span id="generateAltBtnText">Generar con IA</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              id="seoAlt"
+              class="form-input"
+              placeholder="Descripción de la imagen"
+              oninput="onAltInputChange()"
+            />
             <p class="text-xs text-gray-500 mt-1">Importante para accesibilidad y SEO</p>
           </div>
 
@@ -923,8 +960,13 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
       }
 
       // SEO Editor functions
+      let currentMediaData = null;
+
       async function openSeoEditor(mediaId) {
         document.getElementById('seoMediaId').value = mediaId;
+
+        // Hide warning initially
+        document.getElementById('aiConnectionWarning').classList.add('hidden');
 
         // Fetch current SEO data
         try {
@@ -934,6 +976,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
 
           if (response.ok) {
             const data = await response.json();
+            currentMediaData = data.media;
             const seo = data.media.seo || {};
 
             document.getElementById('seoAlt').value = seo.alt || '';
@@ -943,6 +986,11 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             document.getElementById('seoFocusKeyword').value = seo.focusKeyword || '';
             document.getElementById('seoCredits').value = seo.credits || '';
             document.getElementById('seoCopyright').value = seo.copyright || '';
+
+            // Auto-generate alt if empty and it's an image
+            if ((!seo.alt || seo.alt.trim() === '') && data.media.type === 'image') {
+              await generateAltWithAI(true);
+            }
           }
         } catch (error) {
           console.error('Error loading SEO data:', error);
@@ -951,9 +999,97 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
         document.getElementById('seoEditorModal').classList.remove('hidden');
       }
 
+      async function generateAltWithAI(isAutomatic = false) {
+        if (!currentMediaData) return;
+
+        const generateBtn = document.getElementById('generateAltBtn');
+        const generateBtnText = document.getElementById('generateAltBtnText');
+        const altInput = document.getElementById('seoAlt');
+        const aiWarning = document.getElementById('aiConnectionWarning');
+
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtnText.textContent = 'Generando...';
+
+        try {
+          const response = await fetch('/api/seo/suggest/media-alt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              originalFilename: currentMediaData.originalFilename,
+              title: currentMediaData.seo?.title || '',
+              caption: currentMediaData.seo?.caption || '',
+              description: currentMediaData.seo?.description || '',
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Error al generar ALT text');
+          }
+
+          const result = await response.json();
+
+          if (result.success && result.altSuggestion) {
+            altInput.value = result.altSuggestion;
+
+            // Hide warning if it was showing
+            aiWarning.classList.add('hidden');
+
+            // Show success feedback
+            if (!isAutomatic) {
+              const originalBg = generateBtn.className;
+              generateBtn.className = generateBtn.className.replace('bg-purple-600', 'bg-green-600');
+              generateBtnText.textContent = '¡Generado!';
+
+              setTimeout(() => {
+                generateBtn.className = originalBg;
+                generateBtnText.textContent = 'Generar con IA';
+              }, 2000);
+            }
+          } else {
+            throw new Error('No se recibió sugerencia de ALT');
+          }
+        } catch (error) {
+          console.error('Error generating ALT with AI:', error);
+
+          // Show warning only if automatic (on open)
+          if (isAutomatic) {
+            aiWarning.classList.remove('hidden');
+          } else {
+            // Show error in button for manual attempts
+            generateBtnText.textContent = 'Error - Reintentar';
+            setTimeout(() => {
+              generateBtnText.textContent = 'Generar con IA';
+            }, 3000);
+          }
+        } finally {
+          generateBtn.disabled = false;
+          if (isAutomatic) {
+            generateBtnText.textContent = 'Generar con IA';
+          }
+        }
+      }
+
+      function onAltInputChange() {
+        // Hide warning when user starts typing manually
+        const aiWarning = document.getElementById('aiConnectionWarning');
+        if (!aiWarning.classList.contains('hidden')) {
+          aiWarning.classList.add('hidden');
+        }
+      }
+
+      function dismissAiWarning() {
+        document.getElementById('aiConnectionWarning').classList.add('hidden');
+      }
+
       function closeSeoEditor() {
         document.getElementById('seoEditorModal').classList.add('hidden');
         document.getElementById('seoForm').reset();
+        document.getElementById('aiConnectionWarning').classList.add('hidden');
+        currentMediaData = null;
       }
 
       async function saveSeoData() {
