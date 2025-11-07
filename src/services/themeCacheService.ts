@@ -3,7 +3,7 @@
  * Mejora el rendimiento cachéando templates compilados, configuraciones y assets
  */
 
-import { createHash } from "https://deno.land/std@0.224.0/crypto/mod.ts";
+import { createHash } from "../lib/utils/crypto.ts";
 import type { ThemeConfig } from "./themeService.ts";
 
 export interface CachedTemplate {
@@ -245,9 +245,9 @@ class ThemeCacheService {
 
     try {
       const content = await Deno.readFile(path);
-      const hash = createHash("md5");
+      const hash = createHash("SHA-256");
       hash.update(content);
-      const hashValue = hash.toString("hex");
+      const hashValue = await hash.digest("hex");
 
       this.fileHashCache.set(path, hashValue);
       return hashValue;
