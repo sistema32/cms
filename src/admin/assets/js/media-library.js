@@ -505,15 +505,15 @@ function openImageEditor(mediaId, mediaUrl) {
           </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(95vh-8rem)]">
-          <div class="bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center relative">
+        <div class="grid grid-cols-4 gap-4 h-[calc(95vh-8rem)]">
+          <div class="col-span-3 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center relative">
             <canvas id="imageEditorCanvas" class="max-w-full max-h-full"></canvas>
             <div id="imageEditorLoading" class="absolute inset-0 flex items-center justify-center bg-gray-900">
               <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
             </div>
           </div>
 
-          <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg overflow-y-auto space-y-4">
+          <div class="col-span-1 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg overflow-y-auto space-y-4">
             <div class="space-y-3">
               <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">Transformar</h4>
               <button onclick="imgEditor.rotate(-90)" class="btn-secondary w-full">Rotar Izquierda</button>
