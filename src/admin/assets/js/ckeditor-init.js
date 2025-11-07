@@ -240,7 +240,11 @@ async function initCKEditor(config) {
 
     try {
       const response = await fetch(mediaListEndpoint + '?limit=100', { credentials: 'include' });
-      if (!response.ok) throw new Error('Error al cargar medios');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[CKEditor] Error al cargar medios:', response.status, errorText);
+        throw new Error(`Error al cargar medios (${response.status}): ${errorText}`);
+      }
       const data = await response.json();
       mediaItems = Array.isArray(data.media) ? data.media : [];
       renderMediaGrid(mediaItems);
@@ -310,10 +314,11 @@ async function initCKEditor(config) {
         });
       }
     } catch (error) {
-      console.error('Media library error:', error);
+      console.error('[CKEditor] Media library error:', error);
       if (mediaContent) {
+        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
         mediaContent.innerHTML =
-          '<div class="text-center py-8 text-red-600">Error al cargar la biblioteca de medios</div>';
+          '<div class="text-center py-8 text-red-600"><p>Error al cargar la biblioteca de medios</p><p class="text-sm mt-2">' + errorMsg + '</p></div>';
       }
     }
   };
@@ -449,31 +454,38 @@ async function initCKEditor(config) {
     setTimeout(() => interceptFileInputs(), 100);
     setTimeout(() => interceptFileInputs(), 300);
     setTimeout(() => interceptFileInputs(), 500);
+    setTimeout(() => interceptFileInputs(), 1000); // Un último intento después de 1 segundo
 
-    // También interceptar cualquier click en inputs file que puedan aparecer después
-    document.addEventListener('click', (e) => {
-      const target = e.target;
-      if (target && target.matches && target.matches('.ck input[type="file"]')) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        openMediaPicker();
-        return false;
-      }
+    // Interceptar clicks específicamente en el área del editor
+    // Solo para este editor específico, no para todo el documento
+    const editorWrapper = editorElement.closest('.lex-editor-wrapper') || editorElement.parentElement;
+    if (editorWrapper) {
+      editorWrapper.addEventListener('click', (e) => {
+        const target = e.target;
 
-      // También interceptar clicks en botones que contengan inputs file
-      const ckButton = target.closest('.ck-button');
-      if (ckButton && ckButton.querySelector('input[type="file"]')) {
-        const fileInput = ckButton.querySelector('input[type="file"]');
-        if (fileInput && !fileInput.disabled) {
+        // Si es un input file en CKEditor, prevenir y abrir modal
+        if (target && target.tagName === 'INPUT' && target.type === 'file' && target.closest('.ck')) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           openMediaPicker();
           return false;
         }
-      }
-    }, true);
+
+        // Si es un botón que contiene input file, también interceptar
+        const ckButton = target.closest('.ck-button');
+        if (ckButton) {
+          const fileInput = ckButton.querySelector('input[type="file"]');
+          if (fileInput && !fileInput.disabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            openMediaPicker();
+            return false;
+          }
+        }
+      }, true);
+    }
 
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());
