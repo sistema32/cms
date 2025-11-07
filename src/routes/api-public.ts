@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { apiAuthMiddleware } from "../middlewares/apiAuthMiddleware.ts";
+import { apiAuthMiddleware } from "../middleware/apiAuthMiddleware.ts";
 import { API_PERMISSIONS } from "../lib/api/types.ts";
 import { db } from "../config/db.ts";
 import { content, categories, tags, contentCategories, contentTags } from "../db/schema.ts";
