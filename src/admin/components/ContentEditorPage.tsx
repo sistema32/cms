@@ -5,10 +5,12 @@ import renderSeoFields, { type SeoFormValues } from "./SeoFields.tsx";
 import { CategoryTagSelector } from "./CategoryTagSelector.tsx";
 import { env } from "../../config/env.ts";
 import { MediaPicker } from "./MediaPicker.tsx";
+import { RevisionHistory } from "./RevisionHistory.tsx";
 
 type HtmlFragment = ReturnType<typeof html>;
 
 interface ContentEditorData {
+  id?: number; // Para editar contenido existente
   title?: string;
   slug?: string;
   excerpt?: string | null;
@@ -17,6 +19,12 @@ interface ContentEditorData {
   contentTypeId?: number | null;
   featuredImageId?: number | null;
   featuredImageUrl?: string | null;
+  parentId?: number | null; // Para páginas hijas
+  visibility?: string | null; // public, private, password
+  password?: string | null; // Para contenido protegido
+  publishedAt?: string | null; // Fecha de publicación
+  scheduledAt?: string | null; // Fecha programada
+  commentsEnabled?: boolean; // Control de comentarios
 }
 
 interface TaxonomyItem {
@@ -62,12 +70,26 @@ interface ContentEditorPageProps {
   showSeo?: boolean;
   additionalMainSections?: HtmlFragment[];
   additionalSidebarSections?: HtmlFragment[];
+  // Nuevas props para funcionalidades faltantes
+  showRevisionHistory?: boolean; // Mostrar historial de versiones
+  showParentSelector?: boolean; // Mostrar selector de página padre
+  availableParents?: TaxonomyItem[]; // Páginas disponibles como padre
+  showVisibility?: boolean; // Mostrar selector de visibilidad
+  showScheduling?: boolean; // Mostrar programación de publicación
+  showCommentsControl?: boolean; // Mostrar control de comentarios
 }
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Borrador" },
   { value: "published", label: "Publicado" },
+  { value: "scheduled", label: "Programado" },
   { value: "archived", label: "Archivado" },
+];
+
+const VISIBILITY_OPTIONS = [
+  { value: "public", label: "Público" },
+  { value: "private", label: "Privado (solo usuarios autenticados)" },
+  { value: "password", label: "Protegido por contraseña" },
 ];
 
 export const ContentEditorPage = (props: ContentEditorPageProps) => {
@@ -102,6 +124,12 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
     showSeo = false,
     additionalMainSections = [],
     additionalSidebarSections = [],
+    showRevisionHistory = false,
+    showParentSelector = false,
+    availableParents = [],
+    showVisibility = false,
+    showScheduling = false,
+    showCommentsControl = false,
   } = props;
 
   const normalizedCategories = categories.map((item) => ({
@@ -202,7 +230,7 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
   const statusSection = html`
     <div class="mb-4">
       <label class="form-label">Estado</label>
-      <select name="status" class="form-input">
+      <select name="status" class="form-input" id="statusSelect">
         ${STATUS_OPTIONS.map((option) =>
           html`
             <option value="${option.value}" ${statusValue === option.value
@@ -215,6 +243,84 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
       </select>
     </div>
   `;
+
+  // Selector de programación de publicación
+  const schedulingSection = showScheduling ? html`
+    <div class="mb-4" id="schedulingSection" style="display: ${statusValue === 'scheduled' ? 'block' : 'none'}">
+      <label class="form-label">Fecha y hora de publicación</label>
+      <input
+        type="datetime-local"
+        name="scheduledAt"
+        class="form-input"
+        value="${data.scheduledAt ? new Date(data.scheduledAt).toISOString().slice(0, 16) : ''}"
+      />
+      <p class="text-xs text-gray-500 mt-1">
+        Deja vacío para publicar inmediatamente al cambiar el estado
+      </p>
+    </div>
+  ` : null;
+
+  // Selector de visibilidad
+  const visibilitySection = showVisibility ? html`
+    <div class="mb-4">
+      <label class="form-label">Visibilidad</label>
+      <select name="visibility" class="form-input" id="visibilitySelect">
+        ${VISIBILITY_OPTIONS.map((option) =>
+          html`
+            <option value="${option.value}" ${(data.visibility || 'public') === option.value ? "selected" : ""}>
+              ${option.label}
+            </option>
+          `
+        )}
+      </select>
+    </div>
+    <div class="mb-4" id="passwordSection" style="display: ${data.visibility === 'password' ? 'block' : 'none'}">
+      <label class="form-label">Contraseña</label>
+      <input
+        type="text"
+        name="password"
+        class="form-input"
+        value="${data.password || ''}"
+        placeholder="Contraseña para acceder"
+      />
+    </div>
+  ` : null;
+
+  // Selector de página padre
+  const parentSection = showParentSelector && availableParents.length > 0 ? html`
+    <div class="mb-4">
+      <label class="form-label">Página padre</label>
+      <select name="parentId" class="form-input">
+        <option value="">Sin página padre</option>
+        ${availableParents.map((parent) =>
+          html`
+            <option value="${parent.id}" ${data.parentId === parent.id ? "selected" : ""}>
+              ${parent.name}
+            </option>
+          `
+        )}
+      </select>
+      <p class="text-xs text-gray-500 mt-1">
+        Crear una página hija de otra página
+      </p>
+    </div>
+  ` : null;
+
+  // Control de comentarios
+  const commentsSection = showCommentsControl ? html`
+    <div class="mb-4">
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input
+          type="checkbox"
+          name="commentsEnabled"
+          value="true"
+          class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          ${data.commentsEnabled ? "checked" : ""}
+        />
+        <span class="form-label mb-0">Permitir comentarios</span>
+      </label>
+    </div>
+  ` : null;
 
   const shouldShowCategories = showCategories &&
     normalizedCategories.length > 0;
@@ -271,8 +377,15 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
   const publishCard = html`
     <div class="form-card">
       <h3 class="text-lg font-semibold mb-4">Publicación</h3>
-      ${contentTypeSection || ""} ${statusSection} ${categoriesBlock || ""}
-      ${tagsBlock || ""} ${featuredImageBlock || ""}
+      ${contentTypeSection || ""}
+      ${statusSection}
+      ${schedulingSection || ""}
+      ${visibilitySection || ""}
+      ${parentSection || ""}
+      ${commentsSection || ""}
+      ${categoriesBlock || ""}
+      ${tagsBlock || ""}
+      ${featuredImageBlock || ""}
       <button type="submit" class="w-full btn-action">
         ${submitLabel}
       </button>
@@ -288,7 +401,11 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
   const formContent = html`
     <div class="page-header">
       <h1 class="page-title">${pageTitle}</h1>
-      <div class="page-actions">
+      <div class="page-actions space-x-2">
+        ${showRevisionHistory && data.id ? RevisionHistory({
+          contentId: data.id,
+          currentTitle: data.title || "Contenido"
+        }) : ""}
         <a href="${cancelUrl}" class="btn-secondary">Cancelar</a>
       </div>
     </div>
@@ -340,6 +457,28 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
     if (slugInput) {
       slugInput.addEventListener('input', function () {
         this.dataset.locked = this.value.length > 0 ? 'true' : '';
+      });
+    }
+
+    // Control de visibilidad del campo de contraseña
+    const visibilitySelect = document.getElementById('visibilitySelect');
+    if (visibilitySelect) {
+      visibilitySelect.addEventListener('change', function() {
+        const passwordSection = document.getElementById('passwordSection');
+        if (passwordSection) {
+          passwordSection.style.display = this.value === 'password' ? 'block' : 'none';
+        }
+      });
+    }
+
+    // Control de visibilidad del campo de programación
+    const statusSelect = document.getElementById('statusSelect');
+    if (statusSelect) {
+      statusSelect.addEventListener('change', function() {
+        const schedulingSection = document.getElementById('schedulingSection');
+        if (schedulingSection) {
+          schedulingSection.style.display = this.value === 'scheduled' ? 'block' : 'none';
+        }
       });
     }
     </script>

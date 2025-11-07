@@ -4,7 +4,7 @@ import { Hero } from "../partials/Hero.tsx";
 import { PostCard } from "../partials/PostCard.tsx";
 import { Header } from "../partials/Header.tsx";
 import { Footer } from "../partials/Footer.tsx";
-import type { SiteData, PostData } from "../helpers/index.ts";
+import type { SiteData, PostData, MenuItem, CategoryData } from "../helpers/index.ts";
 
 /**
  * Home Template - Homepage estática personalizable
@@ -16,18 +16,22 @@ import type { SiteData, PostData } from "../helpers/index.ts";
 interface HomeProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   featuredPosts: PostData[];
-  categories?: Array<{ id: number; name: string; slug: string; count?: number }>;
+  categories?: CategoryData[];
+  blogUrl?: string;
+  menu?: MenuItem[];
+  footerMenu?: MenuItem[];
 }
 
 export const HomeTemplate = (props: HomeProps) => {
-  const { site, custom, featuredPosts, categories = [] } = props;
+  const { site, custom, activeTheme, featuredPosts, categories = [], blogUrl = "/blog", menu = [], footerMenu = [] } = props;
 
   // Settings de la homepage
   const heroTitle = custom.homepage_hero_title || `Bienvenido a ${site.name}`;
   const heroSubtitle = custom.homepage_hero_subtitle || site.description || "Descubre contenido increíble";
   const heroCtaText = custom.homepage_hero_cta_text || "Ver Blog";
-  const heroCtaUrl = custom.homepage_hero_cta_url || "/blog";
+  const heroCtaUrl = custom.homepage_hero_cta_url || blogUrl;
   const heroBackgroundImage = custom.homepage_hero_background;
   const heroStyle = custom.homepage_hero_style || "default";
   const showFeaturedPosts = custom.homepage_show_featured !== false;
@@ -36,7 +40,7 @@ export const HomeTemplate = (props: HomeProps) => {
 
   const content = html`
     <!-- Header -->
-    ${Header({ site, custom })}
+    ${Header({ site, custom, blogUrl, menu })}
 
     <!-- Hero Section -->
     ${Hero({
@@ -76,7 +80,7 @@ export const HomeTemplate = (props: HomeProps) => {
             </div>
 
             <div class="section-footer">
-              <a href="/blog" class="btn btn-secondary">
+              <a href="${blogUrl}" class="btn btn-secondary">
                 Ver todos los artículos
                 <svg class="icon" width="16" height="16" viewBox="0 0 24 24">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -169,12 +173,13 @@ export const HomeTemplate = (props: HomeProps) => {
     </main>
 
     <!-- Footer -->
-    ${Footer({ site, custom })}
+    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
   `;
 
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home front-page",
     children: content,
   });

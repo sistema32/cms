@@ -350,6 +350,14 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
         placeholder: "/:slug/",
       },
       {
+        key: "blog_base",
+        label: "Base del blog",
+        description: "Ruta base para el listado de posts del blog (sin barras al inicio/final).",
+        type: "text",
+        defaultValue: "blog",
+        placeholder: "blog",
+      },
+      {
         key: "category_base",
         label: "Base de categorías",
         type: "text",

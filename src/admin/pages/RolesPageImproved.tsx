@@ -34,11 +34,19 @@ interface RolesPageProps {
     totalUsers: number;
     usersWithoutRole: number;
   };
+  userPermissions?: string[];
 }
 
 export const RolesPageImproved = (props: RolesPageProps) => {
-  const { user, roles, permissions, stats } = props;
+  const { user, roles, permissions, stats, userPermissions = [] } = props;
   const adminPath = env.ADMIN_PATH;
+
+  // Helper para verificar permisos
+  const hasPermission = (permission: string) => userPermissions.includes(permission);
+  const canCreate = hasPermission("roles:create");
+  const canUpdate = hasPermission("roles:update");
+  const canDelete = hasPermission("roles:delete");
+  const canManagePermissions = hasPermission("role_permissions:update");
 
   const permissionsByModule = Array.from(
     permissions.reduce((acc, perm) => {
@@ -85,14 +93,16 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         }
       </div>
       <div class="page-actions">
-        <button onclick="openRoleModal('create')" class="btn-action">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 8h-2V6a1 1 0 10-2 0v2h-2a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2z"
-            ></path>
-          </svg>
-          Nuevo Rol
-        </button>
+        ${canCreate ? html`
+          <button onclick="openRoleModal('create')" class="btn-action">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 8h-2V6a1 1 0 10-2 0v2h-2a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2z"
+              ></path>
+            </svg>
+            Nuevo Rol
+          </button>
+        ` : ""}
       </div>
     </div>
 
@@ -172,32 +182,36 @@ export const RolesPageImproved = (props: RolesPageProps) => {
                                   ></path>
                                 </svg>
                               </button>
-                              <button
-                                onclick="openRoleModal('edit', ${role.id})"
-                                class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
-                                title="Editar"
-                              >
+                              ${(canUpdate || canManagePermissions) ? html`
+                                <button
+                                  onclick="openRoleModal('edit', ${role.id})"
+                                  class="text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                                  title="Editar"
+                                >
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                   <path
                                     d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
                                   ></path>
                                 </svg>
                               </button>
-                              <button
-                                onclick="cloneRole(${role.id})"
-                                class="text-green-600 hover:text-green-800 dark:text-green-400"
-                                title="Clonar rol"
-                              >
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path
-                                    d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
-                                  ></path>
-                                  <path
-                                    d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"
-                                  ></path>
-                                </svg>
-                              </button>
-                              ${!role.isSystem
+                              ` : ""}
+                              ${canCreate ? html`
+                                <button
+                                  onclick="cloneRole(${role.id})"
+                                  class="text-green-600 hover:text-green-800 dark:text-green-400"
+                                  title="Clonar rol"
+                                >
+                                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                      d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"
+                                    ></path>
+                                    <path
+                                      d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z"
+                                    ></path>
+                                  </svg>
+                                </button>
+                              ` : ""}
+                              ${!role.isSystem && canDelete
                                 ? html`
                                     <button
                                       onclick="deleteRole(${role.id}, '${role.name}')"
@@ -386,13 +400,14 @@ export const RolesPageImproved = (props: RolesPageProps) => {
     </div>
 
     <script>
+      const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
       // Store roles data
       const rolesData = \${JSON.stringify(rolesForScript)};
 
       // Toggle module permissions
       function toggleModulePermissions(checkbox) {
         const module = checkbox.dataset.module;
-        const moduleCheckboxes = document.querySelectorAll(\`.permission-checkbox[data-module="\${module}"]\`);
+        const moduleCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="' + module + '"]');
         moduleCheckboxes.forEach(cb => cb.checked = checkbox.checked);
       }
 
@@ -401,8 +416,8 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         const modules = [...new Set(Array.from(document.querySelectorAll('.permission-checkbox')).map(cb => cb.dataset.module))];
 
         modules.forEach(module => {
-          const moduleCheckbox = document.querySelector(\`.module-checkbox[data-module="\${module}"]\`);
-          const permissionCheckboxes = document.querySelectorAll(\`.permission-checkbox[data-module="\${module}"]\`);
+          const moduleCheckbox = document.querySelector('.module-checkbox[data-module="' + module + '"]');
+          const permissionCheckboxes = document.querySelectorAll('.permission-checkbox[data-module="' + module + '"]');
           const checkedCount = Array.from(permissionCheckboxes).filter(cb => cb.checked).length;
 
           if (checkedCount === 0) {
@@ -433,7 +448,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         if (mode === 'create') {
           title.textContent = 'Nuevo Rol';
-          form.action = '\${adminPath}/roles/create';
+          form.action = ADMIN_BASE_PATH + '/roles/create';
           document.getElementById('roleId').value = '';
           document.getElementById('roleName').value = '';
           document.getElementById('roleDescription').value = '';
@@ -442,14 +457,14 @@ export const RolesPageImproved = (props: RolesPageProps) => {
           if (!role) return;
 
           title.textContent = 'Editar Rol';
-          form.action = '\${adminPath}/roles/edit/' + roleId;
+          form.action = ADMIN_BASE_PATH + '/roles/edit/' + roleId;
           document.getElementById('roleId').value = roleId;
           document.getElementById('roleName').value = role.name;
           document.getElementById('roleDescription').value = role.description;
 
           // Check assigned permissions
           role.permissionIds.forEach(permId => {
-            const checkbox = document.querySelector(\`input[name="permissions[]"][value="\${permId}"]\`);
+            const checkbox = document.querySelector('input[name="permissions[]"][value="' + permId + '"]');
             if (checkbox) checkbox.checked = true;
           });
 
@@ -469,7 +484,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         const role = rolesData.find(r => r.id === roleId);
         if (!role) return;
 
-        document.getElementById('viewPermissionsTitle').textContent = \`Permisos de "\${role.name}"\`;
+        document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + role.name + '"';
 
         const permissions = \${JSON.stringify(permissions)};
         const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
@@ -520,7 +535,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         document.getElementById('cloneRoleId').value = roleId;
         document.getElementById('cloneRoleName').value = role.name + ' (Copia)';
         document.getElementById('cloneRoleDescription').value = 'Copia de ' + role.name;
-        document.getElementById('cloneForm').action = '\${adminPath}/roles/clone/' + roleId;
+        document.getElementById('cloneForm').action = ADMIN_BASE_PATH + '/roles/clone/' + roleId;
         document.getElementById('cloneModal').classList.add('modal-open');
       }
 
@@ -530,12 +545,12 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
       // Delete role
       async function deleteRole(roleId, roleName) {
-        if (!confirm(\`¿Estás seguro de eliminar el rol "\${roleName}"?\`)) {
+        if (!confirm('¿Estás seguro de eliminar el rol "' + roleName + '"?')) {
           return;
         }
 
         try {
-          const response = await fetch('\${adminPath}/roles/delete/' + roleId, {
+          const response = await fetch(ADMIN_BASE_PATH + '/roles/delete/' + roleId, {
             method: 'POST'
           });
 

@@ -20,13 +20,17 @@ CREATE TABLE `jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
-
+--> statement-breakpoint
 CREATE INDEX `jobs_status_idx` ON `jobs` (`status`);
+--> statement-breakpoint
 CREATE INDEX `jobs_name_idx` ON `jobs` (`name`);
+--> statement-breakpoint
 CREATE INDEX `jobs_priority_idx` ON `jobs` (`priority`);
+--> statement-breakpoint
 CREATE INDEX `jobs_scheduled_for_idx` ON `jobs` (`scheduled_for`);
+--> statement-breakpoint
 CREATE INDEX `jobs_created_at_idx` ON `jobs` (`created_at` DESC);
-
+--> statement-breakpoint
 -- ============= SCHEDULED JOBS =============
 CREATE TABLE `scheduled_jobs` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -40,6 +44,7 @@ CREATE TABLE `scheduled_jobs` (
   `created_at` integer DEFAULT (unixepoch()) NOT NULL,
   `updated_at` integer
 );
-
+--> statement-breakpoint
 CREATE INDEX `scheduled_jobs_enabled_idx` ON `scheduled_jobs` (`enabled`);
+--> statement-breakpoint
 CREATE INDEX `scheduled_jobs_next_run_at_idx` ON `scheduled_jobs` (`next_run_at`);

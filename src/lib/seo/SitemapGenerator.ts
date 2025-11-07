@@ -3,7 +3,7 @@
  * Generates XML sitemaps for content, categories, tags, and pages
  */
 
-import { db } from "../../db/db.ts";
+import { db } from "../../config/db.ts";
 import { content, categories, tags } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
 import type { SitemapConfig, SitemapUrl } from "./types.ts";

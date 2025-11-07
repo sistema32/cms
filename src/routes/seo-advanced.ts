@@ -4,14 +4,14 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 import {
   sitemapGenerator,
   robotsManager,
   structuredDataGenerator,
   seoHelper,
 } from "../lib/seo/index.ts";
-import { db } from "../db/db.ts";
+import { db } from "../config/db.ts";
 import { content, users } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

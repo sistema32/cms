@@ -38,9 +38,53 @@ try {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
+      let hasWarnings = false;
+      let successCount = 0;
+      let skipCount = 0;
+
       for (const statement of statements) {
-        if (statement && !statement.startsWith("--")) {
-          await db.run(sql.raw(statement));
+        // Remove comment lines and check if there's actual SQL code
+        const sqlOnly = statement.split('\n')
+          .filter(line => !line.trim().startsWith('--'))
+          .join('\n')
+          .trim();
+
+        if (sqlOnly) {
+          try {
+            await db.run(sql.raw(sqlOnly));
+            successCount++;
+          } catch (error) {
+            // Obtener todo el stack trace y mensajes de error incluyendo causas
+            let fullErrorText = "";
+            if (error instanceof Error) {
+              fullErrorText = error.toString() + "\n" + (error.stack || "");
+
+              // Buscar en la cadena de causas
+              let cause = (error as any).cause;
+              while (cause) {
+                fullErrorText += "\n" + (cause.toString() || "");
+                fullErrorText += "\n" + (cause.stack || "");
+                cause = (cause as any).cause;
+              }
+            } else {
+              fullErrorText = String(error);
+            }
+
+            // Verificar si es un error de "tabla ya existe" o "índice ya existe"
+            const isTableExists = /table\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
+            const isIndexExists = /index\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
+            const isSqliteTableError = fullErrorText.includes("SQLITE_ERROR") &&
+                                        fullErrorText.includes("already exists");
+
+            if (isTableExists || isIndexExists || isSqliteTableError) {
+              // Tratar como advertencia y continuar
+              hasWarnings = true;
+              skipCount++;
+            } else {
+              // Re-lanzar otros tipos de errores
+              throw error;
+            }
+          }
         }
       }
 
@@ -48,7 +92,12 @@ try {
       await db.run(
         sql`INSERT INTO __drizzle_migrations (hash) VALUES (${hash})`
       );
-      console.log(`  ✅ ${file} aplicada`);
+
+      if (hasWarnings) {
+        console.log(`  ⚠️  ${file} aplicada con advertencias (${successCount} exitosos, ${skipCount} ya existían)`);
+      } else {
+        console.log(`  ✅ ${file} aplicada`);
+      }
     } else {
       console.log(`  ⏭️  ${file} ya aplicada`);
     }

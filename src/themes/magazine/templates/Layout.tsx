@@ -9,6 +9,7 @@ import type { SiteData } from "../helpers/index.ts";
 interface LayoutProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   title?: string;
   description?: string;
   children: any;
@@ -19,6 +20,7 @@ export const Layout = (props: LayoutProps) => {
   const {
     site,
     custom,
+    activeTheme = "magazine",
     title = site.name,
     description = site.description,
     children,
@@ -49,7 +51,7 @@ export const Layout = (props: LayoutProps) => {
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lora:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/themes/magazine/assets/css/magazine.css">
+    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
 
     <style>
         :root {
@@ -120,7 +122,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/magazine/assets/js/magazine.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
 </body>
 </html>`;
 };

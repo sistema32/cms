@@ -1,0 +1,210 @@
+{
+  "name": "corporate",
+  "displayName": "Corporate Premium",
+  "version": "1.0.0",
+  "description": "Premium glassmorphism theme with aurora effects. Perfect for B2B, legal firms, consulting, and professional services. Features dark/light mode toggle, scroll animations, and modern design.",
+  "author": {
+    "name": "LexCMS Team",
+    "email": "hello@lexcms.com",
+    "url": "https://lexcms.com"
+  },
+  "license": "MIT",
+  "config": {
+    "posts_per_page": 9,
+    "image_sizes": {
+      "small": { "width": 400 },
+      "medium": { "width": 800 },
+      "large": { "width": 1200 },
+      "xlarge": { "width": 2000 }
+    },
+    "custom": {
+      "primary_color": {
+        "type": "color",
+        "label": "Primary Color",
+        "default": "#2d6aff",
+        "group": "colors",
+        "description": "Main brand color for buttons, links, and accents"
+      },
+      "secondary_color": {
+        "type": "color",
+        "label": "Secondary Color",
+        "default": "#40ebd0",
+        "group": "colors",
+        "description": "Secondary accent color for highlights and decorative elements"
+      },
+      "logo_text": {
+        "type": "text",
+        "label": "Logo Text",
+        "default": "LX",
+        "group": "branding",
+        "description": "Short text for logo (2-3 characters recommended)"
+      },
+      "header_tagline": {
+        "type": "text",
+        "label": "Header Tagline",
+        "default": "Professional Services",
+        "group": "branding",
+        "description": "Tagline displayed next to logo in header"
+      },
+      "enable_aurora_effects": {
+        "type": "boolean",
+        "label": "Enable Aurora Background",
+        "default": true,
+        "group": "design",
+        "description": "Animated gradient background effects (disable for better performance)"
+      },
+      "enable_glassmorphism": {
+        "type": "boolean",
+        "label": "Enable Glassmorphism",
+        "default": true,
+        "group": "design",
+        "description": "Frosted glass effect on panels and cards"
+      },
+      "enable_scroll_reveals": {
+        "type": "boolean",
+        "label": "Enable Scroll Animations",
+        "default": true,
+        "group": "design",
+        "description": "Fade-in animations as content enters viewport"
+      },
+      "default_theme_mode": {
+        "type": "select",
+        "label": "Default Theme Mode",
+        "options": ["light", "dark", "auto"],
+        "default": "light",
+        "group": "design",
+        "description": "Default color scheme for first-time visitors"
+      },
+      "hero_style": {
+        "type": "select",
+        "label": "Hero Style",
+        "options": ["split", "centered", "minimal"],
+        "default": "split",
+        "group": "homepage",
+        "description": "Layout style for the homepage hero section"
+      },
+      "show_trust_bar": {
+        "type": "boolean",
+        "label": "Show Trust Bar",
+        "default": true,
+        "group": "homepage",
+        "description": "Display client logos and trust indicators"
+      },
+      "show_metrics": {
+        "type": "boolean",
+        "label": "Show Key Metrics",
+        "default": true,
+        "group": "homepage",
+        "description": "Display statistics and achievements in hero section"
+      },
+      "cta_style": {
+        "type": "select",
+        "label": "CTA Button Style",
+        "options": ["solid", "gradient", "outline"],
+        "default": "solid",
+        "group": "design",
+        "description": "Style for call-to-action buttons"
+      },
+      "font_primary": {
+        "type": "select",
+        "label": "Primary Font",
+        "options": ["Inter", "Outfit", "Poppins", "Manrope", "DM Sans"],
+        "default": "Inter",
+        "group": "typography",
+        "description": "Main font for body text"
+      },
+      "font_headings": {
+        "type": "select",
+        "label": "Headings Font",
+        "options": ["Outfit", "Inter", "Poppins", "Manrope", "Space Grotesk"],
+        "default": "Outfit",
+        "group": "typography",
+        "description": "Font for headings and titles"
+      },
+      "enable_blur_effects": {
+        "type": "boolean",
+        "label": "Enable Backdrop Blur",
+        "default": true,
+        "group": "design",
+        "description": "Backdrop blur for navigation and panels (may impact performance on older devices)"
+      },
+      "card_hover_effects": {
+        "type": "boolean",
+        "label": "Enable Card Hover Effects",
+        "default": true,
+        "group": "design",
+        "description": "3D lift and glow effects on card hover"
+      },
+      "show_social_links": {
+        "type": "boolean",
+        "label": "Show Social Links",
+        "default": true,
+        "group": "footer",
+        "description": "Display social media links in footer"
+      },
+      "contact_email": {
+        "type": "text",
+        "label": "Contact Email",
+        "default": "hello@company.com",
+        "group": "contact",
+        "description": "Email address for contact forms"
+      },
+      "contact_phone": {
+        "type": "text",
+        "label": "Contact Phone",
+        "default": "",
+        "group": "contact",
+        "description": "Phone number for contact section (optional)"
+      },
+      "show_newsletter_signup": {
+        "type": "boolean",
+        "label": "Show Newsletter Signup",
+        "default": true,
+        "group": "footer",
+        "description": "Display newsletter subscription form in footer"
+      },
+      "analytics_tracking": {
+        "type": "boolean",
+        "label": "Enable Analytics Tracking",
+        "default": false,
+        "group": "advanced",
+        "description": "Enable tracking scripts (configure separately)"
+      }
+    }
+  },
+  "supports": {
+    "comments": true,
+    "customSettings": true,
+    "widgets": true,
+    "menus": ["header", "footer"],
+    "postFormats": ["standard"],
+    "customTemplates": true,
+    "darkMode": true,
+    "responsiveDesign": true,
+    "seo": true
+  },
+  "templates": {
+    "home": "templates/home.tsx"
+  },
+  "partials": {
+    "header": "partials/Header.tsx",
+    "footer": "partials/Footer.tsx"
+  },
+  "requirements": {
+    "lexcms": ">=1.0.0",
+    "deno": ">=1.40.0"
+  },
+  "tags": [
+    "corporate",
+    "b2b",
+    "professional",
+    "glassmorphism",
+    "modern",
+    "premium",
+    "legal",
+    "consulting",
+    "dark-mode",
+    "light-mode",
+    "responsive"
+  ]
+}

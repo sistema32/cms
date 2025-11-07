@@ -3,18 +3,85 @@ import { serveStatic } from "hono/deno";
 import { db } from "../config/db.ts";
 import { content, categories as categoriesSchema, tags as tagsSchema } from "../db/schema.ts";
 import { eq, desc } from "drizzle-orm";
-import * as themeHelpers from "../themes/default/helpers/index.ts";
-import IndexTemplate from "../themes/default/templates/index.tsx";
-import HomeTemplate from "../themes/default/templates/home.tsx";
-import BlogTemplate from "../themes/default/templates/blog.tsx";
-import PostTemplate from "../themes/default/templates/post.tsx";
+import * as themeService from "../services/themeService.ts";
+import * as settingsService from "../services/settingsService.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
- * Sistema multi-theme tipo WordPress
+ * Sistema multi-theme tipo WordPress con carga dinámica de themes
  */
 
 const frontendRouter = new Hono();
+
+/**
+ * Get blog base path from settings
+ */
+async function getBlogBase(): Promise<string> {
+  return await settingsService.getSetting("blog_base", "blog");
+}
+
+/**
+ * Load theme helpers and templates dynamically with fallback to default theme
+ */
+async function loadThemeModule(modulePath: string) {
+  try {
+    const fullPath = join(Deno.cwd(), modulePath);
+    const module = await import(`file://${fullPath}`);
+    return module;
+  } catch (error) {
+    console.error(`Error loading theme module ${modulePath}:`, error);
+    throw error;
+  }
+}
+
+async function getThemeHelpers() {
+  // Always use default theme helpers for core functions like getPaginatedPosts
+  // Theme-specific helpers can be added per theme but core functions should be consistent
+  const defaultHelpersPath = `src/themes/default/helpers/index.ts`;
+  return await loadThemeModule(defaultHelpersPath);
+}
+
+async function getThemeTemplate(templateName: string) {
+  const activeTheme = await themeService.getActiveTheme();
+
+  // Try active theme first
+  const templatePath = `src/themes/${activeTheme}/templates/${templateName}.tsx`;
+  const fullPath = join(Deno.cwd(), templatePath);
+
+  try {
+    // Check if template exists in active theme
+    await Deno.stat(fullPath);
+    const module = await loadThemeModule(templatePath);
+    return module.default;
+  } catch {
+    // Fallback to default theme if template doesn't exist
+    console.log(`Template ${templateName}.tsx not found in theme ${activeTheme}, falling back to default theme`);
+    const defaultTemplatePath = `src/themes/default/templates/${templateName}.tsx`;
+    const module = await loadThemeModule(defaultTemplatePath);
+    return module.default;
+  }
+}
+
+/**
+ * Load common data needed by all templates (menus, categories, etc.)
+ */
+async function loadCommonTemplateData() {
+  const themeHelpers = await getThemeHelpers();
+
+  // Load menus (main header menu and footer menu)
+  const headerMenu = await themeHelpers.getMenu("main");
+  const footerMenu = await themeHelpers.getMenu("footer");
+
+  // Load categories (top 6 by post count)
+  const categories = await themeHelpers.getCategories(6);
+
+  return {
+    headerMenu,
+    footerMenu,
+    categories,
+  };
+}
 
 // ============= SERVIR ASSETS ESTÁTICOS =============
 
@@ -29,34 +96,33 @@ frontendRouter.get("/themes/*", serveStatic({ root: "./src" }));
  */
 frontendRouter.get("/", async (c) => {
   try {
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const HomeTemplate = await getThemeTemplate("home");
+
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
+
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
 
     // Obtener posts destacados para la homepage
     const featuredPosts = await themeHelpers.getFeaturedPosts(
       custom.homepage_featured_count || 6
     );
 
-    // Obtener categorías para la sección de categorías
-    const allCategories = await db.query.categories.findMany({
-      limit: 6,
-      orderBy: [desc(categoriesSchema.id)],
-    });
-
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0, // TODO: Contar posts por categoría
-    }));
-
     // Renderizar homepage
     return c.html(
       HomeTemplate({
         site,
         custom,
+        activeTheme,
         featuredPosts,
-        categories,
+        categories: commonData.categories,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -66,13 +132,28 @@ frontendRouter.get("/", async (c) => {
 });
 
 /**
- * GET /blog - Página de blog (página 1)
+ * GET /:blogBase - Página de blog (página 1)
  * Usa blog.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog", async (c) => {
+frontendRouter.get("/:blogBase", async (c) => {
+  const pathSegment = c.req.param("blogBase");
+  const blogBase = await getBlogBase();
+
+  // Verificar si esta ruta es para el blog
+  if (pathSegment !== blogBase) {
+    return c.notFound();
+  }
   try {
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const BlogTemplate = await getThemeTemplate("blog");
+
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
 
     // Obtener posts paginados
     const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(1);
@@ -83,38 +164,23 @@ frontendRouter.get("/blog", async (c) => {
     // Posts recientes para sidebar
     const recentPosts = await themeHelpers.getRecentPosts(5);
 
-    // Categorías para sidebar
-    const allCategories = await db.query.categories.findMany({
-      limit: 10,
-    });
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0,
-    }));
-
     // Tags para sidebar
-    const allTags = await db.query.tags.findMany({
-      limit: 20,
-    });
-    const tags = allTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      count: 0,
-    }));
+    const tags = await themeHelpers.getPopularTags(20);
 
     // Renderizar blog
     return c.html(
       BlogTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
         recentPosts,
-        categories,
+        categories: commonData.categories,
         tags,
+        blogBase,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -124,17 +190,30 @@ frontendRouter.get("/blog", async (c) => {
 });
 
 /**
- * GET /blog/page/:page - Paginación del blog
+ * GET /:blogBase/page/:page - Paginación del blog
  * Usa blog.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog/page/:page", async (c) => {
+frontendRouter.get("/:blogBase/page/:page", async (c) => {
   try {
+    const pathSegment = c.req.param("blogBase");
+    const blogBase = await getBlogBase();
+
+    // Verificar si esta ruta es para el blog
+    if (pathSegment !== blogBase) {
+      return c.notFound();
+    }
+
     const page = parseInt(c.req.param("page")) || 1;
 
-    // Redirigir a /blog si es página 1
+    // Redirigir a /:blogBase si es página 1
     if (page === 1) {
-      return c.redirect("/blog", 301);
+      return c.redirect(`/${blogBase}`, 301);
     }
+
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const BlogTemplate = await getThemeTemplate("blog");
 
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
@@ -150,41 +229,29 @@ frontendRouter.get("/blog/page/:page", async (c) => {
     // Calcular paginación
     const pagination = await themeHelpers.getPagination(page, total);
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Posts recientes para sidebar
     const recentPosts = await themeHelpers.getRecentPosts(5);
 
-    // Categorías para sidebar
-    const allCategories = await db.query.categories.findMany({
-      limit: 10,
-    });
-    const categories = allCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      count: 0,
-    }));
-
     // Tags para sidebar
-    const allTags = await db.query.tags.findMany({
-      limit: 20,
-    });
-    const tags = allTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      count: 0,
-    }));
+    const tags = await themeHelpers.getPopularTags(20);
 
     // Renderizar blog
     return c.html(
       BlogTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
         recentPosts,
-        categories,
+        categories: commonData.categories,
         tags,
+        blogBase,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
       })
     );
   } catch (error: any) {
@@ -194,12 +261,26 @@ frontendRouter.get("/blog/page/:page", async (c) => {
 });
 
 /**
- * GET /blog/:slug - Post individual
+ * GET /:blogBase/:slug - Post individual
  * Usa post.tsx
+ * La ruta es dinámica basada en la configuración blog_base
  */
-frontendRouter.get("/blog/:slug", async (c) => {
+frontendRouter.get("/:blogBase/:slug", async (c) => {
   try {
+    const pathSegment = c.req.param("blogBase");
+    const blogBase = await getBlogBase();
+
+    // Verificar si esta ruta es para el blog
+    if (pathSegment !== blogBase) {
+      return c.notFound();
+    }
+
     const { slug } = c.req.param();
+
+    // Si slug está vacío o es "page", redirigir al blog principal
+    if (!slug || slug === '' || slug === 'page') {
+      return c.redirect(`/${blogBase}`, 301);
+    }
 
     // Buscar el post por slug
     const post = await db.query.content.findFirst({
@@ -223,6 +304,10 @@ frontendRouter.get("/blog/:slug", async (c) => {
     if (!post) {
       return c.text("Post no encontrado", 404);
     }
+
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const PostTemplate = await getThemeTemplate("post");
 
     // Formatear datos del post
     const postData = {
@@ -255,16 +340,26 @@ frontendRouter.get("/blog/:slug", async (c) => {
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+
     // Obtener posts relacionados (por ahora, posts recientes)
     const relatedPosts = await themeHelpers.getRecentPosts(3);
+
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
 
     // Renderizar template
     return c.html(
       PostTemplate({
         site,
         custom,
+        activeTheme,
         post: postData,
         relatedPosts,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
@@ -281,18 +376,31 @@ frontendRouter.get("/category/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
+
     // TODO: Implementar filtrado por categoría
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
     const posts = await themeHelpers.getRecentPosts(10);
     const pagination = await themeHelpers.getPagination(1, posts.length);
 
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
+
     return c.html(
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
@@ -309,9 +417,17 @@ frontendRouter.get("/tag/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
 
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
+
     // TODO: Implementar filtrado por tag
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
     const posts = await themeHelpers.getRecentPosts(10);
     const pagination = await themeHelpers.getPagination(1, posts.length);
 
@@ -319,8 +435,13 @@ frontendRouter.get("/tag/:slug", async (c) => {
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
@@ -337,6 +458,10 @@ frontendRouter.get("/search", async (c) => {
   try {
     const query = c.req.query("q") || "";
 
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+    const IndexTemplate = await getThemeTemplate("index");
+
     // TODO: Implementar búsqueda real
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
@@ -347,6 +472,7 @@ frontendRouter.get("/search", async (c) => {
       IndexTemplate({
         site,
         custom,
+        activeTheme,
         posts,
         pagination,
       })

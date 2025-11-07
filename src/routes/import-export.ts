@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 import { exporter, importer } from "../lib/import-export/index.ts";
 import { jobQueue } from "../lib/jobs/index.ts";
 import { z } from "zod";

@@ -3,7 +3,7 @@
  * Import content from WordPress XML, JSON, CSV
  */
 
-import { db } from "../../db/db.ts";
+import { db } from "../../config/db.ts";
 import { content, categories, tags, users, contentCategories, contentTags } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
 import type { ImportOptions, ImportResult, WordPressPost } from "./types.ts";

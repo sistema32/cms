@@ -9,6 +9,7 @@ import type { SiteData } from "../helpers/index.ts";
 interface LayoutProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   title?: string;
   description?: string;
   children: any;
@@ -19,6 +20,7 @@ export const Layout = (props: LayoutProps) => {
   const {
     site,
     custom,
+    activeTheme = "default",
     title = site.name,
     description = site.description,
     children,
@@ -46,7 +48,7 @@ export const Layout = (props: LayoutProps) => {
     <meta name="theme-color" content="${primaryColor}">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/themes/default/assets/css/main.css">
+    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
 
     <style>
         :root {
@@ -68,7 +70,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/default/assets/js/main.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
 </body>
 </html>`;
 };

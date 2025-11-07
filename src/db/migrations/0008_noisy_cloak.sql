@@ -1,1 +1,0 @@
-ALTER TABLE `content` ADD `comments_enabled` integer DEFAULT false NOT NULL;

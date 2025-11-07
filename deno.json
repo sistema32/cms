@@ -16,12 +16,16 @@
     "db:push": "deno run -A npm:drizzle-kit push",
     "db:studio": "deno run -A npm:drizzle-kit studio",
     "db:seed": "deno run --allow-all src/db/seed.ts",
+    "db:setup": "deno run --allow-all src/db/setup.ts",
     "test": "deno test --allow-all tests/",
     "test:unit": "deno test --allow-all tests/unit/",
     "test:security": "deno test --allow-all tests/security/",
     "test:integration": "deno test --allow-all tests/integration/",
     "test:coverage": "deno test --allow-all --coverage=coverage tests/",
-    "test:watch": "deno test --allow-all --watch tests/"
+    "test:watch": "deno test --allow-all --watch tests/",
+    "theme:validate": "deno run --allow-all src/cli/themeValidator.ts",
+    "theme:create": "deno run --allow-all src/cli/themeGenerator.ts",
+    "theme:build": "deno run --allow-all src/cli/themeBuilder.ts"
   },
   "imports": {
     "hono": "jsr:@hono/hono@^4",

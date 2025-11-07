@@ -14,7 +14,7 @@ import {
   getSearchStats,
   initializeSearchIndexes,
 } from "../services/searchService.ts";
-import { authMiddleware } from "../middlewares/authMiddleware.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 
 const search = new Hono();
 

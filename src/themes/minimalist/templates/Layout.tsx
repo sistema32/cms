@@ -9,6 +9,7 @@ import type { SiteData } from "../helpers/index.ts";
 interface LayoutProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   title?: string;
   description?: string;
   children: any;
@@ -19,6 +20,7 @@ export const Layout = (props: LayoutProps) => {
   const {
     site,
     custom,
+    activeTheme = "minimalist",
     title = site.name,
     description = site.description,
     children,
@@ -49,7 +51,7 @@ export const Layout = (props: LayoutProps) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/themes/minimalist/assets/css/minimalist.css">
+    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
 
     <style>
         :root {
@@ -101,7 +103,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/minimalist/assets/js/minimalist.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
 </body>
 </html>`;
 };

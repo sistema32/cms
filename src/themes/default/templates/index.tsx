@@ -1,6 +1,8 @@
 import { html } from "hono/html";
 import { Layout } from "./Layout.tsx";
-import type { SiteData, PostData, PaginationData } from "../helpers/index.ts";
+import { Header } from "../partials/Header.tsx";
+import { Footer } from "../partials/Footer.tsx";
+import type { SiteData, PostData, PaginationData, MenuItem, CategoryData } from "../helpers/index.ts";
 
 /**
  * Index Template - Página principal con lista de posts
@@ -10,12 +12,17 @@ import type { SiteData, PostData, PaginationData } from "../helpers/index.ts";
 interface IndexProps {
   site: SiteData;
   custom: Record<string, any>;
+  activeTheme?: string;
   posts: PostData[];
   pagination: PaginationData;
+  blogUrl?: string;
+  menu?: MenuItem[];
+  footerMenu?: MenuItem[];
+  categories?: CategoryData[];
 }
 
 export const IndexTemplate = (props: IndexProps) => {
-  const { site, custom, posts, pagination } = props;
+  const { site, custom, posts, pagination, blogUrl = "/blog", menu = [], footerMenu = [], categories = [] } = props;
   const postsLayout = custom.posts_layout || "Grid";
 
   const postsHtml = posts.map((post) => html`
@@ -59,13 +66,7 @@ export const IndexTemplate = (props: IndexProps) => {
 
   const content = html`
     <!-- Header -->
-    <header class="site-header">
-      <div class="container">
-        ${custom.logo_image ? html`<img src="${custom.logo_image}" alt="${site.name}" class="site-logo" />` : ''}
-        <h1 class="site-title">${site.name}</h1>
-        ${site.description ? html`<p class="site-description">${site.description}</p>` : ''}
-      </div>
-    </header>
+    ${Header({ site, custom, blogUrl, menu })}
 
     <!-- Main Content -->
     <main class="site-main">
@@ -109,17 +110,13 @@ export const IndexTemplate = (props: IndexProps) => {
     ` : ''}
 
     <!-- Footer -->
-    <footer class="site-footer">
-      <div class="container">
-        <p>© ${new Date().getFullYear()} ${site.name}. Todos los derechos reservados.</p>
-        <p>Powered by <a href="https://lexcms.com">LexCMS</a></p>
-      </div>
-    </footer>
+    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
   `;
 
   return Layout({
     site,
     custom,
+    activeTheme,
     bodyClass: "home blog",
     children: content
   });

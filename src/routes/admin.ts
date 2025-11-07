@@ -10,11 +10,8 @@ import { PostFormPage } from "../admin/pages/PostFormPage.tsx";
 import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
 import { CategoriesPage } from "../admin/pages/Categories.tsx";
 import { TagsPage } from "../admin/pages/Tags.tsx";
-import { UsersPage } from "../admin/pages/Users.tsx";
 import { UsersPageImproved } from "../admin/pages/UsersImproved.tsx";
-import { RolesPage } from "../admin/pages/RolesPage.tsx";
 import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
-import { PermissionsPage } from "../admin/pages/PermissionsPage.tsx";
 import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
@@ -1606,6 +1603,705 @@ adminRouter.post("/appearance/themes/custom-settings", async (c) => {
 });
 
 /**
+ * GET /api/admin/themes/cache/stats - Get cache statistics
+ */
+adminRouter.get("/api/admin/themes/cache/stats", async (c) => {
+  try {
+    const stats = themeService.getCacheStats();
+    return c.json(stats);
+  } catch (error: any) {
+    console.error("Error getting cache stats:", error);
+    return c.json({ error: "Failed to get cache stats" }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/cache/clear - Clear theme cache
+ */
+adminRouter.post("/api/admin/themes/cache/clear", async (c) => {
+  try {
+    const body = await c.req.json();
+    const themeName = body?.theme;
+
+    if (themeName) {
+      themeService.invalidateThemeCache(themeName);
+      return c.json({ success: true, message: `Cache cleared for theme: ${themeName}` });
+    } else {
+      themeService.invalidateAllCache();
+      return c.json({ success: true, message: "All cache cleared" });
+    }
+  } catch (error: any) {
+    console.error("Error clearing cache:", error);
+    return c.json({ error: "Failed to clear cache" }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/cache/warmup - Warmup theme cache
+ */
+adminRouter.post("/api/admin/themes/cache/warmup", async (c) => {
+  try {
+    const body = await c.req.json();
+    const themeName = body?.theme;
+
+    await themeService.warmupCache(themeName);
+    return c.json({ success: true, message: "Cache warmed up successfully" });
+  } catch (error: any) {
+    console.error("Error warming up cache:", error);
+    return c.json({ error: "Failed to warmup cache" }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/themes/config/export - Export theme configuration
+ */
+adminRouter.get("/api/admin/themes/config/export", async (c) => {
+  try {
+    const themeName = c.req.query("theme");
+    const includeMenus = c.req.query("includeMenus") === "true";
+
+    const { exportThemeConfig, formatExport, generateExportFilename } = await import(
+      "../services/themeConfigService.ts"
+    );
+
+    const activeTheme = themeName || await themeService.getActiveTheme();
+    const exportData = await exportThemeConfig(activeTheme, {
+      includeMenus,
+      metadata: { exportedBy: "LexCMS Admin" },
+    });
+
+    const jsonContent = formatExport(exportData, true);
+    const filename = generateExportFilename(activeTheme);
+
+    // Set headers for download
+    c.header("Content-Type", "application/json");
+    c.header("Content-Disposition", `attachment; filename="${filename}"`);
+
+    return c.body(jsonContent);
+  } catch (error: any) {
+    console.error("Error exporting theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/config/import - Import theme configuration
+ */
+adminRouter.post("/api/admin/themes/config/import", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { config, options } = body;
+
+    if (!config) {
+      return c.json({ error: "Configuration data is required" }, 400);
+    }
+
+    const { importThemeConfig, validateThemeConfigExport } = await import(
+      "../services/themeConfigService.ts"
+    );
+
+    // Validate first
+    const validation = await validateThemeConfigExport(config);
+    if (!validation.valid) {
+      return c.json({
+        error: "Invalid configuration",
+        errors: validation.errors,
+        warnings: validation.warnings,
+      }, 400);
+    }
+
+    // Import
+    const result = await importThemeConfig(config, options);
+
+    return c.json(result);
+  } catch (error: any) {
+    console.error("Error importing theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/config/validate - Validate theme configuration
+ */
+adminRouter.post("/api/admin/themes/config/validate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { config } = body;
+
+    if (!config) {
+      return c.json({ error: "Configuration data is required" }, 400);
+    }
+
+    const { validateThemeConfigExport } = await import("../services/themeConfigService.ts");
+
+    const validation = await validateThemeConfigExport(config);
+
+    return c.json(validation);
+  } catch (error: any) {
+    console.error("Error validating theme config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * Theme Preview API Endpoints
+ */
+
+/**
+ * POST /api/admin/themes/preview/create - Create preview session
+ */
+adminRouter.post("/api/admin/themes/preview/create", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { theme } = body;
+
+    if (!theme) {
+      return c.json({ error: "Theme name is required" }, 400);
+    }
+
+    // Get current user from session
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const session = await themePreviewService.createPreviewSession(theme, user.id);
+
+    // Generate preview URL
+    const baseUrl = env.BASE_URL || `http://localhost:${env.PORT}`;
+    const previewUrl = `${baseUrl}/?theme_preview=1&preview_token=${session.token}`;
+
+    return c.json({
+      success: true,
+      session: {
+        token: session.token,
+        theme: session.theme,
+        expiresAt: session.expiresAt,
+      },
+      previewUrl,
+    });
+  } catch (error: any) {
+    console.error("Error creating preview session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/preview/activate - Activate previewed theme
+ */
+adminRouter.post("/api/admin/themes/preview/activate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { token } = body;
+
+    if (!token) {
+      return c.json({ error: "Preview token is required" }, 400);
+    }
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const session = await themePreviewService.verifyPreviewToken(token);
+
+    if (!session) {
+      return c.json({ error: "Invalid or expired preview token" }, 400);
+    }
+
+    // Activate the theme
+    await themeService.activateTheme(session.theme);
+
+    // End the preview session
+    await themePreviewService.endPreviewSession(token);
+
+    return c.json({
+      success: true,
+      theme: session.theme,
+      message: "Theme activated successfully",
+    });
+  } catch (error: any) {
+    console.error("Error activating preview theme:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/themes/preview/:token - End preview session
+ */
+adminRouter.delete("/api/admin/themes/preview/:token", async (c) => {
+  try {
+    const token = c.req.param("token");
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    await themePreviewService.endPreviewSession(token);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error ending preview session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * Theme Customizer API Endpoints
+ */
+
+/**
+ * POST /api/admin/themes/customizer/session - Create customizer session
+ */
+adminRouter.post("/api/admin/themes/customizer/session", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { theme } = body;
+
+    if (!theme) {
+      return c.json({ error: "Theme name is required" }, 400);
+    }
+
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const session = await themeCustomizerService.createSession(user.id, theme);
+
+    // Check for existing draft
+    const draft = await themeCustomizerService.loadDraft(user.id, theme);
+
+    return c.json({
+      success: true,
+      sessionId: session.id,
+      hasDraft: draft !== null,
+      draftChanges: draft?.length || 0,
+    });
+  } catch (error: any) {
+    console.error("Error creating customizer session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/themes/customizer/state/:sessionId - Get customizer state
+ */
+adminRouter.get("/api/admin/themes/customizer/state/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.getState(sessionId);
+
+    return c.json(state);
+  } catch (error: any) {
+    console.error("Error getting customizer state:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/change - Apply a change
+ */
+adminRouter.post("/api/admin/themes/customizer/change", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId, settingKey, value, description } = body;
+
+    if (!sessionId || !settingKey) {
+      return c.json({ error: "sessionId and settingKey are required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.applyChange(
+      sessionId,
+      settingKey,
+      value,
+      description
+    );
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error applying change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/undo - Undo last change
+ */
+adminRouter.post("/api/admin/themes/customizer/undo", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.undo(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error undoing change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/redo - Redo last undone change
+ */
+adminRouter.post("/api/admin/themes/customizer/redo", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.redo(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error redoing change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/reset - Reset all changes
+ */
+adminRouter.post("/api/admin/themes/customizer/reset", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.reset(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error resetting changes:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/save-draft - Save as draft
+ */
+adminRouter.post("/api/admin/themes/customizer/save-draft", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.saveDraft(sessionId);
+
+    return c.json({ success: true, message: "Draft saved successfully" });
+  } catch (error: any) {
+    console.error("Error saving draft:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/publish - Publish changes
+ */
+adminRouter.post("/api/admin/themes/customizer/publish", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.publish(sessionId);
+
+    return c.json({ success: true, message: "Changes published successfully" });
+  } catch (error: any) {
+    console.error("Error publishing changes:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/themes/customizer/history/:sessionId - Get change history
+ */
+adminRouter.get("/api/admin/themes/customizer/history/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const history = themeCustomizerService.getHistory(sessionId);
+
+    return c.json({ history });
+  } catch (error: any) {
+    console.error("Error getting history:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/themes/customizer/session/:sessionId - End session
+ */
+adminRouter.delete("/api/admin/themes/customizer/session/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.endSession(sessionId);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error ending session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * Widget API Endpoints
+ */
+
+/**
+ * GET /api/admin/widgets/types - Get available widget types
+ */
+adminRouter.get("/api/admin/widgets/types", async (c) => {
+  try {
+    const { getAvailableWidgetTypes } = await import("../services/widgetService.ts");
+    const types = getAvailableWidgetTypes();
+    return c.json(types);
+  } catch (error: any) {
+    console.error("Error getting widget types:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/areas - Get widget areas
+ */
+adminRouter.get("/api/admin/widgets/areas", async (c) => {
+  try {
+    const theme = c.req.query("theme");
+    const { getWidgetAreasByTheme, getWidgetAreaBySlug } = await import(
+      "../services/widgetService.ts"
+    );
+
+    if (theme) {
+      const areas = await getWidgetAreasByTheme(theme);
+      return c.json(areas);
+    }
+
+    const activeTheme = await themeService.getActiveTheme();
+    const areas = await getWidgetAreasByTheme(activeTheme);
+    return c.json(areas);
+  } catch (error: any) {
+    console.error("Error getting widget areas:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/areas/:slug - Get widget area by slug
+ */
+adminRouter.get("/api/admin/widgets/areas/:slug", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    const { getWidgetAreaBySlug } = await import("../services/widgetService.ts");
+
+    const area = await getWidgetAreaBySlug(slug);
+
+    if (!area) {
+      return c.json({ error: "Widget area not found" }, 404);
+    }
+
+    return c.json(area);
+  } catch (error: any) {
+    console.error("Error getting widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/areas - Create widget area
+ */
+adminRouter.post("/api/admin/widgets/areas", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { createWidgetArea } = await import("../services/widgetService.ts");
+
+    const areaId = await createWidgetArea(body);
+
+    return c.json({ success: true, areaId });
+  } catch (error: any) {
+    console.error("Error creating widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /api/admin/widgets/areas/:id - Update widget area
+ */
+adminRouter.put("/api/admin/widgets/areas/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.json();
+    const { updateWidgetArea } = await import("../services/widgetService.ts");
+
+    await updateWidgetArea(id, body);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error updating widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/widgets/areas/:id - Delete widget area
+ */
+adminRouter.delete("/api/admin/widgets/areas/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { deleteWidgetArea } = await import("../services/widgetService.ts");
+
+    await deleteWidgetArea(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets - Create widget
+ */
+adminRouter.post("/api/admin/widgets", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { createWidget } = await import("../services/widgetService.ts");
+
+    const widgetId = await createWidget(body);
+
+    return c.json({ success: true, widgetId });
+  } catch (error: any) {
+    console.error("Error creating widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/:id - Get widget by ID
+ */
+adminRouter.get("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { getWidgetById } = await import("../services/widgetService.ts");
+
+    const widget = await getWidgetById(id);
+
+    if (!widget) {
+      return c.json({ error: "Widget not found" }, 404);
+    }
+
+    return c.json(widget);
+  } catch (error: any) {
+    console.error("Error getting widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /api/admin/widgets/:id - Update widget
+ */
+adminRouter.put("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.json();
+    const { updateWidget } = await import("../services/widgetService.ts");
+
+    await updateWidget(id, body);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error updating widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/widgets/:id - Delete widget
+ */
+adminRouter.delete("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { deleteWidget } = await import("../services/widgetService.ts");
+
+    await deleteWidget(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/reorder - Reorder widgets in an area
+ */
+adminRouter.post("/api/admin/widgets/reorder", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { areaId, widgetIds } = body;
+
+    if (!areaId || !Array.isArray(widgetIds)) {
+      return c.json({ error: "areaId and widgetIds array required" }, 400);
+    }
+
+    const { reorderWidgets } = await import("../services/widgetService.ts");
+
+    await reorderWidgets(areaId, widgetIds);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error reordering widgets:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/validate - Validate widget settings
+ */
+adminRouter.post("/api/admin/widgets/validate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { type, settings } = body;
+
+    if (!type) {
+      return c.json({ error: "Widget type is required" }, 400);
+    }
+
+    const { validateWidgetSettings } = await import("../services/widgetService.ts");
+
+    const validation = await validateWidgetSettings(type, settings);
+
+    return c.json(validation);
+  } catch (error: any) {
+    console.error("Error validating widget settings:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * GET /appearance/menus - Menu manager
  */
 adminRouter.get("/appearance/menus", async (c) => {
@@ -2055,6 +2751,13 @@ adminRouter.post("/tags/delete/:id", async (c) => {
 adminRouter.get("/users", async (c) => {
   try {
     const user = c.get("user");
+
+    // Verificar permiso para ver usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver usuarios</p>`, 403);
+    }
+
     const query = c.req.query();
 
     // Obtener filtros de la query
@@ -2065,10 +2768,11 @@ adminRouter.get("/users", async (c) => {
     if (query.limit) filters.limit = parseInt(query.limit) || 20;
     if (query.offset) filters.offset = parseInt(query.offset) || 0;
 
-    const [usersResult, rolesData, stats] = await Promise.all([
+    const [usersResult, rolesData, stats, userPermissions] = await Promise.all([
       userService.getUsersWithFilters(filters),
       db.query.roles.findMany(),
       userService.getUserStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     return c.html(UsersPageImproved({
@@ -2083,6 +2787,7 @@ adminRouter.get("/users", async (c) => {
         offset: filters.offset || 0,
         limit: filters.limit || 20,
       },
+      userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
     }));
   } catch (error: any) {
     console.error("Error loading users:", error);
@@ -2092,6 +2797,14 @@ adminRouter.get("/users", async (c) => {
 
 adminRouter.post("/users/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para crear usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "create");
+    if (!hasPermission) {
+      return c.text("No tienes permiso para crear usuarios", 403);
+    }
+
     const body = await c.req.parseBody();
     const { hashPassword } = await import("../utils/password.ts");
     const hashedPassword = await hashPassword(body.password as string);
@@ -2115,6 +2828,14 @@ adminRouter.post("/users/create", async (c) => {
  */
 adminRouter.post("/users/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para actualizar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    if (!hasPermission) {
+      return c.text("No tienes permiso para actualizar usuarios", 403);
+    }
+
     const id = parseInt(c.req.param("id"));
     const body = await c.req.parseBody();
 
@@ -2142,6 +2863,14 @@ adminRouter.post("/users/edit/:id", async (c) => {
 
 adminRouter.post("/users/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para eliminar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+    }
+
     const id = parseInt(c.req.param("id"));
     await userService.deleteUser(id);
     return c.json({ success: true });
@@ -2155,6 +2884,14 @@ adminRouter.post("/users/delete/:id", async (c) => {
  */
 adminRouter.post("/users/bulk-status", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para actualizar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para actualizar usuarios" }, 403);
+    }
+
     const body = await c.req.json();
     const { userIds, status } = body;
 
@@ -2179,6 +2916,14 @@ adminRouter.post("/users/bulk-status", async (c) => {
  */
 adminRouter.post("/users/bulk-delete", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar permiso para eliminar usuarios
+    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    if (!hasPermission) {
+      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+    }
+
     const body = await c.req.json();
     const { userIds } = body;
 
@@ -2201,10 +2946,17 @@ adminRouter.get("/roles", async (c) => {
   try {
     const user = c.get("user");
 
-    const [rolesData, permissionsData, stats] = await Promise.all([
+    // Verificar permiso para ver roles
+    const hasPermission = await permissionService.userHasPermission(user.userId, "roles", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver roles</p>`, 403);
+    }
+
+    const [rolesData, permissionsData, stats, userPermissions] = await Promise.all([
       roleService.getAllRolesWithStats(),
       permissionService.getAllPermissions(),
       roleService.getRoleStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     const formattedRoles = rolesData
@@ -2237,6 +2989,7 @@ adminRouter.get("/roles", async (c) => {
         roles: formattedRoles,
         permissions: sortedPermissions,
         stats,
+        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
       })
     );
   } catch (error: any) {
@@ -2247,6 +3000,15 @@ adminRouter.get("/roles", async (c) => {
 
 adminRouter.post("/roles/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede crear roles", 403);
+    }
+
     const body = await c.req.parseBody();
     const name = parseStringField(body.name);
     const description = parseNullableField(body.description) ?? null;
@@ -2269,6 +3031,15 @@ adminRouter.post("/roles/create", async (c) => {
 
 adminRouter.post("/roles/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede actualizar roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2296,6 +3067,15 @@ adminRouter.post("/roles/edit/:id", async (c) => {
 
 adminRouter.post("/roles/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "delete");
+    if (!isSuperAdmin) {
+      return c.json({ success: false, error: "Solo superadmin puede eliminar roles" }, 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.json({ success: false, error: "ID inválido" }, 400);
@@ -2323,6 +3103,15 @@ adminRouter.post("/roles/delete/:id", async (c) => {
  */
 adminRouter.post("/roles/clone/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "roles", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede clonar roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2348,6 +3137,15 @@ adminRouter.post("/roles/clone/:id", async (c) => {
 
 adminRouter.post("/roles/:id/permissions", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "role_permissions", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede asignar permisos a roles", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2373,11 +3171,19 @@ adminRouter.post("/roles/:id/permissions", async (c) => {
 adminRouter.get("/permissions", async (c) => {
   try {
     const user = c.get("user");
-    const [permissionsData, permissionsByModule, modules, stats] = await Promise.all([
+
+    // Verificar permiso para ver permisos
+    const hasPermission = await permissionService.userHasPermission(user.userId, "permissions", "read");
+    if (!hasPermission) {
+      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver permisos</p>`, 403);
+    }
+
+    const [permissionsData, permissionsByModule, modules, stats, userPermissions] = await Promise.all([
       permissionService.getAllPermissions(),
       permissionService.getPermissionsGroupedByModule(),
       permissionService.getModules(),
       permissionService.getPermissionStats(),
+      permissionService.getUserPermissions(user.userId),
     ]);
 
     const sortedPermissions = permissionsData.sort((a, b) => {
@@ -2393,6 +3199,7 @@ adminRouter.get("/permissions", async (c) => {
         permissionsByModule,
         modules,
         stats,
+        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
       })
     );
   } catch (error: any) {
@@ -2403,6 +3210,15 @@ adminRouter.get("/permissions", async (c) => {
 
 adminRouter.post("/permissions/create", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "create");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede crear permisos", 403);
+    }
+
     const body = await c.req.parseBody();
     const moduleName = parseStringField(body.module);
     const actionName = parseStringField(body.action);
@@ -2430,6 +3246,15 @@ adminRouter.post("/permissions/create", async (c) => {
 
 adminRouter.post("/permissions/edit/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "update");
+    if (!isSuperAdmin) {
+      return c.text("Solo superadmin puede actualizar permisos", 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.text("ID inválido", 400);
@@ -2462,6 +3287,15 @@ adminRouter.post("/permissions/edit/:id", async (c) => {
 
 adminRouter.post("/permissions/delete/:id", async (c) => {
   try {
+    const user = c.get("user");
+
+    // Verificar si es superadmin
+    const isSuperAdmin = user.userId === 1 ||
+      await permissionService.userHasPermission(user.userId, "permissions", "delete");
+    if (!isSuperAdmin) {
+      return c.json({ success: false, message: "Solo superadmin puede eliminar permisos" }, 403);
+    }
+
     const id = Number(c.req.param("id"));
     if (!Number.isFinite(id)) {
       return c.json({ success: false, message: "ID inválido" }, 400);
