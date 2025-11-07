@@ -399,6 +399,38 @@ async function initCKEditor(config) {
       };
     }
 
+    // IMPORTANTE: Interceptar el UI del botón imageUpload para prevenir el explorador de archivos nativo
+    // El botón imageUpload tiene un input type="file" que queremos desactivar
+    setTimeout(() => {
+      try {
+        // Buscar todos los inputs de tipo file en el toolbar de CKEditor
+        const toolbarElement = editorElement.previousElementSibling;
+        if (toolbarElement && toolbarElement.classList.contains('ck-toolbar')) {
+          const fileInputs = toolbarElement.querySelectorAll('input[type="file"]');
+          fileInputs.forEach(input => {
+            // Remover el input file del DOM para prevenir que se active
+            const button = input.closest('.ck-button');
+            if (button) {
+              // Reemplazar el comportamiento del botón
+              button.addEventListener('click', (e) => {
+                // Prevenir el comportamiento por defecto (que abre el file picker)
+                e.preventDefault();
+                e.stopPropagation();
+                // Abrir nuestro modal en su lugar
+                openMediaPicker();
+              }, true); // useCapture = true para capturar antes que el handler original
+
+              // Ocultar/desactivar el input file
+              input.style.display = 'none';
+              input.disabled = true;
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('[CKEditor] No se pudo interceptar el botón de upload:', error);
+      }
+    }, 100); // Pequeño delay para asegurar que el UI esté renderizado
+
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());
     });
