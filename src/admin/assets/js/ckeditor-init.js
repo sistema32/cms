@@ -449,31 +449,38 @@ async function initCKEditor(config) {
     setTimeout(() => interceptFileInputs(), 100);
     setTimeout(() => interceptFileInputs(), 300);
     setTimeout(() => interceptFileInputs(), 500);
+    setTimeout(() => interceptFileInputs(), 1000); // Un último intento después de 1 segundo
 
-    // También interceptar cualquier click en inputs file que puedan aparecer después
-    document.addEventListener('click', (e) => {
-      const target = e.target;
-      if (target && target.matches && target.matches('.ck input[type="file"]')) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        openMediaPicker();
-        return false;
-      }
+    // Interceptar clicks específicamente en el área del editor
+    // Solo para este editor específico, no para todo el documento
+    const editorWrapper = editorElement.closest('.lex-editor-wrapper') || editorElement.parentElement;
+    if (editorWrapper) {
+      editorWrapper.addEventListener('click', (e) => {
+        const target = e.target;
 
-      // También interceptar clicks en botones que contengan inputs file
-      const ckButton = target.closest('.ck-button');
-      if (ckButton && ckButton.querySelector('input[type="file"]')) {
-        const fileInput = ckButton.querySelector('input[type="file"]');
-        if (fileInput && !fileInput.disabled) {
+        // Si es un input file en CKEditor, prevenir y abrir modal
+        if (target && target.tagName === 'INPUT' && target.type === 'file' && target.closest('.ck')) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
           openMediaPicker();
           return false;
         }
-      }
-    }, true);
+
+        // Si es un botón que contiene input file, también interceptar
+        const ckButton = target.closest('.ck-button');
+        if (ckButton) {
+          const fileInput = ckButton.querySelector('input[type="file"]');
+          if (fileInput && !fileInput.disabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            openMediaPicker();
+            return false;
+          }
+        }
+      }, true);
+    }
 
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());
