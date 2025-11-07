@@ -60,14 +60,15 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
     return "/assets/document-icon.svg";
   };
 
-  // Helper to safely escape strings for use in HTML attributes
-  const escapeHtml = (str: string): string => {
+  // Helper to safely escape strings for use in JavaScript strings within HTML attributes
+  const escapeJs = (str: string): string => {
     return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+      .replace(/\\/g, "\\\\")  // Escape backslashes first
+      .replace(/'/g, "\\'")     // Escape single quotes
+      .replace(/"/g, '\\"')     // Escape double quotes
+      .replace(/\n/g, "\\n")    // Escape newlines
+      .replace(/\r/g, "\\r")    // Escape carriage returns
+      .replace(/\t/g, "\\t");   // Escape tabs
   };
 
   const content = html`
@@ -233,7 +234,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           data-url="${item.url}"
           data-type="${item.type}"
           data-filename="${item.originalFilename}"
-          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeHtml(item.url)}', '${escapeHtml(item.originalFilename)}')` : "viewMediaDetails(this)"}"
+          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeJs(item.url)}', '${escapeJs(item.originalFilename)}')` : "viewMediaDetails(this)"}"
         >
           <!-- Bulk Selection Checkbox -->
           ${!pickerMode ? html`
@@ -288,7 +289,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             ${!pickerMode && item.type === "image" ? html`
               <button
-                onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeHtml(item.url)}')"
+                onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeJs(item.url)}')"
                 class="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 title="Editar imagen"
               >
@@ -308,7 +309,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             ` : ""}
             ${!pickerMode ? html`
               <button
-                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeHtml(item.originalFilename)}')"
+                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeJs(item.originalFilename)}')"
                 class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 title="Eliminar"
               >
@@ -335,7 +336,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           data-url="${item.url}"
           data-type="${item.type}"
           data-filename="${item.originalFilename}"
-          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeHtml(item.url)}', '${escapeHtml(item.originalFilename)}')` : "viewMediaDetails(this)"}"
+          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeJs(item.url)}', '${escapeJs(item.originalFilename)}')` : "viewMediaDetails(this)"}"
         >
           <!-- Checkbox -->
           ${!pickerMode ? html`
@@ -386,7 +387,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             <div class="flex items-center gap-2">
               ${item.type === "image" ? html`
                 <button
-                  onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeHtml(item.url)}')"
+                  onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeJs(item.url)}')"
                   class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded transition-colors"
                   title="Editar imagen"
                 >
@@ -405,7 +406,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
                 </button>
               ` : ""}
               <button
-                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeHtml(item.originalFilename)}')"
+                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeJs(item.originalFilename)}')"
                 class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
                 title="Eliminar"
               >
