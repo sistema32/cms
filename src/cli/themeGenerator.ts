@@ -17,6 +17,8 @@ interface ThemeOptions {
   email: string;
   license: string;
   template: "blank" | "base" | "default";
+  isChildTheme?: boolean;
+  parentTheme?: string;
   features: string[];
   colorScheme: "light" | "dark" | "both";
   cssFramework: "tailwind" | "custom" | "none";
@@ -92,7 +94,7 @@ class ThemeGenerator {
   private async createThemeJson(): Promise<void> {
     console.log("📋 Creating theme.json...");
 
-    const config = {
+    const config: any = {
       name: this.options.name,
       displayName: this.options.displayName,
       version: "1.0.0",
@@ -139,6 +141,11 @@ class ThemeGenerator {
         postCard: "partials/PostCard.tsx",
       },
     };
+
+    // Agregar parent si es child theme
+    if (this.options.isChildTheme && this.options.parentTheme) {
+      config.parent = this.options.parentTheme;
+    }
 
     const content = JSON.stringify(config, null, 2);
     await Deno.writeTextFile(join(this.themePath, "theme.json"), content);
@@ -844,6 +851,27 @@ async function runWizard(): Promise<ThemeOptions> {
     default: "MIT",
   });
 
+  const isChildTheme = await Confirm.prompt({
+    message: "Create as child theme?",
+    default: false,
+  });
+
+  let parentTheme: string | undefined;
+  if (isChildTheme) {
+    // List available themes
+    const { listAvailableThemes } = await import("../services/themeService.ts");
+    const availableThemes = await listAvailableThemes();
+
+    if (availableThemes.length === 0) {
+      console.log(colors.yellow("⚠ No themes found. Creating standalone theme."));
+    } else {
+      parentTheme = await Select.prompt({
+        message: "Parent theme:",
+        options: availableThemes.map(t => ({ name: t, value: t })),
+      });
+    }
+  }
+
   const template = await Select.prompt({
     message: "Base template:",
     options: [
@@ -851,7 +879,7 @@ async function runWizard(): Promise<ThemeOptions> {
       { name: "Base", value: "base" },
       { name: "Default", value: "default" },
     ],
-    default: "base",
+    default: isChildTheme ? "blank" : "base",
   });
 
   const features = await Checkbox.prompt({
@@ -892,6 +920,8 @@ async function runWizard(): Promise<ThemeOptions> {
     email,
     license,
     template: template as "blank" | "base" | "default",
+    isChildTheme,
+    parentTheme,
     features,
     colorScheme: colorScheme as "light" | "dark" | "both",
     cssFramework: cssFramework as "tailwind" | "custom" | "none",

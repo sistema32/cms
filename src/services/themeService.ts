@@ -12,6 +12,7 @@ export interface ThemeConfig {
   displayName: string;
   version: string;
   description: string;
+  parent?: string; // Parent theme name for child themes
   author: {
     name: string;
     email: string;
@@ -382,3 +383,260 @@ export async function warmupCache(themeName?: string) {
 
 // Exportar el servicio de caché para uso avanzado
 export { themeCacheService };
+
+/**
+ * Child Themes Support
+ */
+
+/**
+ * Verifica si un theme es un child theme
+ */
+export async function isChildTheme(themeName: string): Promise<boolean> {
+  const config = await loadThemeConfig(themeName);
+  return config?.parent !== undefined;
+}
+
+/**
+ * Obtiene el parent theme de un child theme
+ */
+export async function getParentTheme(themeName: string): Promise<string | null> {
+  const config = await loadThemeConfig(themeName);
+  return config?.parent || null;
+}
+
+/**
+ * Obtiene la cadena de herencia del theme (child -> parent -> ... -> base)
+ */
+export async function getThemeHierarchy(themeName: string): Promise<string[]> {
+  const hierarchy: string[] = [themeName];
+  let currentTheme = themeName;
+
+  // Prevenir ciclos infinitos (max 5 niveles)
+  let depth = 0;
+  const maxDepth = 5;
+
+  while (depth < maxDepth) {
+    const parent = await getParentTheme(currentTheme);
+    if (!parent) break;
+
+    // Detectar ciclo
+    if (hierarchy.includes(parent)) {
+      console.error(`Circular parent reference detected: ${parent}`);
+      break;
+    }
+
+    hierarchy.push(parent);
+    currentTheme = parent;
+    depth++;
+  }
+
+  return hierarchy;
+}
+
+/**
+ * Carga un template con fallback a parent themes
+ */
+export async function loadTemplateWithFallback(templateName: string): Promise<any> {
+  const activeTheme = await getActiveTheme();
+  const hierarchy = await getThemeHierarchy(activeTheme);
+
+  for (const theme of hierarchy) {
+    const templatePath = join(
+      Deno.cwd(),
+      "src",
+      "themes",
+      theme,
+      "templates",
+      `${templateName}.tsx`,
+    );
+
+    try {
+      // Intentar obtener desde caché
+      const cached = await themeCacheService.getCachedTemplate(templatePath);
+      if (cached) {
+        return cached;
+      }
+
+      // Importar el template
+      const module = await import(`file://${templatePath}`);
+
+      // Cachear
+      await themeCacheService.cacheTemplate(templatePath, module);
+
+      return module;
+    } catch {
+      // Continuar con el siguiente en la jerarquía
+      continue;
+    }
+  }
+
+  console.error(`Template "${templateName}" not found in theme hierarchy`);
+  return null;
+}
+
+/**
+ * Carga un partial con fallback a parent themes
+ */
+export async function loadPartialWithFallback(partialName: string): Promise<any> {
+  const activeTheme = await getActiveTheme();
+  const hierarchy = await getThemeHierarchy(activeTheme);
+
+  for (const theme of hierarchy) {
+    const partialPath = join(
+      Deno.cwd(),
+      "src",
+      "themes",
+      theme,
+      "partials",
+      `${partialName}.tsx`,
+    );
+
+    try {
+      // Intentar obtener desde caché
+      const cached = await themeCacheService.getCachedTemplate(partialPath);
+      if (cached) {
+        return cached;
+      }
+
+      // Importar el partial
+      const module = await import(`file://${partialPath}`);
+
+      // Cachear
+      await themeCacheService.cacheTemplate(partialPath, module);
+
+      return module;
+    } catch {
+      // Continuar con el siguiente en la jerarquía
+      continue;
+    }
+  }
+
+  console.error(`Partial "${partialName}" not found in theme hierarchy`);
+  return null;
+}
+
+/**
+ * Obtiene la URL de un asset con fallback a parent themes
+ */
+export async function getAssetUrlWithFallback(assetPath: string): Promise<string> {
+  const activeTheme = await getActiveTheme();
+  const hierarchy = await getThemeHierarchy(activeTheme);
+  const siteUrl = await settingsService.getSetting("site_url", "");
+
+  for (const theme of hierarchy) {
+    const fullPath = join(Deno.cwd(), "src", "themes", theme, "assets", assetPath);
+
+    try {
+      await Deno.stat(fullPath);
+      return `${siteUrl}/themes/${theme}/assets/${assetPath}`;
+    } catch {
+      // Continuar con el siguiente
+      continue;
+    }
+  }
+
+  // Si no se encuentra, retornar la URL del child theme de todas formas
+  return `${siteUrl}/themes/${activeTheme}/assets/${assetPath}`;
+}
+
+/**
+ * Obtiene la configuración merged de un child theme con su parent
+ */
+export async function getMergedThemeConfig(themeName: string): Promise<ThemeConfig | null> {
+  const hierarchy = await getThemeHierarchy(themeName);
+
+  if (hierarchy.length === 0) {
+    return null;
+  }
+
+  // Cargar configs de toda la jerarquía
+  const configs: ThemeConfig[] = [];
+  for (const theme of hierarchy.reverse()) { // Empezar desde el parent más alto
+    const config = await loadThemeConfig(theme);
+    if (config) {
+      configs.push(config);
+    }
+  }
+
+  if (configs.length === 0) {
+    return null;
+  }
+
+  // Merge configs (child sobrescribe parent)
+  let merged = configs[0];
+
+  for (let i = 1; i < configs.length; i++) {
+    const current = configs[i];
+
+    merged = {
+      ...merged,
+      ...current,
+      config: {
+        ...merged.config,
+        ...current.config,
+        custom: {
+          ...merged.config.custom,
+          ...current.config.custom,
+        },
+      },
+      supports: {
+        ...merged.supports,
+        ...current.supports,
+      },
+      templates: {
+        ...merged.templates,
+        ...current.templates,
+      },
+      partials: {
+        ...merged.partials,
+        ...current.partials,
+      },
+    };
+  }
+
+  return merged;
+}
+
+/**
+ * Valida que un child theme tiene un parent válido
+ */
+export async function validateChildTheme(themeName: string): Promise<{
+  valid: boolean;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+
+  const config = await loadThemeConfig(themeName);
+  if (!config) {
+    errors.push("Theme config not found");
+    return { valid: false, errors };
+  }
+
+  if (!config.parent) {
+    // No es un child theme
+    return { valid: true, errors: [] };
+  }
+
+  // Verificar que el parent existe
+  const parentConfig = await loadThemeConfig(config.parent);
+  if (!parentConfig) {
+    errors.push(`Parent theme "${config.parent}" not found`);
+  }
+
+  // Verificar que no hay ciclos
+  const hierarchy = await getThemeHierarchy(themeName);
+  const seen = new Set<string>();
+
+  for (const theme of hierarchy) {
+    if (seen.has(theme)) {
+      errors.push(`Circular parent reference detected: ${theme}`);
+      break;
+    }
+    seen.add(theme);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
