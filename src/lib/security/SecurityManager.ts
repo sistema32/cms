@@ -297,6 +297,33 @@ export class SecurityManager {
   }
 
   /**
+   * Get security stats in the format expected by main.ts
+   */
+  async getSecurityStats() {
+    const allRules = await db.select().from(ipBlockRules);
+    const allEvents = await db.select().from(securityEvents);
+
+    // Events in last 24h
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const eventsLast24h = allEvents.filter(e =>
+      new Date(e.createdAt) >= oneDayAgo
+    );
+
+    return {
+      ipRules: {
+        total: allRules.length,
+        blocked: allRules.filter(r => r.type === "block").length,
+        whitelisted: allRules.filter(r => r.type === "whitelist").length,
+      },
+      events: {
+        total: allEvents.length,
+        last24h: eventsLast24h.length,
+      },
+    };
+  }
+
+  /**
    * Clean old events (older than 30 days)
    */
   async cleanOldEvents(): Promise<number> {

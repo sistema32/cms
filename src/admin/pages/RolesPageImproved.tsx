@@ -402,7 +402,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
     <script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
       // Store roles data
-      const rolesData = ${JSON.stringify(rolesForScript)};
+      const rolesData = \${JSON.stringify(rolesForScript)};
 
       // Toggle module permissions
       function toggleModulePermissions(checkbox) {
@@ -486,7 +486,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + role.name + '"';
 
-        const permissions = ${JSON.stringify(permissions)};
+        const permissions = \${JSON.stringify(permissions)};
         const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
 
         // Group by module
