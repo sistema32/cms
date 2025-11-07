@@ -150,20 +150,43 @@ async function viewMediaDetails(element) {
   if (!element) return;
   const mediaId = element.dataset.id;
 
+  console.log('[viewMediaDetails] Opening details for media ID:', mediaId);
+
   try {
-    const response = await fetch('/api/media/' + mediaId, {
+    const url = '/api/media/' + mediaId;
+    console.log('[viewMediaDetails] Fetching from URL:', url);
+
+    const response = await fetch(url, {
       credentials: 'include'
     });
 
+    console.log('[viewMediaDetails] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      throw new Error('Error al cargar los detalles del archivo');
+      // Intentar leer el cuerpo del error
+      let errorMessage = 'Error al cargar los detalles del archivo';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        console.error('[viewMediaDetails] Error response:', errorData);
+      } catch (e) {
+        console.error('[viewMediaDetails] Could not parse error response');
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
+    console.log('[viewMediaDetails] Received data:', data);
+
+    if (!data.media) {
+      console.error('[viewMediaDetails] No media data in response:', data);
+      throw new Error('No se recibieron datos del archivo');
+    }
+
     showMediaDetailsModal(data.media);
   } catch (error) {
-    console.error('Error loading media details:', error);
-    alert('Error al cargar los detalles del archivo');
+    console.error('[viewMediaDetails] Error:', error);
+    alert('Error al cargar los detalles del archivo: ' + error.message);
   }
 }
 
