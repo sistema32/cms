@@ -184,3 +184,85 @@ export async function getUserPermissions(c: Context) {
     return c.json({ success: false, error: message }, 500);
   }
 }
+
+/**
+ * GET /api/permissions/grouped
+ */
+export async function getPermissionsGrouped(c: Context) {
+  try {
+    const grouped = await permissionService.getPermissionsGroupedByModule();
+
+    return c.json({
+      success: true,
+      data: grouped,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener permisos agrupados";
+    return c.json({ success: false, error: message }, 500);
+  }
+}
+
+/**
+ * GET /api/permissions/modules
+ */
+export async function getAllModules(c: Context) {
+  try {
+    const modules = await permissionService.getAllModules();
+
+    return c.json({
+      success: true,
+      data: modules,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener módulos";
+    return c.json({ success: false, error: message }, 500);
+  }
+}
+
+/**
+ * GET /api/permissions/stats
+ */
+export async function getPermissionStats(c: Context) {
+  try {
+    const stats = await permissionService.getPermissionStats();
+
+    return c.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener estadísticas";
+    return c.json({ success: false, error: message }, 500);
+  }
+}
+
+/**
+ * GET /api/permissions/search?q=query
+ */
+export async function searchPermissions(c: Context) {
+  try {
+    const query = c.req.query("q");
+
+    if (!query) {
+      return c.json({ success: false, error: "Query requerido" }, 400);
+    }
+
+    const permissions = await permissionService.searchPermissions(query);
+
+    return c.json({
+      success: true,
+      data: permissions,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al buscar permisos";
+    return c.json({ success: false, error: message }, 500);
+  }
+}

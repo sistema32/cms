@@ -2,6 +2,7 @@ import { eq, count } from "drizzle-orm";
 import { db } from "../config/db.ts";
 import { roles, rolePermissions, permissions, users } from "../db/schema.ts";
 import type { NewRole } from "../db/schema.ts";
+import { clearUserPermissionsCache, clearAllPermissionsCache } from "./authorizationService.ts";
 
 export interface RoleWithStats {
   id: number;
@@ -144,8 +145,23 @@ export async function updateRole(roleId: number, data: Partial<NewRole>) {
     where: eq(roles.id, roleId),
   });
 
-  if (role?.isSystem && data.name && data.name !== role.name) {
+  if (!role) {
+    throw new Error("Rol no encontrado");
+  }
+
+  if (role.isSystem && data.name && data.name !== role.name) {
     throw new Error("No se puede cambiar el nombre de un rol del sistema");
+  }
+
+  // Si se cambia el nombre, verificar que no exista otro rol con ese nombre
+  if (data.name && data.name !== role.name) {
+    const existing = await db.query.roles.findFirst({
+      where: eq(roles.name, data.name),
+    });
+
+    if (existing) {
+      throw new Error("Ya existe un rol con ese nombre");
+    }
   }
 
   const [updatedRole] = await db
@@ -155,8 +171,11 @@ export async function updateRole(roleId: number, data: Partial<NewRole>) {
     .returning();
 
   if (!updatedRole) {
-    throw new Error("Rol no encontrado");
+    throw new Error("Error al actualizar rol");
   }
+
+  // Limpiar cache de permisos de usuarios con este rol
+  await clearCacheForRole(roleId);
 
   return updatedRole;
 }
@@ -246,6 +265,21 @@ export async function assignPermissionsToRole(
   // Verificar que el rol existe
   const role = await getRoleById(roleId);
 
+  // Prevenir modificación de roles del sistema (especialmente superadmin)
+  if (role.isSystem && role.name === "superadmin") {
+    throw new Error("No se pueden modificar los permisos del rol superadmin");
+  }
+
+  // Verificar que todos los permisos existen
+  for (const permissionId of permissionIds) {
+    const perm = await db.query.permissions.findFirst({
+      where: eq(permissions.id, permissionId),
+    });
+    if (!perm) {
+      throw new Error(`Permiso con ID ${permissionId} no encontrado`);
+    }
+  }
+
   // Eliminar permisos existentes
   await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
 
@@ -258,6 +292,9 @@ export async function assignPermissionsToRole(
 
     await db.insert(rolePermissions).values(assignments);
   }
+
+  // Limpiar cache de permisos de usuarios con este rol
+  await clearCacheForRole(roleId);
 
   return await getRoleById(roleId);
 }
@@ -287,4 +324,117 @@ export async function getRoleStats() {
   };
 
   return stats;
+}
+
+/**
+ * Limpiar cache de permisos de usuarios con un rol específico
+ */
+async function clearCacheForRole(roleId: number) {
+  const usersWithRole = await db.query.users.findMany({
+    where: eq(users.roleId, roleId),
+  });
+
+  for (const user of usersWithRole) {
+    clearUserPermissionsCache(user.id);
+  }
+}
+
+/**
+ * Verificar si un rol puede ser eliminado
+ */
+export async function canDeleteRole(roleId: number): Promise<{
+  canDelete: boolean;
+  reason?: string;
+  userCount?: number;
+}> {
+  const role = await db.query.roles.findFirst({
+    where: eq(roles.id, roleId),
+  });
+
+  if (!role) {
+    return { canDelete: false, reason: "Rol no encontrado" };
+  }
+
+  if (role.isSystem) {
+    return { canDelete: false, reason: "No se puede eliminar un rol del sistema" };
+  }
+
+  const [{ value: userCount }] = await db
+    .select({ value: count() })
+    .from(users)
+    .where(eq(users.roleId, roleId));
+
+  if (userCount > 0) {
+    return {
+      canDelete: false,
+      reason: `El rol tiene ${userCount} usuario(s) asignado(s)`,
+      userCount,
+    };
+  }
+
+  return { canDelete: true };
+}
+
+/**
+ * Agregar un permiso a un rol
+ */
+export async function addPermissionToRole(roleId: number, permissionId: number) {
+  // Verificar que el rol existe
+  await getRoleById(roleId);
+
+  // Verificar que el permiso existe
+  const perm = await db.query.permissions.findFirst({
+    where: eq(permissions.id, permissionId),
+  });
+
+  if (!perm) {
+    throw new Error("Permiso no encontrado");
+  }
+
+  // Verificar si ya tiene el permiso
+  const existing = await db.query.rolePermissions.findFirst({
+    where: (rp, { and, eq }) =>
+      and(eq(rp.roleId, roleId), eq(rp.permissionId, permissionId)),
+  });
+
+  if (existing) {
+    throw new Error("El rol ya tiene este permiso");
+  }
+
+  // Agregar permiso
+  await db.insert(rolePermissions).values({
+    roleId,
+    permissionId,
+  });
+
+  // Limpiar cache
+  await clearCacheForRole(roleId);
+
+  return await getRoleById(roleId);
+}
+
+/**
+ * Remover un permiso de un rol
+ */
+export async function removePermissionFromRole(roleId: number, permissionId: number) {
+  // Verificar que el rol existe
+  const role = await getRoleById(roleId);
+
+  // Prevenir modificación del superadmin
+  if (role.isSystem && role.name === "superadmin") {
+    throw new Error("No se pueden modificar los permisos del rol superadmin");
+  }
+
+  // Remover permiso
+  await db
+    .delete(rolePermissions)
+    .where(
+      (rp, { and, eq }) =>
+        and(eq(rp.roleId, roleId), eq(rp.permissionId, permissionId))
+    );
+
+  // Limpiar cache
+  await clearCacheForRole(roleId);
+
+  return await getRoleById(roleId);
 }

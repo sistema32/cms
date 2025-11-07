@@ -1,7 +1,8 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, like, or, desc } from "drizzle-orm";
 import { db } from "../config/db.ts";
 import { permissions, users, rolePermissions } from "../db/schema.ts";
 import type { NewPermission } from "../db/schema.ts";
+import { clearUserPermissionsCache } from "./authorizationService.ts";
 
 export interface PermissionsByModule {
   module: string;
@@ -13,6 +14,7 @@ export interface PermissionStats {
   totalPermissions: number;
   totalModules: number;
   moduleBreakdown: Array<{ module: string; count: number }>;
+  permissionsByModule?: Record<string, number>;
 }
 
 /**
@@ -129,12 +131,45 @@ export async function createModulePermissions(
 }
 
 /**
+ * Obtener un permiso por módulo y acción
+ */
+export async function getPermissionByModuleAndAction(module: string, action: string) {
+  return await db.query.permissions.findFirst({
+    where: and(
+      eq(permissions.module, module),
+      eq(permissions.action, action)
+    ),
+  });
+}
+
+/**
  * Actualizar un permiso
  */
 export async function updatePermission(
   permissionId: number,
   data: Partial<NewPermission>
 ) {
+  // Verificar que el permiso existe
+  await getPermissionById(permissionId);
+
+  // Si se está cambiando módulo o acción, verificar que no exista otro con esos valores
+  if (data.module || data.action) {
+    const current = await getPermissionById(permissionId);
+    const newModule = data.module || current.module;
+    const newAction = data.action || current.action;
+
+    const existing = await db.query.permissions.findFirst({
+      where: and(
+        eq(permissions.module, newModule),
+        eq(permissions.action, newAction)
+      ),
+    });
+
+    if (existing && existing.id !== permissionId) {
+      throw new Error(`Ya existe un permiso para ${newModule}.${newAction}`);
+    }
+  }
+
   const [updatedPermission] = await db
     .update(permissions)
     .set(data)
@@ -142,8 +177,11 @@ export async function updatePermission(
     .returning();
 
   if (!updatedPermission) {
-    throw new Error("Permiso no encontrado");
+    throw new Error("Error al actualizar permiso");
   }
+
+  // Limpiar cache de permisos de usuarios
+  clearAllUsersCacheForPermission(permissionId);
 
   return updatedPermission;
 }
@@ -152,7 +190,24 @@ export async function updatePermission(
  * Eliminar un permiso
  */
 export async function deletePermission(permissionId: number) {
+  // Verificar que el permiso existe
+  await getPermissionById(permissionId);
+
+  // Verificar si hay roles usando este permiso
+  const rolesUsingPermission = await db.query.rolePermissions.findMany({
+    where: eq(rolePermissions.permissionId, permissionId),
+  });
+
+  if (rolesUsingPermission.length > 0) {
+    throw new Error(
+      `No se puede eliminar el permiso porque está asignado a ${rolesUsingPermission.length} rol(es)`
+    );
+  }
+
   await db.delete(permissions).where(eq(permissions.id, permissionId));
+
+  // Limpiar cache de permisos de usuarios
+  clearAllUsersCacheForPermission(permissionId);
 }
 
 /**
@@ -296,6 +351,121 @@ export async function getUserPermissionsGrouped(userId: number): Promise<Permiss
 }
 
 /**
+ * Busca permisos por módulo o descripción
+ */
+export async function searchPermissions(query: string) {
+  return await db.query.permissions.findMany({
+    where: or(
+      like(permissions.module, `%${query}%`),
+      like(permissions.action, `%${query}%`),
+      like(permissions.description, `%${query}%`)
+    ),
+    orderBy: [desc(permissions.module)],
+  });
+}
+
+/**
+ * Obtiene todos los módulos únicos
+ */
+export async function getAllModules(): Promise<string[]> {
+  const allPermissions = await db.select({
+    module: permissions.module,
+  }).from(permissions);
+
+  const uniqueModules = new Set(allPermissions.map(p => p.module));
+  return Array.from(uniqueModules).sort();
+}
+
+/**
+ * Sincroniza permisos: crea permisos que faltan basándose en una lista
+ */
+export async function syncPermissions(
+  permissionsToSync: Array<{ module: string; action: string; description?: string }>
+) {
+  const created = [];
+  const skipped = [];
+
+  for (const perm of permissionsToSync) {
+    const existing = await getPermissionByModuleAndAction(perm.module, perm.action);
+
+    if (!existing) {
+      const newPerm = await createPermission({
+        module: perm.module,
+        action: perm.action,
+        description: perm.description || `${perm.action} ${perm.module}`,
+      });
+      created.push(newPerm);
+    } else {
+      skipped.push(existing);
+    }
+  }
+
+  return {
+    created: created.length,
+    skipped: skipped.length,
+    total: permissionsToSync.length,
+  };
+}
+
+/**
+ * Crea permisos CRUD para un módulo
+ */
+export async function createCRUDPermissionsForModule(
+  module: string,
+  moduleDescription: string
+) {
+  const actions = [
+    { action: "create", description: `Crear ${moduleDescription.toLowerCase()}` },
+    { action: "read", description: `Leer ${moduleDescription.toLowerCase()}` },
+    { action: "update", description: `Actualizar ${moduleDescription.toLowerCase()}` },
+    { action: "delete", description: `Eliminar ${moduleDescription.toLowerCase()}` },
+  ];
+
+  const created = [];
+
+  for (const actionData of actions) {
+    const existing = await getPermissionByModuleAndAction(module, actionData.action);
+
+    if (!existing) {
+      const newPerm = await createPermission({
+        module,
+        action: actionData.action,
+        description: actionData.description,
+      });
+      created.push(newPerm);
+    }
+  }
+
+  return created;
+}
+
+/**
+ * Limpia cache de permisos de usuarios afectados por cambio en un permiso
+ */
+async function clearAllUsersCacheForPermission(permissionId: number) {
+  // Obtener todos los roles que tienen este permiso
+  const rolesWithPermission = await db.query.rolePermissions.findMany({
+    where: eq(rolePermissions.permissionId, permissionId),
+  });
+
+  if (rolesWithPermission.length === 0) {
+    return;
+  }
+
+  const roleIds = rolesWithPermission.map(rp => rp.roleId);
+
+  // Obtener todos los usuarios con esos roles
+  const usersWithRoles = await db.query.users.findMany({
+    where: (users, { inArray }) => inArray(users.roleId, roleIds),
+  });
+
+  // Limpiar cache de cada usuario
+  for (const user of usersWithRoles) {
+    clearUserPermissionsCache(user.id);
+  }
+}
+
+/**
  * Obtiene estadísticas de permisos
  */
 export async function getPermissionStats(): Promise<PermissionStats> {
@@ -307,9 +477,17 @@ export async function getPermissionStats(): Promise<PermissionStats> {
     count: allPermissions.filter((p) => p.module === module).length,
   }));
 
+  // Contar permisos por módulo (para compatibilidad)
+  const permissionsByModule: Record<string, number> = {};
+  for (const permission of allPermissions) {
+    permissionsByModule[permission.module] =
+      (permissionsByModule[permission.module] || 0) + 1;
+  }
+
   return {
     totalPermissions: allPermissions.length,
     totalModules: modules.length,
     moduleBreakdown: moduleBreakdown.sort((a, b) => b.count - a.count),
+    permissionsByModule,
   };
 }
