@@ -240,7 +240,11 @@ async function initCKEditor(config) {
 
     try {
       const response = await fetch(mediaListEndpoint + '?limit=100', { credentials: 'include' });
-      if (!response.ok) throw new Error('Error al cargar medios');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[CKEditor] Error al cargar medios:', response.status, errorText);
+        throw new Error(`Error al cargar medios (${response.status}): ${errorText}`);
+      }
       const data = await response.json();
       mediaItems = Array.isArray(data.media) ? data.media : [];
       renderMediaGrid(mediaItems);
