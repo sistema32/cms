@@ -513,7 +513,7 @@ async function saveSeoData() {
 // Image Editor - similar to MediaPicker
 function openImageEditor(mediaId, mediaUrl) {
   const editorModalHtml = `
-    <div id="imageEditorModal" class="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center">
+    <div id="imageEditorModal" class="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div class="modal-container max-w-7xl w-full max-h-[95vh] overflow-hidden">
         <div class="flex items-center justify-between mb-4">
           <h3 class="modal-title">Editor de Imágenes</h3>
@@ -528,8 +528,8 @@ function openImageEditor(mediaId, mediaUrl) {
           </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(95vh-8rem)]">
-          <div class="lg:col-span-3 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center relative">
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 h-[calc(95vh-8rem)]">
+          <div class="bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center relative min-h-[400px]">
             <canvas id="imageEditorCanvas" class="max-w-full max-h-full"></canvas>
             <div id="imageEditorLoading" class="absolute inset-0 flex items-center justify-center bg-gray-900">
               <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>

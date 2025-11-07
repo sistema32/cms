@@ -401,35 +401,79 @@ async function initCKEditor(config) {
 
     // IMPORTANTE: Interceptar el UI del botón imageUpload para prevenir el explorador de archivos nativo
     // El botón imageUpload tiene un input type="file" que queremos desactivar
-    setTimeout(() => {
+    const interceptFileInputs = () => {
       try {
-        // Buscar todos los inputs de tipo file en el toolbar de CKEditor
-        const toolbarElement = editorElement.previousElementSibling;
-        if (toolbarElement && toolbarElement.classList.contains('ck-toolbar')) {
-          const fileInputs = toolbarElement.querySelectorAll('input[type="file"]');
-          fileInputs.forEach(input => {
-            // Remover el input file del DOM para prevenir que se active
-            const button = input.closest('.ck-button');
-            if (button) {
-              // Reemplazar el comportamiento del botón
-              button.addEventListener('click', (e) => {
-                // Prevenir el comportamiento por defecto (que abre el file picker)
-                e.preventDefault();
-                e.stopPropagation();
-                // Abrir nuestro modal en su lugar
-                openMediaPicker();
-              }, true); // useCapture = true para capturar antes que el handler original
+        // Buscar todos los inputs de tipo file en el editor
+        const editorWrapper = editorElement.closest('.lex-editor-wrapper') || document;
+        const fileInputs = editorWrapper.querySelectorAll('.ck input[type="file"]');
 
-              // Ocultar/desactivar el input file
-              input.style.display = 'none';
-              input.disabled = true;
+        fileInputs.forEach(input => {
+          // Desactivar completamente el input
+          input.disabled = true;
+          input.style.display = 'none';
+          input.style.visibility = 'hidden';
+          input.style.pointerEvents = 'none';
+
+          // Encontrar el botón padre
+          const button = input.closest('.ck-button');
+          if (button) {
+            // Remover todos los event listeners clonando el botón
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+
+            // Agregar nuestro event listener
+            newButton.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              openMediaPicker();
+              return false;
+            }, true);
+
+            // Desactivar el input dentro del nuevo botón también
+            const newInput = newButton.querySelector('input[type="file"]');
+            if (newInput) {
+              newInput.disabled = true;
+              newInput.remove(); // Eliminar completamente del DOM
             }
-          });
-        }
+          }
+        });
+
+        console.log('[CKEditor] Interceptados', fileInputs.length, 'inputs de tipo file');
       } catch (error) {
         console.warn('[CKEditor] No se pudo interceptar el botón de upload:', error);
       }
-    }, 100); // Pequeño delay para asegurar que el UI esté renderizado
+    };
+
+    // Ejecutar múltiples veces para asegurar que capture el input
+    setTimeout(() => interceptFileInputs(), 100);
+    setTimeout(() => interceptFileInputs(), 300);
+    setTimeout(() => interceptFileInputs(), 500);
+
+    // También interceptar cualquier click en inputs file que puedan aparecer después
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && target.matches && target.matches('.ck input[type="file"]')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        openMediaPicker();
+        return false;
+      }
+
+      // También interceptar clicks en botones que contengan inputs file
+      const ckButton = target.closest('.ck-button');
+      if (ckButton && ckButton.querySelector('input[type="file"]')) {
+        const fileInput = ckButton.querySelector('input[type="file"]');
+        if (fileInput && !fileInput.disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          openMediaPicker();
+          return false;
+        }
+      }
+    }, true);
 
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());
