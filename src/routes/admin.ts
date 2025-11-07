@@ -1395,6 +1395,30 @@ adminRouter.get("/media/data", async (c) => {
 });
 
 /**
+ * GET /media/:id - Get single media details
+ */
+adminRouter.get("/media/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ error: "ID inválido" }, 400);
+    }
+
+    const media = await mediaService.getMediaById(id);
+
+    if (!media) {
+      return c.json({ error: "Medio no encontrado" }, 404);
+    }
+
+    return c.json({ media });
+  } catch (error: any) {
+    console.error("Error loading media details:", error);
+    return c.json({ error: "Error al cargar detalles del medio" }, 500);
+  }
+});
+
+/**
  * POST /media - Upload media from admin panel
  */
 adminRouter.post("/media", async (c) => {
