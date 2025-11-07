@@ -9,6 +9,8 @@ import {
   validateJSON,
 } from "./middleware/security.ts";
 import { securityMiddleware } from "./middlewares/securityMiddleware.ts";
+import { hotReloadMiddleware } from "./middleware/hotReloadMiddleware.ts";
+import { themePreviewMiddleware } from "./middleware/themePreviewMiddleware.ts";
 
 export const app = new Hono();
 
@@ -28,6 +30,9 @@ app.use("*", validateJSON);
 // Apply comprehensive security middleware (headers, IP blocking, rate limiting, request inspection)
 app.use("*", securityMiddleware);
 
+// Apply theme preview middleware (must be before routes)
+app.use("*", themePreviewMiddleware);
+
 app.use("*", logger());
 app.use(
   "*",
@@ -44,6 +49,11 @@ app.use(
 );
 
 registerRoutes(app);
+
+// Apply hot reload middleware in development (must be after routes)
+if (isDevelopment) {
+  app.use("*", hotReloadMiddleware);
+}
 
 app.notFound((c) => {
   return c.json(

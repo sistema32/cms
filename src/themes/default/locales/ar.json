@@ -1,0 +1,70 @@
+{
+  "theme": {
+    "site_title": "موقعي",
+    "read_more": "اقرأ المزيد",
+    "posted_on": "نُشر في {date}",
+    "by_author": "بواسطة {author}",
+    "in_category": "في {category}",
+    "categories": "الفئات",
+    "tags": "الوسوم",
+    "search": "بحث",
+    "search_placeholder": "ابحث...",
+    "search_results": "نتائج البحث",
+    "no_results": "لم يتم العثور على نتائج",
+    "continue_reading": "متابعة القراءة",
+    "share": "مشاركة",
+    "related_posts": "مقالات ذات صلة",
+    "recent_posts": "المقالات الأخيرة",
+    "popular_posts": "المقالات الشائعة",
+    "archive": "الأرشيف",
+    "home": "الصفحة الرئيسية",
+    "about": "حول",
+    "contact": "اتصل بنا",
+    "blog": "المدونة",
+    "next": "التالي",
+    "previous": "السابق",
+    "page": "الصفحة {page}",
+    "of": "من",
+    "error_404_title": "الصفحة غير موجودة",
+    "error_404_message": "الصفحة التي تبحث عنها غير موجودة.",
+    "go_home": "العودة إلى الصفحة الرئيسية"
+  },
+  "comments": {
+    "one": "تعليق واحد",
+    "other": "{count} تعليقات",
+    "no_comments": "لا توجد تعليقات بعد",
+    "leave_comment": "اترك تعليقاً",
+    "your_name": "اسمك",
+    "your_email": "بريدك الإلكتروني",
+    "your_comment": "تعليقك",
+    "submit": "إرسال التعليق",
+    "reply": "رد",
+    "edit": "تعديل",
+    "delete": "حذف"
+  },
+  "time": {
+    "just_now": "الآن",
+    "minutes_ago": "منذ {count} دقائق",
+    "hours_ago": "منذ {count} ساعات",
+    "days_ago": "منذ {count} أيام",
+    "weeks_ago": "منذ {count} أسابيع",
+    "months_ago": "منذ {count} أشهر",
+    "years_ago": "منذ {count} سنوات"
+  },
+  "reading": {
+    "reading_time": "{minutes} دقيقة قراءة",
+    "words": "{count} كلمات"
+  },
+  "newsletter": {
+    "title": "اشترك في نشرتنا الإخبارية",
+    "subtitle": "احصل على آخر المقالات مباشرة في بريدك الإلكتروني",
+    "email_placeholder": "أدخل بريدك الإلكتروني",
+    "subscribe": "اشترك",
+    "success": "شكراً لاشتراكك!",
+    "error": "عذراً! حدث خطأ ما"
+  },
+  "footer": {
+    "copyright": "© {year} {siteName}. جميع الحقوق محفوظة.",
+    "powered_by": "مدعوم بواسطة LexCMS"
+  }
+}
