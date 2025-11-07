@@ -8,7 +8,6 @@ async function initCKEditor(config) {
     tocId,
     mediaModalId,
     mediaContentId,
-    mediaButtonId,
     name,
     bundlePath,
     mediaListEndpoint,
@@ -23,7 +22,6 @@ async function initCKEditor(config) {
   const tocElement = document.getElementById(tocId);
   const mediaModal = document.getElementById(mediaModalId);
   const mediaContent = document.getElementById(mediaContentId);
-  const mediaButton = document.getElementById(mediaButtonId);
 
   const ensureStylesheet = () => {
     if (typeof document === 'undefined') return;
@@ -350,10 +348,6 @@ async function initCKEditor(config) {
 
     syncHiddenInput();
     generateTOC(editor.getData());
-
-    if (mediaButton) {
-      mediaButton.addEventListener('click', openMediaPicker);
-    }
 
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());

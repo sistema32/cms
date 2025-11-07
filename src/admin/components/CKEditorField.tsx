@@ -112,35 +112,6 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
         color: rgba(196, 181, 253, 0.9);
       }
 
-      .lex-media-toolbar {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 0.75rem;
-      }
-
-      .lex-media-toolbar button {
-        background: linear-gradient(
-          135deg,
-          rgba(124, 58, 237, 0.85),
-          rgba(96, 165, 250, 0.75),
-        );
-        color: #f8fafc;
-        border: none;
-        border-radius: 0.5rem;
-        padding: 0.5rem 0.85rem;
-        font-size: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-
-      .lex-media-toolbar button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 20px -12px rgba(124, 58, 237, 0.9);
-      }
-
       .lex-editor-fallback {
         min-height: 18rem;
         border: 1px solid rgba(148, 163, 184, 0.4);
@@ -180,12 +151,6 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
 
     <div class="lex-editor-wrapper">
       <div>
-        <div class="lex-media-toolbar">
-          <button type="button" id="mediaLibraryButton-${name}">
-            <span aria-hidden="true">📁</span>
-            Biblioteca de medios
-          </button>
-        </div>
         <div class="lex-editor-container">
           <div id="${editorId}" data-placeholder="${placeholder}"></div>
         </div>
@@ -247,7 +212,6 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
           tocId: '${tocId}',
           mediaModalId: '${mediaModalId}',
           mediaContentId: '${mediaContentId}',
-          mediaButtonId: 'mediaLibraryButton-${name}',
           name: '${name}',
           bundlePath: '${bundlePath}',
           mediaListEndpoint: '${mediaListEndpoint}',
