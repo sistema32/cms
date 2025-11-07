@@ -7,8 +7,27 @@ import sqlite3
 import os
 import sys
 
-# Ruta a la base de datos
-DB_PATH = "./lexcms.db"
+# Cargar variables de entorno desde .env
+def load_env():
+    """Carga variables de entorno desde el archivo .env"""
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+    if not os.path.exists(env_path):
+        print("⚠️  Archivo .env no encontrado, usando valor por defecto")
+        return {"DATABASE_URL": "./lexcms.db"}
+
+    env_vars = {}
+    with open(env_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                env_vars[key.strip()] = value.strip()
+
+    return env_vars
+
+# Cargar configuración
+env = load_env()
+DB_PATH = env.get("DATABASE_URL", "./lexcms.db")
 MIGRATIONS_DIR = "./src/db/migrations"
 
 def run_migration(conn, migration_file):
@@ -33,6 +52,11 @@ def run_migration(conn, migration_file):
 
 def main():
     print("🚀 Configurando base de datos...\n")
+
+    # Mostrar configuración
+    print(f"📝 Configuración:")
+    print(f"   Base de datos: {DB_PATH}")
+    print(f"   Migraciones: {MIGRATIONS_DIR}\n")
 
     # Crear conexión a la base de datos
     print(f"📁 Creando base de datos: {DB_PATH}")
