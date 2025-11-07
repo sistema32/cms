@@ -1744,6 +1744,240 @@ adminRouter.post("/api/admin/themes/config/validate", async (c) => {
 });
 
 /**
+ * Widget API Endpoints
+ */
+
+/**
+ * GET /api/admin/widgets/types - Get available widget types
+ */
+adminRouter.get("/api/admin/widgets/types", async (c) => {
+  try {
+    const { getAvailableWidgetTypes } = await import("../services/widgetService.ts");
+    const types = getAvailableWidgetTypes();
+    return c.json(types);
+  } catch (error: any) {
+    console.error("Error getting widget types:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/areas - Get widget areas
+ */
+adminRouter.get("/api/admin/widgets/areas", async (c) => {
+  try {
+    const theme = c.req.query("theme");
+    const { getWidgetAreasByTheme, getWidgetAreaBySlug } = await import(
+      "../services/widgetService.ts"
+    );
+
+    if (theme) {
+      const areas = await getWidgetAreasByTheme(theme);
+      return c.json(areas);
+    }
+
+    const activeTheme = await themeService.getActiveTheme();
+    const areas = await getWidgetAreasByTheme(activeTheme);
+    return c.json(areas);
+  } catch (error: any) {
+    console.error("Error getting widget areas:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/areas/:slug - Get widget area by slug
+ */
+adminRouter.get("/api/admin/widgets/areas/:slug", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    const { getWidgetAreaBySlug } = await import("../services/widgetService.ts");
+
+    const area = await getWidgetAreaBySlug(slug);
+
+    if (!area) {
+      return c.json({ error: "Widget area not found" }, 404);
+    }
+
+    return c.json(area);
+  } catch (error: any) {
+    console.error("Error getting widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/areas - Create widget area
+ */
+adminRouter.post("/api/admin/widgets/areas", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { createWidgetArea } = await import("../services/widgetService.ts");
+
+    const areaId = await createWidgetArea(body);
+
+    return c.json({ success: true, areaId });
+  } catch (error: any) {
+    console.error("Error creating widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /api/admin/widgets/areas/:id - Update widget area
+ */
+adminRouter.put("/api/admin/widgets/areas/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.json();
+    const { updateWidgetArea } = await import("../services/widgetService.ts");
+
+    await updateWidgetArea(id, body);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error updating widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/widgets/areas/:id - Delete widget area
+ */
+adminRouter.delete("/api/admin/widgets/areas/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { deleteWidgetArea } = await import("../services/widgetService.ts");
+
+    await deleteWidgetArea(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting widget area:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets - Create widget
+ */
+adminRouter.post("/api/admin/widgets", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { createWidget } = await import("../services/widgetService.ts");
+
+    const widgetId = await createWidget(body);
+
+    return c.json({ success: true, widgetId });
+  } catch (error: any) {
+    console.error("Error creating widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/widgets/:id - Get widget by ID
+ */
+adminRouter.get("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { getWidgetById } = await import("../services/widgetService.ts");
+
+    const widget = await getWidgetById(id);
+
+    if (!widget) {
+      return c.json({ error: "Widget not found" }, 404);
+    }
+
+    return c.json(widget);
+  } catch (error: any) {
+    console.error("Error getting widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * PUT /api/admin/widgets/:id - Update widget
+ */
+adminRouter.put("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const body = await c.req.json();
+    const { updateWidget } = await import("../services/widgetService.ts");
+
+    await updateWidget(id, body);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error updating widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/widgets/:id - Delete widget
+ */
+adminRouter.delete("/api/admin/widgets/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+    const { deleteWidget } = await import("../services/widgetService.ts");
+
+    await deleteWidget(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting widget:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/reorder - Reorder widgets in an area
+ */
+adminRouter.post("/api/admin/widgets/reorder", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { areaId, widgetIds } = body;
+
+    if (!areaId || !Array.isArray(widgetIds)) {
+      return c.json({ error: "areaId and widgetIds array required" }, 400);
+    }
+
+    const { reorderWidgets } = await import("../services/widgetService.ts");
+
+    await reorderWidgets(areaId, widgetIds);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error reordering widgets:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/widgets/validate - Validate widget settings
+ */
+adminRouter.post("/api/admin/widgets/validate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { type, settings } = body;
+
+    if (!type) {
+      return c.json({ error: "Widget type is required" }, 400);
+    }
+
+    const { validateWidgetSettings } = await import("../services/widgetService.ts");
+
+    const validation = await validateWidgetSettings(type, settings);
+
+    return c.json(validation);
+  } catch (error: any) {
+    console.error("Error validating widget settings:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * GET /appearance/menus - Menu manager
  */
 adminRouter.get("/appearance/menus", async (c) => {

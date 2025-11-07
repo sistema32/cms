@@ -385,6 +385,39 @@ export const menuItems = sqliteTable("menu_items", {
     .default(sql`(unixepoch())`),
 });
 
+// ============= WIDGET AREAS =============
+export const widgetAreas = sqliteTable("widget_areas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  theme: text("theme").notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// ============= WIDGETS =============
+export const widgets = sqliteTable("widgets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  areaId: integer("area_id").references(() => widgetAreas.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'search', 'recent-posts', 'custom-html', etc.
+  title: text("title"),
+  settings: text("settings"), // JSON
+  order: integer("order").notNull().default(0),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // ============= SETTINGS =============
 export const settings = sqliteTable("settings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -742,6 +775,17 @@ export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
   }),
 }));
 
+export const widgetAreasRelations = relations(widgetAreas, ({ many }) => ({
+  widgets: many(widgets),
+}));
+
+export const widgetsRelations = relations(widgets, ({ one }) => ({
+  area: one(widgetAreas, {
+    fields: [widgets.areaId],
+    references: [widgetAreas.id],
+  }),
+}));
+
 export const commentsRelations = relations(comments, ({ one, many }) => ({
   content: one(content, {
     fields: [comments.contentId],
@@ -1091,6 +1135,12 @@ export type NewMenu = typeof menus.$inferInsert;
 
 export type MenuItem = typeof menuItems.$inferSelect;
 export type NewMenuItem = typeof menuItems.$inferInsert;
+
+export type WidgetArea = typeof widgetAreas.$inferSelect;
+export type NewWidgetArea = typeof widgetAreas.$inferInsert;
+
+export type Widget = typeof widgets.$inferSelect;
+export type NewWidget = typeof widgets.$inferInsert;
 
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;

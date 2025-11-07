@@ -101,6 +101,21 @@ export {
   themeHooks,
 } from "./hooks.ts";
 
+// Export widget system
+export {
+  createWidgetContext,
+  renderWidgetArea,
+} from "./widgets.ts";
+
+export type {
+  SettingDefinition,
+  WidgetAreaData,
+  WidgetClass,
+  WidgetData,
+  WidgetRegistrationOptions,
+  WidgetRenderContext,
+} from "./widgets.ts";
+
 /**
  * SDK version
  */
