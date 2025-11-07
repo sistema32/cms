@@ -60,17 +60,6 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
     return "/assets/document-icon.svg";
   };
 
-  // Helper to safely escape strings for use in JavaScript strings within HTML attributes
-  const escapeJs = (str: string): string => {
-    return str
-      .replace(/\\/g, "\\\\")  // Escape backslashes first
-      .replace(/'/g, "\\'")     // Escape single quotes
-      .replace(/"/g, '\\"')     // Escape double quotes
-      .replace(/\n/g, "\\n")    // Escape newlines
-      .replace(/\r/g, "\\r")    // Escape carriage returns
-      .replace(/\t/g, "\\t");   // Escape tabs
-  };
-
   const content = html`
     <div class="page-header">
       <h1 class="page-title">Biblioteca de Medios</h1>
@@ -234,7 +223,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           data-url="${item.url}"
           data-type="${item.type}"
           data-filename="${item.originalFilename}"
-          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeJs(item.url)}', '${escapeJs(item.originalFilename)}')` : "viewMediaDetails(this)"}"
+          onclick="${pickerMode ? "selectMedia(this.dataset.id, this.dataset.url, this.dataset.filename)" : "viewMediaDetails(this)"}"
         >
           <!-- Bulk Selection Checkbox -->
           ${!pickerMode ? html`
@@ -289,7 +278,9 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             ${!pickerMode && item.type === "image" ? html`
               <button
-                onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeJs(item.url)}')"
+                data-media-id="${item.id}"
+                data-media-url="${item.url}"
+                onclick="event.stopPropagation(); openImageEditor(this.dataset.mediaId, this.dataset.mediaUrl)"
                 class="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 title="Editar imagen"
               >
@@ -298,7 +289,8 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
                 </svg>
               </button>
               <button
-                onclick="event.stopPropagation(); openSeoEditor(${item.id})"
+                data-media-id="${item.id}"
+                onclick="event.stopPropagation(); openSeoEditor(this.dataset.mediaId)"
                 class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 title="Editar SEO"
               >
@@ -309,7 +301,9 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             ` : ""}
             ${!pickerMode ? html`
               <button
-                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeJs(item.originalFilename)}')"
+                data-media-id="${item.id}"
+                data-media-filename="${item.originalFilename}"
+                onclick="event.stopPropagation(); deleteMedia(this.dataset.mediaId, this.dataset.mediaFilename)"
                 class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 title="Eliminar"
               >
@@ -336,7 +330,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
           data-url="${item.url}"
           data-type="${item.type}"
           data-filename="${item.originalFilename}"
-          onclick="${pickerMode ? `selectMedia(${item.id}, '${escapeJs(item.url)}', '${escapeJs(item.originalFilename)}')` : "viewMediaDetails(this)"}"
+          onclick="${pickerMode ? "selectMedia(this.dataset.id, this.dataset.url, this.dataset.filename)" : "viewMediaDetails(this)"}"
         >
           <!-- Checkbox -->
           ${!pickerMode ? html`
@@ -387,7 +381,9 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
             <div class="flex items-center gap-2">
               ${item.type === "image" ? html`
                 <button
-                  onclick="event.stopPropagation(); openImageEditor(${item.id}, '${escapeJs(item.url)}')"
+                  data-media-id="${item.id}"
+                  data-media-url="${item.url}"
+                  onclick="event.stopPropagation(); openImageEditor(this.dataset.mediaId, this.dataset.mediaUrl)"
                   class="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900 rounded transition-colors"
                   title="Editar imagen"
                 >
@@ -396,7 +392,8 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
                   </svg>
                 </button>
                 <button
-                  onclick="event.stopPropagation(); openSeoEditor(${item.id})"
+                  data-media-id="${item.id}"
+                  onclick="event.stopPropagation(); openSeoEditor(this.dataset.mediaId)"
                   class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition-colors"
                   title="Editar SEO"
                 >
@@ -406,7 +403,9 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
                 </button>
               ` : ""}
               <button
-                onclick="event.stopPropagation(); deleteMedia(${item.id}, '${escapeJs(item.originalFilename)}')"
+                data-media-id="${item.id}"
+                data-media-filename="${item.originalFilename}"
+                onclick="event.stopPropagation(); deleteMedia(this.dataset.mediaId, this.dataset.mediaFilename)"
                 class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
                 title="Eliminar"
               >
