@@ -349,6 +349,56 @@ async function initCKEditor(config) {
     syncHiddenInput();
     generateTOC(editor.getData());
 
+    // Sobrescribir el comportamiento del botón de imagen de CKEditor
+    // para que abra nuestro modal de media library en lugar del diálogo nativo
+    const insertImageCommand = editor.commands.get('insertImage');
+    if (insertImageCommand) {
+      const originalExecute = insertImageCommand.execute.bind(insertImageCommand);
+
+      insertImageCommand.execute = function(options) {
+        // Si viene con opciones (desde drag&drop, paste, o nuestro modal), ejecutar normalmente
+        if (options && (options.source || options.file)) {
+          originalExecute(options);
+        } else {
+          // Si no tiene opciones, significa que el usuario hizo clic en el botón
+          // Abrir nuestro modal en lugar del diálogo nativo
+          openMediaPicker();
+        }
+      };
+    }
+
+    // También interceptar el comando imageInsert (usado en versiones más nuevas)
+    const imageInsertCommand = editor.commands.get('imageInsert');
+    if (imageInsertCommand) {
+      const originalImageInsertExecute = imageInsertCommand.execute.bind(imageInsertCommand);
+
+      imageInsertCommand.execute = function(options) {
+        // Si viene con opciones, ejecutar normalmente
+        if (options && (options.source || options.file)) {
+          originalImageInsertExecute(options);
+        } else {
+          // Si no, abrir nuestro modal
+          openMediaPicker();
+        }
+      };
+    }
+
+    // También manejar el comando uploadImage (para el botón de subir)
+    const uploadImageCommand = editor.commands.get('uploadImage');
+    if (uploadImageCommand) {
+      const originalUploadExecute = uploadImageCommand.execute.bind(uploadImageCommand);
+
+      uploadImageCommand.execute = function(options) {
+        // Si viene con archivo, ejecutar normalmente (drag&drop, paste)
+        if (options && options.file) {
+          originalUploadExecute(options);
+        } else {
+          // Si no, abrir nuestro modal que también permite subir
+          openMediaPicker();
+        }
+      };
+    }
+
     editor.editing.view.change((writer) => {
       writer.setStyle('min-height', '280px', editor.editing.view.document.getRoot());
     });
