@@ -9,6 +9,9 @@ import {
 import postgres from "postgres";
 import * as schema from "../db/schema.ts";
 import { env, isProduction } from "./env.ts";
+import { existsSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 const processRef = globalThis.process as
   | (NodeJS.Process & { report?: { getReport?: () => unknown } })
@@ -58,6 +61,23 @@ try {
 
 if (!createClient) {
   throw new Error("Unable to load @libsql/client for the current runtime.");
+}
+
+// Crear directorios necesarios para la base de datos SQLite en desarrollo
+if (!isProduction && env.DATABASE_URL) {
+  const dbUrl = env.DATABASE_URL;
+  // Solo crear directorios si es una ruta de archivo local (no empieza con http/libsql/file:)
+  if (!dbUrl.startsWith('http') && !dbUrl.startsWith('libsql:') && !dbUrl.startsWith('file:')) {
+    const dbPath = dbUrl.startsWith('./') || dbUrl.startsWith('../') || dbUrl.startsWith('/')
+      ? dbUrl
+      : `./${dbUrl}`;
+    const dbDir = dirname(dbPath);
+
+    // Crear directorio si no existe
+    if (dbDir && dbDir !== '.' && !existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
+    }
+  }
 }
 
 // Configuración de la conexión según el entorno
