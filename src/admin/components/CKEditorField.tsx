@@ -22,8 +22,8 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
   const mediaModalId = `mediaPicker-${name}`;
   const mediaContentId = `mediaPickerContent-${name}`;
   const bundlePath = `${env.ADMIN_PATH}/assets/js/ckeditor-bundle.js`;
-  const mediaListEndpoint = `${env.ADMIN_PATH}/media/data`;
-  const mediaUploadEndpoint = `${env.ADMIN_PATH}/media`;
+  const mediaListEndpoint = `/api/media`;
+  const mediaUploadEndpoint = `/api/media`;
 
   return html`
     <style>

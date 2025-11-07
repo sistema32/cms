@@ -73,7 +73,7 @@ async function handleFilesUpload(files) {
     formData.append('file', file);
 
     try {
-      const response = await fetch(ADMIN_BASE_PATH + '/media', {
+      const response = await fetch('/api/media', {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -126,7 +126,7 @@ async function deleteMedia(id, filename) {
   }
 
   try {
-    const response = await fetch(ADMIN_BASE_PATH + '/media/' + id, {
+    const response = await fetch('/api/media/' + id, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -151,7 +151,7 @@ async function viewMediaDetails(element) {
   const mediaId = element.dataset.id;
 
   try {
-    const response = await fetch(ADMIN_BASE_PATH + '/api/media/' + mediaId, {
+    const response = await fetch('/api/media/' + mediaId, {
       credentials: 'include'
     });
 
@@ -331,7 +331,7 @@ async function openSeoEditor(mediaId) {
 
   // Fetch current SEO data
   try {
-    const response = await fetch(ADMIN_BASE_PATH + '/api/media/' + mediaId, {
+    const response = await fetch('/api/media/' + mediaId, {
       credentials: 'include'
     });
 
@@ -467,7 +467,7 @@ async function saveSeoData() {
   };
 
   try {
-    const response = await fetch(ADMIN_BASE_PATH + '/api/media/' + mediaId + '/seo', {
+    const response = await fetch('/api/media/' + mediaId + '/seo', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -788,7 +788,7 @@ function initializeImageEditor(imageUrl) {
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.9));
         const formData = new FormData();
         formData.append('file', blob, 'edited-image.webp');
-        const response = await fetch(ADMIN_BASE_PATH + '/media', {
+        const response = await fetch('/api/media', {
           method: 'POST',
           body: formData,
           credentials: 'include'
@@ -915,7 +915,7 @@ async function bulkDelete() {
 
   for (const mediaId of selectedMediaIds) {
     try {
-      const response = await fetch(ADMIN_BASE_PATH + '/media/' + mediaId, {
+      const response = await fetch('/api/media/' + mediaId, {
         method: 'DELETE',
         credentials: 'include',
       });
