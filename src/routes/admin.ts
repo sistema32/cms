@@ -1841,6 +1841,233 @@ adminRouter.delete("/api/admin/themes/preview/:token", async (c) => {
 });
 
 /**
+ * Theme Customizer API Endpoints
+ */
+
+/**
+ * POST /api/admin/themes/customizer/session - Create customizer session
+ */
+adminRouter.post("/api/admin/themes/customizer/session", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { theme } = body;
+
+    if (!theme) {
+      return c.json({ error: "Theme name is required" }, 400);
+    }
+
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const session = await themeCustomizerService.createSession(user.id, theme);
+
+    // Check for existing draft
+    const draft = await themeCustomizerService.loadDraft(user.id, theme);
+
+    return c.json({
+      success: true,
+      sessionId: session.id,
+      hasDraft: draft !== null,
+      draftChanges: draft?.length || 0,
+    });
+  } catch (error: any) {
+    console.error("Error creating customizer session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/themes/customizer/state/:sessionId - Get customizer state
+ */
+adminRouter.get("/api/admin/themes/customizer/state/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.getState(sessionId);
+
+    return c.json(state);
+  } catch (error: any) {
+    console.error("Error getting customizer state:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/change - Apply a change
+ */
+adminRouter.post("/api/admin/themes/customizer/change", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId, settingKey, value, description } = body;
+
+    if (!sessionId || !settingKey) {
+      return c.json({ error: "sessionId and settingKey are required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.applyChange(
+      sessionId,
+      settingKey,
+      value,
+      description
+    );
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error applying change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/undo - Undo last change
+ */
+adminRouter.post("/api/admin/themes/customizer/undo", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.undo(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error undoing change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/redo - Redo last undone change
+ */
+adminRouter.post("/api/admin/themes/customizer/redo", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.redo(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error redoing change:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/reset - Reset all changes
+ */
+adminRouter.post("/api/admin/themes/customizer/reset", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const state = await themeCustomizerService.reset(sessionId);
+
+    return c.json({ success: true, state });
+  } catch (error: any) {
+    console.error("Error resetting changes:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/save-draft - Save as draft
+ */
+adminRouter.post("/api/admin/themes/customizer/save-draft", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.saveDraft(sessionId);
+
+    return c.json({ success: true, message: "Draft saved successfully" });
+  } catch (error: any) {
+    console.error("Error saving draft:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/customizer/publish - Publish changes
+ */
+adminRouter.post("/api/admin/themes/customizer/publish", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: "sessionId is required" }, 400);
+    }
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.publish(sessionId);
+
+    return c.json({ success: true, message: "Changes published successfully" });
+  } catch (error: any) {
+    console.error("Error publishing changes:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/themes/customizer/history/:sessionId - Get change history
+ */
+adminRouter.get("/api/admin/themes/customizer/history/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const history = themeCustomizerService.getHistory(sessionId);
+
+    return c.json({ history });
+  } catch (error: any) {
+    console.error("Error getting history:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/themes/customizer/session/:sessionId - End session
+ */
+adminRouter.delete("/api/admin/themes/customizer/session/:sessionId", async (c) => {
+  try {
+    const sessionId = c.req.param("sessionId");
+
+    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    await themeCustomizerService.endSession(sessionId);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error ending session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * Widget API Endpoints
  */
 

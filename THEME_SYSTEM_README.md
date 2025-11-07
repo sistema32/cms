@@ -2,11 +2,11 @@
 
 ## 📋 Resumen
 
-Se han implementado **12 de 18 características propuestas** (67%) para transformar el sistema de themes de LexCMS en una plataforma de clase mundial.
+Se han implementado **13 de 18 características propuestas** (72%) para transformar el sistema de themes de LexCMS en una plataforma de clase mundial.
 
 **Mejora de Performance:** 70-90% más rápido
-**Código Agregado:** ~15,000 líneas
-**Documentación:** ~10,000 líneas
+**Código Agregado:** ~16,500 líneas
+**Documentación:** ~12,000 líneas
 **Status:** ✅ Listo para producción
 
 ---
@@ -462,6 +462,102 @@ const data = await response.json();
 - Sesiones independientes por usuario
 
 📖 [Guía completa de Hot Reload y Preview](./docs/HOT_RELOAD_AND_PREVIEW.md)
+
+---
+
+### 13. ✅ Visual Theme Customizer
+**Editor WYSIWYG con live preview**
+
+```typescript
+// POST /api/admin/themes/customizer/session
+const response = await fetch('/api/admin/themes/customizer/session', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN'
+  },
+  body: JSON.stringify({ theme: 'corporate' })
+});
+
+const { sessionId } = await response.json();
+
+// Aplicar cambio
+await fetch('/api/admin/themes/customizer/change', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    sessionId,
+    settingKey: 'primary_color',
+    value: '#3d7aff',
+    description: 'Changed primary color'
+  })
+});
+
+// Deshacer
+await fetch('/api/admin/themes/customizer/undo', {
+  method: 'POST',
+  body: JSON.stringify({ sessionId })
+});
+
+// Publicar
+await fetch('/api/admin/themes/customizer/publish', {
+  method: 'POST',
+  body: JSON.stringify({ sessionId })
+});
+```
+
+**Características:**
+- ✅ Live preview en iframe
+- ✅ Undo/Redo (hasta 50 cambios)
+- ✅ Autosave cada 30 segundos
+- ✅ Guardar como borrador
+- ✅ Historial completo de cambios
+- ✅ Sesiones aisladas por usuario
+- ✅ Color utilities (lighten, darken, contrast)
+- ✅ Gestión de sesiones
+
+**API Endpoints:**
+```
+POST   /api/admin/themes/customizer/session        → Crear sesión
+GET    /api/admin/themes/customizer/state/:id      → Obtener estado
+POST   /api/admin/themes/customizer/change         → Aplicar cambio
+POST   /api/admin/themes/customizer/undo           → Deshacer
+POST   /api/admin/themes/customizer/redo           → Rehacer
+POST   /api/admin/themes/customizer/reset          → Resetear todo
+POST   /api/admin/themes/customizer/save-draft     → Guardar borrador
+POST   /api/admin/themes/customizer/publish        → Publicar
+GET    /api/admin/themes/customizer/history/:id    → Obtener historial
+DELETE /api/admin/themes/customizer/session/:id    → Terminar sesión
+```
+
+**Utilidades de color:**
+```typescript
+import { ColorUtils } from "../services/themeCustomizerService.ts";
+
+// Convertir hex → RGB
+ColorUtils.hexToRgb("#2d6aff")  // { r: 45, g: 106, b: 255 }
+
+// Convertir RGB → hex
+ColorUtils.rgbToHex(45, 106, 255)  // "#2d6aff"
+
+// Aclarar color
+ColorUtils.lighten("#2d6aff", 0.2)  // "#5f88ff"
+
+// Oscurecer color
+ColorUtils.darken("#2d6aff", 0.2)  // "#1d4adf"
+
+// Color de contraste (negro o blanco)
+ColorUtils.getContrastColor("#2d6aff")  // "#ffffff"
+```
+
+**Flujo de trabajo:**
+1. Crear sesión de customizer
+2. Aplicar cambios con live preview
+3. Usar undo/redo para experimentar
+4. Guardar como borrador (autosave cada 30s)
+5. Publicar cuando estés listo
+
+📖 [Guía completa del Customizer](./docs/THEME_CUSTOMIZER_GUIDE.md)
 
 ---
 
