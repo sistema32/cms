@@ -314,10 +314,11 @@ async function initCKEditor(config) {
         });
       }
     } catch (error) {
-      console.error('Media library error:', error);
+      console.error('[CKEditor] Media library error:', error);
       if (mediaContent) {
+        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
         mediaContent.innerHTML =
-          '<div class="text-center py-8 text-red-600">Error al cargar la biblioteca de medios</div>';
+          '<div class="text-center py-8 text-red-600"><p>Error al cargar la biblioteca de medios</p><p class="text-sm mt-2">' + errorMsg + '</p></div>';
       }
     }
   };

@@ -20,17 +20,17 @@ media.get("/", requirePermission("media", "read"), mediaController.listMedia);
 
 // Ver media por ID - IMPORTANTE: debe estar ANTES de /:year/:month/:file
 // Usamos una validación más estricta: el ID debe ser solo dígitos sin '/'
-media.get("/:id{\\d+}", requirePermission("media", "read"), mediaController.getMediaById);
+media.get("/:id{[0-9]+}", requirePermission("media", "read"), mediaController.getMediaById);
 
 // Actualizar SEO
-media.patch("/:id{\\d+}/seo", requirePermission("media", "update"), mediaController.updateMediaSeo);
+media.patch("/:id{[0-9]+}/seo", requirePermission("media", "update"), mediaController.updateMediaSeo);
 
 // Eliminar media
-media.delete("/:id{\\d+}", requirePermission("media", "delete"), mediaController.deleteMedia);
+media.delete("/:id{[0-9]+}", requirePermission("media", "delete"), mediaController.deleteMedia);
 
 // Ruta para servir archivos directamente: /:year/:month/:file
 // Esta ruta está al final y requiere autenticación (por el middleware anterior)
 // Nota: Las imágenes se sirven públicamente a través de /serve/uploads/:year/:month/:file
-media.get("/:year{\\d{4}}/:month{\\d{2}}/:file", mediaController.serveMedia);
+media.get("/:year{[0-9]{4}}/:month{[0-9]{2}}/:file", mediaController.serveMedia);
 
 export default media;
