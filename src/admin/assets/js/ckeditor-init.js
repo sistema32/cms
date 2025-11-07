@@ -8,7 +8,6 @@ async function initCKEditor(config) {
     tocId,
     mediaModalId,
     mediaContentId,
-    mediaButtonId,
     name,
     bundlePath,
     mediaListEndpoint,
@@ -23,7 +22,6 @@ async function initCKEditor(config) {
   const tocElement = document.getElementById(tocId);
   const mediaModal = document.getElementById(mediaModalId);
   const mediaContent = document.getElementById(mediaContentId);
-  const mediaButton = document.getElementById(mediaButtonId);
 
   const ensureStylesheet = () => {
     if (typeof document === 'undefined') return;
@@ -351,8 +349,39 @@ async function initCKEditor(config) {
     syncHiddenInput();
     generateTOC(editor.getData());
 
-    if (mediaButton) {
-      mediaButton.addEventListener('click', openMediaPicker);
+    // Sobrescribir el botón de imagen de CKEditor para abrir nuestro modal
+    // Interceptamos el comando insertImage antes de que se ejecute
+    const originalInsertImage = editor.commands.get('insertImage');
+    if (originalInsertImage) {
+      // Guardamos la ejecución original
+      const originalExecute = originalInsertImage.execute.bind(originalInsertImage);
+
+      // Sobrescribimos el método execute
+      originalInsertImage.execute = function(options) {
+        // Si las opciones incluyen una fuente (source), significa que viene de nuestro modal
+        // o del drag & drop, así que ejecutamos la inserción normal
+        if (options && options.source) {
+          originalExecute(options);
+        } else {
+          // Si no hay source, significa que el usuario hizo clic en el botón
+          // Abrimos nuestro modal en lugar de la funcionalidad por defecto
+          openMediaPicker();
+        }
+      };
+    }
+
+    // También interceptar imageInsert por si usa ese comando
+    const imageInsertCommand = editor.commands.get('imageInsert');
+    if (imageInsertCommand) {
+      const originalImageInsert = imageInsertCommand.execute.bind(imageInsertCommand);
+
+      imageInsertCommand.execute = function(options) {
+        if (options && (options.source || options.file)) {
+          originalImageInsert(options);
+        } else {
+          openMediaPicker();
+        }
+      };
     }
 
     editor.editing.view.change((writer) => {
