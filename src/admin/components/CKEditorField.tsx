@@ -311,15 +311,26 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
                 credentials: 'include',
               });
 
-              if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error?.error || 'Error al subir la imagen');
+              console.log('[CKEditor Upload] Response status:', response.status, response.statusText);
+
+              // Accept any 2xx status code as success (200, 201, 204, etc.)
+              if (response.status < 200 || response.status >= 300) {
+                let errorMsg = 'Error al subir la imagen';
+                try {
+                  const errorData = await response.json();
+                  errorMsg = errorData.error || errorData.message || errorMsg;
+                } catch (e) {
+                  errorMsg = \`Error HTTP \${response.status}: \${response.statusText}\`;
+                }
+                throw new Error(errorMsg);
               }
 
               const data = await response.json();
+              console.log('[CKEditor Upload] Success:', data);
+
               const url = data?.media?.url;
               if (!url) {
-                throw new Error('Respuesta inválida del servidor');
+                throw new Error('Respuesta inválida del servidor - falta URL');
               }
 
               return { default: url };
@@ -494,10 +505,21 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
                     body: formData,
                     credentials: 'include',
                   });
-                  if (!res.ok) {
-                    const error = await res.json().catch(() => ({}));
-                    throw new Error(error.error || 'Error al subir imagen');
+
+                  console.log('[CKEditor Modal Upload] Response status:', res.status, res.statusText);
+
+                  // Accept any 2xx status code as success (200, 201, 204, etc.)
+                  if (res.status < 200 || res.status >= 300) {
+                    let errorMsg = 'Error al subir imagen';
+                    try {
+                      const errorData = await res.json();
+                      errorMsg = errorData.error || errorData.message || errorMsg;
+                    } catch (e) {
+                      errorMsg = \`Error HTTP \${res.status}: \${res.statusText}\`;
+                    }
+                    throw new Error(errorMsg);
                   }
+
                   if (uploadMessage) {
                     uploadMessage.textContent = 'Imagen subida correctamente';
                     uploadMessage.className =
