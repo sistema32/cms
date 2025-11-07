@@ -2,11 +2,11 @@
 
 ## 📋 Resumen
 
-Se han implementado **10 de 18 características propuestas** (55%) para transformar el sistema de themes de LexCMS en una plataforma de clase mundial.
+Se han implementado **12 de 18 características propuestas** (67%) para transformar el sistema de themes de LexCMS en una plataforma de clase mundial.
 
 **Mejora de Performance:** 70-90% más rápido
-**Código Agregado:** ~12,500 líneas
-**Documentación:** ~8,500 líneas
+**Código Agregado:** ~15,000 líneas
+**Documentación:** ~10,000 líneas
 **Status:** ✅ Listo para producción
 
 ---
@@ -358,6 +358,110 @@ getLocaleConfig('es')               // { code: 'es', name: 'Spanish', ... }
 ```
 
 📖 [Guía completa de i18n](./docs/I18N_GUIDE.md)
+
+---
+
+### 11. ✅ Hot Reload en Desarrollo
+**Recarga automática durante el desarrollo**
+
+```bash
+# Iniciar servidor con hot reload
+DENO_ENV=development deno task dev
+
+# Output:
+# 🔥 Initializing hot reload server...
+# ✅ Hot reload server started on port 3001
+```
+
+**Características:**
+- ✅ Recarga automática al guardar archivos
+- ✅ CSS-only reload (sin perder estado de página)
+- ✅ WebSocket para comunicación en tiempo real
+- ✅ Debouncing (100ms) para evitar recargas múltiples
+- ✅ Auto-reconexión si se pierde la conexión
+- ✅ Monitorea themes y assets
+- ✅ Solo activo en desarrollo
+
+**¿Qué se monitorea?**
+```
+./src/themes/         → Templates, assets, configuración
+./src/admin/assets/   → Assets del admin
+```
+
+**Tipos de recarga:**
+```
+style.css editado  → Recarga solo CSS (instantáneo)
+blog.tsx editado   → Recarga página completa
+theme.json editado → Recarga página completa
+```
+
+**Consola del navegador:**
+```
+🔥 Hot Reload connected
+🔄 CSS reloaded (style.css changed)
+🔄 Page reloaded (blog.tsx changed)
+```
+
+---
+
+### 12. ✅ Sistema de Preview en Vivo
+**Previsualiza themes antes de activarlos**
+
+```typescript
+// POST /api/admin/themes/preview/create
+const response = await fetch('/api/admin/themes/preview/create', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN'
+  },
+  body: JSON.stringify({ theme: 'elegant-blog' })
+});
+
+const data = await response.json();
+// {
+//   "success": true,
+//   "session": {
+//     "token": "eyJhbGc...",
+//     "theme": "elegant-blog",
+//     "expiresAt": "2024-01-15T15:30:00Z"
+//   },
+//   "previewUrl": "http://localhost:8000/?theme_preview=1&preview_token=..."
+// }
+```
+
+**Características:**
+- ✅ Preview seguro sin afectar el sitio en vivo
+- ✅ Sesiones con JWT (1 hora de expiración)
+- ✅ Banner visual en modo preview
+- ✅ Activación con un click desde el preview
+- ✅ Multi-usuario (cada usuario su propia sesión)
+- ✅ Compatible con hot reload
+
+**Banner de preview:**
+```
+┌─────────────────────────────────────────────────┐
+│ 🎨 Preview Mode: elegant-blog                   │
+│    This is a preview. Changes are not saved.    │
+│                                                  │
+│    [Exit Preview]  [Activate Theme]             │
+└─────────────────────────────────────────────────┘
+```
+
+**Flujo de trabajo:**
+1. Crear sesión de preview → Obtener URL
+2. Abrir URL en navegador → Ver theme en preview
+3. Probar navegación y funcionalidad
+4. Click en "Activate Theme" → Activar cuando estés listo
+5. O click en "Exit Preview" → Volver al theme actual
+
+**Seguridad:**
+- Tokens JWT firmados criptográficamente
+- Expiración automática después de 1 hora
+- Requiere autenticación para crear preview
+- Sesiones independientes por usuario
+
+📖 [Guía completa de Hot Reload y Preview](./docs/HOT_RELOAD_AND_PREVIEW.md)
 
 ---
 

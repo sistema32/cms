@@ -1744,6 +1744,103 @@ adminRouter.post("/api/admin/themes/config/validate", async (c) => {
 });
 
 /**
+ * Theme Preview API Endpoints
+ */
+
+/**
+ * POST /api/admin/themes/preview/create - Create preview session
+ */
+adminRouter.post("/api/admin/themes/preview/create", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { theme } = body;
+
+    if (!theme) {
+      return c.json({ error: "Theme name is required" }, 400);
+    }
+
+    // Get current user from session
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const session = await themePreviewService.createPreviewSession(theme, user.id);
+
+    // Generate preview URL
+    const baseUrl = env.BASE_URL || `http://localhost:${env.PORT}`;
+    const previewUrl = `${baseUrl}/?theme_preview=1&preview_token=${session.token}`;
+
+    return c.json({
+      success: true,
+      session: {
+        token: session.token,
+        theme: session.theme,
+        expiresAt: session.expiresAt,
+      },
+      previewUrl,
+    });
+  } catch (error: any) {
+    console.error("Error creating preview session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/preview/activate - Activate previewed theme
+ */
+adminRouter.post("/api/admin/themes/preview/activate", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { token } = body;
+
+    if (!token) {
+      return c.json({ error: "Preview token is required" }, 400);
+    }
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const session = await themePreviewService.verifyPreviewToken(token);
+
+    if (!session) {
+      return c.json({ error: "Invalid or expired preview token" }, 400);
+    }
+
+    // Activate the theme
+    await themeService.activateTheme(session.theme);
+
+    // End the preview session
+    await themePreviewService.endPreviewSession(token);
+
+    return c.json({
+      success: true,
+      theme: session.theme,
+      message: "Theme activated successfully",
+    });
+  } catch (error: any) {
+    console.error("Error activating preview theme:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/admin/themes/preview/:token - End preview session
+ */
+adminRouter.delete("/api/admin/themes/preview/:token", async (c) => {
+  try {
+    const token = c.req.param("token");
+
+    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    await themePreviewService.endPreviewSession(token);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error ending preview session:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * Widget API Endpoints
  */
 

@@ -1,5 +1,5 @@
 import { app } from "./app.ts";
-import { env } from "./config/env.ts";
+import { env, isDevelopment } from "./config/env.ts";
 import { pluginManager } from "./lib/plugin-system/index.ts";
 import { cacheManager } from "./lib/cache/index.ts";
 import { emailManager } from "./lib/email/index.ts";
@@ -8,6 +8,7 @@ import { securityManager } from "./lib/security/index.ts";
 import { initializeSearchIndexes } from "./services/searchService.ts";
 import { jobQueue } from "./lib/jobs/index.ts";
 import { registerBuiltInHandlers } from "./lib/jobs/handlers.ts";
+import { HotReloadServer } from "./dev/hotReload.ts";
 
 const port = env.PORT;
 
@@ -84,6 +85,26 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize job queue:', error);
   // Continue anyway - jobs won't be processed
+}
+
+// Initialize hot reload server in development
+if (isDevelopment) {
+  console.log('\n🔥 Initializing hot reload server...');
+  try {
+    const hotReloadServer = new HotReloadServer({
+      port: 3001,
+      watchPaths: [
+        './src/themes',
+        './src/admin/assets',
+      ],
+      debounceMs: 100,
+    });
+    await hotReloadServer.start();
+    console.log('✅ Hot reload server started on port 3001');
+  } catch (error) {
+    console.error('❌ Failed to initialize hot reload server:', error);
+    // Continue anyway - hot reload is optional
+  }
 }
 
 console.log(`
