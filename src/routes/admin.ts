@@ -1603,6 +1603,56 @@ adminRouter.post("/appearance/themes/custom-settings", async (c) => {
 });
 
 /**
+ * GET /api/admin/themes/cache/stats - Get cache statistics
+ */
+adminRouter.get("/api/admin/themes/cache/stats", async (c) => {
+  try {
+    const stats = themeService.getCacheStats();
+    return c.json(stats);
+  } catch (error: any) {
+    console.error("Error getting cache stats:", error);
+    return c.json({ error: "Failed to get cache stats" }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/cache/clear - Clear theme cache
+ */
+adminRouter.post("/api/admin/themes/cache/clear", async (c) => {
+  try {
+    const body = await c.req.json();
+    const themeName = body?.theme;
+
+    if (themeName) {
+      themeService.invalidateThemeCache(themeName);
+      return c.json({ success: true, message: `Cache cleared for theme: ${themeName}` });
+    } else {
+      themeService.invalidateAllCache();
+      return c.json({ success: true, message: "All cache cleared" });
+    }
+  } catch (error: any) {
+    console.error("Error clearing cache:", error);
+    return c.json({ error: "Failed to clear cache" }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/cache/warmup - Warmup theme cache
+ */
+adminRouter.post("/api/admin/themes/cache/warmup", async (c) => {
+  try {
+    const body = await c.req.json();
+    const themeName = body?.theme;
+
+    await themeService.warmupCache(themeName);
+    return c.json({ success: true, message: "Cache warmed up successfully" });
+  } catch (error: any) {
+    console.error("Error warming up cache:", error);
+    return c.json({ error: "Failed to warmup cache" }, 500);
+  }
+});
+
+/**
  * GET /appearance/menus - Menu manager
  */
 adminRouter.get("/appearance/menus", async (c) => {

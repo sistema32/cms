@@ -22,7 +22,10 @@
     "test:security": "deno test --allow-all tests/security/",
     "test:integration": "deno test --allow-all tests/integration/",
     "test:coverage": "deno test --allow-all --coverage=coverage tests/",
-    "test:watch": "deno test --allow-all --watch tests/"
+    "test:watch": "deno test --allow-all --watch tests/",
+    "theme:validate": "deno run --allow-all src/cli/themeValidator.ts",
+    "theme:create": "deno run --allow-all src/cli/themeGenerator.ts",
+    "theme:build": "deno run --allow-all src/cli/themeBuilder.ts"
   },
   "imports": {
     "hono": "jsr:@hono/hono@^4",

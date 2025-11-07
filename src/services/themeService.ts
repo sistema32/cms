@@ -1,5 +1,6 @@
 import * as settingsService from "./settingsService.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { themeCacheService } from "./themeCacheService.ts";
 
 /**
  * Theme Service - Gestión y carga de themes
@@ -119,12 +120,21 @@ export async function getActiveTheme(): Promise<string> {
 export async function loadThemeConfig(
   themeName: string,
 ): Promise<ThemeConfig | null> {
+  // Intentar obtener desde caché
+  const cached = themeCacheService.getCachedConfig(themeName);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const themeDir = join(Deno.cwd(), "src", "themes", themeName);
     const configPath = join(themeDir, "theme.json");
 
     const configText = await Deno.readTextFile(configPath);
     const config: ThemeConfig = JSON.parse(configText);
+
+    // Cachear la configuración
+    themeCacheService.cacheConfig(themeName, config);
 
     return config;
   } catch (error) {
@@ -211,6 +221,9 @@ export async function activateTheme(themeName: string): Promise<boolean> {
     }
   }
 
+  // Invalidar caché al activar theme
+  themeCacheService.invalidateAll();
+
   console.log(`✅ Theme "${themeName}" activated`);
   return true;
 }
@@ -264,8 +277,18 @@ export async function loadTemplate(templateName: string): Promise<any> {
   );
 
   try {
+    // Intentar obtener desde caché
+    const cached = await themeCacheService.getCachedTemplate(templatePath);
+    if (cached) {
+      return cached;
+    }
+
     // Importar el template dinámicamente
     const module = await import(`file://${templatePath}`);
+
+    // Cachear el template
+    await themeCacheService.cacheTemplate(templatePath, module);
+
     return module;
   } catch (error) {
     console.error(`Error loading template "${templateName}":`, error);
@@ -288,7 +311,18 @@ export async function loadPartial(partialName: string): Promise<any> {
   );
 
   try {
+    // Intentar obtener desde caché
+    const cached = await themeCacheService.getCachedTemplate(partialPath);
+    if (cached) {
+      return cached;
+    }
+
+    // Importar el partial dinámicamente
     const module = await import(`file://${partialPath}`);
+
+    // Cachear el partial
+    await themeCacheService.cacheTemplate(partialPath, module);
+
     return module;
   } catch (error) {
     console.error(`Error loading partial "${partialName}":`, error);
@@ -315,3 +349,36 @@ export async function themeSupports(feature: string): Promise<boolean> {
 
   return (config.supports as any)[feature] === true;
 }
+
+/**
+ * Obtiene estadísticas del caché de themes
+ */
+export function getCacheStats() {
+  return themeCacheService.getStats();
+}
+
+/**
+ * Invalida el caché de un theme específico
+ */
+export function invalidateThemeCache(themeName: string) {
+  themeCacheService.invalidateThemeCache(themeName);
+}
+
+/**
+ * Invalida todo el caché
+ */
+export function invalidateAllCache() {
+  themeCacheService.invalidateAll();
+}
+
+/**
+ * Pre-calienta el caché con templates comunes
+ */
+export async function warmupCache(themeName?: string) {
+  const theme = themeName || await getActiveTheme();
+  const commonTemplates = ["home", "blog", "post", "page"];
+  await themeCacheService.warmup(theme, commonTemplates);
+}
+
+// Exportar el servicio de caché para uso avanzado
+export { themeCacheService };
