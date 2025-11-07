@@ -737,13 +737,31 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
               credentials: 'include',
             });
 
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.error || 'Error al subir archivo');
+            console.log('[Upload] Response status:', response.status, response.statusText);
+
+            // Accept any 2xx status code as success (200, 201, 204, etc.)
+            if (response.status < 200 || response.status >= 300) {
+              let errorMsg = 'Error al subir archivo';
+              try {
+                const errorData = await response.json();
+                errorMsg = errorData.error || errorData.message || errorMsg;
+              } catch (e) {
+                errorMsg = \`Error HTTP \${response.status}: \${response.statusText}\`;
+              }
+              throw new Error(errorMsg);
+            }
+
+            // Try to parse JSON response for success
+            try {
+              const data = await response.json();
+              console.log('[Upload] Success:', data);
+            } catch (e) {
+              console.log('[Upload] Success but no JSON response');
             }
 
             uploadBar.style.width = \`\${((i + 1) / files.length) * 100}%\`;
           } catch (error) {
+            console.error('[Upload] Error:', error);
             errorText.textContent = \`Error al subir \${file.name}: \${error.message}\`;
             errorMessage.classList.remove('hidden');
             break;
@@ -752,6 +770,7 @@ export const MediaLibraryPage = (props: MediaLibraryPageProps) => {
 
         // Reload page after upload
         if (errorMessage.classList.contains('hidden')) {
+          console.log('[Upload] All files uploaded successfully, reloading page...');
           window.location.reload();
         } else {
           uploadProgress.classList.add('hidden');
