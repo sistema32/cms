@@ -1,0 +1,70 @@
+{
+  "theme": {
+    "site_title": "My Site",
+    "read_more": "Read More",
+    "posted_on": "Posted on {date}",
+    "by_author": "By {author}",
+    "in_category": "in {category}",
+    "categories": "Categories",
+    "tags": "Tags",
+    "search": "Search",
+    "search_placeholder": "Search...",
+    "search_results": "Search Results",
+    "no_results": "No results found",
+    "continue_reading": "Continue Reading",
+    "share": "Share",
+    "related_posts": "Related Posts",
+    "recent_posts": "Recent Posts",
+    "popular_posts": "Popular Posts",
+    "archive": "Archive",
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "blog": "Blog",
+    "next": "Next",
+    "previous": "Previous",
+    "page": "Page {page}",
+    "of": "of",
+    "error_404_title": "Page Not Found",
+    "error_404_message": "The page you're looking for doesn't exist.",
+    "go_home": "Go to Homepage"
+  },
+  "comments": {
+    "one": "{count} Comment",
+    "other": "{count} Comments",
+    "no_comments": "No comments yet",
+    "leave_comment": "Leave a Comment",
+    "your_name": "Your Name",
+    "your_email": "Your Email",
+    "your_comment": "Your Comment",
+    "submit": "Submit Comment",
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "time": {
+    "just_now": "Just now",
+    "minutes_ago": "{count} minutes ago",
+    "hours_ago": "{count} hours ago",
+    "days_ago": "{count} days ago",
+    "weeks_ago": "{count} weeks ago",
+    "months_ago": "{count} months ago",
+    "years_ago": "{count} years ago"
+  },
+  "reading": {
+    "reading_time": "{minutes} min read",
+    "words": "{count} words"
+  },
+  "newsletter": {
+    "title": "Subscribe to our Newsletter",
+    "subtitle": "Get the latest posts delivered right to your inbox",
+    "email_placeholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "success": "Thanks for subscribing!",
+    "error": "Oops! Something went wrong"
+  },
+  "footer": {
+    "copyright": "© {year} {siteName}. All rights reserved.",
+    "powered_by": "Powered by LexCMS"
+  }
+}

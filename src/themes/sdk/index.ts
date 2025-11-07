@@ -116,6 +116,34 @@ export type {
   WidgetRenderContext,
 } from "./widgets.ts";
 
+// Export i18n system
+export {
+  formatCurrency,
+  formatLocalizedDate,
+  formatLocalizedNumber,
+  getAllTranslations,
+  getAvailableLocales,
+  getDir,
+  getDirAttr,
+  getLangAttr,
+  getLocale,
+  getLocaleConfig,
+  getRTLClass,
+  getRTLValue,
+  getThemeLocales,
+  hasTranslation,
+  isRTL,
+  loadThemeTranslations,
+  setLocale,
+  t,
+  tn,
+} from "./i18n.ts";
+
+export type {
+  LocaleConfig,
+  TranslationData,
+} from "./i18n.ts";
+
 /**
  * SDK version
  */
