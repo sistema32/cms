@@ -21,8 +21,14 @@ import type {
   BackupVerificationResult,
 } from "./types.ts";
 import { gzip, gunzip } from "https://deno.land/x/compress@v0.4.5/gzip/mod.ts";
-import { crypto } from "https://deno.land/std@0.208.0/crypto/mod.ts";
-import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
+
+/**
+ * Converts an ArrayBuffer to a hexadecimal string
+ */
+function bufferToHex(buffer: ArrayBuffer): string {
+  const hashArray = Array.from(new Uint8Array(buffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export class BackupManager {
   private static instance: BackupManager;
@@ -344,7 +350,7 @@ export class BackupManager {
   private async calculateChecksum(filePath: string): Promise<string> {
     const data = await Deno.readFile(filePath);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return encodeHex(new Uint8Array(hashBuffer));
+    return bufferToHex(hashBuffer);
   }
 
   /**
