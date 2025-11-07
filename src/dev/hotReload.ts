@@ -3,7 +3,7 @@
  * Automatically reloads browser when theme files change
  */
 
-import { invalidateAllCache } from "../services/themeCacheService.ts";
+import { themeCacheService } from "../services/themeCacheService.ts";
 
 export interface HotReloadConfig {
   port?: number;
@@ -255,7 +255,7 @@ export class HotReloadServer {
 
     // Invalidate theme cache
     try {
-      invalidateAllCache();
+      themeCacheService.invalidateAll();
       if (this.config.verbose) {
         console.log("  ✓ Cache invalidated");
       }
