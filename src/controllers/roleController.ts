@@ -187,3 +187,165 @@ export async function getRolePermissions(c: Context) {
     return c.json({ success: false, error: message }, 404);
   }
 }
+
+/**
+ * GET /api/roles/stats
+ */
+export async function getRoleStats(c: Context) {
+  try {
+    const stats = await roleService.getRoleStats();
+
+    return c.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener estadísticas de roles";
+    return c.json({ success: false, error: message }, 500);
+  }
+}
+
+/**
+ * GET /api/roles/:id/with-stats
+ */
+export async function getRoleWithStats(c: Context) {
+  try {
+    const id = Number(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ success: false, error: "ID inválido" }, 400);
+    }
+
+    const role = await roleService.getRoleByIdWithStats(id);
+
+    return c.json({
+      success: true,
+      data: role,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener rol";
+    return c.json({ success: false, error: message }, 404);
+  }
+}
+
+/**
+ * GET /api/roles/all-with-stats
+ */
+export async function getAllRolesWithStats(c: Context) {
+  try {
+    const roles = await roleService.getAllRolesWithStats();
+
+    return c.json({
+      success: true,
+      data: roles,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al obtener roles";
+    return c.json({ success: false, error: message }, 500);
+  }
+}
+
+/**
+ * POST /api/roles/:id/permissions/add
+ */
+export async function addPermissionToRole(c: Context) {
+  try {
+    const id = Number(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ success: false, error: "ID inválido" }, 400);
+    }
+
+    const body = await c.req.json();
+    const { permissionId } = body;
+
+    if (!permissionId || isNaN(Number(permissionId))) {
+      return c.json({ success: false, error: "permissionId requerido" }, 400);
+    }
+
+    const role = await roleService.addPermissionToRole(id, Number(permissionId));
+
+    return c.json({
+      success: true,
+      data: role,
+      message: "Permiso agregado exitosamente",
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al agregar permiso al rol";
+    return c.json({ success: false, error: message }, 400);
+  }
+}
+
+/**
+ * POST /api/roles/:id/permissions/remove
+ */
+export async function removePermissionFromRole(c: Context) {
+  try {
+    const id = Number(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ success: false, error: "ID inválido" }, 400);
+    }
+
+    const body = await c.req.json();
+    const { permissionId } = body;
+
+    if (!permissionId || isNaN(Number(permissionId))) {
+      return c.json({ success: false, error: "permissionId requerido" }, 400);
+    }
+
+    const role = await roleService.removePermissionFromRole(id, Number(permissionId));
+
+    return c.json({
+      success: true,
+      data: role,
+      message: "Permiso removido exitosamente",
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al remover permiso del rol";
+    return c.json({ success: false, error: message }, 400);
+  }
+}
+
+/**
+ * POST /api/roles/:id/clone
+ */
+export async function cloneRole(c: Context) {
+  try {
+    const id = Number(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ success: false, error: "ID inválido" }, 400);
+    }
+
+    const body = await c.req.json();
+    const { name, description } = body;
+
+    if (!name) {
+      return c.json({ success: false, error: "Nombre requerido" }, 400);
+    }
+
+    const role = await roleService.cloneRole(id, name, description);
+
+    return c.json({
+      success: true,
+      data: role,
+      message: "Rol clonado exitosamente",
+    }, 201);
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "Error al clonar rol";
+    return c.json({ success: false, error: message }, 400);
+  }
+}
