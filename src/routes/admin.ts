@@ -17,7 +17,6 @@ import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
-import { PluginsPage } from "../admin/pages/PluginsPage.tsx";
 import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
 import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
 import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
