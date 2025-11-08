@@ -18,17 +18,20 @@ export default class HelloWorldPlugin {
    */
   async onActivate() {
     console.log('✅ Hello World Plugin activated!');
-    console.log(`   Plugin Name: ${this.api.getPluginName()}`);
-    console.log(`   Plugin Version: ${this.api.getManifest().version}`);
 
-    // Register a hook
-    await this.api.registerHook('content:beforeCreate', async (data: any) => {
+    // Get plugin info using the correct API method
+    const info = this.api.getPluginInfo();
+    console.log(`   Plugin Name: ${info.name}`);
+    console.log(`   Plugin Version: ${info.version}`);
+
+    // Register a hook using addAction (not registerHook)
+    this.api.addAction('content:beforeCreate', async (data: any) => {
       console.log('🎣 Hello World Plugin: content:beforeCreate hook triggered');
       console.log(`   Content Title: ${data.title}`);
 
       // You can modify the data here
       return data;
-    });
+    }, 10); // priority parameter
 
     console.log('🎣 Registered hook: content:beforeCreate');
   }

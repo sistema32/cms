@@ -1,0 +1,343 @@
+[
+  {
+    "name": "seo-optimizer",
+    "displayName": "SEO Optimizer",
+    "version": "2.1.0",
+    "description": "Optimiza automáticamente el SEO de tu contenido con análisis en tiempo real, sugerencias de palabras clave y meta tags inteligentes.",
+    "author": "LexCMS Team",
+    "category": "SEO",
+    "tags": ["seo", "optimization", "meta-tags", "analytics"],
+    "license": "MIT",
+    "homepage": "https://lexcms.dev/plugins/seo-optimizer",
+    "downloads": 15420,
+    "rating": 4.8,
+    "verified": true,
+    "price": 0,
+    "thumbnail": "/assets/plugins/seo-optimizer.png",
+    "screenshots": [
+      "/assets/plugins/seo-optimizer-1.png",
+      "/assets/plugins/seo-optimizer-2.png"
+    ],
+    "compatibility": {
+      "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+      "content:read",
+      "content:write",
+      "settings:read"
+    ],
+    "features": [
+      "Análisis SEO en tiempo real",
+      "Sugerencias de palabras clave",
+      "Generación automática de meta tags",
+      "Integración con Google Analytics",
+      "Informes detallados de rendimiento"
+    ]
+  },
+  {
+    "name": "social-share",
+    "displayName": "Social Share Pro",
+    "version": "1.5.2",
+    "description": "Añade botones de compartir en redes sociales con estadísticas detalladas y personalización completa.",
+    "author": "Social Media Inc",
+    "category": "Social",
+    "tags": ["social-media", "sharing", "analytics"],
+    "license": "GPL-3.0",
+    "homepage": "https://socialshare.dev",
+    "downloads": 8934,
+    "rating": 4.5,
+    "verified": true,
+    "price": 0,
+    "thumbnail": "/assets/plugins/social-share.png",
+    "screenshots": [],
+    "compatibility": {
+      "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+      "content:read",
+      "settings:read",
+      "network:external"
+    ],
+    "features": [
+      "Soporte para 10+ redes sociales",
+      "Estadísticas de compartidos",
+      "Diseños personalizables",
+      "Open Graph automático"
+    ]
+  },
+  {
+    "name": "email-marketing",
+    "displayName": "Email Marketing Suite",
+    "version": "3.0.1",
+    "description": "Suite completa de email marketing con automatización, plantillas y análisis avanzados.",
+    "author": "Marketing Tools Ltd",
+    "category": "Marketing",
+    "tags": ["email", "marketing", "automation", "newsletter"],
+    "license": "Commercial",
+    "homepage": "https://emailsuite.com",
+    "downloads": 5621,
+    "rating": 4.9,
+    "verified": true,
+    "price": 49.99,
+    "thumbnail": "/assets/plugins/email-marketing.png",
+    "screenshots": [
+      "/assets/plugins/email-marketing-1.png"
+    ],
+    "compatibility": {
+      "lexcms": ">=1.2.0"
+    },
+    "permissions": [
+      "users:read",
+      "content:read",
+      "network:external",
+      "database:write"
+    ],
+    "features": [
+      "Automatización de campañas",
+      "Editor de plantillas drag & drop",
+      "Segmentación avanzada de audiencia",
+      "A/B testing",
+      "Análisis detallado de métricas"
+    ]
+  },
+  {
+    "name": "backup-manager",
+    "displayName": "Backup Manager Pro",
+    "version": "1.8.0",
+    "description": "Sistema de respaldo automático con almacenamiento en la nube y restauración con un clic.",
+    "author": "Security Tools",
+    "category": "Utilities",
+    "tags": ["backup", "security", "cloud", "restore"],
+    "license": "MIT",
+    "homepage": "https://backupmanager.dev",
+    "downloads": 12305,
+    "rating": 4.7,
+    "verified": true,
+    "price": 0,
+    "thumbnail": "/assets/plugins/backup-manager.png",
+    "screenshots": [],
+    "compatibility": {
+      "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+      "database:read",
+      "database:write",
+      "system:files",
+      "network:external"
+    ],
+    "features": [
+      "Backups automáticos programados",
+      "Almacenamiento en AWS S3, Google Cloud, etc.",
+      "Restauración incremental",
+      "Encriptación de datos",
+      "Notificaciones por email"
+    ]
+  },
+  {
+    "name": "analytics-dashboard",
+    "displayName": "Analytics Dashboard",
+    "version": "2.3.5",
+    "description": "Dashboard completo de analytics con métricas en tiempo real y reportes personalizados.",
+    "author": "Data Insights",
+    "category": "Analytics",
+    "tags": ["analytics", "dashboard", "metrics", "reporting"],
+    "license": "Apache-2.0",
+    "homepage": "https://analyticsdash.io",
+    "downloads": 9847,
+    "rating": 4.6,
+    "verified": false,
+    "price": 0,
+    "thumbnail": "/assets/plugins/analytics-dashboard.png",
+    "screenshots": [
+      "/assets/plugins/analytics-1.png",
+      "/assets/plugins/analytics-2.png",
+      "/assets/plugins/analytics-3.png"
+    ],
+    "compatibility": {
+      "lexcms": ">=1.1.0"
+    },
+    "permissions": [
+      "content:read",
+      "users:read",
+      "database:read"
+    ],
+    "features": [
+      "Métricas en tiempo real",
+      "Reportes personalizables",
+      "Exportación a PDF/CSV",
+      "Gráficos interactivos",
+      "Integración con Google Analytics"
+    ]
+  },
+  {
+    "name": "form-builder",
+    "displayName": "Advanced Form Builder",
+    "version": "1.4.0",
+    "description": "Crea formularios complejos con validación avanzada, campos condicionales y exportación de datos.",
+    "author": "Forms Corp",
+    "category": "Forms",
+    "tags": ["forms", "builder", "validation", "submissions"],
+    "license": "MIT",
+    "homepage": "https://formbuilder.dev",
+    "downloads": 11234,
+    "rating": 4.8,
+    "verified": true,
+    "price": 29.99,
+    "thumbnail": "/assets/plugins/form-builder.png",
+    "screenshots": [],
+    "compatibility": {
+      "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+      "content:write",
+      "database:write",
+      "settings:read"
+    ],
+    "features": [
+      "Constructor visual drag & drop",
+      "30+ tipos de campos",
+      "Validación personalizada",
+      "Lógica condicional",
+      "Exportación de datos",
+      "Integración con webhooks"
+    ]
+  },
+  {
+    "name": "multilingual",
+    "displayName": "Multilingual Content",
+    "version": "2.0.0",
+    "description": "Gestión completa de contenido multiidioma con traducción automática y SEO por idioma.",
+    "author": "Global CMS",
+    "category": "Content",
+    "tags": ["multilingual", "translation", "i18n", "localization"],
+    "license": "GPL-3.0",
+    "homepage": "https://multilingual.cms",
+    "downloads": 6789,
+    "rating": 4.4,
+    "verified": true,
+    "price": 0,
+    "thumbnail": "/assets/plugins/multilingual.png",
+    "screenshots": [
+      "/assets/plugins/multilingual-1.png"
+    ],
+    "compatibility": {
+      "lexcms": ">=1.3.0"
+    },
+    "permissions": [
+      "content:read",
+      "content:write",
+      "network:external"
+    ],
+    "features": [
+      "Soporte para 50+ idiomas",
+      "Traducción automática (DeepL, Google)",
+      "SEO por idioma",
+      "Interfaz de gestión intuitiva",
+      "Detección automática de idioma"
+    ]
+  },
+  {
+    "name": "image-optimizer",
+    "displayName": "Image Optimizer AI",
+    "version": "1.2.3",
+    "description": "Optimiza automáticamente imágenes con IA, genera variantes responsive y convierte a WebP.",
+    "author": "Media Tools",
+    "category": "Media",
+    "tags": ["images", "optimization", "webp", "ai", "responsive"],
+    "license": "MIT",
+    "homepage": "https://imageoptimizer.ai",
+    "downloads": 18650,
+    "rating": 4.9,
+    "verified": true,
+    "price": 0,
+    "thumbnail": "/assets/plugins/image-optimizer.png",
+    "screenshots": [],
+    "compatibility": {
+      "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+      "media:read",
+      "media:write",
+      "network:external"
+    ],
+    "features": [
+      "Optimización automática al subir",
+      "Conversión a WebP/AVIF",
+      "Generación de variantes responsive",
+      "Compresión inteligente con IA",
+      "Lazy loading automático"
+    ]
+  },
+  {
+    "name": "comments-moderation",
+    "displayName": "Smart Comments & Moderation",
+    "version": "1.6.1",
+    "description": "Sistema avanzado de comentarios con moderación automática mediante IA y sistema anti-spam.",
+    "author": "Community Tools",
+    "category": "Community",
+    "tags": ["comments", "moderation", "spam", "community"],
+    "license": "MIT",
+    "homepage": "https://smartcomments.dev",
+    "downloads": 7432,
+    "rating": 4.5,
+    "verified": false,
+    "price": 0,
+    "thumbnail": "/assets/plugins/comments.png",
+    "screenshots": [],
+    "compatibility": {
+      "lexcms": ">=1.1.0"
+    },
+    "permissions": [
+      "content:read",
+      "content:write",
+      "users:read",
+      "database:write"
+    ],
+    "features": [
+      "Moderación automática con IA",
+      "Sistema anti-spam avanzado",
+      "Notificaciones en tiempo real",
+      "Hilos de conversación",
+      "Reacciones y votaciones"
+    ]
+  },
+  {
+    "name": "ecommerce-lite",
+    "displayName": "E-commerce Lite",
+    "version": "3.2.0",
+    "description": "Solución completa de comercio electrónico con carrito, pagos y gestión de inventario.",
+    "author": "Commerce Solutions",
+    "category": "E-commerce",
+    "tags": ["ecommerce", "shop", "payments", "cart", "products"],
+    "license": "Commercial",
+    "homepage": "https://ecommercelite.com",
+    "downloads": 4521,
+    "rating": 4.7,
+    "verified": true,
+    "price": 99.99,
+    "thumbnail": "/assets/plugins/ecommerce.png",
+    "screenshots": [
+      "/assets/plugins/ecommerce-1.png",
+      "/assets/plugins/ecommerce-2.png",
+      "/assets/plugins/ecommerce-3.png"
+    ],
+    "compatibility": {
+      "lexcms": ">=1.4.0"
+    },
+    "permissions": [
+      "content:read",
+      "content:write",
+      "database:write",
+      "network:external",
+      "users:read"
+    ],
+    "features": [
+      "Gestión de productos e inventario",
+      "Carrito de compras",
+      "Integración con Stripe, PayPal",
+      "Cálculo de impuestos y envíos",
+      "Informes de ventas",
+      "Cupones y descuentos"
+    ]
+  }
+]
