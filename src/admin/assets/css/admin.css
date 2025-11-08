@@ -361,6 +361,27 @@
     @apply w-6 h-6;
   }
 
+  /* ============= XOYA COLOR PALETTE ============= */
+
+  /* Coral Colors (Primary) */
+  .bg-coral-50 { @apply bg-[#FFF5F3]; }
+  .bg-coral-100 { @apply bg-[#FFE5E0]; }
+  .bg-coral-500 { @apply bg-[#FF7F5C]; }
+  .bg-coral-600 { @apply bg-[#FF6347]; }
+  .text-coral-500 { @apply text-[#FF7F5C]; }
+  .text-coral-600 { @apply text-[#FF6347]; }
+  .border-coral-500 { @apply border-[#FF7F5C]; }
+  .border-coral-600 { @apply border-[#FF6347]; }
+
+  /* Navy Colors (Secondary) */
+  .bg-navy-500 { @apply bg-[#2D3561]; }
+  .bg-navy-600 { @apply bg-[#1F2847]; }
+  .text-navy-500 { @apply text-[#2D3561]; }
+  .text-navy-600 { @apply text-[#1F2847]; }
+
+  /* Background */
+  .bg-xoya { @apply bg-[#FFF8F5]; }
+
   /* ============= SPIKE-INSPIRED ENHANCEMENTS ============= */
 
   /* Enhanced Stats Cards with Gradients */
@@ -545,5 +566,328 @@
 
   .empty-state-description {
     @apply text-sm text-gray-500 dark:text-gray-400 mb-6;
+  }
+
+  /* ============= XOYA COLOR PALETTE ============= */
+
+  /* Coral Colors (Primary) */
+  .bg-coral-50 {
+    background-color: #FFF5F3;
+  }
+
+  .bg-coral-100 {
+    background-color: #FFE5E0;
+  }
+
+  .bg-coral-200 {
+    background-color: #FFD4CC;
+  }
+
+  .bg-coral-500 {
+    background-color: #FF7F5C;
+  }
+
+  .bg-coral-600 {
+    background-color: #FF6347;
+  }
+
+  .bg-coral-700 {
+    background-color: #E5573E;
+  }
+
+  .text-coral-50 {
+    color: #FFF5F3;
+  }
+
+  .text-coral-100 {
+    color: #FFE5E0;
+  }
+
+  .text-coral-500 {
+    color: #FF7F5C;
+  }
+
+  .text-coral-600 {
+    color: #FF6347;
+  }
+
+  .text-coral-700 {
+    color: #E5573E;
+  }
+
+  .border-coral-500 {
+    border-color: #FF7F5C;
+  }
+
+  .border-coral-600 {
+    border-color: #FF6347;
+  }
+
+  .hover\:bg-coral-500:hover {
+    background-color: #FF7F5C;
+  }
+
+  .hover\:bg-coral-600:hover {
+    background-color: #FF6347;
+  }
+
+  .hover\:text-coral-500:hover {
+    color: #FF7F5C;
+  }
+
+  .hover\:border-coral-500:hover {
+    border-color: #FF7F5C;
+  }
+
+  /* Navy Colors (Secondary) */
+  .bg-navy-500 {
+    background-color: #2D3561;
+  }
+
+  .bg-navy-600 {
+    background-color: #1F2847;
+  }
+
+  .bg-navy-700 {
+    background-color: #151C33;
+  }
+
+  .text-navy-500 {
+    color: #2D3561;
+  }
+
+  .text-navy-600 {
+    color: #1F2847;
+  }
+
+  .text-navy-700 {
+    color: #151C33;
+  }
+
+  /* Pink Colors (Accent) */
+  .bg-pink-100 {
+    background-color: #FFE4E9;
+  }
+
+  .bg-pink-500 {
+    background-color: #FFC0CB;
+  }
+
+  .text-pink-500 {
+    color: #FFC0CB;
+  }
+
+  /* Xoya Background */
+  .bg-xoya {
+    background-color: #FFF8F5;
+  }
+
+  .dark .bg-xoya-dark {
+    background-color: #0f172a;
+  }
+
+  /* ============= XOYA COMPONENTS ============= */
+
+  /* Xoya Cards */
+  .xoya-card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-200;
+  }
+
+  .xoya-card:hover {
+    @apply shadow-lg;
+  }
+
+  .dark .xoya-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  /* Xoya Mini Summary Card */
+  .xoya-mini-card {
+    @apply bg-white rounded-xl p-4 shadow-sm border border-gray-100 transition-all duration-200;
+  }
+
+  .xoya-mini-card:hover {
+    @apply shadow-md transform -translate-y-0.5;
+  }
+
+  .dark .xoya-mini-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  /* Xoya Metric Display */
+  .xoya-metric-label {
+    @apply text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium;
+  }
+
+  .xoya-metric-value {
+    @apply text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2;
+  }
+
+  .xoya-metric-trend {
+    @apply text-sm font-semibold mt-1;
+  }
+
+  .xoya-metric-trend.up {
+    @apply text-green-500;
+  }
+
+  .xoya-metric-trend.down {
+    @apply text-red-500;
+  }
+
+  /* Xoya Buttons */
+  .btn-coral {
+    background-color: #FF7F5C;
+    @apply text-white px-6 py-2.5 rounded-xl font-medium shadow-sm transition-all duration-200;
+  }
+
+  .btn-coral:hover {
+    background-color: #FF6347;
+    @apply shadow-md transform -translate-y-0.5;
+  }
+
+  .btn-coral-outline {
+    border: 2px solid #FF7F5C;
+    color: #FF7F5C;
+    @apply bg-transparent px-6 py-2.5 rounded-xl font-medium transition-all duration-200;
+  }
+
+  .btn-coral-outline:hover {
+    background-color: #FF7F5C;
+    @apply text-white;
+  }
+
+  .btn-icon-coral {
+    @apply w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200;
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+  }
+
+  .btn-icon-coral:hover {
+    border-color: #FF7F5C;
+    color: #FF7F5C;
+    background-color: rgba(255, 127, 92, 0.05);
+  }
+
+  .dark .btn-icon-coral {
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .dark .btn-icon-coral:hover {
+    border-color: #FF7F5C;
+    color: #FF7F5C;
+  }
+
+  /* Xoya Transaction List Item */
+  .xoya-transaction-item {
+    @apply flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200 cursor-pointer;
+  }
+
+  .xoya-transaction-icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0;
+  }
+
+  .xoya-transaction-details {
+    @apply flex-1 ml-4 min-w-0;
+  }
+
+  .xoya-transaction-title {
+    @apply text-sm font-semibold text-gray-900 dark:text-gray-100 truncate;
+  }
+
+  .xoya-transaction-subtitle {
+    @apply text-xs text-gray-500 dark:text-gray-400 truncate;
+  }
+
+  .xoya-transaction-amount {
+    @apply text-base font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  /* Xoya Grid Layout */
+  .xoya-grid-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+
+  .xoya-grid-3 {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+
+  .xoya-grid-2 {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
+  }
+
+  /* Xoya Inputs */
+  .xoya-input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200;
+  }
+
+  .xoya-input:focus {
+    outline: none;
+    border-color: #FF7F5C;
+    box-shadow: 0 0 0 3px rgba(255, 127, 92, 0.1);
+  }
+
+  /* Xoya Modal Overlays */
+  .xoya-modal-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-200;
+  }
+
+  .xoya-modal {
+    @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 max-w-2xl w-full max-h-[90vh] overflow-auto;
+  }
+
+  .xoya-modal-header {
+    @apply p-6 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .xoya-modal-title {
+    @apply text-xl font-bold text-gray-900 dark:text-gray-100;
+  }
+
+  .xoya-modal-body {
+    @apply p-6;
+  }
+
+  .xoya-modal-footer {
+    @apply p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3;
+  }
+
+  /* Xoya Dropdown */
+  .xoya-dropdown {
+    @apply absolute mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50 min-w-[200px];
+  }
+
+  .xoya-dropdown-item {
+    @apply px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 cursor-pointer;
+  }
+
+  .xoya-dropdown-divider {
+    @apply my-2 border-t border-gray-200 dark:border-gray-700;
+  }
+
+  /* Xoya Badge with Coral */
+  .xoya-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .xoya-badge-coral {
+    background-color: #FFE5E0;
+    color: #FF6347;
+  }
+
+  .xoya-badge-navy {
+    background-color: #E8EAEF;
+    color: #2D3561;
+  }
+
+  .dark .xoya-badge-coral {
+    background-color: rgba(255, 127, 92, 0.2);
+    color: #FFA589;
+  }
+
+  .dark .xoya-badge-navy {
+    background-color: rgba(45, 53, 97, 0.3);
+    color: #9CA5CC;
   }
 }
