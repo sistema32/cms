@@ -139,7 +139,7 @@ export const IconSidebar = (props: IconSidebarProps) => {
                       ${item.label}
                     </h3>
                   </div>
-                  ${item.children!.map((child) => renderSubItem(child)).join("")}
+                  ${item.children!.map((child) => renderSubItem(child))}
                 </div>
               </div>
             `
@@ -209,7 +209,7 @@ export const IconSidebar = (props: IconSidebarProps) => {
 
       <!-- Navigation -->
       <nav class="flex-1 py-4 overflow-y-auto scrollbar-hide">
-        ${navItems.map((item) => renderNavItem(item)).join("")}
+        ${navItems.map((item) => renderNavItem(item))}
       </nav>
 
       <!-- Bottom Actions (optional) -->
