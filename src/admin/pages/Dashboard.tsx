@@ -1,5 +1,6 @@
 import { html } from "hono/html";
 import { AdminLayout } from "../components/AdminLayout.tsx";
+import type { NotificationItem } from "../components/NotificationPanel.tsx";
 
 /**
  * Admin Dashboard Page
@@ -25,10 +26,12 @@ interface DashboardProps {
     status: string;
     createdAt: Date;
   }>;
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const DashboardPage = (props: DashboardProps) => {
-  const { user, stats, recentPosts = [] } = props;
+  const { user, stats, recentPosts = [], notifications = [], unreadNotificationCount = 0 } = props;
 
   const content = html`
     <div class="page-header">
@@ -189,6 +192,8 @@ export const DashboardPage = (props: DashboardProps) => {
     children: content,
     activePage: "dashboard",
     user,
+    notifications,
+    unreadNotificationCount,
   });
 };
 
