@@ -585,5 +585,5 @@ export const RolesPageImproved = (props: RolesPageProps) => {
     </script>
   `;
 
-  return AdminLayout({ user, content, title: "Roles y Permisos" });
+  return AdminLayout({ user, children: content, title: "Roles y Permisos" });
 };
