@@ -2,27 +2,67 @@
 
 ## Instrucciones de Instalación
 
-### 1. Ejecutar el Seed de RBAC
+### 1. Configurar Variables de Entorno
 
-Para inicializar el sistema de roles y permisos, ejecuta el siguiente comando:
+Asegúrate de tener un archivo `.env` en la raíz del proyecto con la configuración de la base de datos:
 
 ```bash
-deno run --allow-all src/db/seeds/rbac.ts
+DATABASE_URL=./lexcms.db
+```
+
+Puedes copiar el archivo de ejemplo:
+```bash
+cp .env.example .env
+```
+
+### 2. Ejecutar Setup de Base de Datos
+
+Para crear la base de datos y ejecutar las migraciones:
+
+```bash
+python3 scripts/setup_db.py
+```
+
+Este script:
+- Lee la ubicación de la base de datos desde `.env`
+- Crea la base de datos SQLite
+- Ejecuta todas las migraciones SQL
+
+### 3. Ejecutar Seed de RBAC
+
+Para inicializar el sistema de roles y permisos:
+
+```bash
+python3 scripts/run_seed.py
 ```
 
 Este comando:
-- Creará todos los permisos necesarios para los módulos del sistema
-- Creará el rol de **superadmin** con todos los permisos
-- Creará el rol de **public_user** con permisos de lectura básicos
-- Asignará automáticamente el rol de superadmin al usuario con ID 1
+- Lee la ubicación de la base de datos desde `.env`
+- Crea el usuario administrador (admin@example.com / password123)
+- Crea todos los permisos necesarios (77 permisos)
+- Crea el rol de **superadmin** con todos los permisos
+- Crea el rol de **public_user** con permisos de lectura básicos
+- Asigna automáticamente el rol de superadmin al usuario con ID 1
 
-### 2. Verificar la Instalación
+### 4. Verificar la Instalación
 
-Después de ejecutar el seed, verifica que todo esté correcto:
+Para verificar que todo está correcto:
 
-1. El usuario ID 1 debe tener el rol de superadmin
-2. Deben existir dos roles en el sistema
-3. Deben existir permisos para todos los módulos
+```bash
+python3 scripts/verify_rbac.py
+```
+
+Este script mostrará:
+- Todos los roles creados
+- Permisos asignados a cada rol
+- Usuario administrador
+- Estadísticas del sistema
+
+Deberías ver:
+1. 2 roles (superadmin y public_user)
+2. 77 permisos creados
+3. Usuario ID 1 con rol superadmin
+4. 15 módulos del sistema
 
 ### 3. Estructura del Sistema
 
