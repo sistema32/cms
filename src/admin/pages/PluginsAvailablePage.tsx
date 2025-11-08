@@ -107,7 +107,30 @@ export const PluginsAvailablePage = (props: PluginsAvailablePageProps) => {
       </div>
 
       <script>
-        ${pluginActionsScript}
+        async function installPlugin(pluginName, activate) {
+          const action = activate ? 'instalar y activar' : 'instalar';
+          const actionCap = action.charAt(0).toUpperCase() + action.slice(1);
+          if (!confirm(actionCap + ' el plugin "' + pluginName + '"?')) return;
+
+          try {
+            const response = await fetch('/api/plugins/' + pluginName + '/install', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ activate: activate })
+            });
+
+            if (response.ok) {
+              window.location.href = '/admincp/plugins/installed';
+            } else {
+              const error = await response.json();
+              alert('Error: ' + (error.message || 'No se pudo instalar el plugin'));
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
       </script>
     `,
   });
@@ -319,30 +342,3 @@ function renderPluginCard(plugin: PluginManifest) {
     </div>
   `;
 }
-
-const pluginActionsScript = `
-async function installPlugin(pluginName, activate) {
-  const action = activate ? 'instalar y activar' : 'instalar';
-  const actionCap = action.charAt(0).toUpperCase() + action.slice(1);
-  if (!confirm(actionCap + ' el plugin "' + pluginName + '"?')) return;
-
-  try {
-    const response = await fetch('/api/plugins/' + pluginName + '/install', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ activate: activate })
-    });
-
-    if (response.ok) {
-      window.location.href = '/admincp/plugins/installed';
-    } else {
-      const error = await response.json();
-      alert('Error: ' + (error.message || 'No se pudo instalar el plugin'));
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-`;
