@@ -501,12 +501,12 @@ adminRouter.get("/", async (c) => {
     let unreadNotificationCount = 0;
     try {
       notifications = await notificationService.getForUser({
-        userId: user.id,
+        userId: user.userId,
         isRead: false,
         limit: 5,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.id);
+      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
