@@ -6,6 +6,11 @@
 import { Context } from 'hono';
 import { pluginService } from '../services/pluginService.ts';
 import { z } from 'zod';
+import {
+  validatePluginName,
+  validatePluginSettings,
+  checkRateLimit,
+} from '../utils/pluginValidation.ts';
 
 // Validation schemas
 const installPluginSchema = z.object({
@@ -158,6 +163,33 @@ export class PluginController {
   async installPlugin(c: Context) {
     try {
       const name = c.req.param('name');
+
+      // Validate plugin name
+      const nameValidation = validatePluginName(name);
+      if (!nameValidation.valid) {
+        return c.json(
+          {
+            success: false,
+            error: 'Invalid plugin name',
+            message: nameValidation.error,
+          },
+          400
+        );
+      }
+
+      // Check rate limit
+      const rateLimit = checkRateLimit(`install-plugin`, 5, 60000); // 5 installs per minute
+      if (!rateLimit.allowed) {
+        return c.json(
+          {
+            success: false,
+            error: 'Rate limit exceeded',
+            message: `Too many plugin installations. Try again in ${rateLimit.retryAfter} seconds.`,
+          },
+          429
+        );
+      }
+
       const body = await c.req.json();
       const { activate } = installPluginSchema.parse(body);
 
@@ -250,6 +282,32 @@ export class PluginController {
   async activatePlugin(c: Context) {
     try {
       const name = c.req.param('name');
+
+      // Validate plugin name
+      const nameValidation = validatePluginName(name);
+      if (!nameValidation.valid) {
+        return c.json(
+          {
+            success: false,
+            error: 'Invalid plugin name',
+            message: nameValidation.error,
+          },
+          400
+        );
+      }
+
+      // Check rate limit
+      const rateLimit = checkRateLimit(`activate-plugin-${name}`, 3, 10000); // 3 activations per 10 seconds
+      if (!rateLimit.allowed) {
+        return c.json(
+          {
+            success: false,
+            error: 'Rate limit exceeded',
+            message: `Too many activation attempts. Try again in ${rateLimit.retryAfter} seconds.`,
+          },
+          429
+        );
+      }
 
       await pluginService.activatePlugin(name);
 
@@ -391,6 +449,32 @@ export class PluginController {
       const name = c.req.param('name');
       const body = await c.req.json();
       const { settings } = updateSettingsSchema.parse(body);
+
+      // Validate plugin name
+      const nameValidation = validatePluginName(name);
+      if (!nameValidation.valid) {
+        return c.json(
+          {
+            success: false,
+            error: 'Invalid plugin name',
+            message: nameValidation.error,
+          },
+          400
+        );
+      }
+
+      // Validate settings object
+      const settingsValidation = validatePluginSettings(settings);
+      if (!settingsValidation.valid) {
+        return c.json(
+          {
+            success: false,
+            error: 'Invalid settings',
+            message: settingsValidation.error,
+          },
+          400
+        );
+      }
 
       await pluginService.updatePluginSettings(name, settings);
 

@@ -18,6 +18,9 @@ import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
 import { PluginsPage } from "../admin/pages/PluginsPage.tsx";
+import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
+import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
+import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -3571,15 +3574,21 @@ adminRouter.get("/settings/export", async (c) => {
 });
 
 /**
- * GET /plugins - Plugins management page
+ * GET /plugins - Redirect to installed plugins
  */
 adminRouter.get("/plugins", async (c) => {
+  return c.redirect("/admincp/plugins/installed");
+});
+
+/**
+ * GET /plugins/installed - Installed plugins page
+ */
+adminRouter.get("/plugins/installed", async (c) => {
   try {
     const user = c.get("user");
 
-    const [installedPlugins, availablePlugins, stats] = await Promise.all([
+    const [installedPlugins, stats] = await Promise.all([
       pluginService.getAllPlugins(),
-      pluginService.getAvailablePlugins(),
       pluginService.getPluginStats(),
     ]);
 
@@ -3591,6 +3600,7 @@ adminRouter.get("/plugins", async (c) => {
       displayName: plugin.name,
       description: undefined,
       author: undefined,
+      category: undefined,
       status: plugin.isActive ? "active" : "inactive",
       isInstalled: true,
     }));
@@ -3606,6 +3616,7 @@ adminRouter.get("/plugins", async (c) => {
               displayName: details.manifest.displayName || plugin.name,
               description: details.manifest.description,
               author: details.manifest.author,
+              category: details.manifest.category,
             };
           }
         } catch (error) {
@@ -3616,20 +3627,18 @@ adminRouter.get("/plugins", async (c) => {
     );
 
     return c.html(
-      PluginsPage({
+      PluginsInstalledPage({
         user: {
           name: user.name || user.email,
           email: user.email,
         },
-        installedPlugins: detailedPlugins as any[],
-        availablePlugins,
+        plugins: detailedPlugins as any[],
         stats,
-        currentTab: "installed",
       }),
     );
   } catch (error: any) {
-    console.error("Error loading plugins page:", error);
-    return c.text("Error al cargar plugins", 500);
+    console.error("Error loading installed plugins page:", error);
+    return c.text("Error al cargar plugins instalados", 500);
   }
 });
 
@@ -3640,59 +3649,96 @@ adminRouter.get("/plugins/available", async (c) => {
   try {
     const user = c.get("user");
 
-    const [installedPlugins, availablePlugins, stats] = await Promise.all([
-      pluginService.getAllPlugins(),
+    const [availablePlugins, stats] = await Promise.all([
       pluginService.getAvailablePlugins(),
       pluginService.getPluginStats(),
     ]);
 
-    // Map installed plugins to the format expected by the page
-    const formattedInstalledPlugins = installedPlugins.map((plugin) => ({
-      id: plugin.id,
-      name: plugin.name,
-      version: plugin.version,
-      displayName: plugin.name,
-      description: undefined,
-      author: undefined,
-      status: plugin.isActive ? "active" : "inactive",
-      isInstalled: true,
-    }));
-
-    // Load plugin details for installed plugins
-    const detailedPlugins = await Promise.all(
-      formattedInstalledPlugins.map(async (plugin) => {
+    // Load manifests for available plugins
+    const pluginsWithManifest = await Promise.all(
+      availablePlugins.map(async (pluginName) => {
         try {
-          const details = await pluginService.getPluginDetails(plugin.name);
-          if (details && details.manifest) {
-            return {
-              ...plugin,
-              displayName: details.manifest.displayName || plugin.name,
-              description: details.manifest.description,
-              author: details.manifest.author,
-            };
-          }
+          const manifest = await pluginService.getPluginManifest(pluginName);
+          return {
+            name: pluginName,
+            displayName: manifest.displayName,
+            description: manifest.description,
+            version: manifest.version,
+            author: manifest.author,
+            category: manifest.category,
+            tags: manifest.tags,
+          };
         } catch (error) {
-          console.error(`Error loading details for ${plugin.name}:`, error);
+          console.error(`Error loading manifest for ${pluginName}:`, error);
+          return {
+            name: pluginName,
+            displayName: pluginName,
+            description: "Error loading plugin information",
+            version: "unknown",
+            author: "unknown",
+            category: undefined,
+            tags: [],
+          };
         }
-        return plugin;
       }),
     );
 
     return c.html(
-      PluginsPage({
+      PluginsAvailablePage({
         user: {
           name: user.name || user.email,
           email: user.email,
         },
-        installedPlugins: detailedPlugins as any[],
-        availablePlugins,
+        plugins: pluginsWithManifest as any[],
         stats,
-        currentTab: "available",
       }),
     );
   } catch (error: any) {
-    console.error("Error loading plugins page:", error);
-    return c.text("Error al cargar plugins", 500);
+    console.error("Error loading available plugins page:", error);
+    return c.text("Error al cargar plugins disponibles", 500);
+  }
+});
+
+/**
+ * GET /plugins/marketplace - Marketplace plugins page
+ */
+adminRouter.get("/plugins/marketplace", async (c) => {
+  try {
+    const user = c.get("user");
+
+    // Load marketplace plugins from JSON file
+    const marketplaceData = await Deno.readTextFile(
+      "./src/data/marketplace-plugins.json",
+    );
+    const marketplacePlugins = JSON.parse(marketplaceData);
+
+    // Get installed plugin names
+    const installedPlugins = await pluginService.getAllPlugins();
+    const installedPluginNames = installedPlugins.map((p) => p.name);
+
+    // Get stats
+    const stats = await pluginService.getPluginStats();
+
+    // Extract unique categories
+    const categories = [
+      ...new Set(marketplacePlugins.map((p: any) => p.category)),
+    ].sort();
+
+    return c.html(
+      PluginsMarketplacePage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        plugins: marketplacePlugins,
+        stats,
+        categories,
+        installedPluginNames,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading marketplace page:", error);
+    return c.text("Error al cargar marketplace", 500);
   }
 });
 
