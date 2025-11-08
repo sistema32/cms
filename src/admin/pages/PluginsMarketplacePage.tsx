@@ -473,4 +473,3 @@ function renderDetailModal() {
   `;
 }
 
-const filterScript = `
