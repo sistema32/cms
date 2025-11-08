@@ -1,5 +1,5 @@
 import { html } from "hono/html";
-import { AdminLayoutV2 } from "../components/AdminLayoutV2.tsx";
+import { AdminLayout } from "../components/AdminLayout.tsx";
 import type { NotificationItem } from "../components/NotificationPanel.tsx";
 
 /**
@@ -187,7 +187,7 @@ export const DashboardPage = (props: DashboardProps) => {
     </div>
   `;
 
-  return AdminLayoutV2({
+  return AdminLayout({
     title: "Dashboard",
     children: content,
     activePage: "dashboard",
