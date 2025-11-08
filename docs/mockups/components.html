@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Componentes - LexCMS Admin (Rediseño)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            accent: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-neutral-50 dark:bg-neutral-950 p-8">
+
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-12">
+      <h1 class="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Librería de Componentes</h1>
+      <p class="text-neutral-500 dark:text-neutral-400">Presiona 'd' para alternar modo oscuro</p>
+    </div>
+
+    <!-- Buttons Section -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Botones</h2>
+      <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-8">
+
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Primary Buttons</h3>
+          <div class="flex flex-wrap gap-4">
+            <button class="px-4 py-2 bg-accent-600 text-white rounded-md hover:bg-accent-700 transition-colors text-sm font-medium shadow-sm hover:shadow-md">
+              Button
+            </button>
+            <button class="px-6 py-3 bg-accent-600 text-white rounded-md hover:bg-accent-700 transition-colors text-base font-medium shadow-sm hover:shadow-md">
+              Large Button
+            </button>
+            <button class="px-3 py-1.5 bg-accent-600 text-white rounded-md hover:bg-accent-700 transition-colors text-xs font-medium shadow-sm hover:shadow-md">
+              Small Button
+            </button>
+            <button class="px-4 py-2 bg-accent-600 text-white rounded-md hover:bg-accent-700 transition-colors text-sm font-medium shadow-sm hover:shadow-md inline-flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              With Icon
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Secondary Buttons</h3>
+          <div class="flex flex-wrap gap-4">
+            <button class="px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors text-sm font-medium">
+              Button
+            </button>
+            <button class="px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors text-sm font-medium inline-flex items-center">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+              </svg>
+              With Icon
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Ghost Buttons</h3>
+          <div class="flex flex-wrap gap-4">
+            <button class="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors text-sm font-medium">
+              Button
+            </button>
+            <button class="px-4 py-2 text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950 rounded-md transition-colors text-sm font-medium">
+              Accent Button
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Icon Buttons</h3>
+          <div class="flex flex-wrap gap-4">
+            <button class="p-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+            <button class="p-2 text-neutral-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Forms Section -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Formularios</h2>
+      <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Text Input -->
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Input de Texto
+            </label>
+            <input type="text" placeholder="Escribe algo..." class="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent placeholder:text-neutral-400 dark:placeholder:text-neutral-600">
+          </div>
+
+          <!-- Email Input -->
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Email
+            </label>
+            <input type="email" placeholder="correo@ejemplo.com" class="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent placeholder:text-neutral-400 dark:placeholder:text-neutral-600">
+          </div>
+
+          <!-- Select -->
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Select
+            </label>
+            <select class="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
+              <option>Opción 1</option>
+              <option>Opción 2</option>
+              <option>Opción 3</option>
+            </select>
+          </div>
+
+          <!-- Search Input with Icon -->
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Búsqueda
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-4 w-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <input type="search" placeholder="Buscar..." class="w-full pl-10 pr-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent placeholder:text-neutral-400 dark:placeholder:text-neutral-600">
+            </div>
+          </div>
+
+          <!-- Textarea -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Textarea
+            </label>
+            <textarea rows="4" placeholder="Escribe un mensaje..." class="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent placeholder:text-neutral-400 dark:placeholder:text-neutral-600"></textarea>
+          </div>
+
+          <!-- Checkbox -->
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" class="w-4 h-4 text-accent-600 border-neutral-300 dark:border-neutral-700 rounded focus:ring-accent-500 focus:ring-2">
+              <span class="ml-2 text-sm text-neutral-700 dark:text-neutral-300">Acepto los términos</span>
+            </label>
+          </div>
+
+          <!-- Radio -->
+          <div>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="radio" name="option" class="w-4 h-4 text-accent-600 border-neutral-300 dark:border-neutral-700 focus:ring-accent-500 focus:ring-2">
+                <span class="ml-2 text-sm text-neutral-700 dark:text-neutral-300">Opción A</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="option" class="w-4 h-4 text-accent-600 border-neutral-300 dark:border-neutral-700 focus:ring-accent-500 focus:ring-2">
+                <span class="ml-2 text-sm text-neutral-700 dark:text-neutral-300">Opción B</span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Badges Section -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Badges</h2>
+      <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-8">
+
+        <div class="flex flex-wrap gap-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+            Publicado
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+            Borrador
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+            Inactivo
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            Programado
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300">
+            Neutral
+          </span>
+        </div>
+
+        <div class="mt-6">
+          <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-4">Con Indicador</h3>
+          <div class="flex flex-wrap gap-3">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
+              Online
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-yellow-600 dark:bg-yellow-400"></span>
+              Pendiente
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-600 dark:bg-red-400"></span>
+              Offline
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Cards Section -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Cards</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Simple Card -->
+        <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
+          <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Card Simple</h3>
+          <p class="text-sm text-neutral-500 dark:text-neutral-400">Esta es una tarjeta básica con título y descripción.</p>
+        </div>
+
+        <!-- Card with Icon -->
+        <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-white">Con Ícono</h3>
+            <div class="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <svg class="w-6 h-6 text-accent-600 dark:text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+          </div>
+          <p class="text-sm text-neutral-500 dark:text-neutral-400">Tarjeta con ícono decorativo en la esquina.</p>
+        </div>
+
+        <!-- Stat Card -->
+        <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-6">
+          <p class="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">Total Usuarios</p>
+          <p class="text-3xl font-bold text-neutral-900 dark:text-white mb-2">1,234</p>
+          <p class="text-sm text-green-600 dark:text-green-400">↑ 12% vs mes anterior</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Alerts Section -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Alertas</h2>
+
+      <div class="space-y-4">
+
+        <!-- Info Alert -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800 dark:text-blue-300">Información</h3>
+              <p class="mt-1 text-sm text-blue-700 dark:text-blue-400">Esta es una alerta informativa.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success Alert -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-green-800 dark:text-green-300">Éxito</h3>
+              <p class="mt-1 text-sm text-green-700 dark:text-green-400">La operación se completó correctamente.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning Alert -->
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Advertencia</h3>
+              <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-400">Ten cuidado con esta acción.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Error</h3>
+              <p class="mt-1 text-sm text-red-700 dark:text-red-400">Ocurrió un error al procesar la solicitud.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Loading States -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Estados de Carga</h2>
+      <div class="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-8">
+
+        <div class="flex flex-wrap gap-8">
+
+          <!-- Spinner -->
+          <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Spinner</p>
+          </div>
+
+          <!-- Dots -->
+          <div class="flex flex-col items-center">
+            <div class="flex gap-1">
+              <div class="w-2 h-2 bg-accent-600 rounded-full animate-bounce"></div>
+              <div class="w-2 h-2 bg-accent-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+              <div class="w-2 h-2 bg-accent-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            </div>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Dots</p>
+          </div>
+
+          <!-- Pulse -->
+          <div class="flex flex-col items-center">
+            <div class="h-8 w-8 bg-accent-600 rounded-full animate-pulse"></div>
+            <p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Pulse</p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Dark mode toggle (press 'd' key)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'd') {
+        document.documentElement.classList.toggle('dark');
+      }
+    });
+  </script>
+
+</body>
+</html>
