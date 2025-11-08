@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { Context, Next } from "hono";
 import { env } from "../config/env.ts";
+import { notificationService } from "../lib/email/index.ts";
 import { DashboardPage } from "../admin/pages/Dashboard.tsx";
 import { LoginPage } from "../admin/pages/Login.tsx";
 import { ContentListPage } from "../admin/pages/ContentList.tsx";
@@ -495,6 +496,21 @@ adminRouter.get("/", async (c) => {
       createdAt: post.createdAt,
     }));
 
+    // Get notifications for the user
+    let notifications = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.id,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(user.id);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     return c.html(
       DashboardPage({
         user: {
@@ -503,6 +519,8 @@ adminRouter.get("/", async (c) => {
         },
         stats,
         recentPosts,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {

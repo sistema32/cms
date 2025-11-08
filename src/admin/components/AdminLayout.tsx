@@ -1,9 +1,11 @@
 import { html } from "hono/html";
 import { env } from "../../config/env.ts";
+import { ToastContainer } from "./Toast.tsx";
+import { NotificationPanel, type NotificationItem } from "./NotificationPanel.tsx";
 
 /**
  * Admin Layout Component
- * Based on Windmill Dashboard layout
+ * Based on Windmill Dashboard layout with Spike-inspired enhancements
  */
 
 interface AdminLayoutProps {
@@ -16,6 +18,8 @@ interface AdminLayoutProps {
     avatar?: string;
   };
   settingsAvailability?: Record<string, boolean>;
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const AdminLayout = (props: AdminLayoutProps) => {
@@ -25,6 +29,8 @@ export const AdminLayout = (props: AdminLayoutProps) => {
     activePage = "dashboard",
     user,
     settingsAvailability = {},
+    notifications = [],
+    unreadNotificationCount = 0,
   } = props;
   const adminPath = env.ADMIN_PATH;
 
@@ -429,19 +435,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
                   </button>
 
                   <!-- Notifications -->
-                  <button class="notifications-btn" aria-label="Notifications">
-                    <svg
-                      class="dark-mode-icon"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-                      >
-                      </path>
-                    </svg>
-                    <span class="notification-badge"></span>
-                  </button>
+                  ${NotificationPanel({ adminPath, notifications, unreadCount: unreadNotificationCount })}
 
                   <!-- Profile -->
                   <div class="relative">
@@ -488,6 +482,9 @@ export const AdminLayout = (props: AdminLayoutProps) => {
             </main>
           </div>
         </div>
+
+        <!-- Toast Notifications Container -->
+        ${ToastContainer()}
 
         <script>
         function toggleTheme() {
