@@ -590,5 +590,5 @@ export const UsersPageImproved = (props: UsersPageProps) => {
     </script>
   `;
 
-  return AdminLayout({ user, content, title: "Usuarios" });
+  return AdminLayout({ user, children: content, title: "Usuarios" });
 };

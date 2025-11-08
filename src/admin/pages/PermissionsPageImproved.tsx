@@ -320,5 +320,5 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     </script>
   `;
 
-  return AdminLayout({ user, content, title: "Permisos" });
+  return AdminLayout({ user, children: content, title: "Permisos" });
 };
