@@ -112,7 +112,141 @@ export const PluginsInstalledPage = (props: PluginsInstalledPageProps) => {
       ${renderSettingsModal()}
 
       <script>
-        ${pluginActionsScript}
+        async function activatePlugin(pluginName) {
+          if (!confirm('¿Activar el plugin "' + pluginName + '"?')) return;
+
+          try {
+            const response = await fetch('/api/plugins/' + pluginName + '/activate', {
+              method: 'POST'
+            });
+
+            if (response.ok) {
+              window.location.reload();
+            } else {
+              const error = await response.json();
+              alert('Error: ' + (error.message || 'No se pudo activar el plugin'));
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
+
+        async function deactivatePlugin(pluginName) {
+          if (!confirm('¿Desactivar el plugin "' + pluginName + '"?')) return;
+
+          try {
+            const response = await fetch('/api/plugins/' + pluginName + '/deactivate', {
+              method: 'POST'
+            });
+
+            if (response.ok) {
+              window.location.reload();
+            } else {
+              const error = await response.json();
+              alert('Error: ' + (error.message || 'No se pudo desactivar el plugin'));
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
+
+        async function uninstallPlugin(pluginName) {
+          if (!confirm('¿Desinstalar el plugin "' + pluginName + '"? Esta acción no se puede deshacer.')) return;
+
+          try {
+            const response = await fetch('/api/plugins/' + pluginName, {
+              method: 'DELETE'
+            });
+
+            if (response.ok) {
+              window.location.reload();
+            } else {
+              const error = await response.json();
+              alert('Error: ' + (error.message || 'No se pudo desinstalar el plugin'));
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
+
+        async function openSettings(pluginName) {
+          try {
+            const response = await fetch('/api/plugins/' + pluginName + '/settings');
+
+            if (response.ok) {
+              const data = await response.json();
+              showSettingsModal(pluginName, data.data || {});
+            } else {
+              alert('No se pudo cargar la configuración del plugin');
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
+
+        function showSettingsModal(pluginName, settings) {
+          document.getElementById('modalTitle').textContent = 'Configuración: ' + pluginName;
+
+          let htmlContent = '<form class="space-y-4" id="settingsForm">';
+
+          if (Object.keys(settings).length === 0) {
+            htmlContent += '<p class="text-gray-600 dark:text-gray-400">Este plugin no tiene configuración disponible.</p>';
+          } else {
+            for (const key in settings) {
+              const value = settings[key];
+              htmlContent += '<div>';
+              htmlContent += '<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">' + key + '</label>';
+              htmlContent += '<input type="text" name="' + key + '" value="' + (value || '') + '" ';
+              htmlContent += 'class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" />';
+              htmlContent += '</div>';
+            }
+          }
+
+          htmlContent += '<div class="flex justify-end gap-2 pt-4">';
+          htmlContent += '<button type="button" onclick="closeSettingsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>';
+          if (Object.keys(settings).length > 0) {
+            htmlContent += '<button type="button" onclick="saveSettings(\\''+pluginName+'\\')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">Guardar</button>';
+          }
+          htmlContent += '</div>';
+          htmlContent += '</form>';
+
+          document.getElementById('modalContent').innerHTML = htmlContent;
+          document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+          document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        async function saveSettings(pluginName) {
+          const form = document.getElementById('settingsForm');
+          const formData = new FormData(form);
+          const settings = {};
+
+          for (const pair of formData.entries()) {
+            settings[pair[0]] = pair[1];
+          }
+
+          try {
+            const response = await fetch('/api/plugins/' + pluginName + '/settings', {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ settings: settings })
+            });
+
+            if (response.ok) {
+              closeSettingsModal();
+              alert('Configuración guardada exitosamente');
+            } else {
+              const error = await response.json();
+              alert('Error: ' + (error.message || 'No se pudo guardar la configuración'));
+            }
+          } catch (error) {
+            alert('Error: ' + error.message);
+          }
+        }
       </script>
     `,
   });
@@ -410,141 +544,3 @@ function renderSettingsModal() {
     </div>
   `;
 }
-
-const pluginActionsScript = `
-async function activatePlugin(pluginName) {
-  if (!confirm('¿Activar el plugin "' + pluginName + '"?')) return;
-
-  try {
-    const response = await fetch('/api/plugins/' + pluginName + '/activate', {
-      method: 'POST'
-    });
-
-    if (response.ok) {
-      window.location.reload();
-    } else {
-      const error = await response.json();
-      alert('Error: ' + (error.message || 'No se pudo activar el plugin'));
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-
-async function deactivatePlugin(pluginName) {
-  if (!confirm('¿Desactivar el plugin "' + pluginName + '"?')) return;
-
-  try {
-    const response = await fetch('/api/plugins/' + pluginName + '/deactivate', {
-      method: 'POST'
-    });
-
-    if (response.ok) {
-      window.location.reload();
-    } else {
-      const error = await response.json();
-      alert('Error: ' + (error.message || 'No se pudo desactivar el plugin'));
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-
-async function uninstallPlugin(pluginName) {
-  if (!confirm('¿Desinstalar el plugin "' + pluginName + '"? Esta acción no se puede deshacer.')) return;
-
-  try {
-    const response = await fetch('/api/plugins/' + pluginName, {
-      method: 'DELETE'
-    });
-
-    if (response.ok) {
-      window.location.reload();
-    } else {
-      const error = await response.json();
-      alert('Error: ' + (error.message || 'No se pudo desinstalar el plugin'));
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-
-async function openSettings(pluginName) {
-  try {
-    const response = await fetch('/api/plugins/' + pluginName + '/settings');
-
-    if (response.ok) {
-      const data = await response.json();
-      showSettingsModal(pluginName, data.data || {});
-    } else {
-      alert('No se pudo cargar la configuración del plugin');
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-
-function showSettingsModal(pluginName, settings) {
-  document.getElementById('modalTitle').textContent = 'Configuración: ' + pluginName;
-
-  let htmlContent = '<form class="space-y-4" id="settingsForm">';
-
-  if (Object.keys(settings).length === 0) {
-    htmlContent += '<p class="text-gray-600 dark:text-gray-400">Este plugin no tiene configuración disponible.</p>';
-  } else {
-    for (const key in settings) {
-      const value = settings[key];
-      htmlContent += '<div>';
-      htmlContent += '<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">' + key + '</label>';
-      htmlContent += '<input type="text" name="' + key + '" value="' + (value || '') + '" ';
-      htmlContent += 'class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" />';
-      htmlContent += '</div>';
-    }
-  }
-
-  htmlContent += '<div class="flex justify-end gap-2 pt-4">';
-  htmlContent += '<button type="button" onclick="closeSettingsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>';
-  if (Object.keys(settings).length > 0) {
-    htmlContent += '<button type="button" onclick="saveSettings(\\''+pluginName+'\\')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">Guardar</button>';
-  }
-  htmlContent += '</div>';
-  htmlContent += '</form>';
-
-  document.getElementById('modalContent').innerHTML = htmlContent;
-  document.getElementById('settingsModal').classList.remove('hidden');
-}
-
-function closeSettingsModal() {
-  document.getElementById('settingsModal').classList.add('hidden');
-}
-
-async function saveSettings(pluginName) {
-  const form = document.getElementById('settingsForm');
-  const formData = new FormData(form);
-  const settings = {};
-
-  for (const pair of formData.entries()) {
-    settings[pair[0]] = pair[1];
-  }
-
-  try {
-    const response = await fetch('/api/plugins/' + pluginName + '/settings', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ settings: settings })
-    });
-
-    if (response.ok) {
-      closeSettingsModal();
-      alert('Configuración guardada exitosamente');
-    } else {
-      const error = await response.json();
-      alert('Error: ' + (error.message || 'No se pudo guardar la configuración'));
-    }
-  } catch (error) {
-    alert('Error: ' + error.message);
-  }
-}
-`;
