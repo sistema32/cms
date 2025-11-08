@@ -808,19 +808,125 @@ function initializeImageEditor(imageUrl) {
     },
     save: async () => {
       try {
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.9));
+        // Crear un canvas temporal para renderizar la imagen final sin transformaciones visuales
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = currentImage.width;
+        finalCanvas.height = currentImage.height;
+        const finalCtx = finalCanvas.getContext('2d');
+
+        if (!finalCtx) {
+          throw new Error('No se pudo crear el contexto del canvas');
+        }
+
+        // Renderizar la imagen actual (que ya incluye todas las transformaciones aplicadas)
+        finalCtx.filter = `brightness(${100 + brightness}%) contrast(${100 + contrast}%) saturate(${100 + saturation}%)`;
+
+        // Aplicar rotación y flip si es necesario
+        finalCtx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+        finalCtx.rotate((rotation * Math.PI) / 180);
+        finalCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        finalCtx.drawImage(currentImage, -currentImage.width / 2, -currentImage.height / 2);
+
+        console.log('[ImageEditor] Canvas final creado:', {
+          width: finalCanvas.width,
+          height: finalCanvas.height,
+          brightness,
+          contrast,
+          saturation,
+          rotation,
+          flipH,
+          flipV
+        });
+
+        // Crear blob desde el canvas final
+        // Intentar WebP primero, con fallback a PNG
+        let blob;
+        let mimeType = 'image/webp';
+        let extension = '.webp';
+
+        try {
+          blob = await new Promise((resolve, reject) => {
+            finalCanvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > 0) {
+                  resolve(blob);
+                } else {
+                  reject(new Error('WebP no disponible'));
+                }
+              },
+              'image/webp',
+              0.9
+            );
+          });
+        } catch (webpError) {
+          // Fallback a PNG si WebP no está disponible
+          console.warn('[ImageEditor] WebP no disponible, usando PNG');
+          mimeType = 'image/png';
+          extension = '.png';
+
+          blob = await new Promise((resolve, reject) => {
+            finalCanvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > 0) {
+                  resolve(blob);
+                } else {
+                  reject(new Error('No se pudo crear el blob de la imagen'));
+                }
+              },
+              'image/png'
+            );
+          });
+        }
+
+        // Verificar que el blob es válido
+        if (!blob || blob.size === 0) {
+          throw new Error('La imagen procesada está vacía');
+        }
+
+        console.log('[ImageEditor] Blob creado:', {
+          type: blob.type,
+          size: blob.size,
+          mimeType: mimeType
+        });
+
+        // Crear FormData y agregar el archivo con tipo MIME explícito
         const formData = new FormData();
-        formData.append('file', blob, 'edited-image.webp');
+        const timestamp = Date.now();
+        const filename = 'edited-' + timestamp + extension;
+
+        // Crear un nuevo blob con el tipo MIME explícito
+        const finalBlob = new Blob([blob], { type: mimeType });
+        formData.append('file', finalBlob, filename);
+
+        console.log('[ImageEditor] Subiendo imagen editada...');
+
         const response = await fetch('/api/media', {
           method: 'POST',
           body: formData,
           credentials: 'include'
         });
-        if (!response.ok) throw new Error('Error al guardar la imagen');
+
+        console.log('[ImageEditor] Response status:', response.status);
+
+        if (!response.ok) {
+          let errorMsg = 'Error al guardar la imagen';
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorData.message || errorMsg;
+            console.error('[ImageEditor] Error del servidor:', errorData);
+          } catch (e) {
+            errorMsg = 'Error HTTP ' + response.status + ': ' + response.statusText;
+          }
+          throw new Error(errorMsg);
+        }
+
         const data = await response.json();
+        console.log('[ImageEditor] Imagen guardada exitosamente:', data);
+
         closeImageEditor();
         window.location.reload();
       } catch (error) {
+        console.error('[ImageEditor] Error al guardar:', error);
         alert('Error al guardar la imagen: ' + error.message);
       }
     }
