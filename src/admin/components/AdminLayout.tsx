@@ -291,26 +291,12 @@ export const AdminLayout = (props: AdminLayoutProps) => {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          padding: 0.5rem 0.75rem 0.5rem 2rem;
+          padding: 0.5rem 0.75rem 0.5rem 1.5rem;
           border-radius: 0.5rem;
           color: #94a3b8;
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 400;
-          position: relative;
-          transition: all 0.2s ease;
-        }
-
-        .admin-nav-subitem::before {
-          content: '';
-          position: absolute;
-          left: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #475569;
           transition: all 0.2s ease;
         }
 
@@ -319,17 +305,9 @@ export const AdminLayout = (props: AdminLayoutProps) => {
           color: #f8fafc;
         }
 
-        .admin-nav-subitem:hover::before {
-          background: #94a3b8;
-        }
-
         .admin-nav-subitem.active {
           color: #f8fafc;
           background: #1e293b;
-        }
-
-        .admin-nav-subitem.active::before {
-          background: #6366f1;
         }
 
         .admin-nav-subitem-icon {
@@ -1289,7 +1267,6 @@ function renderNavSubItem(
 
   return html`
     <a href="${fullPath}" class="${className}">
-      <span class="admin-nav-subitem-indicator ${isActive ? "active" : ""}"></span>
       <span class="admin-nav-subitem-icon">
         <svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="${svgIcon}"></path>
