@@ -65,7 +65,7 @@ async function getImageConstructor(): Promise<ImageConstructor> {
   }
 
   imageConstructorPromise = (async () => {
-    const specifier = "https://deno.land/x/imagescript@1.3.0/mod.ts";
+    const specifier = "imagescript";
     try {
       const module = await import(specifier);
       if (module?.Image) {

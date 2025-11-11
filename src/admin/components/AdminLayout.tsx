@@ -103,22 +103,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - LexCMS Admin</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script>
-          tailwind.config = {
-            darkMode: 'class',
-            theme: {
-              extend: {
-                colors: {
-                  violet: {
-                    500: '#8470ff',
-                    600: '#755ff8',
-                  }
-                }
-              }
-            }
-          }
-        </script>
+        <link rel="stylesheet" href="${adminPath}/assets/css/admin.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -126,6 +111,12 @@ export const AdminLayout = (props: AdminLayoutProps) => {
           body { font-family: 'Inter', sans-serif; }
           .no-scrollbar::-webkit-scrollbar { display: none; }
           .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+          /* Mosaic color palette */
+          :root {
+            --violet-500: #8470ff;
+            --violet-600: #755ff8;
+          }
         </style>
       </head>
       <body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">

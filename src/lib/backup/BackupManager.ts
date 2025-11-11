@@ -20,7 +20,7 @@ import type {
   BackupListFilter,
   BackupVerificationResult,
 } from "./types.ts";
-import { gzip, gunzip } from "https://deno.land/x/compress@v0.4.5/gzip/mod.ts";
+import { gzip, gunzip } from "compress/gzip";
 
 /**
  * Converts an ArrayBuffer to a hexadecimal string
