@@ -21,6 +21,7 @@ import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
 import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
 import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
 import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
+import { NotificationsPage } from "../admin/pages/NotificationsPage.tsx";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -526,6 +527,43 @@ adminRouter.get("/", async (c) => {
   } catch (error: any) {
     console.error("Error rendering admin dashboard:", error);
     return c.text("Error al cargar el dashboard", 500);
+  }
+});
+
+/**
+ * GET /notifications - Notifications page
+ */
+adminRouter.get("/notifications", async (c) => {
+  try {
+    const user = c.get("user");
+
+    // Get all notifications for the user
+    let notifications = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        limit: 100,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(
+      NotificationsPage({
+        user: {
+          name: user.name as string | null || user.email,
+          email: user.email,
+        },
+        notifications,
+        unreadNotificationCount,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error rendering notifications page:", error);
+    return c.text("Error al cargar las notificaciones", 500);
   }
 });
 
