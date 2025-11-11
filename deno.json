@@ -58,7 +58,7 @@
     "autoprefixer": "npm:autoprefixer@^10.4",
     "lowlight": "npm:lowlight@^3.1.0"
   },
-  "nodeModulesDir": "manual",
+  "nodeModulesDir": "auto",
   "compilerOptions": {
     "lib": ["deno.window", "deno.unstable"],
     "strict": true
