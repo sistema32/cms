@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import { env } from "../../config/env.ts";
 import { ToastContainer } from "./Toast.tsx";
 import { NotificationPanel, type NotificationItem } from "./NotificationPanel.tsx";
@@ -157,7 +157,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
               </div>
 
               <!-- Dynamic Sections -->
-              ${navSections.map(section => renderNavSection(section, activePage, adminPath)).join('')}
+              ${raw(navSections.map(section => renderNavSection(section, activePage, adminPath)).join(''))}
 
             </div>
           </aside>
