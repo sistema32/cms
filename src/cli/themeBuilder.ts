@@ -3,10 +3,10 @@
  * Minifica, bundlea y optimiza assets de themes (CSS, JS, imágenes)
  */
 
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
-import { parse } from "https://deno.land/std@0.224.0/flags/mod.ts";
-import { colors } from "https://deno.land/x/cliffy@v1.0.0-rc.3/ansi/colors.ts";
-import { ensureDir } from "https://deno.land/std@0.224.0/fs/mod.ts";
+import { join } from "@std/path";
+import { parse } from "@std/flags";
+import { colors } from "cliffy/ansi";
+import { ensureDir } from "@std/fs";
 
 interface BuildOptions {
   themeName: string;

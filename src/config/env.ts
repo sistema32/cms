@@ -22,7 +22,7 @@ function normalizeAdminPath(path: string) {
 }
 
 // Cargar variables de entorno desde .env
-await load({ export: true });
+await load({ export: true, allowEmptyValues: true });
 
 // Esquema de validación
 const envSchema = z.object({
