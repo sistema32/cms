@@ -48,6 +48,9 @@ try {
 // Initialize backup system
 console.log('\n💾 Initializing backup system...');
 try {
+  // Ensure all required directories exist
+  await backupManager.initializeDirectories();
+
   // Backup manager initializes automatically on first getInstance()
   const stats = await backupManager.getStats();
   console.log(`✅ Backup system initialized (${stats.totalBackups} backups, ${stats.successfulBackups} successful)`);
