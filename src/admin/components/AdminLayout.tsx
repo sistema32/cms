@@ -98,11 +98,17 @@ export const AdminLayout = (props: AdminLayoutProps) => {
 
   return html`
     <!DOCTYPE html>
-    <html lang="es" class="light">
+    <html lang="es">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - LexCMS Admin</title>
+        <script>
+          // Dark mode initialization - must run BEFORE page renders to prevent flash
+          if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        </script>
         <link rel="stylesheet" href="${adminPath}/assets/css/admin-compiled.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -216,6 +222,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         ${ToastContainer()}
 
         <script>
+          // Dark mode toggle function
           function toggleDarkMode() {
             const html = document.documentElement;
             if (html.classList.contains('dark')) {
@@ -225,10 +232,6 @@ export const AdminLayout = (props: AdminLayoutProps) => {
               html.classList.add('dark');
               localStorage.setItem('theme', 'dark');
             }
-          }
-
-          if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
           }
         </script>
 
