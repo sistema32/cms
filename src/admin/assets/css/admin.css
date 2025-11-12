@@ -238,12 +238,21 @@
   }
 
   /* Action Buttons */
-  .btn-action {
+  .btn-action,
+  .btn-primary {
     @apply px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple;
   }
 
   .btn-secondary {
     @apply px-4 py-2 text-sm font-medium leading-5 text-gray-700 dark:text-gray-300 transition-colors duration-150 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:shadow-outline-gray;
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-red-600 border border-transparent rounded-lg active:bg-red-700 hover:bg-red-700 focus:outline-none focus:shadow-outline-red;
+  }
+
+  .btn-success {
+    @apply px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-green-600 border border-transparent rounded-lg active:bg-green-700 hover:bg-green-700 focus:outline-none focus:shadow-outline-green;
   }
 
   .btn-action-outline {
@@ -265,8 +274,12 @@
     @apply p-6 bg-white rounded-lg shadow-xs dark:bg-gray-800;
   }
 
+  .form-group {
+    @apply mb-4;
+  }
+
   .form-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-400;
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2;
   }
 
   .form-input {
@@ -339,6 +352,66 @@
 
   .modal-footer {
     @apply flex flex-col items-center justify-end px-6 py-3 -mx-6 -mb-4 space-y-4 sm:space-y-0 sm:space-x-6 sm:flex-row bg-gray-50 dark:bg-gray-800;
+  }
+
+  /* Custom Modal Styles for Users/Roles/Permissions Pages */
+  .modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .modal.modal-open {
+    display: flex;
+  }
+
+  .modal-content {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-2xl;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    @apply flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .modal-header h2 {
+    @apply text-xl font-semibold text-gray-900 dark:text-white;
+  }
+
+  .modal-close {
+    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-3xl font-bold leading-none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-body {
+    @apply p-6;
+  }
+
+  .modal-footer {
+    @apply flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700;
   }
 
   /* ============= CHARTS ============= */
