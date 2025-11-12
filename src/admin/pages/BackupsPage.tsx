@@ -240,13 +240,139 @@ export const BackupsPage = (props: BackupsPageProps) => {
         background: #312e81;
         color: #c7d2fe;
       }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.75rem;
+        max-width: 600px;
+        width: 90%;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      }
+      .dark .modal-content {
+        background-color: #1e293b;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+      .modal-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+      }
+      .dark .modal-header h2 {
+        color: #f3f4f6;
+      }
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+      }
+      .dark .close-btn {
+        color: #9ca3af;
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #374151;
+      }
+      .dark .form-label {
+        color: #d1d5db;
+      }
+      .form-input,
+      .form-select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        background: white;
+        color: #1f2937;
+      }
+      .dark .form-input,
+      .dark .form-select {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f3f4f6;
+      }
+      .form-checkbox {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+      .form-checkbox input {
+        margin-right: 0.5rem;
+      }
+      .form-help {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+      }
+      .dark .form-help {
+        color: #9ca3af;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+      }
+      .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-cancel {
+        background: #e5e7eb;
+        color: #374151;
+        border: none;
+      }
+      .btn-cancel:hover {
+        background: #d1d5db;
+      }
+      .dark .btn-cancel {
+        background: #374151;
+        color: #d1d5db;
+      }
+      .dark .btn-cancel:hover {
+        background: #4b5563;
+      }
     </style>
 
     <div class="backup-header">
       <h1>Gestión de Backups</h1>
       <button
         class="btn-sm btn-success"
-        onclick="createBackup()"
+        onclick="openBackupModal()"
       >
         ➕ Crear Backup
       </button>
@@ -353,9 +479,109 @@ export const BackupsPage = (props: BackupsPageProps) => {
       </table>
     `}
 
+    <!-- Modal de Crear Backup -->
+    <div id="backupModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Crear Nuevo Backup</h2>
+          <button class="close-btn" onclick="closeBackupModal()">&times;</button>
+        </div>
+
+        <form id="backupForm" onsubmit="createBackup(event)">
+          <div class="form-group">
+            <label class="form-label">Tipo de Backup</label>
+            <select id="backupType" class="form-select" onchange="updateBackupOptions()">
+              <option value="full">Completo (Base de datos + Medios + Configuración)</option>
+              <option value="database">Solo Base de Datos</option>
+              <option value="media">Solo Archivos de Medios</option>
+              <option value="config">Solo Configuración</option>
+            </select>
+            <div class="form-help">Selecciona qué elementos incluir en el backup</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Opciones de Contenido</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="includeDatabase" checked>
+              <label>Incluir Base de Datos</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="includeMedia" checked>
+              <label>Incluir Archivos de Medios</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="includeConfig" checked>
+              <label>Incluir Archivos de Configuración</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Compresión</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="compression" checked>
+              <label>Comprimir backup (recomendado)</label>
+            </div>
+            <div class="form-help">La compresión reduce el tamaño del archivo</div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-cancel" onclick="closeBackupModal()">Cancelar</button>
+            <button type="submit" class="btn btn-success">Crear Backup</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
-      async function createBackup() {
-        if (!confirm('¿Crear un nuevo backup completo? Esto puede tomar varios minutos.')) {
+      function openBackupModal() {
+        document.getElementById('backupModal').classList.add('active');
+      }
+
+      function closeBackupModal() {
+        document.getElementById('backupModal').classList.remove('active');
+      }
+
+      function updateBackupOptions() {
+        const type = document.getElementById('backupType').value;
+        const includeDatabase = document.getElementById('includeDatabase');
+        const includeMedia = document.getElementById('includeMedia');
+        const includeConfig = document.getElementById('includeConfig');
+
+        // Reset all
+        includeDatabase.checked = false;
+        includeMedia.checked = false;
+        includeConfig.checked = false;
+
+        // Set based on type
+        switch(type) {
+          case 'full':
+            includeDatabase.checked = true;
+            includeMedia.checked = true;
+            includeConfig.checked = true;
+            break;
+          case 'database':
+            includeDatabase.checked = true;
+            break;
+          case 'media':
+            includeMedia.checked = true;
+            break;
+          case 'config':
+            includeConfig.checked = true;
+            break;
+        }
+      }
+
+      async function createBackup(event) {
+        event.preventDefault();
+
+        const type = document.getElementById('backupType').value;
+        const includeDatabase = document.getElementById('includeDatabase').checked;
+        const includeMedia = document.getElementById('includeMedia').checked;
+        const includeConfig = document.getElementById('includeConfig').checked;
+        const compression = document.getElementById('compression').checked;
+
+        if (!includeDatabase && !includeMedia && !includeConfig) {
+          alert('Debes seleccionar al menos una opción de contenido');
           return;
         }
 
@@ -366,16 +592,17 @@ export const BackupsPage = (props: BackupsPageProps) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              type: 'full',
-              includeMedia: true,
-              includeDatabase: true,
-              includeConfig: true,
-              compression: true,
+              type,
+              includeMedia,
+              includeDatabase,
+              includeConfig,
+              compression,
             }),
           });
 
           if (response.ok) {
-            alert('Backup creado exitosamente');
+            alert('Backup creado exitosamente. El proceso puede tomar varios minutos.');
+            closeBackupModal();
             window.location.reload();
           } else {
             const error = await response.text();
@@ -411,6 +638,14 @@ export const BackupsPage = (props: BackupsPageProps) => {
           alert('Error: ' + error.message);
         }
       }
+
+      // Close modal when clicking outside
+      window.onclick = function(event) {
+        const modal = document.getElementById('backupModal');
+        if (event.target === modal) {
+          closeBackupModal();
+        }
+      }
     </script>
   `;
 
@@ -419,5 +654,6 @@ export const BackupsPage = (props: BackupsPageProps) => {
     title: "Backups",
     content,
     settingsAvailabilityMap: {},
+    activePage: "system.backups",
   });
 };
