@@ -1,4 +1,6 @@
 import { html } from "hono/html";
+import { buildAdminRoute, ROUTES, getAdminAsset } from "../config/routes.ts";
+import { VALIDATION } from "../config/timing.ts";
 
 /**
  * Admin Login Page
@@ -39,7 +41,7 @@ export const LoginPage = (props: LoginPageProps) => {
 
               ${!requires2FA ? html`
                 <!-- Login Form -->
-                <form method="POST" action="/admincp/login">
+                <form method="POST" action="${buildAdminRoute(ROUTES.LOGIN)}">
                   <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                       Email
@@ -76,7 +78,7 @@ export const LoginPage = (props: LoginPageProps) => {
                 </form>
               ` : html`
                 <!-- 2FA Verification Form -->
-                <form method="POST" action="/admincp/login/verify-2fa">
+                <form method="POST" action="${buildAdminRoute(ROUTES.LOGIN_2FA)}">
                   <input type="hidden" name="email" value="${email || ''}" />
 
                   <div class="mb-4">
@@ -90,8 +92,8 @@ export const LoginPage = (props: LoginPageProps) => {
                       type="text"
                       name="code"
                       required
-                      maxlength="6"
-                      pattern="[0-9]{6}"
+                      maxlength="${VALIDATION.TWO_FA_CODE_LENGTH}"
+                      pattern="[0-9]{${VALIDATION.TWO_FA_CODE_LENGTH}}"
                       class="w-full px-4 py-3 text-sm text-gray-900 text-center text-2xl tracking-widest border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
                       placeholder="000000"
                       autocomplete="off"
@@ -106,7 +108,7 @@ export const LoginPage = (props: LoginPageProps) => {
                   </button>
 
                   <a
-                    href="/admincp/login"
+                    href="${buildAdminRoute(ROUTES.LOGIN)}"
                     class="block w-full mt-4 px-4 py-3 text-sm font-medium text-center leading-5 text-gray-700 transition-colors duration-150 border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
                   >
                     Volver
@@ -145,7 +147,7 @@ export const LoginPage = (props: LoginPageProps) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - LexCMS Admin</title>
-  <link rel="stylesheet" href="/admincp/assets/css/admin-compiled.css">
+  <link rel="stylesheet" href="${getAdminAsset('css/admin-compiled.css')}">
 </head>
 <body>
   ${loginForm}
