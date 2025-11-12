@@ -113,6 +113,205 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         <title>${title} - LexCMS Admin</title>
         <link rel="stylesheet" href="${adminPath}/assets/css/admin-compiled.css">
         <style>
+        /* Modal Styles - Inline to ensure they work without compilation */
+        .modal {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 9999 !important;
+          display: none !important;
+          align-items: center !important;
+          justify-content: center !important;
+          background-color: rgba(0, 0, 0, 0.5) !important;
+          backdrop-filter: blur(2px) !important;
+        }
+        .modal.modal-open {
+          display: flex !important;
+        }
+        .modal-content {
+          background-color: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          max-width: 600px;
+          width: 90%;
+          max-height: 90vh;
+          overflow-y: auto;
+          animation: modalSlideIn 0.3s ease-out;
+          position: relative;
+          z-index: 10000;
+        }
+        .dark .modal-content {
+          background-color: #1f2937;
+        }
+        @keyframes modalSlideIn {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.5rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .dark .modal-header {
+          border-bottom-color: #374151;
+        }
+        .modal-header h2 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #111827;
+          margin: 0;
+        }
+        .dark .modal-header h2 {
+          color: white;
+        }
+        .modal-close {
+          color: #9ca3af;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 2rem;
+          line-height: 1;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        }
+        .modal-close:hover {
+          color: #4b5563;
+        }
+        .dark .modal-close:hover {
+          color: #e5e7eb;
+        }
+        .modal-body {
+          padding: 1.5rem;
+        }
+        .modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          padding: 1.5rem;
+          border-top: 1px solid #e5e7eb;
+        }
+        .dark .modal-footer {
+          border-top-color: #374151;
+        }
+        .form-group {
+          margin-bottom: 1rem;
+        }
+        .form-label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 0.5rem;
+        }
+        .dark .form-label {
+          color: #9ca3af;
+        }
+        .form-input, .form-select {
+          display: block;
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.875rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+          background-color: white;
+          color: #111827;
+        }
+        .dark .form-input, .dark .form-select {
+          background-color: #374151;
+          border-color: #4b5563;
+          color: #f3f4f6;
+        }
+        .form-input:focus, .form-select:focus {
+          outline: none;
+          border-color: #9333ea;
+          box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+        }
+        .btn-primary {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+          background-color: #9333ea;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+        }
+        .btn-primary:hover {
+          background-color: #7e22ce;
+        }
+        .btn-secondary {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #374151;
+          background-color: white;
+          border: 1px solid #d1d5db;
+          border-radius: 0.5rem;
+          cursor: pointer;
+        }
+        .dark .btn-secondary {
+          background-color: #374151;
+          border-color: #4b5563;
+          color: #f3f4f6;
+        }
+        .btn-secondary:hover {
+          background-color: #f9fafb;
+        }
+        .dark .btn-secondary:hover {
+          background-color: #4b5563;
+        }
+        .btn-danger {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+          background-color: #dc2626;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+        }
+        .btn-danger:hover {
+          background-color: #b91c1c;
+        }
+        .btn-success {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+          background-color: #16a34a;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+        }
+        .btn-success:hover {
+          background-color: #15803d;
+        }
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: #374151;
+          cursor: pointer;
+        }
+        .dark .checkbox-label {
+          color: #d1d5db;
+        }
+        .checkbox-label input[type="checkbox"] {
+          width: 1rem;
+          height: 1rem;
+          cursor: pointer;
+        }
+
         .admin-sidebar {
           width: 18rem;
           background: linear-gradient(180deg, #111827 0%, #1f2937 45%, #1e1b4b 100%);
