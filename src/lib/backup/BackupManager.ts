@@ -78,9 +78,9 @@ export class BackupManager {
    */
   async createBackup(options: CreateBackupOptions = {}, userId?: number): Promise<number> {
     const type = options.type || "full";
-    const includeMedia = options.includeMedia ?? this.config.includeMedia;
-    const includeDatabase = options.includeDatabase ?? this.config.includeDatabase;
-    const includeConfig = options.includeConfig ?? this.config.includeConfig;
+    const includesMedia = options.includeMedia ?? this.config.includeMedia;
+    const includesDatabase = options.includeDatabase ?? this.config.includeDatabase;
+    const includesConfig = options.includeConfig ?? this.config.includeConfig;
     const compression = options.compression ?? this.config.compression;
     const storageProvider = options.storageProvider || this.config.storageProvider;
 
@@ -115,9 +115,9 @@ export class BackupManager {
       const backupPath = await this.createBackupArchive(
         backup.id,
         type,
-        includeDatabase,
-        includeMedia,
-        includeConfig,
+        includesDatabase,
+        includesMedia,
+        includesConfig,
         compression,
       );
 
