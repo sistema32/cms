@@ -2,6 +2,8 @@ import { html, raw } from "hono/html";
 import { env } from "../../config/env.ts";
 import { ToastContainer } from "./Toast.tsx";
 import { NotificationPanel, type NotificationItem } from "./NotificationPanel.tsx";
+import { CSS_VARIABLES } from "../config/colors.ts";
+import { ROUTES, getAdminAsset } from "../config/routes.ts";
 
 /**
  * Admin Layout Component - Mosaic Design System
@@ -51,44 +53,44 @@ export const AdminLayout = (props: AdminLayoutProps) => {
     {
       title: "Contenido",
       items: [
-        { id: "content.posts", label: "Entradas", path: "/posts" },
-        { id: "content.pages", label: "Páginas", path: "/pages" },
-        { id: "content.categories", label: "Categorías", path: "/categories" },
-        { id: "content.tags", label: "Tags", path: "/tags" },
-        { id: "content.media", label: "Medios", path: "/media" },
+        { id: "content.posts", label: "Entradas", path: `/${ROUTES.POSTS}` },
+        { id: "content.pages", label: "Páginas", path: `/${ROUTES.PAGES}` },
+        { id: "content.categories", label: "Categorías", path: `/${ROUTES.CATEGORIES}` },
+        { id: "content.tags", label: "Tags", path: `/${ROUTES.TAGS}` },
+        { id: "content.media", label: "Medios", path: `/${ROUTES.MEDIA}` },
       ],
     },
     {
       title: "Control de Acceso",
       items: [
-        { id: "access.users", label: "Usuarios", path: "/users" },
-        { id: "access.roles", label: "Roles", path: "/roles" },
-        { id: "access.permissions", label: "Permisos", path: "/permissions" },
+        { id: "access.users", label: "Usuarios", path: `/${ROUTES.USERS}` },
+        { id: "access.roles", label: "Roles", path: `/${ROUTES.ROLES}` },
+        { id: "access.permissions", label: "Permisos", path: `/${ROUTES.PERMISSIONS}` },
       ],
     },
     {
       title: "Apariencia",
       items: [
-        { id: "appearance.themes", label: "Themes", path: "/appearance/themes" },
-        { id: "appearance.menus", label: "Menús", path: "/appearance/menus" },
+        { id: "appearance.themes", label: "Themes", path: `/${ROUTES.THEMES}` },
+        { id: "appearance.menus", label: "Menús", path: `/${ROUTES.MENUS}` },
       ],
     },
     {
       title: "Plugins",
       items: [
-        { id: "plugins.all", label: "Todos los Plugins", path: "/plugins" },
+        { id: "plugins.all", label: "Todos los Plugins", path: `/${ROUTES.PLUGINS}` },
       ],
     },
     {
       title: "Configuración",
       items: [
-        { id: "settings.general", label: "General", path: "/settings?category=general" },
-        { id: "settings.reading", label: "Lectura", path: "/settings?category=reading" },
-        { id: "settings.writing", label: "Escritura", path: "/settings?category=writing" },
-        { id: "settings.discussion", label: "Comentarios", path: "/settings?category=discussion" },
-        { id: "settings.media", label: "Medios", path: "/settings?category=media" },
-        { id: "settings.seo", label: "SEO", path: "/settings?category=seo" },
-        { id: "settings.advanced", label: "Avanzado", path: "/settings?category=advanced" },
+        { id: "settings.general", label: "General", path: `/${ROUTES.SETTINGS_GENERAL}` },
+        { id: "settings.reading", label: "Lectura", path: `/${ROUTES.SETTINGS_READING}` },
+        { id: "settings.writing", label: "Escritura", path: `/${ROUTES.SETTINGS_WRITING}` },
+        { id: "settings.discussion", label: "Comentarios", path: `/${ROUTES.SETTINGS_DISCUSSION}` },
+        { id: "settings.media", label: "Medios", path: `/${ROUTES.SETTINGS_MEDIA}` },
+        { id: "settings.seo", label: "SEO", path: `/${ROUTES.SETTINGS_SEO}` },
+        { id: "settings.advanced", label: "Avanzado", path: `/${ROUTES.SETTINGS_ADVANCED}` },
       ].map(item => ({
         ...item,
         availableTag: settingsAvailability[item.id] === false ? "Sin datos" : undefined,
@@ -98,12 +100,18 @@ export const AdminLayout = (props: AdminLayoutProps) => {
 
   return html`
     <!DOCTYPE html>
-    <html lang="es" class="light">
+    <html lang="es">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - LexCMS Admin</title>
-        <link rel="stylesheet" href="${adminPath}/assets/css/admin-compiled.css">
+        <script>
+          // Dark mode initialization - must run BEFORE page renders to prevent flash
+          if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        </script>
+        <link rel="stylesheet" href="${getAdminAsset('css/admin-compiled.css')}">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -114,8 +122,8 @@ export const AdminLayout = (props: AdminLayoutProps) => {
 
           /* Mosaic color palette */
           :root {
-            --violet-500: #8470ff;
-            --violet-600: #755ff8;
+            --violet-500: ${CSS_VARIABLES['--violet-500']};
+            --violet-600: ${CSS_VARIABLES['--violet-600']};
           }
         </style>
       </head>
@@ -180,7 +188,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
                     </button>
 
                     <!-- Notifications -->
-                    ${NotificationPanel({ notifications, unreadNotificationCount })}
+                    ${NotificationPanel({ adminPath, notifications, unreadCount: unreadNotificationCount })}
 
                     <!-- Divider -->
                     <hr class="w-px h-6 bg-gray-200 dark:bg-gray-700/60 border-none" />
@@ -216,6 +224,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         ${ToastContainer()}
 
         <script>
+          // Dark mode toggle function
           function toggleDarkMode() {
             const html = document.documentElement;
             if (html.classList.contains('dark')) {
@@ -225,10 +234,6 @@ export const AdminLayout = (props: AdminLayoutProps) => {
               html.classList.add('dark');
               localStorage.setItem('theme', 'dark');
             }
-          }
-
-          if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
           }
         </script>
 

@@ -1,4 +1,5 @@
 import { html } from "hono/html";
+import { TOAST_TIMING, ANIMATION_DURATION } from "../config/timing.ts";
 
 /**
  * Toast Notification Component
@@ -24,11 +25,11 @@ export const ToastContainer = () => {
     <style>
       .admin-toast {
         pointer-events: auto;
-        animation: slideInRight 0.3s ease-out;
-        transition: all 0.3s ease;
+        animation: slideInRight ${ANIMATION_DURATION.TOAST_SLIDE}ms ease-out;
+        transition: all ${ANIMATION_DURATION.TOAST_SLIDE}ms ease;
       }
       .admin-toast.removing {
-        animation: slideOutRight 0.3s ease-in;
+        animation: slideOutRight ${ANIMATION_DURATION.TOAST_SLIDE}ms ease-in;
         opacity: 0;
         transform: translateX(100%);
       }
@@ -66,6 +67,10 @@ export const ToastContainer = () => {
       (function() {
         let toastIdCounter = 0;
 
+        // Timing constants injected from server
+        const TOAST_TIMING = ${JSON.stringify(TOAST_TIMING)};
+        const ANIMATION_DURATION = ${JSON.stringify(ANIMATION_DURATION)};
+
         // Toast manager
         window.toastManager = {
           show: function(options) {
@@ -73,7 +78,7 @@ export const ToastContainer = () => {
             const type = options.type || 'info';
             const title = options.title || '';
             const message = options.message || '';
-            const duration = options.duration !== undefined ? options.duration : 5000;
+            const duration = options.duration !== undefined ? options.duration : TOAST_TIMING.DEFAULT_DURATION;
 
             this.remove(id); // Remove if exists
 
@@ -153,7 +158,7 @@ export const ToastContainer = () => {
               if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
               }
-            }, 300);
+            }, ANIMATION_DURATION.TOAST_SLIDE);
           },
 
           success: function(message, title, duration) {
