@@ -380,7 +380,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
 
     <!-- Create/Edit Modal -->
     <div id="userModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-container max-w-6xl">
         <div class="modal-header">
           <h2 id="modalTitle">Nuevo Usuario</h2>
           <button onclick="closeModal()" class="modal-close">&times;</button>

@@ -172,7 +172,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
 
     <!-- Create/Edit Modal -->
     <div id="permissionModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-container max-w-6xl">
         <div class="modal-header">
           <h2 id="modalTitle">Nuevo Permiso</h2>
           <button onclick="closeModal()" class="modal-close">&times;</button>

@@ -130,11 +130,10 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         .modal.modal-open {
           display: flex !important;
         }
-        .modal-content {
+        .modal-container {
           background-color: white;
           border-radius: 0.5rem;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-          max-width: 600px;
           width: 90%;
           max-height: 90vh;
           overflow-y: auto;
@@ -142,7 +141,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
           position: relative;
           z-index: 10000;
         }
-        .dark .modal-content {
+        .dark .modal-container {
           background-color: #1f2937;
         }
         @keyframes modalSlideIn {
