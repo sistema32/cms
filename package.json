@@ -34,6 +34,7 @@
     "postgres": "^3.4.7"
   },
   "devDependencies": {
+    "daisyui": "^5.5.0",
     "esbuild": "^0.25.12"
   }
 }
