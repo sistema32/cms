@@ -52,13 +52,11 @@ export default {
     themes: [
       {
         light: {
-          ...require('daisyui/src/theming/themes')['light'],
           primary: '#8470ff', // Mosaic violet
           'primary-focus': '#755ff8',
           'primary-content': '#ffffff',
         },
         dark: {
-          ...require('daisyui/src/theming/themes')['dark'],
           primary: '#8470ff',
           'primary-focus': '#755ff8',
           'primary-content': '#ffffff',
