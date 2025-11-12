@@ -378,65 +378,89 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       }
     </div>
 
-    <!-- Create/Edit Modal -->
-    <div id="userModal" class="modal">
-      <div class="modal-container max-w-6xl">
-        <div class="modal-header">
-          <h2 id="modalTitle">Nuevo Usuario</h2>
-          <button onclick="closeModal()" class="modal-close">&times;</button>
-        </div>
+    <!-- Create/Edit Modal - DaisyUI -->
+    <dialog id="userModal" class="modal">
+      <div class="modal-box max-w-6xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="closeModal()">✕</button>
+        </form>
+        <h3 id="modalTitle" class="font-bold text-lg mb-4">Nuevo Usuario</h3>
+
         <form id="userForm" method="POST">
-          <div class="modal-body">
-            <input type="hidden" id="userId" name="userId" />
+          <input type="hidden" id="userId" name="userId" />
 
-            <div class="form-group">
-              <label for="name" class="form-label">Nombre</label>
-              <input type="text" id="name" name="name" class="form-input" required />
-            </div>
-
-            <div class="form-group">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" id="email" name="email" class="form-input" required />
-            </div>
-
-            <div class="form-group">
-              <label for="roleId" class="form-label">Rol</label>
-              <select id="roleId" name="roleId" class="form-input" required>
-                <option value="">Seleccionar rol...</option>
-                ${roles.map(
-                  (r) => html` <option value="${r.id}">${r.name}${r.isSystem ? " (sistema)" : ""}</option> `
-                )}
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="status" class="form-label">Estado</label>
-              <select id="status" name="status" class="form-input" required>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-                <option value="suspended">Suspendido</option>
-              </select>
-            </div>
-
-            <div id="passwordSection" class="form-group">
-              <label for="password" class="form-label">Contraseña</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                class="form-input"
-                placeholder="Dejar vacío para mantener la actual"
-              />
-            </div>
+          <div class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Nombre</span>
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="input input-bordered w-full"
+              required
+            />
           </div>
 
-          <div class="modal-footer">
-            <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar</button>
+          <div class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Email</span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="input input-bordered w-full"
+              required
+            />
+          </div>
+
+          <div class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Rol</span>
+            </label>
+            <select id="roleId" name="roleId" class="select select-bordered w-full" required>
+              <option value="">Seleccionar rol...</option>
+              ${roles.map(
+                (r) => html` <option value="${r.id}">${r.name}${r.isSystem ? " (sistema)" : ""}</option> `
+              )}
+            </select>
+          </div>
+
+          <div class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Estado</span>
+            </label>
+            <select id="status" name="status" class="select select-bordered w-full" required>
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+              <option value="suspended">Suspendido</option>
+            </select>
+          </div>
+
+          <div id="passwordSection" class="form-control w-full mb-4">
+            <label class="label">
+              <span class="label-text">Contraseña</span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="input input-bordered w-full"
+              placeholder="Dejar vacío para mantener la actual"
+            />
+          </div>
+
+          <div class="modal-action">
+            <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
           </div>
         </form>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button onclick="closeModal()">close</button>
+      </form>
+    </dialog>
 
     <script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};

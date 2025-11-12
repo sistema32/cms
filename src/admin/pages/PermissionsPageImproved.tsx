@@ -171,23 +171,25 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
     </div>
 
     <!-- Create/Edit Modal -->
-    <div id="permissionModal" class="modal">
-      <div class="modal-container max-w-6xl">
-        <div class="modal-header">
-          <h2 id="modalTitle">Nuevo Permiso</h2>
-          <button onclick="closeModal()" class="modal-close">&times;</button>
-        </div>
+    <dialog id="permissionModal" class="modal">
+      <div class="modal-box max-w-2xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4" id="modalTitle">Nuevo Permiso</h3>
         <form id="permissionForm" method="POST">
-          <div class="modal-body">
+          <div class="space-y-4">
             <input type="hidden" id="permissionId" name="permissionId" />
 
-            <div class="form-group">
-              <label for="module" class="form-label">Módulo *</label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Módulo *</span>
+              </label>
               <input
                 type="text"
                 id="module"
                 name="module"
-                class="form-input"
+                class="input input-bordered w-full"
                 list="modulesList"
                 required
                 placeholder="ej: users, posts, media..."
@@ -199,58 +201,64 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
                   <option value="${g.module}">${g.module}</option>
                 `)}
               </datalist>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Nombre del módulo o sección del sistema
-              </p>
+              <label class="label">
+                <span class="label-text-alt">Nombre del módulo o sección del sistema</span>
+              </label>
             </div>
 
-            <div class="form-group">
-              <label for="action" class="form-label">Acción *</label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Acción *</span>
+              </label>
               <input
                 type="text"
                 id="action"
                 name="action"
-                class="form-input"
+                class="input input-bordered w-full"
                 required
                 placeholder="ej: create, read, update, delete..."
               />
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Acción que permite realizar este permiso
-              </p>
+              <label class="label">
+                <span class="label-text-alt">Acción que permite realizar este permiso</span>
+              </label>
             </div>
 
-            <div class="form-group">
-              <label for="description" class="form-label">Descripción</label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Descripción</span>
+              </label>
               <input
                 type="text"
                 id="description"
                 name="description"
-                class="form-input"
+                class="input input-bordered w-full"
                 placeholder="Descripción breve del permiso..."
               />
             </div>
 
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p class="text-sm text-gray-700 dark:text-gray-300">
-                <strong>Convención:</strong> Los permisos se nombran como <code class="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">módulo:acción</code>
-              </p>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Ejemplos: users:create, posts:delete, media:read
-              </p>
+            <div class="alert alert-info">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <div class="text-sm">
+                <p><strong>Convención:</strong> Los permisos se nombran como <code class="font-mono bg-base-300 px-1 py-0.5 rounded">módulo:acción</code></p>
+                <p class="text-xs mt-1">Ejemplos: users:create, posts:delete, media:read</p>
+              </div>
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" onclick="closeModal()" class="btn-secondary">
+          <div class="modal-action">
+            <button type="button" onclick="closeModal()" class="btn btn-ghost">
               Cancelar
             </button>
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="btn btn-primary">
               Guardar
             </button>
           </div>
         </form>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
 
     <script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
@@ -263,7 +271,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
         document.getElementById('description').value = '';
         document.getElementById('module').readOnly = false;
         document.getElementById('action').readOnly = false;
-        document.getElementById('permissionModal').classList.add('modal-open');
+        document.getElementById('permissionModal').showModal();
       }
 
       function editPermission(id, module, action, description) {
@@ -276,11 +284,11 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
         // Don't allow changing module/action for existing permissions
         document.getElementById('module').readOnly = true;
         document.getElementById('action').readOnly = true;
-        document.getElementById('permissionModal').classList.add('modal-open');
+        document.getElementById('permissionModal').showModal();
       }
 
       function closeModal() {
-        document.getElementById('permissionModal').classList.remove('modal-open');
+        document.getElementById('permissionModal').close();
       }
 
       async function deletePermission(id, name) {
@@ -304,19 +312,7 @@ export const PermissionsPageImproved = (props: PermissionsPageProps) => {
         }
       }
 
-      // Close modal on ESC
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeModal();
-        }
-      });
-
-      // Close modal on outside click
-      document.getElementById('permissionModal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'permissionModal') {
-          closeModal();
-        }
-      });
+      // ESC and backdrop clicks are handled automatically by DaisyUI's dialog element
     </script>
   `;
 

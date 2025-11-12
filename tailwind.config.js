@@ -31,5 +31,12 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('daisyui')],
+  daisyui: {
+    themes: ["light", "dark", "cupcake"],
+    darkTheme: "dark",
+    base: true,
+    styled: true,
+    utils: true,
+  },
 }

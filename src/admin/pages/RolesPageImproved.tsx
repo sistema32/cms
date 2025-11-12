@@ -272,30 +272,36 @@ export const RolesPageImproved = (props: RolesPageProps) => {
     </div>
 
     <!-- Role Modal -->
-    <div id="roleModal" class="modal">
-      <div class="modal-content max-w-4xl">
-        <div class="modal-header">
-          <h2 id="roleModalTitle">Nuevo Rol</h2>
-          <button onclick="closeRoleModal()" class="modal-close">&times;</button>
-        </div>
+    <dialog id="roleModal" class="modal">
+      <div class="modal-box max-w-4xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4" id="roleModalTitle">Nuevo Rol</h3>
         <form id="roleForm" method="POST">
-          <div class="modal-body">
+          <div class="space-y-4">
             <input type="hidden" id="roleId" name="roleId" />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div class="form-group">
-                <label for="roleName" class="form-label">Nombre del rol *</label>
-                <input type="text" id="roleName" name="name" class="form-input" required />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">Nombre del rol *</span>
+                </label>
+                <input type="text" id="roleName" name="name" class="input input-bordered w-full" required />
               </div>
 
-              <div class="form-group">
-                <label for="roleDescription" class="form-label">Descripción</label>
-                <input type="text" id="roleDescription" name="description" class="form-input" />
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">Descripción</span>
+                </label>
+                <input type="text" id="roleDescription" name="description" class="input input-bordered w-full" />
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label mb-3">Permisos</label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Permisos</span>
+              </label>
               <div class="space-y-3 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 ${permissionsByModule.map(
                   (group) => html`
@@ -339,65 +345,77 @@ export const RolesPageImproved = (props: RolesPageProps) => {
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" onclick="closeRoleModal()" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">Guardar Rol</button>
+          <div class="modal-action">
+            <button type="button" onclick="closeRoleModal()" class="btn btn-ghost">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Rol</button>
           </div>
         </form>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
 
     <!-- View Permissions Modal -->
-    <div id="viewPermissionsModal" class="modal">
-      <div class="modal-content max-w-2xl">
-        <div class="modal-header">
-          <h2 id="viewPermissionsTitle">Permisos del Rol</h2>
-          <button onclick="closeViewPermissionsModal()" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
+    <dialog id="viewPermissionsModal" class="modal">
+      <div class="modal-box max-w-2xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4" id="viewPermissionsTitle">Permisos del Rol</h3>
+        <div class="py-4">
           <div id="viewPermissionsContent"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" onclick="closeViewPermissionsModal()" class="btn-secondary">Cerrar</button>
+        <div class="modal-action">
+          <button type="button" onclick="closeViewPermissionsModal()" class="btn btn-ghost">Cerrar</button>
         </div>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
 
     <!-- Clone Role Modal -->
-    <div id="cloneModal" class="modal">
-      <div class="modal-container max-w-6xl">
-        <div class="modal-header">
-          <h2>Clonar Rol</h2>
-          <button onclick="closeCloneModal()" class="modal-close">&times;</button>
-        </div>
+    <dialog id="cloneModal" class="modal">
+      <div class="modal-box max-w-2xl">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4">Clonar Rol</h3>
         <form id="cloneForm" method="POST">
-          <div class="modal-body">
+          <div class="space-y-4">
             <input type="hidden" id="cloneRoleId" name="roleId" />
 
-            <div class="form-group">
-              <label for="cloneRoleName" class="form-label">Nombre del nuevo rol *</label>
-              <input type="text" id="cloneRoleName" name="newName" class="form-input" required />
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Nombre del nuevo rol *</span>
+              </label>
+              <input type="text" id="cloneRoleName" name="newName" class="input input-bordered w-full" required />
             </div>
 
-            <div class="form-group">
-              <label for="cloneRoleDescription" class="form-label">Descripción</label>
-              <input type="text" id="cloneRoleDescription" name="newDescription" class="form-input" />
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Descripción</span>
+              </label>
+              <input type="text" id="cloneRoleDescription" name="newDescription" class="input input-bordered w-full" />
             </div>
 
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <p class="text-sm text-gray-700 dark:text-gray-300">
-                Se creará una copia exacta del rol con todos sus permisos asignados.
-              </p>
+            <div class="alert alert-info">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span class="text-sm">Se creará una copia exacta del rol con todos sus permisos asignados.</span>
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" onclick="closeCloneModal()" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">Clonar Rol</button>
+          <div class="modal-action">
+            <button type="button" onclick="closeCloneModal()" class="btn btn-ghost">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Clonar Rol</button>
           </div>
         </form>
       </div>
-    </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
 
     <script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
@@ -472,11 +490,11 @@ export const RolesPageImproved = (props: RolesPageProps) => {
           updateModuleCheckbox();
         }
 
-        modal.classList.add('modal-open');
+        modal.showModal();
       }
 
       function closeRoleModal() {
-        document.getElementById('roleModal').classList.remove('modal-open');
+        document.getElementById('roleModal').close();
       }
 
       // View role permissions
@@ -520,11 +538,11 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         content += '</div>';
 
         document.getElementById('viewPermissionsContent').innerHTML = content;
-        document.getElementById('viewPermissionsModal').classList.add('modal-open');
+        document.getElementById('viewPermissionsModal').showModal();
       }
 
       function closeViewPermissionsModal() {
-        document.getElementById('viewPermissionsModal').classList.remove('modal-open');
+        document.getElementById('viewPermissionsModal').close();
       }
 
       // Clone role
@@ -536,11 +554,11 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         document.getElementById('cloneRoleName').value = role.name + ' (Copia)';
         document.getElementById('cloneRoleDescription').value = 'Copia de ' + role.name;
         document.getElementById('cloneForm').action = ADMIN_BASE_PATH + '/roles/clone/' + roleId;
-        document.getElementById('cloneModal').classList.add('modal-open');
+        document.getElementById('cloneModal').showModal();
       }
 
       function closeCloneModal() {
-        document.getElementById('cloneModal').classList.remove('modal-open');
+        document.getElementById('cloneModal').close();
       }
 
       // Delete role
@@ -574,14 +592,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         }
       });
 
-      // Close modals on outside click
-      ['roleModal', 'viewPermissionsModal', 'cloneModal'].forEach(modalId => {
-        document.getElementById(modalId)?.addEventListener('click', (e) => {
-          if (e.target.id === modalId) {
-            document.getElementById(modalId).classList.remove('modal-open');
-          }
-        });
-      });
+      // Backdrop clicks are handled automatically by DaisyUI's modal-backdrop form
     </script>
   `;
 
