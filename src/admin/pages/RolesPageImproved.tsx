@@ -365,7 +365,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
     <!-- Clone Role Modal -->
     <div id="cloneModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-container max-w-6xl">
         <div class="modal-header">
           <h2>Clonar Rol</h2>
           <button onclick="closeCloneModal()" class="modal-close">&times;</button>

@@ -356,23 +356,31 @@
 
   /* Custom Modal Styles for Users/Roles/Permissions Pages */
   .modal {
-    @apply fixed inset-0 z-50 flex items-center justify-center;
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: none !important;
+    align-items: center;
+    justify-content: center;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
   }
 
   .modal.modal-open {
-    display: flex;
+    display: flex !important;
   }
 
-  .modal-content {
+  .modal-container {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-2xl;
-    max-width: 600px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+    z-index: 10000;
   }
 
   @keyframes modalSlideIn {
