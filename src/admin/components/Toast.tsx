@@ -22,12 +22,12 @@ export const ToastContainer = () => {
       aria-atomic="true"
     ></div>
     <style>
-      .toast {
+      .admin-toast {
         pointer-events: auto;
         animation: slideInRight 0.3s ease-out;
         transition: all 0.3s ease;
       }
-      .toast.removing {
+      .admin-toast.removing {
         animation: slideOutRight 0.3s ease-in;
         opacity: 0;
         transform: translateX(100%);
@@ -105,7 +105,7 @@ export const ToastContainer = () => {
           createToast: function(id, type, title, message, duration) {
             const toast = document.createElement('div');
             toast.id = id;
-            toast.className = 'toast relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden';
+            toast.className = 'admin-toast relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden';
             toast.setAttribute('role', 'alert');
 
             const colors = {

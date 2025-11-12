@@ -55,6 +55,7 @@
     "zod": "npm:zod@^3.23",
     "tailwindcss": "npm:tailwindcss@^3.4.0",
     "@tailwindcss/cli": "npm:tailwindcss@^3.4.0",
+    "daisyui": "npm:daisyui@^4.12.14",
     "autoprefixer": "npm:autoprefixer@^10.4",
     "lowlight": "npm:lowlight@^3.1.0"
   },
