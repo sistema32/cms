@@ -583,16 +583,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
         }
       }
 
-      // Close modals on ESC
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeRoleModal();
-          closeViewPermissionsModal();
-          closeCloneModal();
-        }
-      });
-
-      // Backdrop clicks are handled automatically by DaisyUI's modal-backdrop form
+      // ESC and backdrop clicks are handled automatically by DaisyUI's dialog element
     </script>
   `;
 

@@ -382,7 +382,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
     <dialog id="userModal" class="modal">
       <div class="modal-box max-w-6xl">
         <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="closeModal()">✕</button>
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
         </form>
         <h3 id="modalTitle" class="font-bold text-lg mb-4">Nuevo Usuario</h3>
 
@@ -458,7 +458,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         </form>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button onclick="closeModal()">close</button>
+        <button>close</button>
       </form>
     </dialog>
 
@@ -557,7 +557,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         document.getElementById('status').value = 'active';
         document.getElementById('password').value = '';
         document.getElementById('password').required = true;
-        document.getElementById('userModal').classList.add('modal-open');
+        document.getElementById('userModal').showModal();
       }
 
       function editUser(id, name, email, roleId, status) {
@@ -570,11 +570,11 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         document.getElementById('status').value = status || 'active';
         document.getElementById('password').value = '';
         document.getElementById('password').required = false;
-        document.getElementById('userModal').classList.add('modal-open');
+        document.getElementById('userModal').showModal();
       }
 
       function closeModal() {
-        document.getElementById('userModal').classList.remove('modal-open');
+        document.getElementById('userModal').close();
       }
 
       async function deleteUser(id, email) {
@@ -598,19 +598,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         }
       }
 
-      // Close modal on ESC
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          closeModal();
-        }
-      });
-
-      // Close modal on outside click
-      document.getElementById('userModal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'userModal') {
-          closeModal();
-        }
-      });
+      // ESC and backdrop clicks are handled automatically by DaisyUI's dialog element
     </script>
   `;
 
