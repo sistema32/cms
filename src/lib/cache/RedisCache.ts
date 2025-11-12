@@ -3,7 +3,7 @@
  * Cache implementation using Redis for distributed caching
  */
 
-import { connect, Redis } from "https://deno.land/x/redis@v0.32.3/mod.ts";
+import { connect, Redis } from "redis";
 import type {
   CacheInterface,
   CacheOptions,

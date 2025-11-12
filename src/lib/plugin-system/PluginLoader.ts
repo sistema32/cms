@@ -12,8 +12,8 @@ import type {
 } from './types.ts';
 import { PluginAPI } from './PluginAPI.ts';
 import { hookManager } from './HookManager.ts';
-import { existsSync } from 'https://deno.land/std@0.208.0/fs/mod.ts';
-import { join } from 'https://deno.land/std@0.208.0/path/mod.ts';
+import { existsSync } from '@std/fs';
+import { join } from '@std/path';
 
 export class PluginLoader {
   private pluginsDir: string;

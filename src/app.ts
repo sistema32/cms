@@ -8,7 +8,7 @@ import {
   blockUnsafeMethods,
   validateJSON,
 } from "./middleware/security.ts";
-import { securityMiddleware } from "./middlewares/securityMiddleware.ts";
+import { securityMiddleware } from "./middleware/securityMiddleware.ts";
 import { hotReloadMiddleware } from "./middleware/hotReloadMiddleware.ts";
 import { themePreviewMiddleware } from "./middleware/themePreviewMiddleware.ts";
 

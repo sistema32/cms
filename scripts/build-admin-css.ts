@@ -19,7 +19,7 @@ console.log(`   Output: ${outputFile}`);
 console.log(`   Minify: ${minify}`);
 console.log(`   Watch:  ${watch}`);
 
-const tailwindBin = join(projectRoot, ".bin/tailwindcss");
+const tailwindBin = join(projectRoot, "node_modules/.bin/tailwindcss");
 
 // Build CSS
 const args = [

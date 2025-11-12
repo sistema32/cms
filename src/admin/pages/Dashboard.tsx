@@ -1,8 +1,9 @@
 import { html } from "hono/html";
 import { AdminLayout } from "../components/AdminLayout.tsx";
+import type { NotificationItem } from "../components/NotificationPanel.tsx";
 
 /**
- * Admin Dashboard Page
+ * Admin Dashboard Page - Mosaic Style
  * Shows statistics and recent activity
  */
 
@@ -25,123 +26,170 @@ interface DashboardProps {
     status: string;
     createdAt: Date;
   }>;
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const DashboardPage = (props: DashboardProps) => {
-  const { user, stats, recentPosts = [] } = props;
+  const { user, stats, recentPosts = [], notifications = [], unreadNotificationCount = 0 } = props;
 
   const content = html`
-    <div class="page-header">
-      <h1 class="page-title">Dashboard</h1>
+    <!-- Dashboard Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Dashboard</h1>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
-      <!-- Total Posts -->
-      <div class="stats-card">
-        <div class="stats-icon-container">
-          <svg class="stats-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
-            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
-          </svg>
+    <div class="grid grid-cols-12 gap-6 mb-8">
+
+      <!-- Total Posts Card -->
+      <div class="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div class="px-5 pt-5">
+          <div class="flex items-start">
+            <div class="flex shrink-0 items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 mr-3">
+              <svg class="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M19,5V7H17V5H19M15,5V7H13V5H15M11,5V7H9V5H11M7,5V7H5V5H7M19,9V11H17V9H19M15,9V11H13V9H15M11,9V11H9V9H11M7,9V11H5V9H7M19,13V15H17V13H19M15,13V15H13V13H15M11,13V15H9V13H11M7,13V15H5V13H7M19,17V19H17V17H19M15,17V19H13V17H15M11,17V19H9V17H11M7,17V19H5V17H7Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Total Posts</div>
+              <div class="text-3xl font-bold text-gray-800 dark:text-gray-100">${stats?.totalPosts || 0}</div>
+            </div>
+          </div>
         </div>
-        <div class="stats-content">
-          <p class="stats-label">Total Posts</p>
-          <p class="stats-value">${stats?.totalPosts || 0}</p>
+        <div class="px-5 py-3">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Entradas publicadas
+          </div>
         </div>
       </div>
 
-      <!-- Total Users -->
-      <div class="stats-card">
-        <div class="stats-icon-container green">
-          <svg class="stats-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-          </svg>
+      <!-- Total Users Card -->
+      <div class="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div class="px-5 pt-5">
+          <div class="flex items-start">
+            <div class="flex shrink-0 items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 mr-3">
+              <svg class="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Total Usuarios</div>
+              <div class="text-3xl font-bold text-gray-800 dark:text-gray-100">${stats?.totalUsers || 0}</div>
+            </div>
+          </div>
         </div>
-        <div class="stats-content">
-          <p class="stats-label">Total Usuarios</p>
-          <p class="stats-value">${stats?.totalUsers || 0}</p>
-        </div>
-      </div>
-
-      <!-- Total Comments -->
-      <div class="stats-card">
-        <div class="stats-icon-container blue">
-          <svg class="stats-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
-          </svg>
-        </div>
-        <div class="stats-content">
-          <p class="stats-label">Comentarios</p>
-          <p class="stats-value">${stats?.totalComments || 0}</p>
+        <div class="px-5 py-3">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Usuarios registrados
+          </div>
         </div>
       </div>
 
-      <!-- Total Views -->
-      <div class="stats-card">
-        <div class="stats-icon-container teal">
-          <svg class="stats-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
-            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
-          </svg>
+      <!-- Total Comments Card -->
+      <div class="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div class="px-5 pt-5">
+          <div class="flex items-start">
+            <div class="flex shrink-0 items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 mr-3">
+              <svg class="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Comentarios</div>
+              <div class="text-3xl font-bold text-gray-800 dark:text-gray-100">${stats?.totalComments || 0}</div>
+            </div>
+          </div>
         </div>
-        <div class="stats-content">
-          <p class="stats-label">Vistas</p>
-          <p class="stats-value">${stats?.totalViews || 0}</p>
+        <div class="px-5 py-3">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Total de comentarios
+          </div>
         </div>
       </div>
+
+      <!-- Total Views Card -->
+      <div class="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div class="px-5 pt-5">
+          <div class="flex items-start">
+            <div class="flex shrink-0 items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 mr-3">
+              <svg class="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-1">Vistas</div>
+              <div class="text-3xl font-bold text-gray-800 dark:text-gray-100">${stats?.totalViews || 0}</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-5 py-3">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Páginas vistas
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Recent Posts Table -->
-    <div class="mb-8">
-      <h2 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-200">Posts Recientes</h2>
-      <div class="table-card">
-        <div class="table-container">
-          <table class="admin-table">
-            <thead>
+    <div class="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <header class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+        <h2 class="font-semibold text-gray-800 dark:text-gray-100">Posts Recientes</h2>
+      </header>
+      <div class="p-3">
+        <div class="overflow-x-auto">
+          <table class="table-auto w-full">
+            <thead class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20">
               <tr>
-                <th>Título</th>
-                <th>Autor</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
+                <th class="p-2 whitespace-nowrap">
+                  <div class="font-semibold text-left">Título</div>
+                </th>
+                <th class="p-2 whitespace-nowrap">
+                  <div class="font-semibold text-left">Autor</div>
+                </th>
+                <th class="p-2 whitespace-nowrap">
+                  <div class="font-semibold text-left">Estado</div>
+                </th>
+                <th class="p-2 whitespace-nowrap">
+                  <div class="font-semibold text-left">Fecha</div>
+                </th>
+                <th class="p-2 whitespace-nowrap">
+                  <div class="font-semibold text-center">Acciones</div>
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
               ${recentPosts.length > 0
                 ? recentPosts.map((post) => html`
                   <tr>
-                    <td>
-                      <div class="text-sm">
-                        <p class="font-semibold">${post.title}</p>
-                      </div>
+                    <td class="p-2 whitespace-nowrap">
+                      <div class="font-medium text-gray-800 dark:text-gray-100">${post.title}</div>
                     </td>
-                    <td>
-                      <div class="text-sm">
-                        <p>${post.author}</p>
-                      </div>
+                    <td class="p-2 whitespace-nowrap">
+                      <div class="text-gray-500 dark:text-gray-400">${post.author}</div>
                     </td>
-                    <td>
+                    <td class="p-2 whitespace-nowrap">
                       ${post.status === 'published'
-                        ? html`<span class="badge-success">Publicado</span>`
+                        ? html`<span class="inline-flex font-medium bg-green-500/20 text-green-700 rounded-full text-center px-2.5 py-0.5">Publicado</span>`
                         : post.status === 'draft'
-                        ? html`<span class="badge-warning">Borrador</span>`
-                        : html`<span class="badge-neutral">${post.status}</span>`
+                        ? html`<span class="inline-flex font-medium bg-yellow-500/20 text-yellow-700 rounded-full text-center px-2.5 py-0.5">Borrador</span>`
+                        : html`<span class="inline-flex font-medium bg-gray-500/20 text-gray-700 rounded-full text-center px-2.5 py-0.5">${post.status}</span>`
                       }
                     </td>
-                    <td>
-                      <span class="text-sm">${new Date(post.createdAt).toLocaleDateString('es')}</span>
+                    <td class="p-2 whitespace-nowrap">
+                      <div class="text-gray-500 dark:text-gray-400">${new Date(post.createdAt).toLocaleDateString('es')}</div>
                     </td>
-                    <td>
-                      <div class="flex items-center space-x-4 text-sm">
-                        <button class="btn-icon" aria-label="Edit">
-                          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                    <td class="p-2 whitespace-nowrap">
+                      <div class="flex items-center justify-center space-x-2">
+                        <button class="text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 rounded-full" aria-label="Edit">
+                          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
                           </svg>
                         </button>
-                        <button class="btn-icon" aria-label="Delete">
-                          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        <button class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-full" aria-label="Delete">
+                          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
                           </svg>
                         </button>
                       </div>
@@ -150,7 +198,7 @@ export const DashboardPage = (props: DashboardProps) => {
                 `).join('')
                 : html`
                   <tr>
-                    <td colspan="5" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <td colspan="5" class="p-8 text-center text-gray-500 dark:text-gray-400">
                       No hay posts recientes
                     </td>
                   </tr>
@@ -161,27 +209,6 @@ export const DashboardPage = (props: DashboardProps) => {
         </div>
       </div>
     </div>
-
-    <!-- Charts Section -->
-    <div class="grid gap-6 mb-8 md:grid-cols-2">
-      <!-- Traffic Chart -->
-      <div class="chart-container">
-        <h4 class="chart-title">Tráfico</h4>
-        <canvas id="trafficChart"></canvas>
-        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Visitantes en los últimos 7 días
-        </p>
-      </div>
-
-      <!-- Revenue Chart -->
-      <div class="chart-container">
-        <h4 class="chart-title">Contenido</h4>
-        <canvas id="contentChart"></canvas>
-        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Posts publicados por categoría
-        </p>
-      </div>
-    </div>
   `;
 
   return AdminLayout({
@@ -189,6 +216,8 @@ export const DashboardPage = (props: DashboardProps) => {
     children: content,
     activePage: "dashboard",
     user,
+    notifications,
+    unreadNotificationCount,
   });
 };
 

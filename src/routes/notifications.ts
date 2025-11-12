@@ -19,7 +19,7 @@ notifications.use("/*", authMiddleware);
 notifications.get("/", async (c) => {
   try {
     const user = c.get("user");
-    const userId = user.id;
+    const userId = user.userId;
 
     const isRead = c.req.query("isRead");
     const type = c.req.query("type");
@@ -57,7 +57,7 @@ notifications.get("/", async (c) => {
 notifications.get("/unread-count", async (c) => {
   try {
     const user = c.get("user");
-    const count = await notificationService.getUnreadCount(user.id);
+    const count = await notificationService.getUnreadCount(user.userId);
 
     return c.json({
       success: true,
@@ -79,7 +79,7 @@ notifications.get("/unread-count", async (c) => {
 notifications.get("/stats", async (c) => {
   try {
     const user = c.get("user");
-    const stats = await notificationService.getStats(user.id);
+    const stats = await notificationService.getStats(user.userId);
 
     return c.json({
       success: true,
@@ -103,7 +103,7 @@ notifications.patch("/:id/read", async (c) => {
     const user = c.get("user");
     const id = parseInt(c.req.param("id"));
 
-    await notificationService.markAsRead(id, user.id);
+    await notificationService.markAsRead(id, user.userId);
 
     return c.json({
       success: true,
@@ -126,7 +126,7 @@ notifications.post("/read-all", async (c) => {
   try {
     const user = c.get("user");
 
-    await notificationService.markAllAsRead(user.id);
+    await notificationService.markAllAsRead(user.userId);
 
     return c.json({
       success: true,
@@ -150,7 +150,7 @@ notifications.delete("/:id", async (c) => {
     const user = c.get("user");
     const id = parseInt(c.req.param("id"));
 
-    await notificationService.delete(id, user.id);
+    await notificationService.delete(id, user.userId);
 
     return c.json({
       success: true,
@@ -173,7 +173,7 @@ notifications.delete("/", async (c) => {
   try {
     const user = c.get("user");
 
-    await notificationService.deleteAll(user.id);
+    await notificationService.deleteAll(user.userId);
 
     return c.json({
       success: true,
@@ -195,7 +195,7 @@ notifications.delete("/", async (c) => {
 notifications.get("/preferences", async (c) => {
   try {
     const user = c.get("user");
-    const prefs = await notificationService.getPreferences(user.id);
+    const prefs = await notificationService.getPreferences(user.userId);
 
     return c.json({
       success: true,
@@ -219,7 +219,7 @@ notifications.patch("/preferences", async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
 
-    const updated = await notificationService.updatePreferences(user.id, body);
+    const updated = await notificationService.updatePreferences(user.userId, body);
 
     return c.json({
       success: true,
