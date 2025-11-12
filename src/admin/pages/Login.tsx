@@ -51,7 +51,7 @@ export const LoginPage = (props: LoginPageProps) => {
                       name="email"
                       value="${email || ''}"
                       required
-                      class="w-full px-4 py-3 text-sm text-gray-900 border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      class="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
                       placeholder="tu@email.com"
                     />
                   </div>
@@ -64,7 +64,7 @@ export const LoginPage = (props: LoginPageProps) => {
                       type="password"
                       name="password"
                       required
-                      class="w-full px-4 py-3 text-sm text-gray-900 border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      class="w-full px-4 py-3 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
                       placeholder="••••••••"
                     />
                   </div>
@@ -94,7 +94,7 @@ export const LoginPage = (props: LoginPageProps) => {
                       required
                       maxlength="${VALIDATION.TWO_FA_CODE_LENGTH}"
                       pattern="[0-9]{${VALIDATION.TWO_FA_CODE_LENGTH}}"
-                      class="w-full px-4 py-3 text-sm text-gray-900 text-center text-2xl tracking-widest border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      class="w-full px-4 py-3 text-sm text-gray-900 bg-white text-center text-2xl tracking-widest border border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none focus:ring focus:ring-purple-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
                       placeholder="000000"
                       autocomplete="off"
                     />
