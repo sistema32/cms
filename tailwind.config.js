@@ -23,6 +23,19 @@ export default {
           900: '#581c87',
           950: '#3b0764',
         },
+        // Mosaic violet colors
+        violet: {
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8470ff', // Primary Mosaic color
+          600: '#755ff8',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+        },
       },
       boxShadow: {
         'xs': '0 0 0 1px rgba(0, 0, 0, 0.05)',
@@ -31,12 +44,31 @@ export default {
       },
     },
   },
-  plugins: [require('daisyui')],
+  plugins: [
+    require('daisyui'),
+  ],
+  // DaisyUI config
   daisyui: {
-    themes: ["light", "dark", "cupcake"],
-    darkTheme: "dark",
+    themes: [
+      {
+        light: {
+          ...require('daisyui/src/theming/themes')['light'],
+          primary: '#8470ff', // Mosaic violet
+          'primary-focus': '#755ff8',
+          'primary-content': '#ffffff',
+        },
+        dark: {
+          ...require('daisyui/src/theming/themes')['dark'],
+          primary: '#8470ff',
+          'primary-focus': '#755ff8',
+          'primary-content': '#ffffff',
+        },
+      },
+    ],
+    darkTheme: 'dark',
     base: true,
     styled: true,
     utils: true,
+    logs: false,
   },
 }

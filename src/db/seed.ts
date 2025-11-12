@@ -2,20 +2,33 @@ import { db } from "../config/db.ts";
 import { users } from "./schema.ts";
 import { hash } from "bcrypt";
 import { seedRBAC } from "./seeds/rbac.ts";
+import { eq } from "drizzle-orm";
 
 console.log("🌱 Seeding database...\n");
 
 // Crear usuario administrador
-console.log("📝 Creando usuario administrador...");
-const hashedPassword = await hash("password123");
+console.log("📝 Verificando usuario administrador...");
 
-await db.insert(users).values({
-  email: "admin@example.com",
-  password: hashedPassword,
-  name: "Admin User",
+// Verificar si el usuario ya existe
+let adminUser = await db.query.users.findFirst({
+  where: eq(users.email, "admin@example.com"),
 });
 
-console.log("✅ Usuario administrador creado");
+if (!adminUser) {
+  const hashedPassword = await hash("password123");
+
+  const [newUser] = await db.insert(users).values({
+    email: "admin@example.com",
+    password: hashedPassword,
+    name: "Admin User",
+  }).returning();
+
+  adminUser = newUser;
+  console.log("✅ Usuario administrador creado");
+} else {
+  console.log("ℹ️  Usuario administrador ya existe");
+}
+
 console.log("   Email: admin@example.com");
 console.log("   Password: password123\n");
 

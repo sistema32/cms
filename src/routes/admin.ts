@@ -22,6 +22,7 @@ import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
 import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
 import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
 import { NotificationsPage } from "../admin/pages/NotificationsPage.tsx";
+import { BackupsPage } from "../admin/pages/BackupsPage.tsx";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -56,6 +57,7 @@ import * as permissionService from "../services/permissionService.ts";
 import * as userService from "../services/userService.ts";
 import { pluginService } from "../services/pluginService.ts";
 import type { MenuItemWithChildren } from "../services/menuItemService.ts";
+import { backupManager } from "../lib/backup/index.ts";
 
 function parseSettingValueForAdmin(value: string | null): unknown {
   if (value === null || value === undefined) {
@@ -3794,6 +3796,116 @@ adminRouter.get("/plugins/marketplace", async (c) => {
   } catch (error: any) {
     console.error("Error loading marketplace page:", error);
     return c.text("Error al cargar marketplace", 500);
+  }
+});
+
+/**
+ * Backups Management
+ * GET /backups - Backups management page
+ * POST /api/backups - Create a new backup
+ * DELETE /api/backups/:id - Delete a backup
+ * GET /api/backups/:id/download - Download a backup
+ */
+
+// Backups page
+adminRouter.get("/backups", async (c) => {
+  try {
+    const user = c.get("user");
+
+    const [backups, stats] = await Promise.all([
+      backupManager.getBackups({ limit: 100 }),
+      backupManager.getStats(),
+    ]);
+
+    return c.html(
+      BackupsPage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        backups: backups as any[],
+        stats: stats as any,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading backups page:", error);
+    return c.text("Error al cargar página de backups", 500);
+  }
+});
+
+// Create backup API
+adminRouter.post("/api/backups", async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.json();
+
+    const backupId = await backupManager.createBackup(
+      {
+        type: body.type || "full",
+        includeMedia: body.includeMedia ?? true,
+        includeDatabase: body.includeDatabase ?? true,
+        includeConfig: body.includeConfig ?? true,
+        compression: body.compression ?? true,
+        notifyUser: true,
+      },
+      user.userId,
+    );
+
+    return c.json({ success: true, backupId });
+  } catch (error: any) {
+    console.error("Error creating backup:", error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Delete backup API
+adminRouter.delete("/api/backups/:id", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.json({ success: false, error: "Invalid backup ID" }, 400);
+    }
+
+    await backupManager.deleteBackup(id);
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting backup:", error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Download backup API
+adminRouter.get("/api/backups/:id/download", async (c) => {
+  try {
+    const id = parseInt(c.req.param("id"));
+
+    if (isNaN(id)) {
+      return c.text("Invalid backup ID", 400);
+    }
+
+    const backup = await backupManager.getBackupById(id);
+
+    if (!backup) {
+      return c.text("Backup not found", 404);
+    }
+
+    if (backup.status !== "completed") {
+      return c.text("Backup is not completed yet", 400);
+    }
+
+    // Read file and send it
+    const file = await Deno.readFile(backup.storagePath);
+
+    c.header("Content-Type", "application/gzip");
+    c.header("Content-Disposition", `attachment; filename="${backup.filename}"`);
+    c.header("Content-Length", file.length.toString());
+
+    return c.body(file);
+  } catch (error: any) {
+    console.error("Error downloading backup:", error);
+    return c.text("Error downloading backup: " + error.message, 500);
   }
 });
 

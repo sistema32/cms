@@ -243,8 +243,20 @@ export class BackupManager {
    * Backup database
    */
   private async backupDatabase(targetDir: string): Promise<void> {
-    const dbPath = env.DATABASE_URL;
+    // Convert DATABASE_URL to file path (remove file: prefix if present)
+    let dbPath = env.DATABASE_URL;
+    if (dbPath.startsWith("file:")) {
+      dbPath = dbPath.replace(/^file:/, "");
+    }
+
     const dbBackupPath = `${targetDir}/database.db`;
+
+    // Check if database file exists
+    try {
+      await Deno.stat(dbPath);
+    } catch (error) {
+      throw new Error(`Database file not found at: ${dbPath}. Please ensure the database exists before creating a backup.`);
+    }
 
     // Copy database file
     await Deno.copyFile(dbPath, dbBackupPath);
@@ -379,6 +391,39 @@ export class BackupManager {
       await Deno.mkdir(this.config.localPath, { recursive: true });
     } catch (error) {
       console.warn("Failed to create backup directory:", error);
+    }
+  }
+
+  /**
+   * Initialize all required directories for the application
+   */
+  async initializeDirectories(): Promise<void> {
+    const directories = [
+      this.config.localPath, // ./backups
+      Deno.env.get("UPLOAD_DIR") || "./uploads",
+    ];
+
+    // Also create data directory if using SQLite
+    if (env.DATABASE_URL.includes("sqlite") || env.DATABASE_URL.includes("file:")) {
+      let dbPath = env.DATABASE_URL;
+      if (dbPath.startsWith("file:")) {
+        dbPath = dbPath.replace(/^file:/, "");
+      }
+
+      // Extract directory path from database file path
+      const dbDir = dbPath.substring(0, dbPath.lastIndexOf("/"));
+      if (dbDir) {
+        directories.push(dbDir);
+      }
+    }
+
+    for (const dir of directories) {
+      try {
+        await Deno.mkdir(dir, { recursive: true });
+        console.log(`✓ Directory ensured: ${dir}`);
+      } catch (error) {
+        console.warn(`⚠ Failed to create directory ${dir}:`, error);
+      }
     }
   }
 
