@@ -18,6 +18,7 @@ import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { ThemePreviewPage } from "../admin/pages/ThemePreviewPage.tsx";
 import { ThemeCustomizerPage } from "../admin/pages/ThemeCustomizerPage.tsx";
+import { ThemeEditorPage } from "../admin/pages/ThemeEditorPage.tsx";
 import { WidgetsPage } from "../admin/pages/WidgetsPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
@@ -1819,6 +1820,126 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
   } catch (error: any) {
     console.error("Error loading theme customizer:", error);
     return c.text("Error al cargar el personalizador", 500);
+  }
+});
+
+/**
+ * GET /appearance/themes/editor - Theme code editor page
+ */
+adminRouter.get("/appearance/themes/editor", async (c) => {
+  try {
+    const user = c.get("user");
+    const themeName = c.req.query("theme") || await themeService.getActiveTheme();
+    const filePath = c.req.query("file");
+
+    // Build file tree
+    const themeDir = join(Deno.cwd(), "src", "themes", themeName);
+
+    async function buildFileTree(dirPath: string, relativePath = ""): Promise<any[]> {
+      const files: any[] = [];
+
+      try {
+        for await (const entry of Deno.readDir(dirPath)) {
+          const entryPath = join(dirPath, entry.name);
+          const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+
+          if (entry.isDirectory) {
+            const children = await buildFileTree(entryPath, relPath);
+            files.push({
+              name: entry.name,
+              path: relPath,
+              type: "directory",
+              children,
+            });
+          } else if (entry.isFile) {
+            const ext = entry.name.split(".").pop();
+            files.push({
+              name: entry.name.replace(`.${ext}`, ""),
+              path: relPath,
+              type: "file",
+              extension: ext,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error reading directory ${dirPath}:`, error);
+      }
+
+      return files.sort((a, b) => {
+        if (a.type === "directory" && b.type === "file") return -1;
+        if (a.type === "file" && b.type === "directory") return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    const fileTree = await buildFileTree(themeDir);
+
+    // Load file content if requested
+    let currentContent;
+    let error;
+
+    if (filePath) {
+      try {
+        const fullPath = join(themeDir, filePath);
+        // Security: ensure the path is within the theme directory
+        if (!fullPath.startsWith(themeDir)) {
+          throw new Error("Invalid file path");
+        }
+        currentContent = await Deno.readTextFile(fullPath);
+      } catch (err) {
+        console.error("Error loading file:", err);
+        error = `No se pudo cargar el archivo: ${err.message}`;
+      }
+    }
+
+    return c.html(ThemeEditorPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      themeName,
+      fileTree,
+      currentFile: filePath,
+      currentContent,
+      error,
+    }));
+  } catch (error: any) {
+    console.error("Error loading theme editor:", error);
+    return c.text("Error al cargar el editor", 500);
+  }
+});
+
+/**
+ * POST /api/admin/themes/editor/save - Save theme file
+ */
+adminRouter.post("/api/admin/themes/editor/save", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const themeName = parseStringField(body.theme);
+    const filePath = parseStringField(body.file);
+    const content = String(body.content || "");
+
+    if (!themeName || !filePath) {
+      return c.text("Parámetros inválidos", 400);
+    }
+
+    const themeDir = join(Deno.cwd(), "src", "themes", themeName);
+    const fullPath = join(themeDir, filePath);
+
+    // Security: ensure the path is within the theme directory
+    if (!fullPath.startsWith(themeDir)) {
+      return c.text("Ruta de archivo inválida", 400);
+    }
+
+    await Deno.writeTextFile(fullPath, content);
+
+    // Invalidate theme cache
+    themeService.invalidateThemeCache(themeName);
+
+    return c.redirect(`${env.ADMIN_PATH}/appearance/themes/editor?theme=${themeName}&file=${encodeURIComponent(filePath)}&saved=1`);
+  } catch (error: any) {
+    console.error("Error saving theme file:", error);
+    return c.text("Error al guardar el archivo", 500);
   }
 });
 

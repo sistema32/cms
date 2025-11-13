@@ -271,6 +271,22 @@ export const ThemesPage = (props: ThemesPageProps) => {
                 : ""}
             </div>
 
+            <div class="flex gap-2 mt-4">
+              <a
+                href="${env.ADMIN_PATH}/appearance/themes/editor?theme=${activeTheme}"
+                class="btn-secondary btn-sm"
+              >
+                Editar código
+              </a>
+              <a
+                href="${env.ADMIN_PATH}/appearance/themes/preview?theme=${activeTheme}"
+                class="btn-secondary btn-sm"
+                target="_blank"
+              >
+                Vista previa
+              </a>
+            </div>
+
             ${customSettings.length > 0
               ? html`
                 <div class="settings-card">
@@ -632,6 +648,12 @@ export const ThemesPage = (props: ThemesPageProps) => {
                           class="btn-ghost btn-sm w-full text-center block"
                         >
                           Personalizar
+                        </a>
+                        <a
+                          href="${env.ADMIN_PATH}/appearance/themes/editor?theme=${theme.name}"
+                          class="btn-ghost btn-sm w-full text-center block"
+                        >
+                          Editar código
                         </a>
                       </div>
                     </div>
