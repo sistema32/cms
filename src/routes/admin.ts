@@ -16,6 +16,9 @@ import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
 import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
+import { ThemePreviewPage } from "../admin/pages/ThemePreviewPage.tsx";
+import { ThemeCustomizerPage } from "../admin/pages/ThemeCustomizerPage.tsx";
+import { WidgetsPage } from "../admin/pages/WidgetsPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
 import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
@@ -50,6 +53,9 @@ import {
 import { updateSetting as updateSettingService } from "../services/settingsService.ts";
 import * as contentService from "../services/contentService.ts";
 import * as themeService from "../services/themeService.ts";
+import * as themePreviewService from "../services/themePreviewService.ts";
+import * as themeCustomizerService from "../services/themeCustomizerService.ts";
+import * as widgetService from "../services/widgetService.ts";
 import * as menuService from "../services/menuService.ts";
 import * as menuItemService from "../services/menuItemService.ts";
 import * as mediaService from "../services/mediaService.ts";
@@ -1590,6 +1596,7 @@ adminRouter.get("/appearance/themes", async (c) => {
             : undefined,
           screenshots: config?.screenshots,
           isActive: name === activeTheme,
+          parent: config?.parent, // Add parent theme info for child themes
         };
       }),
     );
@@ -1691,9 +1698,18 @@ adminRouter.post("/appearance/themes/custom-settings", async (c) => {
         case "boolean":
           updates[key] = parseBooleanField(value);
           break;
+        case "number":
+        case "range": {
+          const numValue = parseNullableField(value);
+          updates[key] = numValue ? Number(numValue) : null;
+          break;
+        }
         case "select":
         case "text":
+        case "textarea":
+        case "url":
         case "image":
+        case "image_upload":
         case "color":
           updates[key] = parseNullableField(value) ?? null;
           break;
@@ -1708,6 +1724,129 @@ adminRouter.post("/appearance/themes/custom-settings", async (c) => {
   } catch (error: any) {
     console.error("Error updating theme custom settings:", error);
     return c.text("Error al guardar la configuración del theme", 500);
+  }
+});
+
+/**
+ * GET /appearance/themes/preview - Theme preview page
+ */
+adminRouter.get("/appearance/themes/preview", async (c) => {
+  try {
+    const user = c.get("user");
+    const themeName = c.req.query("theme");
+
+    if (!themeName) {
+      return c.text("Theme no especificado", 400);
+    }
+
+    const config = await themeService.loadThemeConfig(themeName);
+    if (!config) {
+      return c.text("Theme no encontrado", 404);
+    }
+
+    // Crear sesión de preview
+    const token = await themePreviewService.createPreviewToken(
+      user.id,
+      themeName
+    );
+
+    return c.html(ThemePreviewPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      themeName,
+      themeDisplayName: config.displayName || config.name,
+      previewUrl: "/",
+      previewToken: token,
+    }));
+  } catch (error: any) {
+    console.error("Error loading theme preview:", error);
+    return c.text("Error al cargar la vista previa", 500);
+  }
+});
+
+/**
+ * GET /appearance/themes/customize - Theme customizer page
+ */
+adminRouter.get("/appearance/themes/customize", async (c) => {
+  try {
+    const user = c.get("user");
+    const themeName = c.req.query("theme") || await themeService.getActiveTheme();
+
+    const config = await themeService.loadThemeConfig(themeName);
+    if (!config) {
+      return c.text("Theme no encontrado", 404);
+    }
+
+    // Crear sesión de customizer
+    const session = await themeCustomizerService.createSession(
+      user.id,
+      themeName
+    );
+
+    // Preparar custom settings
+    const savedSettings = await themeService.getThemeCustomSettings(themeName);
+    const customSettings = Object.entries(config.config?.custom || {}).map(
+      ([key, definition]) => {
+        const typed = definition as any;
+        return {
+          key,
+          label: typed.label || key,
+          type: typed.type || "text",
+          description: typed.description,
+          options: typed.options,
+          group: typed.group || "general",
+          defaultValue: typed.default,
+          value: savedSettings[key] !== undefined ? savedSettings[key] : typed.default,
+          min: typed.min,
+          max: typed.max,
+          step: typed.step,
+        };
+      }
+    );
+
+    return c.html(ThemeCustomizerPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      themeName,
+      themeDisplayName: config.displayName || config.name,
+      customSettings,
+      sessionId: session.id,
+    }));
+  } catch (error: any) {
+    console.error("Error loading theme customizer:", error);
+    return c.text("Error al cargar el personalizador", 500);
+  }
+});
+
+/**
+ * GET /appearance/widgets - Widgets management page
+ */
+adminRouter.get("/appearance/widgets", async (c) => {
+  try {
+    const user = c.get("user");
+    const activeTheme = await themeService.getActiveTheme();
+    const config = await themeService.getActiveThemeConfig();
+
+    // Get widget areas from theme config
+    const widgetAreas = await widgetService.getWidgetAreasForTheme(activeTheme);
+    const availableWidgets = widgetService.getAvailableWidgetTypes();
+
+    return c.html(WidgetsPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      widgetAreas,
+      availableWidgets,
+      activeTheme,
+    }));
+  } catch (error: any) {
+    console.error("Error loading widgets page:", error);
+    return c.text("Error al cargar la página de widgets", 500);
   }
 });
 

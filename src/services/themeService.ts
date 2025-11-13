@@ -194,39 +194,70 @@ export async function listAvailableThemes(): Promise<string[]> {
 }
 
 /**
- * Activa un theme
+ * Activa un theme con validación y rollback
  */
 export async function activateTheme(themeName: string): Promise<boolean> {
-  // Verificar que el theme existe
-  const config = await loadThemeConfig(themeName);
-  if (!config) {
-    throw new Error(`Theme "${themeName}" not found or invalid`);
+  // Validar theme antes de activar
+  const validation = await validateTheme(themeName);
+
+  if (!validation.valid) {
+    const errorMessage = `Theme "${themeName}" inválido:\n${validation.errors.join('\n')}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
   }
 
-  // Activar el theme
-  await settingsService.updateSetting("active_theme", themeName);
+  // Mostrar warnings si existen
+  if (validation.warnings.length > 0) {
+    console.warn(`⚠️ Warnings para theme "${themeName}":\n${validation.warnings.join('\n')}`);
+  }
 
-  // Inicializar custom settings del theme si no existen
-  if (config.config.custom) {
-    const existingSettings = await getThemeCustomSettings(themeName);
+  // Guardar theme activo anterior para rollback
+  const previousTheme = await getActiveTheme();
 
-    // Solo crear settings que no existan
-    for (const [key, setting] of Object.entries(config.config.custom)) {
-      if (!(key in existingSettings)) {
-        const defaultValue = (setting as any).default || null;
-        await settingsService.updateSetting(
-          `theme.${themeName}.${key}`,
-          defaultValue,
-        );
+  try {
+    const config = await loadThemeConfig(themeName);
+    if (!config) {
+      throw new Error(`Theme "${themeName}" not found or invalid`);
+    }
+
+    // Activar el theme
+    await settingsService.updateSetting("active_theme", themeName);
+
+    // Inicializar custom settings del theme si no existen
+    if (config.config.custom) {
+      const existingSettings = await getThemeCustomSettings(themeName);
+
+      // Solo crear settings que no existan
+      for (const [key, setting] of Object.entries(config.config.custom)) {
+        if (!(key in existingSettings)) {
+          const defaultValue = (setting as any).default || null;
+          await settingsService.updateSetting(
+            `theme.${themeName}.${key}`,
+            defaultValue,
+          );
+        }
       }
     }
+
+    // Invalidar caché al activar theme
+    themeCacheService.invalidateAll();
+
+    console.log(`✅ Theme "${themeName}" activated successfully`);
+    return true;
+  } catch (error) {
+    // Rollback en caso de error
+    console.error(`❌ Error activating theme "${themeName}":`, error);
+    console.log(`↩️  Rolling back to theme "${previousTheme}"`);
+
+    try {
+      await settingsService.updateSetting("active_theme", previousTheme);
+      themeCacheService.invalidateAll();
+    } catch (rollbackError) {
+      console.error(`❌ CRITICAL: Rollback failed:`, rollbackError);
+    }
+
+    throw error;
   }
-
-  // Invalidar caché al activar theme
-  themeCacheService.invalidateAll();
-
-  console.log(`✅ Theme "${themeName}" activated`);
-  return true;
 }
 
 /**
@@ -638,5 +669,185 @@ export async function validateChildTheme(themeName: string): Promise<{
   return {
     valid: errors.length === 0,
     errors,
+  };
+}
+
+/**
+ * Interfaz para definiciones de custom settings mejorada
+ */
+export interface CustomSettingDefinition {
+  type: 'text' | 'textarea' | 'number' | 'color' | 'select' | 'boolean' | 'url' | 'image' | 'image_upload' | 'range';
+  label: string;
+  default?: any;
+  description?: string;
+  group?: string;
+  // Para number y range
+  min?: number;
+  max?: number;
+  step?: number;
+  // Para select
+  options?: string[];
+  // Para image_upload
+  allowedTypes?: string[];
+  maxSize?: number;
+  // Para visibility condicional
+  visibility?: string;
+}
+
+/**
+ * Compara versiones semánticas
+ */
+function compareVersions(current: string, required: string): boolean {
+  try {
+    const currentParts = current.split('.').map(Number);
+    const requiredParts = required.replace('>=', '').trim().split('.').map(Number);
+
+    for (let i = 0; i < Math.max(currentParts.length, requiredParts.length); i++) {
+      const curr = currentParts[i] || 0;
+      const req = requiredParts[i] || 0;
+
+      if (curr > req) return true;
+      if (curr < req) return false;
+    }
+
+    return true; // Son iguales
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Valida un theme completo antes de activarlo
+ */
+export async function validateTheme(themeName: string): Promise<{
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. Validar theme.json existe y es válido
+  const config = await loadThemeConfig(themeName);
+  if (!config) {
+    errors.push("theme.json no encontrado o inválido JSON");
+    return { valid: false, errors, warnings };
+  }
+
+  // 2. Validar campos requeridos
+  const requiredFields: (keyof ThemeConfig)[] = ['name', 'displayName', 'version', 'description'];
+  for (const field of requiredFields) {
+    if (!config[field]) {
+      errors.push(`Campo requerido faltante: ${field}`);
+    }
+  }
+
+  // 3. Validar que el nombre coincida con el directorio
+  if (config.name !== themeName) {
+    warnings.push(`El nombre en theme.json ("${config.name}") no coincide con el directorio ("${themeName}")`);
+  }
+
+  // 4. Validar templates críticos existen
+  const requiredTemplates = ['home', 'blog', 'post', 'page'];
+  const themeDir = join(Deno.cwd(), "src", "themes", themeName);
+
+  for (const template of requiredTemplates) {
+    const templatePath = join(themeDir, "templates", `${template}.tsx`);
+    try {
+      await Deno.stat(templatePath);
+    } catch {
+      errors.push(`Template requerido faltante: templates/${template}.tsx`);
+    }
+  }
+
+  // 5. Validar parent theme si es child theme
+  if (config.parent) {
+    const parentConfig = await loadThemeConfig(config.parent);
+    if (!parentConfig) {
+      errors.push(`Parent theme "${config.parent}" no encontrado`);
+    } else {
+      // Validar que no hay ciclos en la jerarquía
+      const hierarchy = await getThemeHierarchy(themeName);
+      const seen = new Set<string>();
+
+      for (const theme of hierarchy) {
+        if (seen.has(theme)) {
+          errors.push(`Referencia circular detectada en parent themes: ${theme}`);
+          break;
+        }
+        seen.add(theme);
+      }
+    }
+  }
+
+  // 6. Validar versión de requisitos
+  if (config.requirements) {
+    if ((config.requirements as any).deno) {
+      const currentVersion = Deno.version.deno;
+      const requiredVersion = (config.requirements as any).deno;
+
+      if (!compareVersions(currentVersion, requiredVersion)) {
+        warnings.push(
+          `Versión de Deno (${currentVersion}) puede ser incompatible con la requerida (${requiredVersion})`
+        );
+      }
+    }
+  }
+
+  // 7. Validar custom settings
+  if (config.config.custom) {
+    for (const [key, setting] of Object.entries(config.config.custom)) {
+      const typedSetting = setting as any;
+
+      if (!typedSetting.type) {
+        errors.push(`Custom setting "${key}" no tiene type definido`);
+      }
+
+      if (typedSetting.type === 'select' && !typedSetting.options) {
+        errors.push(`Custom setting "${key}" de tipo select no tiene options definidas`);
+      }
+
+      if (typedSetting.type === 'number' || typedSetting.type === 'range') {
+        if (typedSetting.min !== undefined && typedSetting.max !== undefined) {
+          if (typedSetting.min > typedSetting.max) {
+            errors.push(`Custom setting "${key}": min (${typedSetting.min}) es mayor que max (${typedSetting.max})`);
+          }
+        }
+      }
+
+      if (!typedSetting.label) {
+        warnings.push(`Custom setting "${key}" no tiene label definido`);
+      }
+    }
+  }
+
+  // 8. Validar que existan archivos de assets críticos si están referenciados
+  if (config.screenshots?.desktop) {
+    const screenshotPath = join(themeDir, config.screenshots.desktop);
+    try {
+      await Deno.stat(screenshotPath);
+    } catch {
+      warnings.push(`Screenshot desktop referenciado pero no encontrado: ${config.screenshots.desktop}`);
+    }
+  }
+
+  // 9. Validar estructura de directorios
+  const requiredDirs = ['templates', 'partials', 'assets'];
+  for (const dir of requiredDirs) {
+    const dirPath = join(themeDir, dir);
+    try {
+      const stat = await Deno.stat(dirPath);
+      if (!stat.isDirectory) {
+        errors.push(`"${dir}" debe ser un directorio`);
+      }
+    } catch {
+      warnings.push(`Directorio recomendado faltante: ${dir}/`);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
   };
 }
