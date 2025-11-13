@@ -205,3 +205,96 @@ export interface MarketplacePlugin {
   homepage: string;
   downloadUrl?: string;
 }
+
+/**
+ * Admin Panel Configuration
+ * Defines a custom admin panel registered by a plugin
+ */
+export interface AdminPanelConfig {
+  /**
+   * Unique identifier for the panel (will be prefixed with plugin name)
+   */
+  id: string;
+
+  /**
+   * Display title in navigation
+   */
+  title: string;
+
+  /**
+   * Optional description
+   */
+  description?: string;
+
+  /**
+   * Icon name (Material Design Icons)
+   */
+  icon?: string;
+
+  /**
+   * Route path (relative to /admin/plugins/:pluginName/)
+   */
+  path: string;
+
+  /**
+   * Required permissions to view this panel
+   */
+  requiredPermissions?: string[];
+
+  /**
+   * Panel content renderer
+   * Can be a JSX component or HTML string
+   */
+  component: AdminPanelComponent;
+
+  /**
+   * Optional menu order (lower numbers appear first)
+   */
+  order?: number;
+
+  /**
+   * Whether to show in navigation menu
+   */
+  showInMenu?: boolean;
+}
+
+/**
+ * Admin Panel Component
+ * Function that returns JSX or HTML for the panel
+ */
+export type AdminPanelComponent = (context: AdminPanelContext) => any;
+
+/**
+ * Context passed to admin panel components
+ */
+export interface AdminPanelContext {
+  /**
+   * Current user information
+   */
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+
+  /**
+   * Query parameters from URL
+   */
+  query: Record<string, string | string[]>;
+
+  /**
+   * Plugin API instance for accessing plugin functionality
+   */
+  pluginAPI: any; // Will be PluginAPI instance
+
+  /**
+   * Plugin settings
+   */
+  settings: Record<string, any>;
+
+  /**
+   * Request object
+   */
+  request?: any;
+}

@@ -9,6 +9,7 @@ export { PluginAPI } from './PluginAPI.ts';
 export { PluginSecurityManager, PluginSecurityError } from './SecurityManager.ts';
 export { PluginLoader, pluginLoader } from './PluginLoader.ts';
 export { PluginManager, pluginManager } from './PluginManager.ts';
+export { AdminPanelRegistry } from './AdminPanelRegistry.ts';
 
 // Types
 export type {
@@ -27,6 +28,9 @@ export type {
   ValidationResult,
   InstallOptions,
   MarketplacePlugin,
+  AdminPanelConfig,
+  AdminPanelComponent,
+  AdminPanelContext,
 } from './types.ts';
 
 /**
