@@ -22,47 +22,8 @@ interface IndexProps {
 }
 
 export const IndexTemplate = (props: IndexProps) => {
-  const { site, custom, posts, pagination, blogUrl = "/blog", menu = [], footerMenu = [], categories = [] } = props;
+  const { site, custom, activeTheme, posts, pagination, blogUrl = "/blog", menu = [], footerMenu = [], categories = [] } = props;
   const postsLayout = custom.posts_layout || "Grid";
-
-  const postsHtml = posts.map((post) => html`
-    <article class="post-card">
-      ${post.featureImage ? html`
-        <a href="/${post.slug}" class="post-card-image-link">
-          <img src="${post.featureImage}" alt="${post.title}" class="post-card-image" />
-        </a>
-      ` : ''}
-
-      <div class="post-card-content">
-        ${post.categories.length > 0 ? html`
-          <div class="post-card-categories">
-            ${post.categories.map((cat) => html`
-              <a href="/category/${cat.slug}" class="post-card-category">${cat.name}</a>
-            `)}
-          </div>
-        ` : ''}
-
-        <h2 class="post-card-title">
-          <a href="/${post.slug}">${post.title}</a>
-        </h2>
-
-        ${post.excerpt ? html`<p class="post-card-excerpt">${post.excerpt}</p>` : ''}
-
-        <div class="post-card-meta">
-          <span class="post-card-author">Por ${post.author.name}</span>
-          <span class="post-card-date">${new Date(post.createdAt).toLocaleDateString("es")}</span>
-        </div>
-
-        ${post.tags.length > 0 ? html`
-          <div class="post-card-tags">
-            ${post.tags.map((tag) => html`
-              <a href="/tag/${tag.slug}" class="post-card-tag">#${tag.name}</a>
-            `)}
-          </div>
-        ` : ''}
-      </div>
-    </article>
-  `).join('');
 
   const content = html`
     <!-- Header -->
@@ -73,7 +34,44 @@ export const IndexTemplate = (props: IndexProps) => {
       <div class="container">
         ${posts.length > 0 ? html`
           <div class="posts-grid layout-${postsLayout.toLowerCase()}">
-            ${postsHtml}
+            ${posts.map((post) => html`
+              <article class="post-card">
+                ${post.featureImage ? html`
+                  <a href="/${post.slug}" class="post-card-image-link">
+                    <img src="${post.featureImage}" alt="${post.title}" class="post-card-image" />
+                  </a>
+                ` : ''}
+
+                <div class="post-card-content">
+                  ${post.categories.length > 0 ? html`
+                    <div class="post-card-categories">
+                      ${post.categories.map((cat) => html`
+                        <a href="/category/${cat.slug}" class="post-card-category">${cat.name}</a>
+                      `)}
+                    </div>
+                  ` : ''}
+
+                  <h2 class="post-card-title">
+                    <a href="/${post.slug}">${post.title}</a>
+                  </h2>
+
+                  ${post.excerpt ? html`<p class="post-card-excerpt">${post.excerpt}</p>` : ''}
+
+                  <div class="post-card-meta">
+                    <span class="post-card-author">Por ${post.author.name}</span>
+                    <span class="post-card-date">${new Date(post.createdAt).toLocaleDateString("es")}</span>
+                  </div>
+
+                  ${post.tags.length > 0 ? html`
+                    <div class="post-card-tags">
+                      ${post.tags.map((tag) => html`
+                        <a href="/tag/${tag.slug}" class="post-card-tag">#${tag.name}</a>
+                      `)}
+                    </div>
+                  ` : ''}
+                </div>
+              </article>
+            `)}
           </div>
 
           ${pagination.totalPages > 1 ? html`

@@ -1,0 +1,6 @@
+/**
+ * Modern Theme - Main Entry Point
+ * Imports the modern-specific styles
+ */
+
+@import url("./modern.css");

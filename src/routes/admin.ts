@@ -58,7 +58,7 @@ import {
 import { updateSetting as updateSettingService } from "../services/settingsService.ts";
 import * as contentService from "../services/contentService.ts";
 import * as themeService from "../services/themeService.ts";
-import * as themePreviewService from "../services/themePreviewService.ts";
+import { themePreviewService } from "../services/themePreviewService.ts";
 import * as themeCustomizerService from "../services/themeCustomizerService.ts";
 import * as widgetService from "../services/widgetService.ts";
 import * as menuService from "../services/menuService.ts";
@@ -3787,6 +3787,28 @@ adminRouter.get("/settings", async (c) => {
       storedValues[setting.key] = parseSettingValueForAdmin(setting.value);
     }
 
+    // Fetch all pages for dynamic dropdown options
+    const pageType = await db.query.contentTypes.findFirst({
+      where: eq(contentTypes.slug, "page"),
+    });
+
+    let pageOptions: { value: string; label: string }[] = [];
+    if (pageType) {
+      const pages = await db.query.content.findMany({
+        where: eq(content.contentTypeId, pageType.id),
+        orderBy: [asc(content.title)],
+        columns: {
+          id: true,
+          title: true,
+        },
+      });
+
+      pageOptions = pages.map((page) => ({
+        value: String(page.id),
+        label: page.title,
+      }));
+    }
+
     const resolvedSettings: Record<string, unknown> = {};
     const categories = SETTINGS_DEFINITIONS.map((category) => {
       const fields = category.fields.map((field) => {
@@ -3800,9 +3822,16 @@ adminRouter.get("/settings", async (c) => {
           resolvedSettings[field.key] = null;
         }
 
+        // Inject dynamic page options for front_page_id and posts_page_id
+        let fieldOptions = field.options;
+        if ((field.key === "front_page_id" || field.key === "posts_page_id") && pageOptions.length > 0) {
+          fieldOptions = pageOptions;
+        }
+
         return {
           ...field,
           defaultValue,
+          options: fieldOptions,
         };
       });
 

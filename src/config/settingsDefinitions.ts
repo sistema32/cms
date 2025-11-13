@@ -143,15 +143,17 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "front_page_id",
         label: "Página estática",
-        description: "ID de la página que se mostrará como portada (si aplica).",
-        type: "number",
+        description: "Selecciona la página que se mostrará como portada (si aplica).",
+        type: "select",
+        options: [], // Will be populated dynamically
         defaultValue: null,
       },
       {
         key: "posts_page_id",
         label: "Página de entradas",
-        description: "ID de la página que listará las entradas (si aplica).",
-        type: "number",
+        description: "Selecciona la página que listará las entradas (si aplica).",
+        type: "select",
+        options: [], // Will be populated dynamically
         defaultValue: null,
       },
       {

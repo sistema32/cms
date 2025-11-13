@@ -1,0 +1,6 @@
+/**
+ * Minimalist Theme - Main Entry Point
+ * Imports the minimalist-specific styles
+ */
+
+@import url("./minimalist.css");

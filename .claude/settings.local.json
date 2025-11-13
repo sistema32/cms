@@ -10,7 +10,19 @@
       "Bash(deno run:*)",
       "Bash(src/themes/base/assets/css/base.css)",
       "Bash(src/themes/base/assets/css/main.css)",
-      "Bash(deno check:*)"
+      "Bash(deno check:*)",
+      "Bash(/tmp/frontend_category.txt)",
+      "Bash(/tmp/frontend_tag.txt)",
+      "Bash(/tmp/frontend_search.txt)",
+      "Bash(/tmp/frontend_blog.txt)",
+      "Bash(for theme in base corporate magazine minimalist modern)",
+      "Bash(do echo \"=== Theme: $theme ===\")",
+      "Bash(ls:*)",
+      "Bash(done)",
+      "Bash(for theme in base corporate magazine minimalist modern default)",
+      "Bash(do echo -n \"$theme: \")",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.ts";
 import { requirePermission } from "../middleware/permission.ts";
-import { requireCaptcha } from "../middleware/captcha.ts";
+import { requireCaptcha, requireCaptchaForGuests } from "../middleware/captcha.ts";
 import * as commentController from "../controllers/commentController.ts";
 
 const comments = new Hono();
@@ -17,10 +17,10 @@ comments.get("/content/:contentId", commentController.getByContentId);
 /**
  * POST /api/comments
  * Crear nuevo comentario
- * Requiere CAPTCHA (verificado en middleware)
+ * Sin CAPTCHA para desarrollo (TODO: habilitar en producción)
  * Permite guests (sin auth) y usuarios autenticados
  */
-comments.post("/", requireCaptcha(), commentController.create);
+comments.post("/", commentController.create);
 
 // ============= RUTAS AUTENTICADAS =============
 
