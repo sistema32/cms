@@ -1,6 +1,6 @@
 import { eq, like, or, and, inArray, count, desc, asc } from "drizzle-orm";
 import { db } from "../config/db.ts";
-import { users } from "../db/schema.ts";
+import { users, type User, type Role } from "../db/schema.ts";
 import type { SafeUser } from "../types/index.ts";
 import type { UpdateUserInput } from "../utils/validation.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
@@ -24,7 +24,7 @@ export interface PaginatedUsers {
 /**
  * Convierte un usuario de BD a SafeUser
  */
-function toSafeUser(user: any): SafeUser {
+function toSafeUser(user: User & { role?: Role }): SafeUser {
   return {
     id: user.id,
     email: user.email,
