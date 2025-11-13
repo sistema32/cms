@@ -788,6 +788,313 @@ export async function getPopularTags(limit = 10): Promise<TagData[]> {
   return tagsWithPosts.slice(0, limit);
 }
 
+/**
+ * Obtiene una categoría por slug
+ */
+export async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
+  const category = await db.query.categories.findFirst({
+    where: eq(categories.slug, slug),
+  });
+
+  if (!category) {
+    return null;
+  }
+
+  // Contar posts en esta categoría
+  const posts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    with: {
+      contentCategories: {
+        where: (contentCategories, { eq }) => eq(contentCategories.categoryId, category.id),
+      },
+    },
+  });
+
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description || undefined,
+    count: posts.filter(p => p.contentCategories.length > 0).length,
+  };
+}
+
+/**
+ * Obtiene un tag por slug
+ */
+export async function getTagBySlug(slug: string): Promise<TagData | null> {
+  const tag = await db.query.tags.findFirst({
+    where: eq(tags.slug, slug),
+  });
+
+  if (!tag) {
+    return null;
+  }
+
+  // Contar posts con este tag
+  const posts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    with: {
+      contentTags: {
+        where: (contentTags, { eq }) => eq(contentTags.tagId, tag.id),
+      },
+    },
+  });
+
+  return {
+    id: tag.id,
+    name: tag.name,
+    slug: tag.slug,
+    count: posts.filter(p => p.contentTags.length > 0).length,
+  };
+}
+
+/**
+ * Obtiene posts de una categoría específica con paginación
+ */
+export async function getPostsByCategory(
+  categorySlug: string,
+  page: number = 1,
+  perPage?: number
+): Promise<{ posts: PostData[]; total: number; totalPages: number; category: CategoryData | null }> {
+  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  const offset = (page - 1) * postsPerPage;
+
+  // Obtener categoría
+  const category = await getCategoryBySlug(categorySlug);
+
+  if (!category) {
+    return { posts: [], total: 0, totalPages: 0, category: null };
+  }
+
+  // Obtener posts de esta categoría
+  const allPosts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    orderBy: [desc(content.publishedAt)],
+    with: {
+      author: true,
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  });
+
+  // Filtrar solo posts de esta categoría
+  const categoryPosts = allPosts.filter(post =>
+    post.contentCategories.some(cc => cc.categoryId === category.id)
+  );
+
+  const total = categoryPosts.length;
+  const totalPages = Math.ceil(total / postsPerPage);
+
+  // Aplicar paginación
+  const paginatedPosts = categoryPosts.slice(offset, offset + postsPerPage);
+
+  // Formatear posts
+  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || undefined,
+    body: post.body,
+    featureImage: post.featureImage || undefined,
+    status: post.status,
+    featured: post.featured || false,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    publishedAt: post.publishedAt || post.createdAt,
+    author: {
+      id: post.author.id,
+      name: post.author.name,
+      email: post.author.email,
+    },
+    categories: post.contentCategories.map(cc => ({
+      id: cc.category.id,
+      name: cc.category.name,
+      slug: cc.category.slug,
+    })),
+    tags: post.contentTags.map(ct => ({
+      id: ct.tag.id,
+      name: ct.tag.name,
+      slug: ct.tag.slug,
+    })),
+  }));
+
+  return { posts: formattedPosts, total, totalPages, category };
+}
+
+/**
+ * Obtiene posts de un tag específico con paginación
+ */
+export async function getPostsByTag(
+  tagSlug: string,
+  page: number = 1,
+  perPage?: number
+): Promise<{ posts: PostData[]; total: number; totalPages: number; tag: TagData | null }> {
+  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  const offset = (page - 1) * postsPerPage;
+
+  // Obtener tag
+  const tag = await getTagBySlug(tagSlug);
+
+  if (!tag) {
+    return { posts: [], total: 0, totalPages: 0, tag: null };
+  }
+
+  // Obtener posts con este tag
+  const allPosts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    orderBy: [desc(content.publishedAt)],
+    with: {
+      author: true,
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  });
+
+  // Filtrar solo posts con este tag
+  const tagPosts = allPosts.filter(post =>
+    post.contentTags.some(ct => ct.tagId === tag.id)
+  );
+
+  const total = tagPosts.length;
+  const totalPages = Math.ceil(total / postsPerPage);
+
+  // Aplicar paginación
+  const paginatedPosts = tagPosts.slice(offset, offset + postsPerPage);
+
+  // Formatear posts
+  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || undefined,
+    body: post.body,
+    featureImage: post.featureImage || undefined,
+    status: post.status,
+    featured: post.featured || false,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    publishedAt: post.publishedAt || post.createdAt,
+    author: {
+      id: post.author.id,
+      name: post.author.name,
+      email: post.author.email,
+    },
+    categories: post.contentCategories.map(cc => ({
+      id: cc.category.id,
+      name: cc.category.name,
+      slug: cc.category.slug,
+    })),
+    tags: post.contentTags.map(ct => ({
+      id: ct.tag.id,
+      name: ct.tag.name,
+      slug: ct.tag.slug,
+    })),
+  }));
+
+  return { posts: formattedPosts, total, totalPages, tag };
+}
+
+/**
+ * Busca posts por título o contenido
+ */
+export async function searchPosts(
+  query: string,
+  page: number = 1,
+  perPage?: number
+): Promise<{ posts: PostData[]; total: number; totalPages: number; query: string }> {
+  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  const offset = (page - 1) * postsPerPage;
+
+  if (!query || query.trim() === "") {
+    return { posts: [], total: 0, totalPages: 0, query: "" };
+  }
+
+  const searchQuery = query.toLowerCase().trim();
+
+  // Obtener todos los posts publicados
+  const allPosts = await db.query.content.findMany({
+    where: eq(content.status, "published"),
+    orderBy: [desc(content.publishedAt)],
+    with: {
+      author: true,
+      contentCategories: {
+        with: {
+          category: true,
+        },
+      },
+      contentTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  });
+
+  // Filtrar posts que coincidan con la búsqueda
+  const searchResults = allPosts.filter(post => {
+    const titleMatch = post.title.toLowerCase().includes(searchQuery);
+    const bodyMatch = post.body.toLowerCase().includes(searchQuery);
+    const excerptMatch = post.excerpt?.toLowerCase().includes(searchQuery) || false;
+
+    return titleMatch || bodyMatch || excerptMatch;
+  });
+
+  const total = searchResults.length;
+  const totalPages = Math.ceil(total / postsPerPage);
+
+  // Aplicar paginación
+  const paginatedPosts = searchResults.slice(offset, offset + postsPerPage);
+
+  // Formatear posts
+  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || undefined,
+    body: post.body,
+    featureImage: post.featureImage || undefined,
+    status: post.status,
+    featured: post.featured || false,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    publishedAt: post.publishedAt || post.createdAt,
+    author: {
+      id: post.author.id,
+      name: post.author.name,
+      email: post.author.email,
+    },
+    categories: post.contentCategories.map(cc => ({
+      id: cc.category.id,
+      name: cc.category.name,
+      slug: cc.category.slug,
+    })),
+    tags: post.contentTags.map(ct => ({
+      id: ct.tag.id,
+      name: ct.tag.name,
+      slug: ct.tag.slug,
+    })),
+  }));
+
+  return { posts: formattedPosts, total, totalPages, query: searchQuery };
+}
+
 // ============= EXPORT ALL HELPERS =============
 
 export const themeHelpers = {
@@ -807,6 +1114,13 @@ export const themeHelpers = {
   // Categories & Tags
   getCategories,
   getPopularTags,
+  getCategoryBySlug,
+  getTagBySlug,
+  getPostsByCategory,
+  getPostsByTag,
+
+  // Search
+  searchPosts,
 
   // Formatting
   formatDate,
