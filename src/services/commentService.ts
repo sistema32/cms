@@ -7,6 +7,7 @@ import { sanitizeHTML, escapeHTML, sanitizeURL } from "../utils/sanitization.ts"
 import { webhookManager } from "../lib/webhooks/index.ts";
 import { notificationService } from "../lib/email/index.ts";
 import { env } from "../config/env.ts";
+import { getAutoModeration } from "../../plugins/auto-moderation/index.ts";
 
 /**
  * Interfaz para crear un comentario
@@ -81,7 +82,8 @@ async function decrementCommentCount(contentId: number) {
 
 /**
  * Determina el estado inicial de un comentario con moderación inteligente
- * Reglas:
+ * Usa el plugin de auto-moderación si está disponible, sino usa reglas básicas
+ * Reglas básicas:
  * 1. Usuarios autenticados con historial limpio -> approved
  * 2. Usuarios nuevos o invitados -> pending
  * 3. Contenido censurado -> pending (puede contener spam)
@@ -89,12 +91,46 @@ async function decrementCommentCount(contentId: number) {
  */
 async function determineInitialStatus(params: {
   authorId?: number | null;
+  authorName?: string | null;
   authorEmail?: string | null;
+  authorWebsite?: string | null;
   body: string;
   bodyCensored: string;
   ipAddress?: string;
+  userAgent?: string;
 }): Promise<"approved" | "pending" | "spam"> {
-  const { authorId, authorEmail, body, bodyCensored, ipAddress } = params;
+  const { authorId, authorName, authorEmail, authorWebsite, body, bodyCensored, ipAddress, userAgent } = params;
+
+  // Intentar usar plugin de auto-moderación si está disponible
+  const autoModPlugin = getAutoModeration();
+  if (autoModPlugin) {
+    try {
+      const decision = await autoModPlugin.checkComment({
+        authorId,
+        authorName,
+        authorEmail,
+        authorWebsite,
+        body,
+        ipAddress,
+        userAgent,
+      });
+
+      console.log('[CommentService] Auto-moderation decision:', {
+        action: decision.action,
+        score: decision.analysis.score,
+        confidence: decision.analysis.confidence,
+        reasons: decision.analysis.reasons,
+      });
+
+      // Mapear acción del plugin a status de comentario
+      if (decision.action === 'spam') return 'spam';
+      if (decision.action === 'approve') return 'approved';
+      if (decision.action === 'moderate') return 'pending';
+    } catch (error) {
+      console.error('[CommentService] Error in auto-moderation:', error);
+      // Si hay error, continuar con reglas básicas
+    }
+  }
 
   // Regla 1: Usuarios autenticados con historial
   if (authorId) {
@@ -227,10 +263,13 @@ export async function createComment(
   // 4. Determinar estado inicial con moderación inteligente
   const initialStatus = await determineInitialStatus({
     authorId: data.authorId,
+    authorName: sanitizedAuthorName,
     authorEmail: data.authorEmail,
+    authorWebsite: sanitizedAuthorWebsite,
     body: sanitizedBody,
     bodyCensored,
     ipAddress: data.ipAddress,
+    userAgent: data.userAgent,
   });
 
   // Crear comentario
