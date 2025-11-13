@@ -4153,6 +4153,154 @@ adminRouter.get("/comments", async (c) => {
 });
 
 /**
+ * Auto-Moderation Management
+ * GET /auto-moderation - Auto-moderation configuration page
+ * POST /auto-moderation/update - Update plugin configuration
+ * POST /auto-moderation/verify-akismet - Verify Akismet API key
+ * POST /auto-moderation/reset-stats - Reset plugin statistics
+ */
+
+// Auto-moderation page
+adminRouter.get("/auto-moderation", async (c) => {
+  try {
+    const user = c.get("user");
+    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const plugin = getAutoModeration();
+
+    if (!plugin) {
+      return c.text("Auto-moderation plugin not initialized", 500);
+    }
+
+    const config = plugin.getConfig();
+    const stats = plugin.getStats();
+
+    // Verify Akismet if configured
+    let akismetVerified: boolean | undefined = undefined;
+    if (config.services.akismet) {
+      try {
+        akismetVerified = await plugin.verifyAkismetKey();
+      } catch (error) {
+        console.error('Error verifying Akismet:', error);
+        akismetVerified = false;
+      }
+    }
+
+    const { AutoModerationPage } = await import("../admin/pages/AutoModerationPage.tsx");
+
+    return c.html(
+      AutoModerationPage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        config: {
+          enabled: config.enabled,
+          strategy: config.strategy,
+          hasAkismet: !!config.services.akismet,
+          akismetVerified,
+          threshold: config.localDetector.threshold,
+          autoApprove: config.actions.autoApprove,
+          autoApproveThreshold: config.actions.autoApproveThreshold,
+          autoMarkSpam: config.actions.autoMarkSpam,
+          autoMarkSpamThreshold: config.actions.autoMarkSpamThreshold,
+          learningEnabled: config.learning.enabled,
+          sendFeedback: config.learning.sendFeedback,
+        },
+        stats,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading auto-moderation page:", error);
+    return c.text("Error al cargar página de auto-moderación", 500);
+  }
+});
+
+// Update auto-moderation configuration
+adminRouter.post("/auto-moderation/update", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const plugin = getAutoModeration();
+
+    if (!plugin) {
+      return c.json({ error: "Auto-moderation plugin not initialized" }, 500);
+    }
+
+    // Parse form data
+    const newConfig: any = {
+      enabled: formData.get("enabled") === "on",
+      strategy: formData.get("strategy") as any,
+    };
+
+    const threshold = formData.get("threshold");
+    if (threshold) {
+      newConfig.localDetector = {
+        threshold: parseInt(threshold as string),
+      };
+    }
+
+    newConfig.actions = {
+      autoApprove: formData.get("autoApprove") === "on",
+      autoApproveThreshold: parseInt(formData.get("autoApproveThreshold") as string || "20"),
+      autoMarkSpam: formData.get("autoMarkSpam") === "on",
+      autoMarkSpamThreshold: parseInt(formData.get("autoMarkSpamThreshold") as string || "80"),
+      sendToModeration: true,
+    };
+
+    newConfig.learning = {
+      enabled: formData.get("learningEnabled") === "on",
+      sendFeedback: formData.get("sendFeedback") === "on",
+      updateBlacklist: true,
+      updateWhitelist: true,
+    };
+
+    // Update configuration
+    plugin.updateConfig(newConfig);
+
+    return c.redirect("/admin/auto-moderation");
+  } catch (error: any) {
+    console.error("Error updating auto-moderation config:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Verify Akismet API key
+adminRouter.post("/auto-moderation/verify-akismet", async (c) => {
+  try {
+    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const plugin = getAutoModeration();
+
+    if (!plugin) {
+      return c.json({ error: "Auto-moderation plugin not initialized" }, 500);
+    }
+
+    const verified = await plugin.verifyAkismetKey();
+    return c.json({ verified });
+  } catch (error: any) {
+    console.error("Error verifying Akismet:", error);
+    return c.json({ error: error.message, verified: false }, 500);
+  }
+});
+
+// Reset statistics
+adminRouter.post("/auto-moderation/reset-stats", async (c) => {
+  try {
+    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const plugin = getAutoModeration();
+
+    if (!plugin) {
+      return c.json({ error: "Auto-moderation plugin not initialized" }, 500);
+    }
+
+    plugin.resetStats();
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Error resetting stats:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
  * Backups Management
  * GET /backups - Backups management page
  * POST /api/backups - Create a new backup

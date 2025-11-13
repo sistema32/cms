@@ -70,6 +70,18 @@ try {
   // Continue anyway - security features will still work
 }
 
+// Initialize auto-moderation plugin
+console.log('\n🛡️  Initializing auto-moderation plugin...');
+try {
+  const { setupAutoModeration } = await import("../plugins/auto-moderation/init.ts");
+  const plugin = setupAutoModeration();
+  const config = plugin.getConfig();
+  console.log(`✅ Auto-moderation initialized (strategy: ${config.strategy}, enabled: ${config.enabled})`);
+} catch (error) {
+  console.error('❌ Failed to initialize auto-moderation plugin:', error);
+  // Continue anyway - comments will use basic moderation rules
+}
+
 // Initialize search indexes
 try {
   await initializeSearchIndexes();
