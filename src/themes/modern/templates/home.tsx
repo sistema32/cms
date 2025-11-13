@@ -51,7 +51,7 @@ export const HomeTemplate = (props: HomeProps) => {
           <!-- CTAs -->
           <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
-              href="${blogUrl || /blog}"
+              href="${blogUrl || "/blog"}"
               class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-purple-500/50 transition hover:shadow-purple-500/70"
             >
               Get Started
@@ -180,7 +180,7 @@ export const HomeTemplate = (props: HomeProps) => {
               <p class="text-lg text-slate-600">Tips, guides, and news from our team</p>
             </div>
             <a
-              href="${blogUrl || /blog}"
+              href="${blogUrl || "/blog"}"
               class="hidden text-sm font-semibold text-purple-600 transition hover:text-purple-700 sm:block"
             >
               View all posts →
@@ -223,7 +223,7 @@ export const HomeTemplate = (props: HomeProps) => {
 
           <div class="mt-12 text-center sm:hidden">
             <a
-              href="${blogUrl || /blog}"
+              href="${blogUrl || "/blog"}"
               class="text-sm font-semibold text-purple-600 transition hover:text-purple-700"
             >
               View all posts →
@@ -250,7 +250,7 @@ export const HomeTemplate = (props: HomeProps) => {
             Start for free
           </a>
           <a
-            href="${blogUrl || /blog}"
+            href="${blogUrl || "/blog"}"
             class="inline-flex items-center gap-2 rounded-lg border-2 border-white bg-transparent px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10"
           >
             Learn more

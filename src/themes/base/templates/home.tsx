@@ -37,7 +37,7 @@ export const HomeTemplate = (props: HomeProps) => {
           </p>
           <div class="mt-10 flex justify-center gap-4">
             <a
-              href="${blogUrl || /blog}"
+              href="${blogUrl || "/blog"}"
               class="rounded-md bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-gray-700"
             >
               Read the blog
@@ -101,7 +101,7 @@ export const HomeTemplate = (props: HomeProps) => {
 
           <div class="mt-12 text-center">
             <a
-              href="${blogUrl || /blog}"
+              href="${blogUrl || "/blog"}"
               class="inline-flex items-center rounded-md border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50"
             >
               View all posts

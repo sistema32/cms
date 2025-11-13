@@ -55,7 +55,7 @@ export const HomeTemplate = (props: HomeProps) => {
             </div>
 
             <div class="posts-footer">
-              <a href="${blogUrl || /blog}" class="link-subtle">Ver todos los artículos →</a>
+              <a href="${blogUrl || "/blog"}" class="link-subtle">Ver todos los artículos →</a>
             </div>
           </div>
         </section>
