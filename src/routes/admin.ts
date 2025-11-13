@@ -19,6 +19,8 @@ import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { ThemePreviewPage } from "../admin/pages/ThemePreviewPage.tsx";
 import { ThemeCustomizerPage } from "../admin/pages/ThemeCustomizerPage.tsx";
 import { ThemeEditorPage } from "../admin/pages/ThemeEditorPage.tsx";
+import { ThemeSettingsPage } from "../admin/pages/ThemeSettingsPage.tsx";
+import { ThemeBrowserPage } from "../admin/pages/ThemeBrowserPage.tsx";
 import { WidgetsPage } from "../admin/pages/WidgetsPage.tsx";
 import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
 import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
@@ -1577,12 +1579,18 @@ adminRouter.delete("/media/:id", async (c) => {
 });
 
 /**
- * GET /appearance/themes - Themes overview
+ * GET /appearance/themes - Redirect to browser
  */
 adminRouter.get("/appearance/themes", async (c) => {
+  return c.redirect(`${env.ADMIN_PATH}/appearance/themes/browser`);
+});
+
+/**
+ * GET /appearance/themes/browser - Themes browser/selector
+ */
+adminRouter.get("/appearance/themes/browser", async (c) => {
   try {
     const user = c.get("user");
-    const settingsSaved = c.req.query("saved") === "1";
     const activeTheme = await themeService.getActiveTheme();
     const themeNames = await themeService.listAvailableThemes();
 
@@ -1599,12 +1607,40 @@ adminRouter.get("/appearance/themes", async (c) => {
             : undefined,
           screenshots: config?.screenshots,
           isActive: name === activeTheme,
-          parent: config?.parent, // Add parent theme info for child themes
+          parent: config?.parent,
         };
       }),
     );
 
+    return c.html(ThemeBrowserPage({
+      user: {
+        name: user.name || user.email,
+        email: user.email,
+      },
+      themes,
+      activeTheme,
+    }));
+  } catch (error: any) {
+    console.error("Error rendering themes browser:", error);
+    return c.text("Error al cargar los themes", 500);
+  }
+});
+
+/**
+ * GET /appearance/themes/settings - Active theme settings
+ */
+adminRouter.get("/appearance/themes/settings", async (c) => {
+  try {
+    const user = c.get("user");
+    const settingsSaved = c.req.query("saved") === "1";
+    const activeTheme = await themeService.getActiveTheme();
     const activeConfig = await themeService.loadThemeConfig(activeTheme);
+
+    if (!activeConfig) {
+      return c.redirect(`${env.ADMIN_PATH}/appearance/themes/browser`);
+    }
+
+    // Preparar custom settings
     let customSettings: Array<{
       key: string;
       label: string;
@@ -1643,19 +1679,27 @@ adminRouter.get("/appearance/themes", async (c) => {
       );
     }
 
-    return c.html(ThemesPage({
+    const theme = {
+      name: activeTheme,
+      displayName: activeConfig.displayName || activeConfig.name || activeTheme,
+      version: activeConfig.version,
+      description: activeConfig.description,
+      author: activeConfig.author,
+      screenshots: activeConfig.screenshots,
+    };
+
+    return c.html(ThemeSettingsPage({
       user: {
         name: user.name || user.email,
         email: user.email,
       },
-      themes,
-      activeTheme,
+      theme,
       customSettings,
       settingsSaved,
     }));
   } catch (error: any) {
-    console.error("Error rendering themes page:", error);
-    return c.text("Error al cargar los themes", 500);
+    console.error("Error rendering theme settings:", error);
+    return c.text("Error al cargar la configuración", 500);
   }
 });
 
@@ -1671,7 +1715,7 @@ adminRouter.post("/appearance/themes/activate", async (c) => {
     }
 
     await themeService.activateTheme(theme);
-    return c.redirect(`${env.ADMIN_PATH}/appearance/themes`);
+    return c.redirect(`${env.ADMIN_PATH}/appearance/themes/browser`);
   } catch (error: any) {
     console.error("Error activating theme:", error);
     return c.text("Error al activar el theme", 500);
@@ -1679,7 +1723,45 @@ adminRouter.post("/appearance/themes/activate", async (c) => {
 });
 
 /**
- * POST /appearance/themes/custom-settings - Update theme custom settings
+ * POST /appearance/themes/settings/save - Update theme settings
+ */
+adminRouter.post("/appearance/themes/settings/save", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const theme = parseStringField(body.theme) ||
+      await themeService.getActiveTheme();
+
+    const updates: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(body)) {
+      if (key.startsWith("custom_")) {
+        const settingKey = key.replace("custom_", "");
+
+        if (Array.isArray(value)) {
+          const lastValue = value[value.length - 1];
+          if (lastValue === "true" || lastValue === "false") {
+            updates[settingKey] = lastValue === "true";
+          } else {
+            updates[settingKey] = lastValue;
+          }
+        } else if (value === "true" || value === "false") {
+          updates[settingKey] = value === "true";
+        } else {
+          updates[settingKey] = value;
+        }
+      }
+    }
+
+    await themeService.updateThemeCustomSettings(theme, updates);
+    return c.redirect(`${env.ADMIN_PATH}/appearance/themes/settings?saved=1`);
+  } catch (error: any) {
+    console.error("Error updating theme settings:", error);
+    return c.text("Error al guardar la configuración del theme", 500);
+  }
+});
+
+/**
+ * POST /appearance/themes/custom-settings - Update theme custom settings (legacy route)
  */
 adminRouter.post("/appearance/themes/custom-settings", async (c) => {
   try {
