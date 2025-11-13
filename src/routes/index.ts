@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { serveStatic } from "hono/deno";
 import authRoutes from "./auth.ts";
 import userRoutes from "./users.ts";
 import roleRoutes from "./roles.ts";
@@ -37,6 +38,17 @@ import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
 
 export function registerRoutes(app: Hono) {
+  // Servir archivos estáticos de themes (DEBE ser lo primero)
+  app.get(
+    "/themes/*",
+    serveStatic({
+      root: "./src",
+      onNotFound: (path, c) => {
+        console.log(`Theme asset not found: ${path}`);
+      },
+    }),
+  );
+
   // API Health check
   app.get("/api", (c) => c.json({
     message: "LexCMS API",

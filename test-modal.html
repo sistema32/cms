@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Modal - DaisyUI</title>
+  <link rel="stylesheet" href="src/admin/assets/css/admin-compiled.css">
+</head>
+<body class="p-8">
+  <h1 class="text-2xl font-bold mb-4">Prueba de Modal DaisyUI</h1>
+
+  <button class="btn btn-primary" onclick="testModal.showModal()">Abrir Modal de Prueba</button>
+
+  <dialog id="testModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">¡Hola!</h3>
+      <p class="py-4">Este es un modal de prueba con DaisyUI</p>
+      <div class="modal-action">
+        <button class="btn" onclick="testModal.close()">Cerrar</button>
+        <button class="btn btn-primary" onclick="testModal.close()">Aceptar</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <script>
+    console.log('Test modal page loaded');
+    console.log('Modal element:', document.getElementById('testModal'));
+  </script>
+</body>
+</html>

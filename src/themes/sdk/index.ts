@@ -144,6 +144,21 @@ export type {
   TranslationData,
 } from "./i18n.ts";
 
+// Export comments system
+export {
+  renderCommentBox,
+  renderComments,
+  commentsScript,
+} from "../../lib/comments/index.ts";
+
+export type {
+  CommentAuthor,
+  CommentBoxOptions,
+  CommentData,
+  CommentsListOptions,
+  CommentsStats,
+} from "../../lib/comments/index.ts";
+
 /**
  * SDK version
  */

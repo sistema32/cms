@@ -57,6 +57,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         { id: "content.pages", label: "Páginas", path: `/${ROUTES.PAGES}` },
         { id: "content.categories", label: "Categorías", path: `/${ROUTES.CATEGORIES}` },
         { id: "content.tags", label: "Tags", path: `/${ROUTES.TAGS}` },
+        { id: "content.comments", label: "Comentarios", path: `/${ROUTES.COMMENTS}` },
         { id: "content.media", label: "Medios", path: `/${ROUTES.MEDIA}` },
       ],
     },
@@ -106,15 +107,21 @@ export const AdminLayout = (props: AdminLayoutProps) => {
 
   return html`
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="es" data-theme="light">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - LexCMS Admin</title>
         <script>
           // Dark mode initialization - must run BEFORE page renders to prevent flash
-          if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          const savedTheme = localStorage.getItem('theme');
+          const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+          if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'light');
           }
         </script>
         <link rel="stylesheet" href="${getAdminAsset('css/admin-compiled.css')}">
@@ -235,9 +242,11 @@ export const AdminLayout = (props: AdminLayoutProps) => {
             const html = document.documentElement;
             if (html.classList.contains('dark')) {
               html.classList.remove('dark');
+              html.setAttribute('data-theme', 'light');
               localStorage.setItem('theme', 'light');
             } else {
               html.classList.add('dark');
+              html.setAttribute('data-theme', 'dark');
               localStorage.setItem('theme', 'dark');
             }
           }

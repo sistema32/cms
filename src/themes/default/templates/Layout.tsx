@@ -48,7 +48,7 @@ export const Layout = (props: LayoutProps) => {
     <meta name="theme-color" content="${primaryColor}">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
+    <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/main.css">
 
     <style>
         :root {
@@ -70,7 +70,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/main.js"></script>
 </body>
 </html>`;
 };

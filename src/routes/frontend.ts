@@ -1,8 +1,13 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { db } from "../config/db.ts";
-import { content, categories as categoriesSchema, tags as tagsSchema } from "../db/schema.ts";
-import { eq, desc } from "drizzle-orm";
+import {
+  content,
+  categories as categoriesSchema,
+  tags as tagsSchema,
+  comments,
+} from "../db/schema.ts";
+import { eq, desc, count, and, isNull } from "drizzle-orm";
 import * as themeService from "../services/themeService.ts";
 import * as settingsService from "../services/settingsService.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
@@ -83,12 +88,8 @@ async function loadCommonTemplateData() {
   };
 }
 
-// ============= SERVIR ASSETS ESTÁTICOS =============
-
-// Servir archivos estáticos del theme
-frontendRouter.get("/themes/*", serveStatic({ root: "./src" }));
-
 // ============= RUTAS PÚBLICAS =============
+// Nota: Los assets estáticos de themes (/themes/*) se sirven desde index.ts
 
 /**
  * GET / - Homepage estática
@@ -348,6 +349,74 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
 
     const blogUrl = await getBlogBase().then(base => `/${base}`);
 
+    // Load comments for this post
+    const postComments = await db.query.comments.findMany({
+      where: and(
+        eq(comments.contentId, post.id),
+        eq(comments.status, "approved"),
+        isNull(comments.deletedAt),
+        isNull(comments.parentId) // Only top-level comments
+      ),
+      orderBy: [desc(comments.createdAt)],
+      limit: 50,
+      with: {
+        author: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    // Get comments stats
+    const [approvedCount] = await db
+      .select({ count: count() })
+      .from(comments)
+      .where(
+        and(
+          eq(comments.contentId, post.id),
+          eq(comments.status, "approved"),
+          isNull(comments.deletedAt)
+        )
+      );
+
+    const [pendingCount] = await db
+      .select({ count: count() })
+      .from(comments)
+      .where(
+        and(
+          eq(comments.contentId, post.id),
+          eq(comments.status, "pending"),
+          isNull(comments.deletedAt)
+        )
+      );
+
+    const commentsStats = {
+      total: approvedCount.count + pendingCount.count,
+      approved: approvedCount.count,
+      pending: pendingCount.count,
+    };
+
+    // Format comments
+    const formattedComments = postComments.map((comment) => ({
+      id: comment.id,
+      parentId: comment.parentId,
+      author: {
+        id: comment.authorId || undefined,
+        name: comment.authorName,
+        email: comment.authorEmail,
+        website: comment.authorWebsite || undefined,
+        avatar: comment.author?.avatar || undefined,
+      },
+      body: comment.body,
+      bodyCensored: comment.bodyCensored,
+      createdAt: comment.createdAt,
+      status: comment.status as "approved" | "pending" | "spam" | "deleted",
+    }));
+
     // Renderizar template
     return c.html(
       PostTemplate({
@@ -360,6 +429,8 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         menu: commonData.headerMenu,
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
+        comments: formattedComments,
+        commentsStats,
       })
     );
   } catch (error: any) {

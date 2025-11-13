@@ -3,6 +3,9 @@
  * Minimal styles for development
  */
 
+/* Import Comments Styles */
+@import url("../../sdk/comments.css");
+
 /* Base Typography */
 body {
   font-family: Inter, system-ui, -apple-system, sans-serif;

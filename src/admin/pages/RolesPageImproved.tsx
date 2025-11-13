@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import { AdminLayout } from "../components/AdminLayout.tsx";
 import { env } from "../../config/env.ts";
 
@@ -72,6 +72,40 @@ export const RolesPageImproved = (props: RolesPageProps) => {
   }));
 
   const content = html`
+    <style>
+      /* Fix modal visibility issues */
+      dialog.modal {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+
+      dialog.modal[open] {
+        display: flex !important;
+      }
+
+      dialog.modal::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      dialog.modal .modal-box {
+        position: relative;
+        z-index: 1000;
+        background: white;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      /* Dark mode support */
+      .dark dialog.modal .modal-box {
+        background: rgb(31, 41, 55);
+        color: white;
+      }
+    </style>
+
     <div class="page-header">
       <div>
         <h1 class="page-title">Roles y Permisos</h1>
@@ -417,10 +451,10 @@ export const RolesPageImproved = (props: RolesPageProps) => {
       </form>
     </dialog>
 
-    <script>
+    ${raw(`<script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
       // Store roles data
-      const rolesData = \${JSON.stringify(rolesForScript)};
+      const rolesData = ${JSON.stringify(rolesForScript)};
 
       // Toggle module permissions
       function toggleModulePermissions(checkbox) {
@@ -504,7 +538,7 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         document.getElementById('viewPermissionsTitle').textContent = 'Permisos de "' + role.name + '"';
 
-        const permissions = \${JSON.stringify(permissions)};
+        const permissions = ${JSON.stringify(permissions)};
         const rolePermissions = permissions.filter(p => role.permissionIds.includes(p.id));
 
         // Group by module
@@ -516,24 +550,27 @@ export const RolesPageImproved = (props: RolesPageProps) => {
 
         let content = '<div class="space-y-4">';
         for (const [module, perms] of Object.entries(grouped)) {
-          content += \`
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm">
-                \${module} <span class="text-xs text-gray-500">(\${perms.length})</span>
-              </div>
-              <div class="p-3 space-y-1">
-                \${perms.map(p => \`
-                  <div class="flex items-center text-sm">
-                    <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="font-medium">\${p.action}</span>
-                    \${p.description ? \`<span class="text-xs text-gray-500 ml-2">- \${p.description}</span>\` : ''}
-                  </div>
-                \`).join('')}
-              </div>
-            </div>
-          \`;
+          content += '<div class="border border-gray-200 dark:border-gray-700 rounded-lg">' +
+            '<div class="bg-gray-50 dark:bg-gray-800 px-3 py-2 font-medium text-sm">' +
+              module + ' <span class="text-xs text-gray-500">(' + perms.length + ')</span>' +
+            '</div>' +
+            '<div class="p-3 space-y-1">';
+
+          perms.forEach(p => {
+            content += '<div class="flex items-center text-sm">' +
+              '<svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">' +
+                '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>' +
+              '</svg>' +
+              '<span class="font-medium">' + p.action + '</span>';
+
+            if (p.description) {
+              content += '<span class="text-xs text-gray-500 ml-2">- ' + p.description + '</span>';
+            }
+
+            content += '</div>';
+          });
+
+          content += '</div></div>';
         }
         content += '</div>';
 
@@ -584,8 +621,8 @@ export const RolesPageImproved = (props: RolesPageProps) => {
       }
 
       // ESC and backdrop clicks are handled automatically by DaisyUI's dialog element
-    </script>
-  `;
+    </script>`)}
+`;
 
   return AdminLayout({ user, children: content, title: "Roles y Permisos" });
 };

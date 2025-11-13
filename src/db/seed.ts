@@ -2,6 +2,8 @@ import { db } from "../config/db.ts";
 import { users } from "./schema.ts";
 import { hash } from "bcrypt";
 import { seedRBAC } from "./seeds/rbac.ts";
+import { seedTestContent } from "./seeds/testContent.ts";
+import { seedTestComments } from "./seeds/testComments.ts";
 import { eq } from "drizzle-orm";
 
 console.log("🌱 Seeding database...\n");
@@ -34,6 +36,12 @@ console.log("   Password: password123\n");
 
 // Ejecutar seed de RBAC (roles y permisos)
 await seedRBAC();
+
+// Ejecutar seed de contenido de prueba
+await seedTestContent();
+
+// Ejecutar seed de comentarios de prueba
+await seedTestComments();
 
 console.log("\n✅ Database seeded successfully!");
 console.log("\n🎉 Sistema listo para usar:");

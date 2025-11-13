@@ -28,6 +28,7 @@ export const ROUTES = {
 
   CATEGORIES: 'categories',
   TAGS: 'tags',
+  COMMENTS: 'comments',
 
   MEDIA: 'media',
   MEDIA_UPLOAD: 'media/upload',

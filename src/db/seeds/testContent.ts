@@ -38,24 +38,16 @@ export async function seedTestContent() {
       console.log("✅ Content type 'post' ya existe");
     }
 
-    // Crear usuario de prueba si no existe
-    const existingUser = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, "demo@lexcms.com")
-    });
+    // Obtener el primer usuario disponible (normalmente el admin)
+    const existingUser = await db.query.users.findFirst();
 
-    let userId = existingUser?.id;
-
-    if (!userId) {
-      const [user] = await db.insert(users).values({
-        email: "demo@lexcms.com",
-        name: "Demo Author",
-        passwordHash: "$2a$10$YourHashHere" // Este será reemplazado si te registras
-      }).returning();
-      userId = user.id;
-      console.log("✅ Usuario de prueba creado");
-    } else {
-      console.log("✅ Usuario de prueba ya existe");
+    if (!existingUser) {
+      console.log("⚠️  No se encontró ningún usuario. Ejecuta el seed principal primero.");
+      return;
     }
+
+    const userId = existingUser.id;
+    console.log(`✅ Usando usuario: ${existingUser.email}`);
 
     // Crear categorías (solo si no existen)
     let techCat = await db.query.categories.findFirst({

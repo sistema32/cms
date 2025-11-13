@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import { AdminLayout } from "../components/AdminLayout.tsx";
 import { env } from "../../config/env.ts";
 
@@ -77,6 +77,40 @@ export const UsersPageImproved = (props: UsersPageProps) => {
   };
 
   const content = html`
+    <style>
+      /* Fix modal visibility issues */
+      #userModal {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #userModal[open] {
+        display: flex !important;
+      }
+
+      #userModal::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      #userModal .modal-box {
+        position: relative;
+        z-index: 1000;
+        background: white;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      /* Dark mode support */
+      .dark #userModal .modal-box {
+        background: rgb(31, 41, 55);
+        color: white;
+      }
+    </style>
+
     <div class="page-header">
       <div>
         <h1 class="page-title">Gestión de Usuarios</h1>
@@ -378,12 +412,11 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       }
     </div>
 
-    <!-- Create/Edit Modal - DaisyUI -->
+    <!-- Create/Edit User Modal -->
     <dialog id="userModal" class="modal">
-      <div class="modal-box max-w-6xl">
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-        </form>
+      <div class="modal-box w-11/12 max-w-2xl relative">
+        <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="document.getElementById('userModal').close()">✕</button>
+
         <h3 id="modalTitle" class="font-bold text-lg mb-4">Nuevo Usuario</h3>
 
         <form id="userForm" method="POST">
@@ -395,7 +428,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             </label>
             <input
               type="text"
-              id="name"
+              id="userName"
               name="name"
               class="input input-bordered w-full"
               required
@@ -408,7 +441,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             </label>
             <input
               type="email"
-              id="email"
+              id="userEmail"
               name="email"
               class="input input-bordered w-full"
               required
@@ -419,10 +452,10 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             <label class="label">
               <span class="label-text">Rol</span>
             </label>
-            <select id="roleId" name="roleId" class="select select-bordered w-full" required>
+            <select id="userRoleId" name="roleId" class="select select-bordered w-full" required>
               <option value="">Seleccionar rol...</option>
               ${roles.map(
-                (r) => html` <option value="${r.id}">${r.name}${r.isSystem ? " (sistema)" : ""}</option> `
+                (r) => html`<option value="${r.id}">${r.name}${r.isSystem ? " (sistema)" : ""}</option>`
               )}
             </select>
           </div>
@@ -431,28 +464,28 @@ export const UsersPageImproved = (props: UsersPageProps) => {
             <label class="label">
               <span class="label-text">Estado</span>
             </label>
-            <select id="status" name="status" class="select select-bordered w-full" required>
+            <select id="userStatus" name="status" class="select select-bordered w-full" required>
               <option value="active">Activo</option>
               <option value="inactive">Inactivo</option>
               <option value="suspended">Suspendido</option>
             </select>
           </div>
 
-          <div id="passwordSection" class="form-control w-full mb-4">
+          <div class="form-control w-full mb-4">
             <label class="label">
               <span class="label-text">Contraseña</span>
+              <span id="passwordHint" class="label-text-alt">Dejar vacío para mantener la actual</span>
             </label>
             <input
               type="password"
-              id="password"
+              id="userPassword"
               name="password"
               class="input input-bordered w-full"
-              placeholder="Dejar vacío para mantener la actual"
             />
           </div>
 
           <div class="modal-action">
-            <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancelar</button>
+            <button type="button" class="btn" onclick="document.getElementById('userModal').close()">Cancelar</button>
             <button type="submit" class="btn btn-primary">Guardar</button>
           </div>
         </form>
@@ -462,42 +495,39 @@ export const UsersPageImproved = (props: UsersPageProps) => {
       </form>
     </dialog>
 
-    <script>
+    ${raw(`<script>
       const ADMIN_BASE_PATH = ${JSON.stringify(adminPath)};
 
-      // Select All functionality
+      // Bulk Actions Functions
       function toggleSelectAll(checkbox) {
         const checkboxes = document.querySelectorAll('.userCheckbox:not([disabled])');
         checkboxes.forEach(cb => cb.checked = checkbox.checked);
         updateBulkActions();
       }
 
-      // Update bulk actions visibility
       function updateBulkActions() {
         const checkboxes = document.querySelectorAll('.userCheckbox:checked');
         const bulkActions = document.getElementById('bulkActions');
         const selectedCount = document.getElementById('selectedCount');
 
         if (checkboxes.length > 0) {
-          bulkActions.classList.remove('hidden');
-          selectedCount.textContent = checkboxes.length;
+          bulkActions?.classList.remove('hidden');
+          if (selectedCount) selectedCount.textContent = checkboxes.length;
         } else {
-          bulkActions.classList.add('hidden');
+          bulkActions?.classList.add('hidden');
         }
       }
 
-      // Get selected user IDs
       function getSelectedIds() {
         const checkboxes = document.querySelectorAll('.userCheckbox:checked');
         return Array.from(checkboxes).map(cb => parseInt(cb.value));
       }
 
-      // Bulk update status
       async function bulkUpdateStatus(status) {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm('Estás seguro de cambiar el estado de ' + ids.length + ' usuario(s) a "' + status + '"?')) {
+        if (!confirm('¿Cambiar el estado de ' + ids.length + ' usuario(s) a "' + status + '"?')) {
           return;
         }
 
@@ -519,12 +549,11 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         }
       }
 
-      // Bulk delete
       async function bulkDelete() {
         const ids = getSelectedIds();
         if (ids.length === 0) return;
 
-        if (!confirm('Estás seguro de eliminar ' + ids.length + ' usuario(s)? Esta acción no se puede deshacer.')) {
+        if (!confirm('¿Eliminar ' + ids.length + ' usuario(s)? Esta acción no se puede deshacer.')) {
           return;
         }
 
@@ -546,39 +575,47 @@ export const UsersPageImproved = (props: UsersPageProps) => {
         }
       }
 
-      // Modal functions
+      // Modal Functions - Simplified
       function showCreateModal() {
+        const modal = document.getElementById('userModal');
+        if (!modal) return;
+
+        // Reset form
         document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
         document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/create';
-        document.getElementById('userId').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('email').value = '';
-        document.getElementById('roleId').value = '';
-        document.getElementById('status').value = 'active';
-        document.getElementById('password').value = '';
-        document.getElementById('password').required = true;
-        document.getElementById('userModal').showModal();
+        document.getElementById('userName').value = '';
+        document.getElementById('userEmail').value = '';
+        document.getElementById('userRoleId').value = '';
+        document.getElementById('userStatus').value = 'active';
+        document.getElementById('userPassword').value = '';
+        document.getElementById('userPassword').required = true;
+        document.getElementById('passwordHint').textContent = '';
+
+        // Show modal
+        modal.showModal();
       }
 
       function editUser(id, name, email, roleId, status) {
+        const modal = document.getElementById('userModal');
+        if (!modal) return;
+
+        // Set form values
         document.getElementById('modalTitle').textContent = 'Editar Usuario';
         document.getElementById('userForm').action = ADMIN_BASE_PATH + '/users/edit/' + id;
-        document.getElementById('userId').value = id;
-        document.getElementById('name').value = name;
-        document.getElementById('email').value = email;
-        document.getElementById('roleId').value = roleId || '';
-        document.getElementById('status').value = status || 'active';
-        document.getElementById('password').value = '';
-        document.getElementById('password').required = false;
-        document.getElementById('userModal').showModal();
-      }
+        document.getElementById('userName').value = name || '';
+        document.getElementById('userEmail').value = email || '';
+        document.getElementById('userRoleId').value = roleId || '';
+        document.getElementById('userStatus').value = status || 'active';
+        document.getElementById('userPassword').value = '';
+        document.getElementById('userPassword').required = false;
+        document.getElementById('passwordHint').textContent = 'Dejar vacío para mantener la actual';
 
-      function closeModal() {
-        document.getElementById('userModal').close();
+        // Show modal
+        modal.showModal();
       }
 
       async function deleteUser(id, email) {
-        if (!confirm('Estás seguro de eliminar el usuario "' + email + '"?')) {
+        if (!confirm('¿Eliminar el usuario "' + email + '"?')) {
           return;
         }
 
@@ -597,9 +634,7 @@ export const UsersPageImproved = (props: UsersPageProps) => {
           alert('Error de conexión');
         }
       }
-
-      // ESC and backdrop clicks are handled automatically by DaisyUI's dialog element
-    </script>
+    </script>`)}
   `;
 
   return AdminLayout({ user, children: content, title: "Usuarios" });
