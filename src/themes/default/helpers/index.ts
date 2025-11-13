@@ -165,6 +165,7 @@ export async function getRecentPosts(limit = 5): Promise<PostData[]> {
         },
       },
       featuredImage: true,
+      contentSeo: true,
     },
   });
 
@@ -233,6 +234,7 @@ export async function getPaginatedPosts(
           },
         },
         featuredImage: true,
+        contentSeo: true,
       },
     });
 
@@ -290,6 +292,7 @@ export async function getPaginatedPosts(
             },
           },
           featuredImage: true,
+          contentSeo: true,
         },
       });
 
@@ -344,6 +347,7 @@ export async function getPaginatedPosts(
           },
         },
         featuredImage: true,
+        contentSeo: true,
       },
     });
 
@@ -413,6 +417,7 @@ export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
         },
       },
       featuredImage: true,
+      contentSeo: true,
     },
   });
 
@@ -883,6 +888,8 @@ export async function getPostsByCategory(
           tag: true,
         },
       },
+      featuredImage: true,
+      contentSeo: true,
     },
   });
 
@@ -964,6 +971,8 @@ export async function getPostsByTag(
           tag: true,
         },
       },
+      featuredImage: true,
+      contentSeo: true,
     },
   });
 
@@ -1044,6 +1053,8 @@ export async function searchPosts(
           tag: true,
         },
       },
+      featuredImage: true,
+      contentSeo: true,
     },
   });
 

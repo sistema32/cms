@@ -11,6 +11,10 @@ import { eq, desc, count, and, isNull } from "drizzle-orm";
 import * as themeService from "../services/themeService.ts";
 import * as settingsService from "../services/settingsService.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { SEOHelper } from "../lib/seo/SEOHelper.ts";
+import { StructuredDataGenerator } from "../lib/seo/StructuredDataGenerator.ts";
+import { URLOptimizer } from "../lib/seo-optimization/URLOptimizer.ts";
+import { env } from "../config/env.ts";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
@@ -271,6 +275,176 @@ async function loadCommonTemplateData() {
   return data;
 }
 
+// ============= FUNCIONES AUXILIARES DE SEO =============
+
+const seoHelper = SEOHelper.getInstance();
+const structuredDataGenerator = new StructuredDataGenerator();
+const urlOptimizer = new URLOptimizer();
+
+/**
+ * Genera todos los meta tags SEO completos para una página
+ */
+async function generateSEOMetaTags(options: {
+  content?: any;
+  url: string;
+  pageType?: 'article' | 'website' | 'blog';
+  title?: string;
+  description?: string;
+  image?: string;
+  author?: { name: string; email?: string };
+  categories?: Array<{ name: string; slug: string }>;
+  tags?: Array<{ name: string; slug: string }>;
+  breadcrumbs?: Array<{ label: string; url: string }>;
+  pagination?: { prev?: string; next?: string };
+}): Promise<string> {
+  const {
+    content: contentData,
+    url,
+    pageType = 'website',
+    title: defaultTitle,
+    description: defaultDescription,
+    image: defaultImage,
+    author,
+    categories,
+    tags,
+    breadcrumbs,
+    pagination,
+  } = options;
+
+  const site = await settingsService.getSetting("site_name", "LexCMS");
+  const siteUrl = await settingsService.getSetting("site_url", env.BASE_URL || "http://localhost:8000");
+  const twitterHandle = await settingsService.getSetting("twitter_handle", "@lexcms");
+
+  let metadata: any = {
+    title: defaultTitle || site,
+    description: defaultDescription || "",
+    canonical: `${siteUrl}${url}`,
+    robots: "index,follow",
+    openGraph: {
+      title: defaultTitle || site,
+      type: pageType,
+      url: `${siteUrl}${url}`,
+      siteName: site,
+      locale: "es_ES",
+    },
+    twitterCard: {
+      card: "summary_large_image",
+      title: defaultTitle || site,
+      site: twitterHandle,
+    },
+  };
+
+  // Si hay contenido, usar datos SEO personalizados si existen
+  if (contentData) {
+    const seoData = contentData.contentSeo;
+
+    // Título
+    const finalTitle = seoData?.metaTitle || contentData.title || defaultTitle || site;
+    metadata.title = finalTitle;
+    metadata.openGraph.title = seoData?.ogTitle || finalTitle;
+    metadata.twitterCard.title = seoData?.twitterTitle || finalTitle;
+
+    // Descripción
+    const finalDescription = seoData?.metaDescription || contentData.excerpt || defaultDescription || "";
+    metadata.description = finalDescription;
+    metadata.openGraph.description = seoData?.ogDescription || finalDescription;
+    metadata.twitterCard.description = seoData?.twitterDescription || finalDescription;
+
+    // Imagen
+    const finalImage = seoData?.ogImage || contentData.featuredImage?.url || contentData.featureImage || defaultImage;
+    if (finalImage) {
+      metadata.openGraph.image = finalImage.startsWith('http') ? finalImage : `${siteUrl}${finalImage}`;
+      metadata.twitterCard.image = metadata.openGraph.image;
+      metadata.twitterCard.imageAlt = seoData?.twitterImageAlt || contentData.title;
+    }
+
+    // Canonical
+    if (seoData?.canonicalUrl) {
+      metadata.canonical = seoData.canonicalUrl;
+    }
+
+    // Robots
+    const noIndex = seoData?.noIndex || false;
+    const noFollow = seoData?.noFollow || false;
+    if (noIndex || noFollow) {
+      const robots = [];
+      if (noIndex) robots.push('noindex');
+      else robots.push('index');
+      if (noFollow) robots.push('nofollow');
+      else robots.push('follow');
+      metadata.robots = robots.join(',');
+    }
+
+    // Open Graph type para artículos
+    if (pageType === 'article' && seoData?.ogType) {
+      metadata.openGraph.type = seoData.ogType;
+    } else if (pageType === 'article') {
+      metadata.openGraph.type = 'article';
+      metadata.openGraph.publishedTime = contentData.publishedAt?.toISOString();
+      metadata.openGraph.modifiedTime = contentData.updatedAt?.toISOString();
+      if (author) {
+        metadata.openGraph.author = author.name;
+      }
+      if (categories && categories.length > 0) {
+        metadata.openGraph.section = categories[0].name;
+      }
+      if (tags && tags.length > 0) {
+        metadata.openGraph.tags = tags.map((t: any) => t.name);
+      }
+    }
+
+    // Structured Data (Schema.org)
+    if (pageType === 'article') {
+      const articleSchema = structuredDataGenerator.generateArticleSchema({
+        title: finalTitle,
+        description: finalDescription,
+        url: metadata.canonical,
+        image: metadata.openGraph.image || "",
+        datePublished: contentData.publishedAt?.toISOString() || contentData.createdAt?.toISOString(),
+        dateModified: contentData.updatedAt?.toISOString(),
+        author: author ? {
+          name: author.name,
+          url: `${siteUrl}/author/${author.email}`,
+        } : undefined,
+      });
+      metadata.schema = articleSchema;
+    } else if (seoData?.schemaJson) {
+      // Usar schema personalizado si existe
+      try {
+        metadata.schema = JSON.parse(seoData.schemaJson);
+      } catch (e) {
+        console.error("Error parsing custom schema JSON:", e);
+      }
+    }
+  }
+
+  // Generar meta tags HTML
+  let metaTags = seoHelper.generateAllMetaTags(metadata);
+
+  // Agregar breadcrumbs si existen
+  if (breadcrumbs && breadcrumbs.length > 0) {
+    const breadcrumbSchema = urlOptimizer.generateBreadcrumbSchema(breadcrumbs);
+    metaTags += `\n<script type="application/ld+json">\n${JSON.stringify(breadcrumbSchema, null, 2)}\n</script>`;
+  }
+
+  // Agregar pagination links
+  if (pagination) {
+    if (pagination.prev) {
+      metaTags += `\n<link rel="prev" href="${siteUrl}${pagination.prev}" />`;
+    }
+    if (pagination.next) {
+      metaTags += `\n<link rel="next" href="${siteUrl}${pagination.next}" />`;
+    }
+  }
+
+  // Preload de recursos críticos
+  metaTags += '\n<!-- Preload Critical Resources -->';
+  metaTags += `\n<link rel="preconnect" href="${siteUrl}" />`;
+  metaTags += '\n<link rel="dns-prefetch" href="https://fonts.googleapis.com" />';
+
+  return metaTags;
+}
+
 // ============= FUNCIONES AUXILIARES DE RENDERIZADO =============
 
 /**
@@ -297,6 +471,36 @@ async function renderBlogTemplate(c: any, page = 1) {
   const recentPosts = await themeHelpers.getRecentPosts(5);
   const tags = await themeHelpers.getPopularTags(20);
 
+  // Generar pagination links
+  const paginationLinks: { prev?: string; next?: string } = {};
+  if (page > 1) {
+    paginationLinks.prev = page === 2 ? `/${blogBase}` : `/${blogBase}/page/${page - 1}`;
+  }
+  if (page < totalPages) {
+    paginationLinks.next = `/${blogBase}/page/${page + 1}`;
+  }
+
+  // Generar breadcrumbs
+  const breadcrumbs = [
+    { label: 'Inicio', url: '/' },
+    { label: 'Blog', url: `/${blogBase}` },
+  ];
+  if (page > 1) {
+    breadcrumbs.push({ label: `Página ${page}`, url: `/${blogBase}/page/${page}` });
+  }
+
+  // Generar meta tags SEO completos
+  const blogTitle = page > 1 ? `Blog - Página ${page}` : 'Blog';
+  const blogDescription = await settingsService.getSetting("blog_description", "Todos nuestros artículos");
+  const seoMetaTags = await generateSEOMetaTags({
+    url: page === 1 ? `/${blogBase}` : `/${blogBase}/page/${page}`,
+    pageType: 'blog',
+    title: blogTitle,
+    description: blogDescription,
+    breadcrumbs,
+    pagination: paginationLinks,
+  });
+
   return c.html(
     BlogTemplate({
       site,
@@ -310,6 +514,7 @@ async function renderBlogTemplate(c: any, page = 1) {
       blogBase,
       menu: commonData.headerMenu,
       footerMenu: commonData.footerMenu,
+      seoMetaTags,
     })
   );
 }
@@ -328,6 +533,7 @@ async function renderPageById(c: any, pageId: number) {
     with: {
       author: true,
       featuredImage: true,
+      contentSeo: true,
     },
   });
 
@@ -355,6 +561,21 @@ async function renderPageById(c: any, pageId: number) {
     },
   };
 
+  // Generar breadcrumbs para página
+  const breadcrumbs = [
+    { label: 'Inicio', url: '/' },
+    { label: page.title, url: `/${page.slug}` },
+  ];
+
+  // Generar meta tags SEO completos
+  const seoMetaTags = await generateSEOMetaTags({
+    content: page,
+    url: `/${page.slug}`,
+    pageType: 'website',
+    author: pageData.author,
+    breadcrumbs,
+  });
+
   return c.html(
     PageTemplate({
       site,
@@ -365,6 +586,7 @@ async function renderPageById(c: any, pageId: number) {
       menu: commonData.headerMenu,
       footerMenu: commonData.footerMenu,
       categories: commonData.categories,
+      seoMetaTags,
     })
   );
 }
@@ -720,6 +942,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
           },
         },
         featuredImage: true,
+        contentSeo: true,
       },
     });
 
@@ -838,6 +1061,30 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
       status: comment.status as "approved" | "pending" | "spam" | "deleted",
     }));
 
+    // Generar breadcrumbs
+    const breadcrumbs = [
+      { label: 'Inicio', url: '/' },
+      { label: 'Blog', url: blogUrl },
+    ];
+    if (postData.categories.length > 0) {
+      breadcrumbs.push({
+        label: postData.categories[0].name,
+        url: `/category/${postData.categories[0].slug}`,
+      });
+    }
+    breadcrumbs.push({ label: post.title, url: `${blogUrl}/${post.slug}` });
+
+    // Generar meta tags SEO completos
+    const seoMetaTags = await generateSEOMetaTags({
+      content: post,
+      url: `${blogUrl}/${post.slug}`,
+      pageType: 'article',
+      author: postData.author,
+      categories: postData.categories,
+      tags: postData.tags,
+      breadcrumbs,
+    });
+
     // Renderizar template
     return c.html(
       PostTemplate({
@@ -848,6 +1095,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         relatedPosts,
         blogUrl,
         menu: commonData.headerMenu,
+        seoMetaTags,
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
         comments: formattedComments,

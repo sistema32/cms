@@ -14,6 +14,7 @@ interface LayoutProps {
   description?: string;
   children: any;
   bodyClass?: string;
+  seoMetaTags?: string;
 }
 
 export const Layout = (props: LayoutProps) => {
@@ -25,6 +26,7 @@ export const Layout = (props: LayoutProps) => {
     description = site.description,
     children,
     bodyClass = "",
+    seoMetaTags = "",
   } = props;
 
   const pageTitle = title ? `${title} - ${site.name}` : site.name;
@@ -35,16 +37,23 @@ export const Layout = (props: LayoutProps) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    ${seoMetaTags ? html([seoMetaTags]) : html`
     <title>${pageTitle}</title>
     <meta name="description" content="${description}">
+    `}
 
-    <!-- Fonts -->
+    <!-- Preload Critical Resources -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    <link rel="preload" href="/themes/${activeTheme}/assets/css/${activeTheme}.css" as="style">
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="/themes/${activeTheme}/assets/css/${activeTheme}.css">
@@ -124,7 +133,7 @@ export const Layout = (props: LayoutProps) => {
     ${children}
 
     <!-- Scripts -->
-    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js"></script>
+    <script src="/themes/${activeTheme}/assets/js/${activeTheme}.js" defer></script>
 </body>
 </html>`;
 };
