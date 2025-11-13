@@ -320,9 +320,7 @@ export const ThemeEditorPage = (props: ThemeEditorPageProps) => {
               <input type="hidden" name="theme" value="${themeName}" />
               <input type="hidden" name="file" value="${currentFile}" />
 
-              <div class="line-numbers" id="line-numbers">
-                ${currentContent.split("\n").map((_, i) => html`<div>${i + 1}</div>`).join("")}
-              </div>
+              <div class="line-numbers" id="line-numbers"></div>
 
               <textarea
                 name="content"
@@ -349,9 +347,13 @@ export const ThemeEditorPage = (props: ThemeEditorPageProps) => {
                 lineNumbers.scrollTop = editor.scrollTop;
               }
 
-              // Initialize
+              // Initialize line numbers on load
+              document.addEventListener('DOMContentLoaded', function() {
+                updateLineNumbers();
+              });
+
+              // Tab key handling
               document.getElementById('code-editor').addEventListener('keydown', function(e) {
-                // Tab key handling
                 if (e.key === 'Tab') {
                   e.preventDefault();
                   const start = this.selectionStart;
