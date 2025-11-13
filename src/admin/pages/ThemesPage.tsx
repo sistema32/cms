@@ -16,6 +16,7 @@ export interface ThemeSummary {
     mobile?: string;
   };
   isActive: boolean;
+  parent?: string; // Parent theme name for child themes
 }
 
 interface ThemeCustomSetting {
@@ -230,7 +231,7 @@ export const ThemesPage = (props: ThemesPageProps) => {
         <div class="theme-card">
           ${renderScreenshot(active?.screenshots)}
           <div class="theme-card__body space-y-4">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
               <h2 class="text-xl font-semibold">
                 ${active?.displayName || active?.name || "Theme activo"}
                 ${active?.version
@@ -239,6 +240,13 @@ export const ThemesPage = (props: ThemesPageProps) => {
               </h2>
               ${active
                 ? html`<span class="theme-badge">Activo</span>`
+                : ""}
+              ${active?.parent
+                ? html`
+                  <span class="theme-badge" style="background: rgba(59, 130, 246, 0.14); color: rgba(37, 99, 235, 0.95);">
+                    Child de ${active.parent}
+                  </span>
+                `
                 : ""}
             </div>
 
@@ -369,6 +377,141 @@ export const ThemesPage = (props: ThemesPageProps) => {
                                     </div>
                                   `;
                                 }
+                                case "textarea": {
+                                  return html`
+                                    <div class="col-span-2">
+                                      <label class="form-label">${setting.label}</label>
+                                      <textarea
+                                        name="${fieldName}"
+                                        rows="4"
+                                        class="form-input"
+                                        placeholder="${setting.description || ''}"
+                                      >${toStringValue(currentValue)}</textarea>
+                                      ${setting.description
+                                        ? html`
+                                          <p class="text-xs text-gray-500 mt-1">
+                                            ${setting.description}
+                                          </p>
+                                        `
+                                        : ""}
+                                    </div>
+                                  `;
+                                }
+                                case "number": {
+                                  const numberSetting = setting as any;
+                                  return html`
+                                    <div>
+                                      <label class="form-label">${setting.label}</label>
+                                      <input
+                                        type="number"
+                                        name="${fieldName}"
+                                        value="${toStringValue(currentValue)}"
+                                        min="${numberSetting.min || ''}"
+                                        max="${numberSetting.max || ''}"
+                                        step="${numberSetting.step || '1'}"
+                                        class="form-input"
+                                      />
+                                      ${setting.description
+                                        ? html`
+                                          <p class="text-xs text-gray-500 mt-1">
+                                            ${setting.description}
+                                          </p>
+                                        `
+                                        : ""}
+                                    </div>
+                                  `;
+                                }
+                                case "url": {
+                                  return html`
+                                    <div>
+                                      <label class="form-label">${setting.label}</label>
+                                      <input
+                                        type="url"
+                                        name="${fieldName}"
+                                        value="${toStringValue(currentValue)}"
+                                        placeholder="https://..."
+                                        class="form-input"
+                                      />
+                                      ${setting.description
+                                        ? html`
+                                          <p class="text-xs text-gray-500 mt-1">
+                                            ${setting.description}
+                                          </p>
+                                        `
+                                        : ""}
+                                    </div>
+                                  `;
+                                }
+                                case "range": {
+                                  const rangeSetting = setting as any;
+                                  return html`
+                                    <div class="col-span-2">
+                                      <label class="form-label">
+                                        ${setting.label}
+                                        <span class="ml-2 text-sm font-mono text-purple-600 dark:text-purple-400" id="${fieldName}_value">
+                                          ${toStringValue(currentValue)}
+                                        </span>
+                                      </label>
+                                      <input
+                                        type="range"
+                                        name="${fieldName}"
+                                        value="${toStringValue(currentValue)}"
+                                        min="${rangeSetting.min || 0}"
+                                        max="${rangeSetting.max || 100}"
+                                        step="${rangeSetting.step || 1}"
+                                        class="form-range w-full"
+                                        oninput="document.getElementById('${fieldName}_value').textContent = this.value"
+                                      />
+                                      ${setting.description
+                                        ? html`
+                                          <p class="text-xs text-gray-500 mt-1">
+                                            ${setting.description}
+                                          </p>
+                                        `
+                                        : ""}
+                                    </div>
+                                  `;
+                                }
+                                case "image_upload": {
+                                  return html`
+                                    <div class="col-span-2">
+                                      <label class="form-label">${setting.label}</label>
+                                      <div class="space-y-2">
+                                        ${currentValue ? html`
+                                          <img
+                                            src="${currentValue}"
+                                            alt="Preview"
+                                            class="h-32 w-auto rounded border border-gray-300 dark:border-gray-600"
+                                          />
+                                        ` : ""}
+                                        <div class="flex gap-2">
+                                          <input
+                                            type="text"
+                                            name="${fieldName}"
+                                            value="${toStringValue(currentValue)}"
+                                            placeholder="URL de la imagen"
+                                            class="form-input flex-1"
+                                            id="${fieldName}_input"
+                                          />
+                                          <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            onclick="alert('Media library integration coming soon')"
+                                          >
+                                            Examinar
+                                          </button>
+                                        </div>
+                                        ${setting.description
+                                          ? html`
+                                            <p class="text-xs text-gray-500">
+                                              ${setting.description}
+                                            </p>
+                                          `
+                                          : ""}
+                                      </div>
+                                    </div>
+                                  `;
+                                }
                                 case "text":
                                 case "image":
                                 default: {
@@ -424,30 +567,28 @@ export const ThemesPage = (props: ThemesPageProps) => {
                     <div class="theme-card">
                       ${renderScreenshot(theme.screenshots)}
                       <div class="theme-card__body space-y-3">
-                        <div class="flex items-center justify-between gap-2">
-                          <div>
-                            <h3 class="text-lg font-semibold">
-                              ${theme.displayName || theme.name}
-                            </h3>
-                            ${theme.version
-                              ? html`
-                                <span class="text-xs text-gray-500">v${theme.version}</span>
-                              `
-                              : ""}
-                          </div>
-                          <form
-                            method="POST"
-                            action="${env.ADMIN_PATH}/appearance/themes/activate"
-                          >
-                            <input type="hidden" name="theme" value="${theme.name}" />
-                            <button type="submit" class="btn-action btn-sm">
-                              Activar
-                            </button>
-                          </form>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <h3 class="text-lg font-semibold">
+                            ${theme.displayName || theme.name}
+                          </h3>
+                          ${theme.version
+                            ? html`
+                              <span class="text-xs text-gray-500">v${theme.version}</span>
+                            `
+                            : ""}
+                          ${theme.parent
+                            ? html`
+                              <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                Child de ${theme.parent}
+                              </span>
+                            `
+                            : ""}
                         </div>
+
                         <p class="text-sm text-gray-500 dark:text-gray-400">
                           ${theme.description || "Theme disponible para activar."}
                         </p>
+
                         ${theme.author?.name
                           ? html`
                             <p class="text-xs text-gray-400">
@@ -456,7 +597,7 @@ export const ThemesPage = (props: ThemesPageProps) => {
                                 ? html`
                                   <a
                                     href="${theme.author.url}"
-                                    class="text-purple-500"
+                                    class="text-purple-500 hover:text-purple-600"
                                     target="_blank"
                                   >
                                     ${theme.author.name}
@@ -466,6 +607,32 @@ export const ThemesPage = (props: ThemesPageProps) => {
                             </p>
                           `
                           : ""}
+
+                        <div class="flex gap-2 flex-wrap pt-2">
+                          <form
+                            method="POST"
+                            action="${env.ADMIN_PATH}/appearance/themes/activate"
+                            class="flex-1"
+                          >
+                            <input type="hidden" name="theme" value="${theme.name}" />
+                            <button type="submit" class="btn-action btn-sm w-full">
+                              Activar
+                            </button>
+                          </form>
+                          <a
+                            href="${env.ADMIN_PATH}/appearance/themes/preview?theme=${theme.name}"
+                            class="btn-secondary btn-sm flex-1 text-center"
+                            target="_blank"
+                          >
+                            Vista previa
+                          </a>
+                        </div>
+                        <a
+                          href="${env.ADMIN_PATH}/appearance/themes/customize?theme=${theme.name}"
+                          class="btn-ghost btn-sm w-full text-center block"
+                        >
+                          Personalizar
+                        </a>
                       </div>
                     </div>
                   `

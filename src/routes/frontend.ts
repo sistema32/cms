@@ -20,6 +20,24 @@ import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 const frontendRouter = new Hono();
 
 /**
+ * Cache en memoria para common data
+ */
+const commonDataCache = new Map<string, {
+  data: any;
+  timestamp: number;
+}>();
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+/**
+ * Invalida el cache de common data
+ */
+export function invalidateCommonDataCache() {
+  commonDataCache.clear();
+  console.log("✅ Common data cache invalidated");
+}
+
+/**
  * Get blog base path from settings
  */
 async function getBlogBase(): Promise<string> {
@@ -47,45 +65,210 @@ async function getThemeHelpers() {
   return await loadThemeModule(defaultHelpersPath);
 }
 
-async function getThemeTemplate(templateName: string) {
-  const activeTheme = await themeService.getActiveTheme();
+/**
+ * Crea un template de emergencia cuando falla la carga
+ */
+function createEmergencyTemplate(templateName: string, themeName: string) {
+  return (props: any) => {
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error - Template no encontrado</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .error-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 600px;
+      padding: 40px;
+      text-align: center;
+    }
+    .error-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #1a202c;
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #4a5568;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    code {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Courier New', monospace;
+      color: #e53e3e;
+    }
+    .details {
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 24px;
+      text-align: left;
+    }
+    .details h3 {
+      color: #c53030;
+      font-size: 14px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    a:hover {
+      background: #5a67d8;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h1>Error de configuración del theme</h1>
+    <p>El template <code>${templateName}.tsx</code> no se encontró en el theme <code>${themeName}</code> ni en el theme por defecto.</p>
 
-  // Try active theme first
-  const templatePath = `src/themes/${activeTheme}/templates/${templateName}.tsx`;
-  const fullPath = join(Deno.cwd(), templatePath);
+    <div class="details">
+      <h3>Detalles técnicos</h3>
+      <p><strong>Template solicitado:</strong> ${templateName}.tsx</p>
+      <p><strong>Theme activo:</strong> ${themeName}</p>
+      <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+    </div>
 
+    <p style="margin-top: 24px; font-size: 14px;">
+      Este error ha sido reportado automáticamente al administrador del sitio.
+    </p>
+
+    <a href="/">Volver al inicio</a>
+  </div>
+</body>
+</html>`;
+  };
+}
+
+/**
+ * Notifica al admin sobre templates faltantes
+ */
+async function notifyAdminAboutMissingTemplate(
+  templateName: string,
+  themeName: string
+) {
   try {
-    // Check if template exists in active theme
-    await Deno.stat(fullPath);
-    const module = await loadThemeModule(templatePath);
-    return module.default;
-  } catch {
-    // Fallback to default theme if template doesn't exist
-    console.log(`Template ${templateName}.tsx not found in theme ${activeTheme}, falling back to default theme`);
-    const defaultTemplatePath = `src/themes/default/templates/${templateName}.tsx`;
-    const module = await loadThemeModule(defaultTemplatePath);
-    return module.default;
+    const errorKey = `theme_error_missing_template_${Date.now()}`;
+    await settingsService.updateSetting(
+      errorKey,
+      JSON.stringify({
+        type: 'missing_template',
+        template: templateName,
+        theme: themeName,
+        timestamp: new Date().toISOString(),
+      })
+    );
+    console.error(`❌ CRITICAL: Missing template "${templateName}.tsx" in theme "${themeName}" - Error logged to settings`);
+  } catch (error) {
+    console.error("Failed to log missing template error:", error);
   }
 }
 
 /**
+ * Obtiene un template con manejo robusto de errores
+ */
+async function getThemeTemplate(templateName: string) {
+  const activeTheme = await themeService.getActiveTheme();
+
+  // Try 1: Active theme
+  const templatePath = `src/themes/${activeTheme}/templates/${templateName}.tsx`;
+  const fullPath = join(Deno.cwd(), templatePath);
+
+  try {
+    await Deno.stat(fullPath);
+    const module = await loadThemeModule(templatePath);
+    return module.default;
+  } catch (error) {
+    console.warn(
+      `⚠️  Template ${templateName}.tsx not found in theme ${activeTheme}, trying fallback...`
+    );
+  }
+
+  // Try 2: Default theme
+  try {
+    const defaultTemplatePath = `src/themes/default/templates/${templateName}.tsx`;
+    const module = await loadThemeModule(defaultTemplatePath);
+    console.log(`✅ Using fallback template from default theme`);
+    return module.default;
+  } catch (error) {
+    console.error(
+      `❌ CRITICAL: Template ${templateName}.tsx not found in default theme!`
+    );
+  }
+
+  // Try 3: Emergency fallback
+  await notifyAdminAboutMissingTemplate(templateName, activeTheme);
+  return createEmergencyTemplate(templateName, activeTheme);
+}
+
+/**
  * Load common data needed by all templates (menus, categories, etc.)
+ * Con caching para mejorar performance
  */
 async function loadCommonTemplateData() {
+  const cacheKey = 'common_template_data';
+  const cached = commonDataCache.get(cacheKey);
+
+  // Retornar desde cache si es válido
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  // Cargar datos frescos
   const themeHelpers = await getThemeHelpers();
 
-  // Load menus (main header menu and footer menu)
-  const headerMenu = await themeHelpers.getMenu("main");
-  const footerMenu = await themeHelpers.getMenu("footer");
+  // Usar Promise.all para cargar en paralelo
+  const [headerMenu, footerMenu, categories] = await Promise.all([
+    themeHelpers.getMenu("main"),
+    themeHelpers.getMenu("footer"),
+    themeHelpers.getCategories(6),
+  ]);
 
-  // Load categories (top 6 by post count)
-  const categories = await themeHelpers.getCategories(6);
-
-  return {
+  const data = {
     headerMenu,
     footerMenu,
     categories,
   };
+
+  // Guardar en cache
+  commonDataCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+
+  return data;
 }
 
 // ============= RUTAS PÚBLICAS =============

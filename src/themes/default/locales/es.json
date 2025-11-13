@@ -1,70 +1,32 @@
 {
   "theme": {
-    "site_title": "Mi Sitio",
-    "read_more": "Leer Más",
-    "posted_on": "Publicado el {date}",
-    "by_author": "Por {author}",
-    "in_category": "en {category}",
-    "categories": "Categorías",
-    "tags": "Etiquetas",
-    "search": "Buscar",
-    "search_placeholder": "Buscar...",
-    "search_results": "Resultados de Búsqueda",
-    "no_results": "No se encontraron resultados",
-    "continue_reading": "Continuar Leyendo",
-    "share": "Compartir",
-    "related_posts": "Posts Relacionados",
-    "recent_posts": "Posts Recientes",
-    "popular_posts": "Posts Populares",
-    "archive": "Archivo",
+    "name": "Default Theme",
+    "description": "Theme por defecto del CMS"
+  },
+  "navigation": {
     "home": "Inicio",
-    "about": "Acerca de",
-    "contact": "Contacto",
     "blog": "Blog",
-    "next": "Siguiente",
-    "previous": "Anterior",
-    "page": "Página {page}",
-    "of": "de",
-    "error_404_title": "Página No Encontrada",
-    "error_404_message": "La página que buscas no existe.",
-    "go_home": "Ir al Inicio"
+    "about": "Acerca de",
+    "contact": "Contacto"
   },
-  "comments": {
-    "one": "{count} Comentario",
-    "other": "{count} Comentarios",
-    "no_comments": "Aún no hay comentarios",
-    "leave_comment": "Dejar un Comentario",
-    "your_name": "Tu Nombre",
-    "your_email": "Tu Email",
-    "your_comment": "Tu Comentario",
-    "submit": "Enviar Comentario",
-    "reply": "Responder",
-    "edit": "Editar",
-    "delete": "Eliminar"
-  },
-  "time": {
-    "just_now": "Justo ahora",
-    "minutes_ago": "hace {count} minutos",
-    "hours_ago": "hace {count} horas",
-    "days_ago": "hace {count} días",
-    "weeks_ago": "hace {count} semanas",
-    "months_ago": "hace {count} meses",
-    "years_ago": "hace {count} años"
-  },
-  "reading": {
-    "reading_time": "{minutes} min de lectura",
-    "words": "{count} palabras"
-  },
-  "newsletter": {
-    "title": "Suscríbete a nuestro Newsletter",
-    "subtitle": "Recibe los últimos posts directamente en tu bandeja de entrada",
-    "email_placeholder": "Ingresa tu email",
-    "subscribe": "Suscribirse",
-    "success": "¡Gracias por suscribirte!",
-    "error": "¡Ups! Algo salió mal"
+  "blog": {
+    "title": "Blog",
+    "latest_posts": "Últimas entradas",
+    "read_more": "Leer más",
+    "posted_on": "Publicado el {date}",
+    "by_author": "por {author}",
+    "in_category": "en {category}",
+    "comments": "{count, plural, =0 {Sin comentarios} one {1 comentario} other {# comentarios}}",
+    "tags": "Etiquetas",
+    "categories": "Categorías",
+    "recent_posts": "Entradas recientes"
   },
   "footer": {
     "copyright": "© {year} {siteName}. Todos los derechos reservados.",
-    "powered_by": "Powered by LexCMS"
+    "powered_by": "Powered by {cms}"
+  },
+  "pagination": {
+    "previous": "← Anterior",
+    "next": "Siguiente →"
   }
 }
