@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { Context, Next } from "hono";
+import { join } from "@std/path";
 import { env } from "../config/env.ts";
 import { notificationService } from "../lib/email/index.ts";
 import { DashboardPage } from "../admin/pages/Dashboard.tsx";
@@ -1830,9 +1831,9 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
     }
 
     // Crear sesión de preview
-    const token = await themePreviewService.createPreviewToken(
-      user.id,
-      themeName
+    const session = await themePreviewService.createPreviewSession(
+      themeName,
+      user.id
     );
 
     return c.html(ThemePreviewPage({
@@ -1843,7 +1844,7 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
       themeName,
       themeDisplayName: config.displayName || config.name,
       previewUrl: "/",
-      previewToken: token,
+      previewToken: session.token,
     }));
   } catch (error: any) {
     console.error("Error loading theme preview:", error);
