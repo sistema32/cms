@@ -1,2 +1,111 @@
-// Re-export from db.ts for module resolution
-export * from "./db.ts";
+import {
+  drizzle as drizzleSQLite,
+  type LibSQLDatabase,
+} from "drizzle-orm/libsql";
+import {
+  drizzle as drizzlePostgres,
+  type PostgresJsDatabase,
+} from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema.ts";
+import { env, isProduction } from "../config/env.ts";
+import { existsSync } from "node:fs";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+
+const processRef = globalThis.process as
+  | (NodeJS.Process & { report?: { getReport?: () => unknown } })
+  | undefined;
+
+if (processRef) {
+  const existingReport = processRef.report;
+
+  if (existingReport && typeof existingReport === "object") {
+    const originalGetReport = existingReport.getReport?.bind(existingReport);
+    existingReport.getReport = () => {
+      if (originalGetReport) {
+        try {
+          return originalGetReport();
+        } catch {
+          // noop
+        }
+      }
+      return { header: {} };
+    };
+  } else {
+    Object.defineProperty(processRef, "report", {
+      configurable: true,
+      enumerable: false,
+      get() {
+        return {
+          getReport: () => ({ header: {} }),
+        };
+      },
+    });
+  }
+}
+
+let createClient: any;
+let clientSource = "node";
+
+try {
+  ({ createClient } = await import("npm:@libsql/client@^0.14/node"));
+} catch (error) {
+  console.warn(
+    "Falling back to @libsql/client web runtime due to error loading native module:",
+    error instanceof Error ? error.message : error,
+  );
+  clientSource = "web";
+  ({ createClient } = await import("npm:@libsql/client@^0.14/web"));
+}
+
+if (!createClient) {
+  throw new Error("Unable to load @libsql/client for the current runtime.");
+}
+
+// Crear directorios necesarios para la base de datos SQLite en desarrollo
+if (!isProduction && env.DATABASE_URL) {
+  const dbUrl = env.DATABASE_URL;
+  // Solo crear directorios si es una ruta de archivo local (no empieza con http/libsql/file:)
+  if (!dbUrl.startsWith('http') && !dbUrl.startsWith('libsql:') && !dbUrl.startsWith('file:')) {
+    const dbPath = dbUrl.startsWith('./') || dbUrl.startsWith('../') || dbUrl.startsWith('/')
+      ? dbUrl
+      : `./${dbUrl}`;
+    const dbDir = dirname(dbPath);
+
+    // Crear directorio si no existe
+    if (dbDir && dbDir !== '.' && !existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
+    }
+  }
+}
+
+// Configuración de la conexión según el entorno
+const sqliteClient = !isProduction
+  ? createClient({
+      url: env.DATABASE_URL,
+      authToken: env.DATABASE_AUTH_TOKEN,
+    })
+  : null;
+
+const sqliteDb = sqliteClient
+  ? drizzleSQLite(sqliteClient, {
+      schema,
+    })
+  : null;
+
+const postgresDb = drizzlePostgres(postgres(env.DATABASE_URL), {
+  schema,
+});
+
+type SqliteDatabase = LibSQLDatabase<typeof schema>;
+type PostgresDatabase = PostgresJsDatabase<typeof schema>;
+
+// Unificar el tipo para evitar uniones incompatibles durante el type checking.
+// En producción usamos Postgres, en desarrollo SQLite, pero exponemos una interfase
+// común basada en la firma de LibSQL para mantener compatibilidad en la capa de servicios.
+export const db: SqliteDatabase = isProduction
+  ? (postgresDb as unknown as SqliteDatabase)
+  : (sqliteDb as SqliteDatabase);
+
+export type Database = SqliteDatabase | PostgresDatabase;
