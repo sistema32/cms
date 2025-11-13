@@ -181,6 +181,13 @@ export const ThemePreviewPage = (props: ThemePreviewPageProps) => {
             </button>
           </div>
 
+          <button type="button" class="btn-secondary" onclick="reloadPreview()" title="Recargar vista previa">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Recargar
+          </button>
+
           <form method="POST" action="${env.ADMIN_PATH}/appearance/themes/activate">
             <input type="hidden" name="theme" value="${themeName}" />
             <button type="submit" class="btn-action">
@@ -188,7 +195,7 @@ export const ThemePreviewPage = (props: ThemePreviewPageProps) => {
             </button>
           </form>
 
-          <a href="${env.ADMIN_PATH}/appearance/themes" class="btn-secondary">
+          <a href="${env.ADMIN_PATH}/appearance/themes/browser" class="btn-secondary">
             Cerrar preview
           </a>
         </div>
@@ -227,6 +234,21 @@ export const ThemePreviewPage = (props: ThemePreviewPageProps) => {
           document.getElementById('btn-mobile').classList.add('active');
         }
       }
+
+      function reloadPreview() {
+        const iframe = document.getElementById('preview-frame');
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+        iframe.src = iframe.src;
+      }
+
+      // Keyboard shortcut: Ctrl/Cmd + R to reload
+      document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+          e.preventDefault();
+          reloadPreview();
+        }
+      });
     </script>
   `;
 
