@@ -12,6 +12,26 @@ import { HotReloadServer } from "./dev/hotReload.ts";
 
 const port = env.PORT;
 
+// Function to find an available port
+async function findAvailablePort(startPort: number, maxAttempts = 10): Promise<number> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const testPort = startPort + i;
+    try {
+      // Try to create a temporary server to test if port is available
+      const listener = Deno.listen({ port: testPort });
+      listener.close();
+      return testPort;
+    } catch (error) {
+      if (error instanceof Deno.errors.AddrInUse) {
+        console.warn(`⚠️  Port ${testPort} is already in use, trying next port...`);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`No available port found in range ${startPort}-${startPort + maxAttempts - 1}`);
+}
+
 // Initialize cache system
 try {
   await cacheManager.initialize();
@@ -122,12 +142,20 @@ if (isDevelopment) {
   }
 }
 
-console.log(`
+// Find available port and start server
+try {
+  const availablePort = await findAvailablePort(port);
+
+  if (availablePort !== port) {
+    console.warn(`⚠️  Configured port ${port} was in use. Starting server on port ${availablePort} instead.`);
+  }
+
+  console.log(`
 🚀 Servidor iniciado exitosamente
 
 📍 Entorno: ${env.DENO_ENV}
-🌐 URL: http://localhost:${port}
-🏥 Health: http://localhost:${port}/health
+🌐 URL: http://localhost:${availablePort}
+🏥 Health: http://localhost:${availablePort}/health
 
 📚 Endpoints:
    POST   /api/auth/register
@@ -146,4 +174,8 @@ console.log(`
    PATCH  /api/plugins/:name/settings (protegido)
 `);
 
-Deno.serve({ port }, app.fetch);
+  Deno.serve({ port: availablePort }, app.fetch);
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  Deno.exit(1);
+}
