@@ -3,14 +3,15 @@
  * HTTP handlers for plugin management endpoints
  */
 
-import { Context } from 'hono';
-import { pluginService } from '../services/pluginService.ts';
-import { z } from 'zod';
+import { Context } from "hono";
+import { pluginService } from "../services/pluginService.ts";
+import { z } from "zod";
 import {
   validatePluginName,
   validatePluginSettings,
   checkRateLimit,
-} from '../utils/pluginValidation.ts';
+} from "../utils/pluginValidation.ts";
+import { logger } from "../lib/logger/index.ts";
 
 // Validation schemas
 const installPluginSchema = z.object({
@@ -18,7 +19,7 @@ const installPluginSchema = z.object({
 });
 
 const updateSettingsSchema = z.object({
-  settings: z.record(z.any()),
+  settings: z.record(z.string(), z.unknown()),
 });
 
 export class PluginController {
@@ -35,11 +36,11 @@ export class PluginController {
         data: plugins,
       });
     } catch (error) {
-      console.error('Error listing plugins:', error);
+      logger.error("Error listing plugins", error as Error);
       return c.json(
         {
           success: false,
-          error: 'Failed to list plugins',
+          error: "Failed to list plugins",
           message: (error as Error).message,
         },
         500
@@ -72,7 +73,7 @@ export class PluginController {
           } catch (error) {
             return {
               name,
-              error: 'Failed to load manifest',
+              error: "Failed to load manifest",
             };
           }
         })
@@ -83,11 +84,11 @@ export class PluginController {
         data: pluginsWithInfo,
       });
     } catch (error) {
-      console.error('Error listing available plugins:', error);
+      logger.error("Error listing available plugins", error as Error);
       return c.json(
         {
           success: false,
-          error: 'Failed to list available plugins',
+          error: "Failed to list available plugins",
           message: (error as Error).message,
         },
         500
@@ -108,11 +109,11 @@ export class PluginController {
         data: stats,
       });
     } catch (error) {
-      console.error('Error getting plugin stats:', error);
+      logger.error("Error getting plugin stats", error as Error);
       return c.json(
         {
           success: false,
-          error: 'Failed to get plugin stats',
+          error: "Failed to get plugin stats",
           message: (error as Error).message,
         },
         500
@@ -133,7 +134,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Plugin not found',
+            error: "Plugin not found",
           },
           404
         );
@@ -144,11 +145,11 @@ export class PluginController {
         data: plugin,
       });
     } catch (error) {
-      console.error('Error getting plugin details:', error);
+      logger.error("Error getting plugin details", error as Error);
       return c.json(
         {
           success: false,
-          error: 'Failed to get plugin details',
+          error: "Failed to get plugin details",
           message: (error as Error).message,
         },
         500
@@ -170,7 +171,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Invalid plugin name',
+            error: "Invalid plugin name",
             message: nameValidation.error,
           },
           400
@@ -183,7 +184,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Rate limit exceeded',
+            error: "Rate limit exceeded",
             message: `Too many plugin installations. Try again in ${rateLimit.retryAfter} seconds.`,
           },
           429
@@ -201,24 +202,24 @@ export class PluginController {
         data: plugin,
       });
     } catch (error) {
-      console.error('Error installing plugin:', error);
+      logger.error("Error installing plugin", error as Error);
 
-      if ((error as Error).message.includes('not found')) {
+      if ((error as Error).message.includes("not found")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not found',
+            error: "Plugin not found",
             message: (error as Error).message,
           },
           404
         );
       }
 
-      if ((error as Error).message.includes('already installed')) {
+      if ((error as Error).message.includes("already installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin already installed',
+            error: "Plugin already installed",
             message: (error as Error).message,
           },
           409
@@ -228,7 +229,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to install plugin',
+          error: "Failed to install plugin",
           message: (error as Error).message,
         },
         500
@@ -251,13 +252,13 @@ export class PluginController {
         message: `Plugin "${name}" uninstalled successfully`,
       });
     } catch (error) {
-      console.error('Error uninstalling plugin:', error);
+      logger.error("Error uninstalling plugin", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
@@ -267,7 +268,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to uninstall plugin',
+          error: "Failed to uninstall plugin",
           message: (error as Error).message,
         },
         500
@@ -289,7 +290,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Invalid plugin name',
+            error: "Invalid plugin name",
             message: nameValidation.error,
           },
           400
@@ -302,7 +303,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Rate limit exceeded',
+            error: "Rate limit exceeded",
             message: `Too many activation attempts. Try again in ${rateLimit.retryAfter} seconds.`,
           },
           429
@@ -316,24 +317,24 @@ export class PluginController {
         message: `Plugin "${name}" activated successfully`,
       });
     } catch (error) {
-      console.error('Error activating plugin:', error);
+      logger.error("Error activating plugin", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
         );
       }
 
-      if ((error as Error).message.includes('already active')) {
+      if ((error as Error).message.includes("already active")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin already active',
+            error: "Plugin already active",
             message: (error as Error).message,
           },
           409
@@ -343,7 +344,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to activate plugin',
+          error: "Failed to activate plugin",
           message: (error as Error).message,
         },
         500
@@ -366,24 +367,24 @@ export class PluginController {
         message: `Plugin "${name}" deactivated successfully`,
       });
     } catch (error) {
-      console.error('Error deactivating plugin:', error);
+      logger.error("Error deactivating plugin", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
         );
       }
 
-      if ((error as Error).message.includes('already inactive')) {
+      if ((error as Error).message.includes("already inactive")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin already inactive',
+            error: "Plugin already inactive",
             message: (error as Error).message,
           },
           409
@@ -393,7 +394,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to deactivate plugin',
+          error: "Failed to deactivate plugin",
           message: (error as Error).message,
         },
         500
@@ -416,13 +417,13 @@ export class PluginController {
         data: settings,
       });
     } catch (error) {
-      console.error('Error getting plugin settings:', error);
+      logger.error("Error getting plugin settings", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
@@ -432,7 +433,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to get plugin settings',
+          error: "Failed to get plugin settings",
           message: (error as Error).message,
         },
         500
@@ -456,7 +457,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Invalid plugin name',
+            error: "Invalid plugin name",
             message: nameValidation.error,
           },
           400
@@ -469,7 +470,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Invalid settings',
+            error: "Invalid settings",
             message: settingsValidation.error,
           },
           400
@@ -483,13 +484,13 @@ export class PluginController {
         message: `Settings for plugin "${name}" updated successfully`,
       });
     } catch (error) {
-      console.error('Error updating plugin settings:', error);
+      logger.error("Error updating plugin settings", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
@@ -500,7 +501,7 @@ export class PluginController {
         return c.json(
           {
             success: false,
-            error: 'Validation error',
+            error: "Validation error",
             details: error.errors,
           },
           400
@@ -510,7 +511,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to update plugin settings',
+          error: "Failed to update plugin settings",
           message: (error as Error).message,
         },
         500
@@ -533,13 +534,13 @@ export class PluginController {
         message: `Plugin "${name}" reloaded successfully`,
       });
     } catch (error) {
-      console.error('Error reloading plugin:', error);
+      logger.error("Error reloading plugin", error as Error);
 
-      if ((error as Error).message.includes('not installed')) {
+      if ((error as Error).message.includes("not installed")) {
         return c.json(
           {
             success: false,
-            error: 'Plugin not installed',
+            error: "Plugin not installed",
             message: (error as Error).message,
           },
           404
@@ -549,7 +550,7 @@ export class PluginController {
       return c.json(
         {
           success: false,
-          error: 'Failed to reload plugin',
+          error: "Failed to reload plugin",
           message: (error as Error).message,
         },
         500
@@ -572,11 +573,11 @@ export class PluginController {
         data: validation,
       });
     } catch (error) {
-      console.error('Error validating plugin:', error);
+      logger.error("Error validating plugin", error as Error);
       return c.json(
         {
           success: false,
-          error: 'Failed to validate plugin',
+          error: "Failed to validate plugin",
           message: (error as Error).message,
         },
         500

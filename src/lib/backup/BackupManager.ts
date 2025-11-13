@@ -54,22 +54,22 @@ export class BackupManager {
    */
   private loadConfig(): BackupConfig {
     return {
-      enabled: Deno.env.get("BACKUP_ENABLED") === "true",
-      schedule: Deno.env.get("BACKUP_SCHEDULE") || "0 2 * * *", // 2 AM daily
-      retention: parseInt(Deno.env.get("BACKUP_RETENTION_DAYS") || "30"),
-      storageProvider: (Deno.env.get("BACKUP_STORAGE_PROVIDER") || "local") as any,
-      includeMedia: Deno.env.get("BACKUP_INCLUDE_MEDIA") !== "false",
-      includeDatabase: Deno.env.get("BACKUP_INCLUDE_DATABASE") !== "false",
-      includeConfig: Deno.env.get("BACKUP_INCLUDE_CONFIG") !== "false",
-      compression: Deno.env.get("BACKUP_COMPRESSION") !== "false",
-      notifyOnComplete: Deno.env.get("BACKUP_NOTIFY_COMPLETE") === "true",
-      notifyOnError: Deno.env.get("BACKUP_NOTIFY_ERROR") === "true",
-      localPath: Deno.env.get("BACKUP_LOCAL_PATH") || "./backups",
-      s3Bucket: Deno.env.get("BACKUP_S3_BUCKET"),
-      s3Region: Deno.env.get("BACKUP_S3_REGION"),
-      s3AccessKey: Deno.env.get("BACKUP_S3_ACCESS_KEY"),
-      s3SecretKey: Deno.env.get("BACKUP_S3_SECRET_KEY"),
-      s3Prefix: Deno.env.get("BACKUP_S3_PREFIX") || "backups/",
+      enabled: env.BACKUP_ENABLED,
+      schedule: env.BACKUP_SCHEDULE,
+      retention: env.BACKUP_RETENTION_DAYS,
+      storageProvider: env.BACKUP_STORAGE_PROVIDER,
+      includeMedia: env.BACKUP_INCLUDE_UPLOADS,
+      includeDatabase: true, // Always include database
+      includeConfig: true, // Always include config
+      compression: env.BACKUP_COMPRESS,
+      notifyOnComplete: false,
+      notifyOnError: false,
+      localPath: env.BACKUP_LOCAL_PATH,
+      s3Bucket: env.BACKUP_S3_BUCKET,
+      s3Region: env.BACKUP_S3_REGION,
+      s3AccessKey: env.BACKUP_S3_ACCESS_KEY,
+      s3SecretKey: env.BACKUP_S3_SECRET_KEY,
+      s3Prefix: env.BACKUP_S3_ENDPOINT || "backups/",
     };
   }
 

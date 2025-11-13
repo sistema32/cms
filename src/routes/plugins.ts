@@ -3,10 +3,10 @@
  * API endpoints for plugin management
  */
 
-import { Hono } from 'hono';
-import { pluginController } from '../controllers/pluginController.ts';
-import { authMiddleware } from '../middleware/auth.ts';
-import { requirePermission } from '../middleware/permission.ts';
+import { Hono } from "hono";
+import { pluginController } from "../controllers/pluginController.ts";
+import { authMiddleware } from "../middleware/auth.ts";
+import { requirePermission } from "../middleware/permission.ts";
 
 const plugins = new Hono();
 

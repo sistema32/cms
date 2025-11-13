@@ -7,7 +7,7 @@ import { createHash } from "../lib/utils/crypto.ts";
 import type { ThemeConfig } from "./themeService.ts";
 
 export interface CachedTemplate {
-  module: any;
+  module: unknown;
   hash: string;
   timestamp: number;
   path: string;
@@ -93,7 +93,7 @@ class ThemeCacheService {
   /**
    * Cachea un template
    */
-  async cacheTemplate(path: string, module: any): Promise<void> {
+  async cacheTemplate(path: string, module: unknown): Promise<void> {
     if (!this.ENABLE_CACHE) return;
 
     // Limitar tamaño del caché

@@ -98,17 +98,23 @@ type RawContent = Awaited<
   ReturnType<typeof db.query.content.findFirst>
 >;
 
+interface RawContentWithRelations extends RawContent {
+  contentCategories?: Array<{ category: unknown }>;
+  contentTags?: Array<{ tag: unknown }>;
+}
+
 function normalizeContent(
   raw: RawContent,
 ) {
   if (!raw) return raw;
 
-  const categories = (raw as any).contentCategories?.map((item: any) =>
+  const rawWithRelations = raw as RawContentWithRelations;
+  const categories = rawWithRelations.contentCategories?.map((item) =>
     item.category
   ).filter(
     Boolean,
   ) ?? [];
-  const tags = (raw as any).contentTags?.map((item: any) => item.tag).filter(
+  const tags = rawWithRelations.contentTags?.map((item) => item.tag).filter(
     Boolean,
   ) ?? [];
 

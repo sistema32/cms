@@ -12,7 +12,7 @@ export interface SettingDefinition {
   type: "text" | "number" | "boolean" | "color" | "select" | "textarea" | "image";
   label: string;
   description?: string;
-  default?: any;
+  default?: unknown;
   options?: Array<{ value: string; label: string }>; // For select type
   min?: number; // For number type
   max?: number; // For number type
@@ -45,14 +45,14 @@ export interface WidgetClass {
    * @param settings - Widget settings (validated against settingsSchema)
    * @param context - Rendering context (site data, user, etc.)
    */
-  render(settings: any, context: WidgetRenderContext): Promise<HtmlEscapedString>;
+  render(settings: Record<string, unknown>, context: WidgetRenderContext): Promise<HtmlEscapedString>;
 
   /**
    * Optional: Validate settings before saving
    * @param settings - Settings to validate
    * @returns Validation result
    */
-  validate?(settings: any): Promise<{ valid: boolean; errors?: string[] }>;
+  validate?(settings: Record<string, unknown>): Promise<{ valid: boolean; errors?: string[] }>;
 }
 
 /**
@@ -84,7 +84,7 @@ export interface WidgetData {
   areaId?: number;
   type: string;
   title?: string;
-  settings: any;
+  settings: Record<string, unknown>;
   order: number;
   isActive: boolean;
   createdAt?: Date;

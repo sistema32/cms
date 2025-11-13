@@ -78,6 +78,33 @@ const envSchema = z.object({
   MAILGUN_DOMAIN: z.string().optional(),
   // Resend
   RESEND_API_KEY: z.string().optional(),
+  // Backup configuration
+  BACKUP_ENABLED: z.string()
+    .transform((val) => val === "true")
+    .default("false"),
+  BACKUP_SCHEDULE: z.string().default("0 2 * * *"),
+  BACKUP_RETENTION_DAYS: z.string().transform(Number).default("30"),
+  BACKUP_STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  BACKUP_LOCAL_PATH: z.string().default("./backups"),
+  BACKUP_S3_BUCKET: z.string().optional(),
+  BACKUP_S3_REGION: z.string().optional(),
+  BACKUP_S3_ACCESS_KEY: z.string().optional(),
+  BACKUP_S3_SECRET_KEY: z.string().optional(),
+  BACKUP_S3_ENDPOINT: z.string().optional(),
+  BACKUP_COMPRESS: z.string()
+    .transform((val) => val === "true")
+    .default("true"),
+  BACKUP_INCLUDE_UPLOADS: z.string()
+    .transform((val) => val === "true")
+    .default("true"),
+  // Logger configuration
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  LOG_PRETTY: z.string()
+    .transform((val) => val !== "false")
+    .default("true"),
+  LOG_ENABLED: z.string()
+    .transform((val) => val !== "false")
+    .default("true"),
 });
 
 // Validar y exportar
@@ -117,6 +144,23 @@ export const env = envSchema.parse({
   MAILGUN_API_KEY: Deno.env.get("MAILGUN_API_KEY"),
   MAILGUN_DOMAIN: Deno.env.get("MAILGUN_DOMAIN"),
   RESEND_API_KEY: Deno.env.get("RESEND_API_KEY"),
+  // Backup
+  BACKUP_ENABLED: Deno.env.get("BACKUP_ENABLED"),
+  BACKUP_SCHEDULE: Deno.env.get("BACKUP_SCHEDULE"),
+  BACKUP_RETENTION_DAYS: Deno.env.get("BACKUP_RETENTION_DAYS"),
+  BACKUP_STORAGE_PROVIDER: Deno.env.get("BACKUP_STORAGE_PROVIDER"),
+  BACKUP_LOCAL_PATH: Deno.env.get("BACKUP_LOCAL_PATH"),
+  BACKUP_S3_BUCKET: Deno.env.get("BACKUP_S3_BUCKET"),
+  BACKUP_S3_REGION: Deno.env.get("BACKUP_S3_REGION"),
+  BACKUP_S3_ACCESS_KEY: Deno.env.get("BACKUP_S3_ACCESS_KEY"),
+  BACKUP_S3_SECRET_KEY: Deno.env.get("BACKUP_S3_SECRET_KEY"),
+  BACKUP_S3_ENDPOINT: Deno.env.get("BACKUP_S3_ENDPOINT"),
+  BACKUP_COMPRESS: Deno.env.get("BACKUP_COMPRESS"),
+  BACKUP_INCLUDE_UPLOADS: Deno.env.get("BACKUP_INCLUDE_UPLOADS"),
+  // Logger
+  LOG_LEVEL: Deno.env.get("LOG_LEVEL"),
+  LOG_PRETTY: Deno.env.get("LOG_PRETTY"),
+  LOG_ENABLED: Deno.env.get("LOG_ENABLED"),
 });
 
 export const isDevelopment = env.DENO_ENV === "development";
