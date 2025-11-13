@@ -629,16 +629,22 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
 frontendRouter.get("/category/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
+    const page = parseInt(c.req.query("page") || "1");
 
     const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
-    // TODO: Implementar filtrado por categoría
+    // Obtener posts de la categoría
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
-    const posts = await themeHelpers.getRecentPosts(10);
-    const pagination = await themeHelpers.getPagination(1, posts.length);
+    const result = await themeHelpers.getPostsByCategory(slug, page);
+
+    if (!result.category) {
+      return c.text("Categoría no encontrada", 404);
+    }
+
+    const pagination = await themeHelpers.getPagination(page, result.total);
 
     // Load common data (menus, categories)
     const commonData = await loadCommonTemplateData();
@@ -649,7 +655,7 @@ frontendRouter.get("/category/:slug", async (c) => {
         site,
         custom,
         activeTheme,
-        posts,
+        posts: result.posts,
         pagination,
         blogUrl,
         menu: commonData.headerMenu,
@@ -670,27 +676,33 @@ frontendRouter.get("/category/:slug", async (c) => {
 frontendRouter.get("/tag/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
+    const page = parseInt(c.req.query("page") || "1");
 
     const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
-    // TODO: Implementar filtrado por tag
+    // Obtener posts del tag
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
+    const result = await themeHelpers.getPostsByTag(slug, page);
+
+    if (!result.tag) {
+      return c.text("Tag no encontrado", 404);
+    }
+
+    const pagination = await themeHelpers.getPagination(page, result.total);
 
     // Load common data (menus, categories)
     const commonData = await loadCommonTemplateData();
     const blogUrl = await getBlogBase().then(base => `/${base}`);
-    const posts = await themeHelpers.getRecentPosts(10);
-    const pagination = await themeHelpers.getPagination(1, posts.length);
 
     return c.html(
       IndexTemplate({
         site,
         custom,
         activeTheme,
-        posts,
+        posts: result.posts,
         pagination,
         blogUrl,
         menu: commonData.headerMenu,
@@ -711,24 +723,33 @@ frontendRouter.get("/tag/:slug", async (c) => {
 frontendRouter.get("/search", async (c) => {
   try {
     const query = c.req.query("q") || "";
+    const page = parseInt(c.req.query("page") || "1");
 
     const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
     const IndexTemplate = await getThemeTemplate("index");
 
-    // TODO: Implementar búsqueda real
+    // Implementar búsqueda
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
-    const posts = await themeHelpers.getRecentPosts(10);
-    const pagination = await themeHelpers.getPagination(1, posts.length);
+    const result = await themeHelpers.searchPosts(query, page);
+    const pagination = await themeHelpers.getPagination(page, result.total);
+
+    // Load common data (menus, categories)
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
 
     return c.html(
       IndexTemplate({
         site,
         custom,
         activeTheme,
-        posts,
+        posts: result.posts,
         pagination,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
       })
     );
   } catch (error: any) {
