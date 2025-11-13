@@ -1,0 +1,78 @@
+{
+  "_comment": "Ejemplo de Actualización de Seguridad Crítica",
+  "_description": "Este archivo muestra el formato de una actualización de seguridad crítica",
+
+  "id": "security-2024-critical-001",
+  "version": "1.0.1",
+  "title": "Actualización de Seguridad Crítica - Corrección de Vulnerabilidad RCE",
+  "description": "Esta actualización crítica corrige una vulnerabilidad de ejecución remota de código (RCE) que podría permitir a un atacante ejecutar código arbitrario en el servidor. Recomendamos instalar esta actualización inmediatamente.",
+
+  "type": "security",
+  "severity": "critical",
+  "releaseDate": "2024-11-13T00:00:00Z",
+
+  "isCritical": true,
+  "cveIds": [
+    "CVE-2024-1234",
+    "CVE-2024-5678"
+  ],
+
+  "minVersion": "1.0.0",
+  "maxVersion": "1.0.0",
+  "requiredDependencies": [
+    "deno@^1.30.0"
+  ],
+
+  "downloadUrl": "https://updates.example.com/security/downloads/cms-1.0.1-security.zip",
+  "checksum": "3f4d5e6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
+  "checksumAlgorithm": "sha256",
+  "size": 5242880,
+
+  "migrationScript": "#!/bin/bash\necho 'Running security update migration...'\ndeno run --allow-all scripts/migrate-security.ts",
+  "rollbackScript": "#!/bin/bash\necho 'Rolling back security update...'\ndeno run --allow-all scripts/rollback-security.ts",
+
+  "changelog": [
+    "[CRÍTICO] Corregida vulnerabilidad de ejecución remota de código (CVE-2024-1234)",
+    "[ALTO] Corregida vulnerabilidad de inyección SQL en módulo de búsqueda (CVE-2024-5678)",
+    "[MEDIO] Mejoras en validación de entrada de usuarios",
+    "[MEDIO] Actualización de dependencias de seguridad",
+    "[BAJO] Correcciones menores en logging de seguridad"
+  ],
+
+  "breakingChanges": [
+    "Se requiere reiniciar el servidor después de la instalación",
+    "Los tokens de API antiguos serán invalidados por seguridad"
+  ],
+
+  "documentation": "https://security.example.com/advisories/2024-critical-001",
+  "author": "Security Team - Sistema32",
+
+  "requiresBackup": true,
+  "requiresRestart": true,
+  "autoInstall": false,
+
+  "_securityDetails": {
+    "_comment": "Detalles adicionales de seguridad",
+    "affectedVersions": "1.0.0 y anteriores",
+    "exploitPublic": false,
+    "exploitComplexity": "baja",
+    "attackVector": "network",
+    "privilegesRequired": "none",
+    "userInteraction": "none",
+    "cvssScore": 9.8,
+    "cvssVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "timeline": {
+      "discovered": "2024-11-08T10:00:00Z",
+      "reported": "2024-11-08T14:00:00Z",
+      "fixed": "2024-11-12T18:00:00Z",
+      "released": "2024-11-13T00:00:00Z"
+    },
+    "credits": [
+      {
+        "name": "John Doe",
+        "organization": "Security Research Inc.",
+        "role": "Discoverer"
+      }
+    ]
+  }
+}

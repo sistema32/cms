@@ -1,0 +1,86 @@
+{
+  "success": true,
+  "latestVersion": "1.2.0",
+  "updates": [
+    {
+      "id": "update-2024-001",
+      "version": "1.1.0",
+      "title": "Actualización de Seguridad y Mejoras",
+      "description": "Esta actualización incluye correcciones de seguridad importantes y mejoras de rendimiento",
+      "type": "security",
+      "severity": "high",
+      "releaseDate": "2024-11-10T00:00:00Z",
+      "isCritical": true,
+      "cveIds": ["CVE-2024-1234", "CVE-2024-5678"],
+      "minVersion": "1.0.0",
+      "downloadUrl": "https://updates.example.com/downloads/cms-1.1.0.zip",
+      "checksum": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6",
+      "checksumAlgorithm": "sha256",
+      "size": 15728640,
+      "changelog": [
+        "Corregidas vulnerabilidades de seguridad críticas",
+        "Mejoras en el rendimiento del dashboard",
+        "Optimización de consultas a la base de datos",
+        "Corrección de errores en la carga de medios"
+      ],
+      "breakingChanges": [
+        "Se requiere migración de base de datos",
+        "Los plugins antiguos deben actualizarse"
+      ],
+      "documentation": "https://docs.example.com/updates/1.1.0",
+      "author": "Sistema32 Team",
+      "requiresBackup": true,
+      "requiresRestart": true,
+      "autoInstall": false
+    },
+    {
+      "id": "update-2024-002",
+      "version": "1.2.0",
+      "title": "Nuevas Características y Optimizaciones",
+      "description": "Añade nuevas funcionalidades y optimiza el sistema",
+      "type": "feature",
+      "severity": "medium",
+      "releaseDate": "2024-11-13T00:00:00Z",
+      "isCritical": false,
+      "minVersion": "1.1.0",
+      "downloadUrl": "https://updates.example.com/downloads/cms-1.2.0.zip",
+      "checksum": "z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1",
+      "checksumAlgorithm": "sha256",
+      "size": 20971520,
+      "changelog": [
+        "Nuevo módulo de actualizaciones desde servidor central",
+        "Mejoras en la interfaz del dashboard",
+        "Soporte para temas personalizados mejorado",
+        "Nuevas opciones de configuración de seguridad"
+      ],
+      "documentation": "https://docs.example.com/updates/1.2.0",
+      "author": "Sistema32 Team",
+      "requiresBackup": true,
+      "requiresRestart": true,
+      "autoInstall": false
+    }
+  ],
+  "news": [
+    {
+      "id": "news-2024-001",
+      "title": "Nueva Funcionalidad: Sistema de Actualizaciones",
+      "summary": "Ahora puedes recibir actualizaciones automáticas desde nuestro servidor central",
+      "content": "Nos complace anunciar la nueva funcionalidad de actualizaciones automáticas. Ahora tu CMS puede verificar y descargar actualizaciones directamente desde nuestro servidor central, manteniendo tu sistema siempre actualizado y seguro.",
+      "category": "announcement",
+      "publishDate": "2024-11-13T10:00:00Z",
+      "priority": "high",
+      "imageUrl": "https://updates.example.com/images/news-updates.jpg",
+      "links": [
+        {
+          "text": "Leer más",
+          "url": "https://docs.example.com/news/auto-updates"
+        },
+        {
+          "text": "Guía de configuración",
+          "url": "https://docs.example.com/guides/updates-config"
+        }
+      ],
+      "tags": ["features", "updates", "automation"]
+    }
+  ]
+}

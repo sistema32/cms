@@ -3,6 +3,18 @@ import { AdminLayout } from "../components/AdminLayout.tsx";
 import type { NotificationItem } from "../components/NotificationPanel.tsx";
 
 /**
+ * Escapes HTML entities to prevent XSS and display issues
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Admin Dashboard Page - Mosaic Style
  * Shows statistics and recent activity
  */
@@ -161,20 +173,24 @@ export const DashboardPage = (props: DashboardProps) => {
             </thead>
             <tbody class="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
               ${recentPosts.length > 0
-                ? recentPosts.map((post) => html`
+                ? recentPosts.map((post) => {
+                    const safeTitle = escapeHtml(post.title);
+                    const safeAuthor = escapeHtml(post.author);
+                    const safeStatus = escapeHtml(post.status);
+                    return html`
                   <tr>
                     <td class="p-2 whitespace-nowrap">
-                      <div class="font-medium text-gray-800 dark:text-gray-100">${post.title}</div>
+                      <div class="font-medium text-gray-800 dark:text-gray-100">${safeTitle}</div>
                     </td>
                     <td class="p-2 whitespace-nowrap">
-                      <div class="text-gray-500 dark:text-gray-400">${post.author}</div>
+                      <div class="text-gray-500 dark:text-gray-400">${safeAuthor}</div>
                     </td>
                     <td class="p-2 whitespace-nowrap">
                       ${post.status === 'published'
                         ? html`<span class="inline-flex font-medium bg-green-500/20 text-green-700 rounded-full text-center px-2.5 py-0.5">Publicado</span>`
                         : post.status === 'draft'
                         ? html`<span class="inline-flex font-medium bg-yellow-500/20 text-yellow-700 rounded-full text-center px-2.5 py-0.5">Borrador</span>`
-                        : html`<span class="inline-flex font-medium bg-gray-500/20 text-gray-700 rounded-full text-center px-2.5 py-0.5">${post.status}</span>`
+                        : html`<span class="inline-flex font-medium bg-gray-500/20 text-gray-700 rounded-full text-center px-2.5 py-0.5">${safeStatus}</span>`
                       }
                     </td>
                     <td class="p-2 whitespace-nowrap">
@@ -195,7 +211,8 @@ export const DashboardPage = (props: DashboardProps) => {
                       </div>
                     </td>
                   </tr>
-                `).join('')
+                `;
+                  }).join('')
                 : html`
                   <tr>
                     <td colspan="5" class="p-8 text-center text-gray-500 dark:text-gray-400">

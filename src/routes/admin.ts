@@ -26,6 +26,7 @@ import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
 import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
 import { NotificationsPage } from "../admin/pages/NotificationsPage.tsx";
 import { BackupsPage } from "../admin/pages/BackupsPage.tsx";
+import { SystemUpdatesPage } from "../admin/pages/SystemUpdatesPage.tsx";
 import { CommentsPage } from "../admin/pages/CommentsPage.tsx";
 import { db } from "../config/db.ts";
 import {
@@ -65,6 +66,7 @@ import * as userService from "../services/userService.ts";
 import { pluginService } from "../services/pluginService.ts";
 import type { MenuItemWithChildren } from "../services/menuItemService.ts";
 import { backupManager } from "../lib/backup/index.ts";
+import { systemUpdatesService, SYSTEM_VERSION, getUpdateConfig } from "../lib/system-updates/index.ts";
 
 function parseSettingValueForAdmin(value: string | null): unknown {
   if (value === null || value === undefined) {
@@ -4407,6 +4409,42 @@ adminRouter.get("/api/backups/:id/download", async (c) => {
   } catch (error: any) {
     console.error("Error downloading backup:", error);
     return c.text("Error downloading backup: " + error.message, 500);
+  }
+});
+
+/**
+ * System Updates Management
+ * GET /system-updates - System updates page
+ */
+
+// System updates page
+adminRouter.get("/system-updates", async (c) => {
+  try {
+    const user = c.get("user");
+
+    // Check for updates
+    const checkResult = await systemUpdatesService.checkForUpdates();
+
+    // Get configuration
+    const config = getUpdateConfig();
+
+    return c.html(
+      SystemUpdatesPage({
+        user: {
+          name: user.name || user.email,
+          email: user.email,
+        },
+        currentVersion: SYSTEM_VERSION,
+        latestVersion: checkResult.latestVersion,
+        updates: checkResult.updates,
+        news: checkResult.news,
+        config,
+        lastChecked: checkResult.lastChecked,
+      }),
+    );
+  } catch (error: any) {
+    console.error("Error loading system updates page:", error);
+    return c.text("Error al cargar página de actualizaciones", 500);
   }
 });
 
