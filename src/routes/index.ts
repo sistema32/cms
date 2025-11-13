@@ -33,6 +33,7 @@ import searchRoutes from "./search.ts";
 import jobsRoutes from "./jobs.ts";
 import importExportRoutes from "./import-export.ts";
 import seoOptimizationRoutes from "./seo-optimization.ts";
+import systemUpdatesRoutes from "./system-updates.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -81,7 +82,8 @@ export function registerRoutes(app: Hono) {
     search: "enabled",
     backgroundJobs: "enabled",
     importExport: "enabled",
-    seoOptimization: "enabled"
+    seoOptimization: "enabled",
+    systemUpdates: "enabled"
   }));
 
   app.get("/api/health", (c) => c.json({
@@ -167,6 +169,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de SEO Optimization
   app.route("/api/seo-optimization", seoOptimizationRoutes);
+
+  // Registrar rutas de System Updates
+  app.route("/api/system-updates", systemUpdatesRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);

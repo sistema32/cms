@@ -1,0 +1,83 @@
+{
+  "_comment": "Configuración del Sistema de Actualizaciones - Ejemplo",
+  "_description": "Este archivo muestra todas las opciones disponibles para configurar el sistema de actualizaciones automáticas",
+
+  "enabled": true,
+  "serverUrl": "https://updates.example.com/api/v1",
+  "apiKey": "your-api-key-here",
+  "checkInterval": 360,
+
+  "_security": {
+    "_comment": "Configuración de Seguridad",
+    "_description": "Opciones para garantizar la seguridad de las actualizaciones"
+  },
+  "autoDownload": false,
+  "autoInstall": false,
+  "allowPrerelease": false,
+  "verifyChecksum": true,
+  "verifySignature": true,
+  "requireHttps": true,
+  "trustedCertificates": [
+    "-----BEGIN CERTIFICATE-----\n[Your trusted certificate here]\n-----END CERTIFICATE-----"
+  ],
+
+  "_proxy": {
+    "_comment": "Configuración de Proxy (Opcional)",
+    "_description": "Usa estas opciones si tu servidor requiere proxy para conectarse a internet"
+  },
+  "proxyUrl": "http://proxy.example.com:8080",
+  "proxyAuth": {
+    "username": "proxy-user",
+    "password": "proxy-password"
+  },
+
+  "_notifications": {
+    "_comment": "Configuración de Notificaciones",
+    "_description": "Controla cómo y cuándo recibir notificaciones sobre actualizaciones"
+  },
+  "notifyOnUpdate": true,
+  "notifyEmail": "admin@example.com",
+
+  "_backup": {
+    "_comment": "Configuración de Respaldos",
+    "_description": "Configuración para respaldos automáticos antes de actualizaciones"
+  },
+  "autoBackupBeforeUpdate": true,
+  "keepBackupDays": 30,
+
+  "_examples": {
+    "_comment": "Ejemplos de Configuración",
+    "_production": {
+      "enabled": true,
+      "serverUrl": "https://updates.example.com/api/v1",
+      "checkInterval": 360,
+      "autoDownload": false,
+      "autoInstall": false,
+      "verifyChecksum": true,
+      "verifySignature": true,
+      "requireHttps": true,
+      "autoBackupBeforeUpdate": true
+    },
+    "_development": {
+      "enabled": true,
+      "serverUrl": "https://updates-dev.example.com/api/v1",
+      "checkInterval": 60,
+      "autoDownload": true,
+      "autoInstall": false,
+      "allowPrerelease": true,
+      "verifyChecksum": true,
+      "requireHttps": false
+    },
+    "_testing": {
+      "enabled": true,
+      "serverUrl": "http://localhost:3000/api/v1",
+      "checkInterval": 30,
+      "autoDownload": true,
+      "autoInstall": true,
+      "allowPrerelease": true,
+      "verifyChecksum": false,
+      "requireHttps": false,
+      "autoBackupBeforeUpdate": false
+    }
+  }
+}

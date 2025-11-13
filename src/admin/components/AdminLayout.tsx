@@ -102,6 +102,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
       title: "Sistema",
       items: [
         { id: "system.backups", label: "Backups", path: "/backups" },
+        { id: "system.updates", label: "Actualizaciones", path: "/system-updates" },
       ],
     },
     {

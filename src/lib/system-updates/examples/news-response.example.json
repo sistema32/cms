@@ -1,0 +1,82 @@
+{
+  "success": true,
+  "news": [
+    {
+      "id": "news-2024-security-001",
+      "title": "Alerta de Seguridad: Actualización Crítica Disponible",
+      "summary": "Se ha detectado una vulnerabilidad de seguridad. Actualiza inmediatamente.",
+      "content": "Hemos identificado una vulnerabilidad de seguridad crítica que afecta a las versiones anteriores a la 1.1.0. Esta vulnerabilidad podría permitir la ejecución de código arbitrario. Por favor, actualiza tu sistema lo antes posible. La actualización 1.1.0 corrige esta vulnerabilidad (CVE-2024-1234) y otras vulnerabilidades menores.",
+      "category": "security",
+      "publishDate": "2024-11-10T08:00:00Z",
+      "priority": "high",
+      "imageUrl": "https://updates.example.com/images/security-alert.jpg",
+      "links": [
+        {
+          "text": "Ver detalles de la vulnerabilidad",
+          "url": "https://security.example.com/CVE-2024-1234"
+        },
+        {
+          "text": "Guía de actualización",
+          "url": "https://docs.example.com/security/update-guide"
+        }
+      ],
+      "tags": ["security", "critical", "cve"]
+    },
+    {
+      "id": "news-2024-tips-001",
+      "title": "Consejos: Optimiza el Rendimiento de tu CMS",
+      "summary": "Aprende a optimizar el rendimiento de tu instalación con estos consejos",
+      "content": "En este artículo compartimos las mejores prácticas para optimizar el rendimiento de tu CMS. Desde configuración de caché hasta optimización de base de datos, descubre cómo hacer que tu sitio sea más rápido y eficiente.",
+      "category": "tips",
+      "publishDate": "2024-11-12T14:00:00Z",
+      "priority": "medium",
+      "imageUrl": "https://updates.example.com/images/performance-tips.jpg",
+      "links": [
+        {
+          "text": "Leer artículo completo",
+          "url": "https://blog.example.com/performance-tips"
+        }
+      ],
+      "tags": ["performance", "optimization", "tips"]
+    },
+    {
+      "id": "news-2024-community-001",
+      "title": "Comunidad: Nuevo Plugin de Analytics Disponible",
+      "summary": "La comunidad ha desarrollado un nuevo plugin de analytics avanzado",
+      "content": "Un miembro de nuestra comunidad ha creado un increíble plugin de analytics que ofrece estadísticas detalladas sobre el tráfico de tu sitio, comportamiento de usuarios, y mucho más. El plugin está disponible en el marketplace de plugins.",
+      "category": "community",
+      "publishDate": "2024-11-11T12:00:00Z",
+      "priority": "low",
+      "imageUrl": "https://updates.example.com/images/community-plugin.jpg",
+      "links": [
+        {
+          "text": "Ver plugin",
+          "url": "https://plugins.example.com/advanced-analytics"
+        },
+        {
+          "text": "Documentación del plugin",
+          "url": "https://docs.plugins.example.com/advanced-analytics"
+        }
+      ],
+      "tags": ["plugins", "community", "analytics"]
+    },
+    {
+      "id": "news-2024-announcement-002",
+      "title": "Anuncio: Webinar sobre Nuevas Características",
+      "summary": "Únete a nuestro webinar gratuito sobre las nuevas características de la versión 1.2",
+      "content": "Te invitamos a nuestro próximo webinar donde mostraremos en detalle todas las nuevas características de la versión 1.2, incluyendo el sistema de actualizaciones automáticas, mejoras en la seguridad, y nuevas herramientas de gestión. El webinar será el próximo viernes a las 15:00 (GMT).",
+      "category": "announcement",
+      "publishDate": "2024-11-13T09:00:00Z",
+      "expiryDate": "2024-11-20T00:00:00Z",
+      "priority": "medium",
+      "imageUrl": "https://updates.example.com/images/webinar.jpg",
+      "links": [
+        {
+          "text": "Registrarse al webinar",
+          "url": "https://events.example.com/webinar-v1.2"
+        }
+      ],
+      "tags": ["webinar", "events", "announcement"]
+    }
+  ]
+}
