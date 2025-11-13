@@ -8,6 +8,7 @@ import { plugins, pluginHooks, type Plugin as PluginDB, type NewPlugin } from '.
 import { pluginLoader } from './PluginLoader.ts';
 import type { Plugin, InstallOptions } from './types.ts';
 import { eq } from 'drizzle-orm';
+import { AdminPanelRegistry } from './AdminPanelRegistry.ts';
 
 export class PluginManager {
   /**
@@ -141,6 +142,9 @@ export class PluginManager {
 
     // Deactivate
     await pluginLoader.deactivatePlugin(pluginName);
+
+    // Unregister all admin panels for this plugin
+    AdminPanelRegistry.unregisterAllPanels(pluginName);
 
     // Update database
     await db

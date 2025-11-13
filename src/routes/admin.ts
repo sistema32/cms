@@ -191,6 +191,30 @@ async function adminAuth(c: Context, next: Next) {
 
 const adminRouter = new Hono();
 
+/**
+ * Helper function to get all registered plugin panels for navigation
+ */
+async function getPluginPanels() {
+  try {
+    const { AdminPanelRegistry } = await import("../lib/plugin-system/index.ts");
+    const allPanels = AdminPanelRegistry.getAllPanels();
+
+    // Filter only panels that should show in menu
+    return allPanels
+      .filter(panel => panel.showInMenu !== false)
+      .map(panel => ({
+        id: panel.id,
+        title: panel.title,
+        pluginName: panel.pluginName,
+        path: panel.path,
+        icon: panel.icon,
+      }));
+  } catch (error) {
+    console.error("Error loading plugin panels:", error);
+    return [];
+  }
+}
+
 async function getContentTypeBySlug(slug: string) {
   let contentType = await db.query.contentTypes.findFirst({
     where: eq(contentTypes.slug, slug),
@@ -3797,6 +3821,62 @@ adminRouter.get("/plugins/marketplace", async (c) => {
   } catch (error: any) {
     console.error("Error loading marketplace page:", error);
     return c.text("Error al cargar marketplace", 500);
+  }
+});
+
+/**
+ * GET /plugins/:pluginName/:panelPath* - Dynamic plugin admin panel routes
+ */
+adminRouter.get("/plugins/:pluginName/*", async (c) => {
+  try {
+    const user = c.get("user");
+    const pluginName = c.req.param("pluginName");
+    const fullPath = c.req.path;
+
+    // Import AdminPanelRegistry
+    const { AdminPanelRegistry } = await import("../lib/plugin-system/index.ts");
+    const { pluginLoader } = await import("../lib/plugin-system/PluginLoader.ts");
+
+    // Find the panel by matching the full path
+    const panel = AdminPanelRegistry.getPanelByPath(fullPath);
+
+    if (!panel) {
+      return c.text(`Panel no encontrado: ${fullPath}`, 404);
+    }
+
+    // Check if plugin is active
+    const plugin = pluginLoader.getPlugin(pluginName);
+    if (!plugin || plugin.status !== 'active') {
+      return c.text(`El plugin "${pluginName}" no está activo`, 403);
+    }
+
+    // Check user permissions if required
+    if (panel.requiredPermissions && panel.requiredPermissions.length > 0) {
+      // TODO: Implement permission checking
+      // For now, we'll allow all authenticated users
+    }
+
+    // Prepare context for the panel component
+    const context = {
+      user: {
+        id: user.id,
+        name: user.name || user.email,
+        email: user.email,
+        role: user.role || 'admin',
+      },
+      query: c.req.query(),
+      pluginAPI: plugin.instance,
+      settings: plugin.settings || {},
+      request: c.req,
+    };
+
+    // Render the panel component
+    const content = await panel.component(context);
+
+    return c.html(content);
+  } catch (error: any) {
+    console.error("Error rendering plugin panel:", error);
+    return c.text(`Error al cargar el panel: ${error.message}`, 500);
   }
 });
 

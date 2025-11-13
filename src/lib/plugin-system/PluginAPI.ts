@@ -3,10 +3,11 @@
  * The main API interface that plugins use to interact with LexCMS
  */
 
-import type { HookCallback, PluginAPIContext, PluginPermission } from './types.ts';
+import type { HookCallback, PluginAPIContext, PluginPermission, AdminPanelConfig } from './types.ts';
 import { hookManager } from './HookManager.ts';
 import { PluginSecurityManager } from './SecurityManager.ts';
 import { sanitizeHTML } from '../../utils/sanitization.ts';
+import { AdminPanelRegistry } from './AdminPanelRegistry.ts';
 
 export class PluginAPI {
   private context: PluginAPIContext;
@@ -260,5 +261,51 @@ export class PluginAPI {
    */
   hasPermission(permission: PluginPermission): boolean {
     return this.context.manifest.permissions.includes(permission);
+  }
+
+  // ==================
+  // Admin Panel Registration
+  // ==================
+
+  /**
+   * Register a custom admin panel
+   * The panel will be accessible at /admin/plugins/:pluginName/:panelPath
+   */
+  registerAdminPanel(config: AdminPanelConfig): void {
+    this.log(`Registering admin panel: ${config.id}`, 'info');
+
+    // Validate config
+    if (!config.id || !config.title || !config.path || !config.component) {
+      throw new Error('Admin panel config must include id, title, path, and component');
+    }
+
+    // Normalize path (remove leading/trailing slashes)
+    const normalizedPath = config.path.replace(/^\/+|\/+$/g, '');
+
+    // Register panel in the global registry
+    AdminPanelRegistry.registerPanel(this.context.pluginName, {
+      ...config,
+      path: normalizedPath,
+      showInMenu: config.showInMenu !== false, // Default to true
+      order: config.order ?? 10,
+    });
+
+    this.log(`Admin panel registered successfully: /admin/plugins/${this.context.pluginName}/${normalizedPath}`, 'info');
+  }
+
+  /**
+   * Unregister an admin panel
+   */
+  unregisterAdminPanel(panelId: string): void {
+    AdminPanelRegistry.unregisterPanel(this.context.pluginName, panelId);
+    this.log(`Admin panel unregistered: ${panelId}`, 'info');
+  }
+
+  /**
+   * Unregister all admin panels for this plugin
+   */
+  unregisterAllAdminPanels(): void {
+    AdminPanelRegistry.unregisterAllPanels(this.context.pluginName);
+    this.log('All admin panels unregistered', 'info');
   }
 }

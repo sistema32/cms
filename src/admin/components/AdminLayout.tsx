@@ -22,6 +22,13 @@ interface AdminLayoutProps {
   settingsAvailability?: Record<string, boolean>;
   notifications?: NotificationItem[];
   unreadNotificationCount?: number;
+  pluginPanels?: Array<{
+    id: string;
+    title: string;
+    pluginName: string;
+    path: string;
+    icon?: string;
+  }>;
 }
 
 interface NavItem {
@@ -45,8 +52,16 @@ export const AdminLayout = (props: AdminLayoutProps) => {
     settingsAvailability = {},
     notifications = [],
     unreadNotificationCount = 0,
+    pluginPanels = [],
   } = props;
   const adminPath = env.ADMIN_PATH;
+
+  // Build plugin panel navigation items
+  const pluginPanelItems: NavItem[] = pluginPanels.map(panel => ({
+    id: `plugin.${panel.pluginName}.${panel.id}`,
+    label: panel.title,
+    path: `/plugins/${panel.pluginName}/${panel.path}`,
+  }));
 
   // Consolidated navigation structure
   const navSections: NavSection[] = [
@@ -80,6 +95,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
       title: "Plugins",
       items: [
         { id: "plugins.all", label: "Todos los Plugins", path: `/${ROUTES.PLUGINS}` },
+        ...pluginPanelItems,
       ],
     },
     {
