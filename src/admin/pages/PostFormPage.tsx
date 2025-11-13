@@ -82,10 +82,10 @@ export const PostFormPage = (props: PostFormPageProps) => {
     showMediaPicker: true,
     featuredImage: featuredImage || null,
     mediaPickerFieldName: "featuredImageId",
-    showCategories: categories.length > 0,
+    showCategories: true,
     categories,
     selectedCategories,
-    showTags: tags.length > 0,
+    showTags: true,
     tags,
     selectedTags,
     // Nuevas funcionalidades
