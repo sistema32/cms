@@ -153,23 +153,24 @@ export const MediaPicker = (props: MediaPickerProps) => {
       </div>
 
       <script>
-        const MEDIA_LIST_ENDPOINT = ${JSON.stringify(mediaDataEndpoint)};
-        const ADMIN_PATH = ${JSON.stringify(adminPath)};
+        (function() {
+          const MEDIA_LIST_ENDPOINT = ${JSON.stringify(mediaDataEndpoint)};
+          const ADMIN_PATH = ${JSON.stringify(adminPath)};
 
-        // Drag and drop handlers
-        function handleDragOver_${fieldName}(event) {
+          // Drag and drop handlers
+          window.handleDragOver_${fieldName} = function(event) {
           event.preventDefault();
           event.stopPropagation();
           event.currentTarget.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900');
         }
 
-        function handleDragLeave_${fieldName}(event) {
+          window.handleDragLeave_${fieldName} = function(event) {
           event.preventDefault();
           event.stopPropagation();
           event.currentTarget.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900');
         }
 
-        async function handleDrop_${fieldName}(event) {
+          window.handleDrop_${fieldName} = async function(event) {
           event.preventDefault();
           event.stopPropagation();
           event.currentTarget.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900');
@@ -199,14 +200,14 @@ export const MediaPicker = (props: MediaPickerProps) => {
             }
 
             const data = await response.json();
-            selectMediaFromModal_${fieldName}(data.media.media.id, data.media.media.url);
+            window.selectMediaFromModal_${fieldName}(data.media.media.id, data.media.media.url);
           } catch (error) {
             alert('Error al subir la imagen: ' + error.message);
           }
         }
 
-        // Edit media with image editor
-        function editMedia_${fieldName}(mediaId, mediaUrl) {
+          // Edit media with image editor
+          window.editMedia_${fieldName} = function(mediaId, mediaUrl) {
           // Create modal for image editor
           const editorModalHtml = \`
             <div id="imageEditorModal_${fieldName}" class="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center">
@@ -389,10 +390,10 @@ export const MediaPicker = (props: MediaPickerProps) => {
           document.body.insertAdjacentHTML('beforeend', editorModalHtml);
 
           // Initialize image editor
-          initializeImageEditor_${fieldName}(mediaUrl);
-        }
+          window.initializeImageEditor_${fieldName}(mediaUrl);
+        };
 
-        function initializeImageEditor_${fieldName}(imageUrl) {
+        window.initializeImageEditor_${fieldName} = function(imageUrl) {
           const canvas = document.getElementById('imageEditorCanvas_${fieldName}');
           const ctx = canvas.getContext('2d');
           const loading = document.getElementById('imageEditorLoading_${fieldName}');
@@ -651,8 +652,8 @@ export const MediaPicker = (props: MediaPickerProps) => {
                 }
 
                 const data = await response.json();
-                selectMediaFromModal_${fieldName}(data.media.media.id, data.media.media.url);
-                closeImageEditor_${fieldName}();
+                window.selectMediaFromModal_${fieldName}(data.media.media.id, data.media.media.url);
+                window.closeImageEditor_${fieldName}();
               } catch (error) {
                 alert('Error al guardar la imagen: ' + error.message);
               }
@@ -660,7 +661,7 @@ export const MediaPicker = (props: MediaPickerProps) => {
           };
         }
 
-        function closeImageEditor_${fieldName}() {
+          window.closeImageEditor_${fieldName} = function() {
           const modal = document.getElementById('imageEditorModal_${fieldName}');
           if (modal) {
             modal.remove();
@@ -668,8 +669,8 @@ export const MediaPicker = (props: MediaPickerProps) => {
           delete window['imageEditor_${fieldName}'];
         }
 
-        // Open media picker
-        async function openMediaPicker_${fieldName}() {
+          // Open media picker
+          window.openMediaPicker_${fieldName} = async function() {
           const modal = document.getElementById('${fieldName}_modal');
           const modalContent = document.getElementById('${fieldName}_modal_content');
 
@@ -734,41 +735,43 @@ export const MediaPicker = (props: MediaPickerProps) => {
           }
         }
 
-        // Close media picker
-        function closeMediaPicker_${fieldName}() {
+          // Close media picker
+          window.closeMediaPicker_${fieldName} = function() {
           document.getElementById('${fieldName}_modal').classList.add('hidden');
         }
 
-        // Select media from modal
-        function selectMediaFromModal_${fieldName}(id, url) {
+          // Select media from modal
+          window.selectMediaFromModal_${fieldName} = function(id, url) {
           document.getElementById('${fieldName}').value = id;
           document.getElementById('${fieldName}_preview_img').src = url;
           document.getElementById('${fieldName}_preview').classList.remove('hidden');
           document.getElementById('${fieldName}_placeholder').classList.add('hidden');
-          closeMediaPicker_${fieldName}();
-        }
+          window.closeMediaPicker_${fieldName}();
+        };
 
-        // Remove media
-        function removeMedia_${fieldName}() {
+          // Remove media
+          window.removeMedia_${fieldName} = function() {
           document.getElementById('${fieldName}').value = '';
           document.getElementById('${fieldName}_preview').classList.add('hidden');
           document.getElementById('${fieldName}_placeholder').classList.remove('hidden');
         }
 
-        // Filter media in modal
-        function filterModalMedia_${fieldName}(query) {
-          const items = document.querySelectorAll('.media-item-modal');
-          const lowerQuery = query.toLowerCase();
+          // Filter media in modal
+          window.filterModalMedia_${fieldName} = function(query) {
+            const items = document.querySelectorAll('.media-item-modal');
+            const lowerQuery = query.toLowerCase();
 
-          items.forEach(item => {
-            const filename = item.dataset.filename.toLowerCase();
-            if (!query || filename.includes(lowerQuery)) {
-              item.style.display = '';
-            } else {
-              item.style.display = 'none';
-            }
-          });
-        }
+            items.forEach(item => {
+              const filename = item.dataset.filename.toLowerCase();
+              if (!query || filename.includes(lowerQuery)) {
+                item.style.display = '';
+              } else {
+                item.style.display = 'none';
+              }
+            });
+          };
+
+        })();
       </script>
     </div>
   `;
