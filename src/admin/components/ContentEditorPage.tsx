@@ -287,7 +287,7 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
   ` : null;
 
   // Selector de página padre
-  const parentSection = showParentSelector && availableParents.length > 0 ? html`
+  const parentSection = showParentSelector ? html`
     <div class="mb-4">
       <label class="form-label">Página padre</label>
       <select name="parentId" class="form-input">
@@ -301,7 +301,9 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
         )}
       </select>
       <p class="text-xs text-gray-500 mt-1">
-        Crear una página hija de otra página
+        ${availableParents.length > 0
+          ? "Crear una página hija de otra página"
+          : "Aún no hay páginas disponibles para usar como padre"}
       </p>
     </div>
   ` : null;
@@ -322,11 +324,7 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
     </div>
   ` : null;
 
-  const shouldShowCategories = showCategories &&
-    normalizedCategories.length > 0;
-  const shouldShowTags = showTags && normalizedTags.length > 0;
-
-  const categoriesBlock = shouldShowCategories
+  const categoriesBlock = showCategories
     ? html`
       <div
         class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700"
@@ -341,7 +339,7 @@ export const ContentEditorPage = (props: ContentEditorPageProps) => {
     `
     : null;
 
-  const tagsBlock = shouldShowTags
+  const tagsBlock = showTags
     ? html`
       <div
         class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700"
