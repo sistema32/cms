@@ -220,12 +220,14 @@ export function renderCommentBox(
 
         try {
           const formData = new FormData(form);
+          const parentIdValue = formData.get('parentId');
           const data = {
             contentId: parseInt(contentId),
             authorName: formData.get('name'),
             authorEmail: formData.get('email'),
             authorWebsite: formData.get('website') || null,
             body: formData.get('body'),
+            parentId: parentIdValue ? parseInt(parentIdValue) : null,
           };
 
           const response = await fetch('/api/comments', {
@@ -239,17 +241,30 @@ export function renderCommentBox(
           if (response.ok) {
             const result = await response.json();
             statusDiv.className = '${className}__status ${className}__status--success';
-            statusDiv.textContent = 'Comentario publicado exitosamente. Estará visible después de ser moderado.';
+            statusDiv.textContent = 'Comentario publicado exitosamente!';
             form.reset();
             charsCount.textContent = '0';
 
-            // Reload comments after 2 seconds
+            // Cancel reply if it was a reply
+            const replyIndicator = document.getElementById('reply-indicator');
+            const parentIdField = document.getElementById('comment-parent-id');
+            if (replyIndicator) replyIndicator.remove();
+            if (parentIdField) parentIdField.remove();
+
+            // Show success message for 3 seconds
+            setTimeout(() => {
+              statusDiv.textContent = '';
+              statusDiv.className = '${className}__status';
+            }, 3000);
+
+            // Reload page to show new comment (simplified for now)
+            // TODO: Implement dynamic insertion without reload
             setTimeout(() => {
               window.location.reload();
-            }, 2000);
+            }, 1500);
           } else {
             const error = await response.json();
-            throw new Error(error.message || 'Error al publicar el comentario');
+            throw new Error(error.error || error.message || 'Error al publicar el comentario');
           }
         } catch (error) {
           statusDiv.className = '${className}__status ${className}__status--error';
@@ -466,8 +481,10 @@ function renderSingleComment(
           <div class="${className}__actions">
             <button
               class="${className}__action-btn ${className}__action-btn--reply"
-              onclick="replyToComment(${comment.id}, '${comment.author.name}')"
+              data-comment-id="${comment.id}"
+              data-author-name="${comment.author.name}"
               type="button"
+              aria-label="Responder al comentario de ${comment.author.name}"
             >
               💬 Responder
             </button>
@@ -534,53 +551,96 @@ function getRelativeTime(date: Date): string {
 
 /**
  * Script global para manejar respuestas a comentarios
+ * Usa event delegation para evitar vulnerabilidades XSS
  */
 export const commentsScript = html`
   <script>
-    function replyToComment(commentId, authorName) {
-      const commentBox = document.getElementById('comment-box');
-      const commentForm = document.getElementById('comment-form');
-      const commentBody = document.getElementById('comment-body');
+    (function() {
+      'use strict';
 
-      if (commentBox && commentForm && commentBody) {
-        // Scroll to comment box
-        commentBox.scrollIntoView({ behavior: 'smooth' });
-
-        // Add reply indicator
-        let replyIndicator = document.getElementById('reply-indicator');
-        if (!replyIndicator) {
-          replyIndicator = document.createElement('div');
-          replyIndicator.id = 'reply-indicator';
-          replyIndicator.className = 'comment-box__reply-indicator';
-          commentForm.insertBefore(replyIndicator, commentForm.firstChild);
-        }
-
-        replyIndicator.innerHTML =
-          'Respondiendo a <strong>' + authorName + '</strong> ' +
-          '<button type="button" onclick="cancelReply()" class="comment-box__cancel-reply">✕</button>';
-
-        // Add hidden field with parent ID
-        let parentIdField = document.getElementById('comment-parent-id');
-        if (!parentIdField) {
-          parentIdField = document.createElement('input');
-          parentIdField.type = 'hidden';
-          parentIdField.id = 'comment-parent-id';
-          parentIdField.name = 'parentId';
-          commentForm.appendChild(parentIdField);
-        }
-        parentIdField.value = commentId;
-
-        // Focus on textarea
-        commentBody.focus();
+      // Funciones helper
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
       }
-    }
 
-    function cancelReply() {
-      const replyIndicator = document.getElementById('reply-indicator');
-      const parentIdField = document.getElementById('comment-parent-id');
+      function replyToComment(commentId, authorName) {
+        const commentBox = document.getElementById('comment-box');
+        const commentForm = document.getElementById('comment-form');
+        const commentBody = document.getElementById('comment-body');
 
-      if (replyIndicator) replyIndicator.remove();
-      if (parentIdField) parentIdField.remove();
-    }
+        if (commentBox && commentForm && commentBody) {
+          // Scroll to comment box
+          commentBox.scrollIntoView({ behavior: 'smooth' });
+
+          // Add reply indicator
+          let replyIndicator = document.getElementById('reply-indicator');
+          if (!replyIndicator) {
+            replyIndicator = document.createElement('div');
+            replyIndicator.id = 'reply-indicator';
+            replyIndicator.className = 'comment-box__reply-indicator';
+            commentForm.insertBefore(replyIndicator, commentForm.firstChild);
+          }
+
+          const escapedAuthorName = escapeHtml(authorName);
+          replyIndicator.innerHTML =
+            'Respondiendo a <strong>' + escapedAuthorName + '</strong> ' +
+            '<button type="button" data-action="cancel-reply" class="comment-box__cancel-reply" aria-label="Cancelar respuesta">✕</button>';
+
+          // Add event listener to cancel button
+          const cancelBtn = replyIndicator.querySelector('[data-action="cancel-reply"]');
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', cancelReply);
+          }
+
+          // Add hidden field with parent ID
+          let parentIdField = document.getElementById('comment-parent-id');
+          if (!parentIdField) {
+            parentIdField = document.createElement('input');
+            parentIdField.type = 'hidden';
+            parentIdField.id = 'comment-parent-id';
+            parentIdField.name = 'parentId';
+            commentForm.appendChild(parentIdField);
+          }
+          parentIdField.value = commentId;
+
+          // Focus on textarea
+          commentBody.focus();
+        }
+      }
+
+      function cancelReply() {
+        const replyIndicator = document.getElementById('reply-indicator');
+        const parentIdField = document.getElementById('comment-parent-id');
+
+        if (replyIndicator) replyIndicator.remove();
+        if (parentIdField) parentIdField.remove();
+      }
+
+      // Event delegation for reply buttons
+      document.addEventListener('click', function(e) {
+        const replyBtn = e.target.closest('[data-comment-id]');
+        if (replyBtn && replyBtn.classList.contains('comments__action-btn--reply')) {
+          e.preventDefault();
+          const commentId = replyBtn.dataset.commentId;
+          const authorName = replyBtn.dataset.authorName;
+          replyToComment(commentId, authorName);
+        }
+      });
+
+      // Keyboard accessibility for reply buttons
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const replyBtn = e.target.closest('[data-comment-id]');
+          if (replyBtn && replyBtn.classList.contains('comments__action-btn--reply')) {
+            e.preventDefault();
+            const commentId = replyBtn.dataset.commentId;
+            const authorName = replyBtn.dataset.authorName;
+            replyToComment(commentId, authorName);
+          }
+        }
+      });
+    })();
   </script>
 `;

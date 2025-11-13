@@ -124,6 +124,22 @@ export const CommentsPage = (props: CommentsPageProps) => {
         <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Comentarios</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400">Gestiona y modera los comentarios del sitio</p>
       </div>
+      <div class="flex gap-2">
+        <a href="${adminPath}/settings?category=discussion" class="btn btn-sm btn-ghost">
+          ⚙️ Configuración
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Info -->
+    <div class="alert alert-info mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <div>
+        <div class="font-bold">Sistema de Moderación y Censura</div>
+        <div class="text-sm">Los comentarios se filtran automáticamente para detectar spam, enlaces, teléfonos y palabras prohibidas. Ver comentario original vs censurado en detalles.</div>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -378,16 +394,52 @@ export const CommentsPage = (props: CommentsPageProps) => {
           });
 
           if (response.ok) {
-            const comment = await response.json();
-            const detailsHtml = '<div class="space-y-3">' +
-              '<div><strong class="text-sm">Autor:</strong><div class="mt-1">' + comment.author.name + ' (' + comment.author.email + ')</div></div>' +
-              (comment.author.website ? '<div><strong class="text-sm">Sitio web:</strong><div class="mt-1"><a href="' + comment.author.website + '" target="_blank" class="text-blue-600">' + comment.author.website + '</a></div></div>' : '') +
-              '<div><strong class="text-sm">Comentario (original):</strong><div class="mt-1 p-3 bg-gray-100 dark:bg-gray-700 rounded">' + comment.body + '</div></div>' +
-              '<div><strong class="text-sm">Comentario (censurado):</strong><div class="mt-1 p-3 bg-gray-100 dark:bg-gray-700 rounded">' + comment.bodyCensored + '</div></div>' +
-              '<div><strong class="text-sm">Estado:</strong> ' + comment.status + '</div>' +
-              '<div><strong class="text-sm">IP:</strong> ' + (comment.ipAddress || 'N/A') + '</div>' +
-              '<div><strong class="text-sm">User Agent:</strong><div class="mt-1 text-xs">' + (comment.userAgent || 'N/A') + '</div></div>' +
-              '<div><strong class="text-sm">Fecha:</strong> ' + new Date(comment.createdAt).toLocaleString('es-ES') + '</div>' +
+            const result = await response.json();
+            const comment = result.data || result;
+
+            // Detectar si hubo censura
+            const wasCensored = comment.body !== comment.bodyCensored;
+            const censorshipBadge = wasCensored
+              ? '<span class="badge badge-warning badge-sm ml-2">Censurado</span>'
+              : '<span class="badge badge-success badge-sm ml-2">Sin censura</span>';
+
+            const detailsHtml = '<div class="space-y-4">' +
+              // Author Info
+              '<div class="card bg-base-200"><div class="card-body p-4">' +
+              '<h4 class="font-bold text-sm mb-2">👤 Información del Autor</h4>' +
+              '<div class="space-y-1 text-sm">' +
+              '<div><strong>Nombre:</strong> ' + comment.authorName + '</div>' +
+              '<div><strong>Email:</strong> ' + comment.authorEmail + '</div>' +
+              (comment.authorWebsite ? '<div><strong>Website:</strong> <a href="' + comment.authorWebsite + '" target="_blank" class="link link-primary">' + comment.authorWebsite + '</a></div>' : '') +
+              '<div><strong>IP:</strong> ' + (comment.ipAddress || 'N/A') + '</div>' +
+              '<div><strong>User Agent:</strong> <span class="text-xs opacity-70">' + (comment.userAgent || 'N/A') + '</span></div>' +
+              '</div></div></div>' +
+
+              // Comment Comparison
+              '<div class="card bg-base-200"><div class="card-body p-4">' +
+              '<h4 class="font-bold text-sm mb-2">💬 Contenido del Comentario' + censorshipBadge + '</h4>' +
+              '<div class="space-y-3">' +
+              '<div><strong class="text-sm">Original:</strong><div class="mt-1 p-3 bg-gray-100 dark:bg-gray-700 rounded border-2 ' + (wasCensored ? 'border-yellow-400' : 'border-green-400') + '">' + comment.body + '</div></div>' +
+              (wasCensored ?
+                '<div><strong class="text-sm">Versión Pública (Censurado):</strong><div class="mt-1 p-3 bg-gray-100 dark:bg-gray-700 rounded border-2 border-blue-400">' + comment.bodyCensored + '</div></div>'
+                : '') +
+              '</div></div></div>' +
+
+              // Meta Info
+              '<div class="card bg-base-200"><div class="card-body p-4">' +
+              '<h4 class="font-bold text-sm mb-2">ℹ️ Metadata</h4>' +
+              '<div class="grid grid-cols-2 gap-2 text-sm">' +
+              '<div><strong>Estado:</strong> <span class="badge badge-sm ' +
+                (comment.status === 'approved' ? 'badge-success' :
+                 comment.status === 'pending' ? 'badge-warning' :
+                 comment.status === 'spam' ? 'badge-error' : 'badge-ghost') +
+              '">' + comment.status + '</span></div>' +
+              '<div><strong>ID:</strong> #' + comment.id + '</div>' +
+              '<div><strong>Content ID:</strong> ' + comment.contentId + '</div>' +
+              '<div><strong>Parent ID:</strong> ' + (comment.parentId || 'N/A') + '</div>' +
+              '<div><strong>Creado:</strong> ' + new Date(comment.createdAt).toLocaleString('es-ES') + '</div>' +
+              '<div><strong>Actualizado:</strong> ' + new Date(comment.updatedAt).toLocaleString('es-ES') + '</div>' +
+              '</div></div></div>' +
               '</div>';
 
             document.getElementById('commentDetails').innerHTML = detailsHtml;
@@ -400,13 +452,14 @@ export const CommentsPage = (props: CommentsPageProps) => {
         }
       }
 
-      async function moderateComment(id, action) {
+      async function moderateComment(id, status) {
         const actions = {
           'approved': 'aprobar',
-          'spam': 'marcar como spam'
+          'spam': 'marcar como spam',
+          'deleted': 'eliminar'
         };
 
-        if (!confirm('¿Estás seguro de ' + actions[action] + ' este comentario?')) {
+        if (!confirm('¿Estás seguro de ' + actions[status] + ' este comentario?')) {
           return;
         }
 
@@ -418,14 +471,14 @@ export const CommentsPage = (props: CommentsPageProps) => {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ' + localStorage.getItem('token')
             },
-            body: JSON.stringify({ action: action })
+            body: JSON.stringify({ status: status })
           });
 
           if (response.ok) {
             window.location.reload();
           } else {
-            const error = await response.text();
-            alert('Error: ' + error);
+            const error = await response.json();
+            alert('Error: ' + (error.error || error.message || 'Error al moderar comentario'));
           }
         } catch (error) {
           alert('Error: ' + error.message);

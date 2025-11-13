@@ -1,6 +1,39 @@
 # Comments System
 
-Sistema de comentarios completo para LexCMS. Proporciona hooks y funciones reutilizables para integrar comentarios en cualquier theme.
+Sistema de comentarios completo para LexCMS con moderación inteligente, censura automática y diseño adaptable. Proporciona hooks y funciones reutilizables para integrar comentarios en cualquier theme.
+
+## ⚡ Mejoras Implementadas (v2.0)
+
+### Seguridad
+- ✅ Corrección de vulnerabilidad XSS en nombres de autor
+- ✅ Uso de event delegation en lugar de onclick inline
+- ✅ Sanitización HTML completa de todos los campos
+- ✅ Escape de HTML en nombres de usuario
+
+### Funcionalidad
+- ✅ Threading de respuestas funcional (bug de parentId corregido)
+- ✅ Moderación inteligente basada en historial del usuario
+- ✅ Detección automática de spam
+- ✅ Sistema de censura con comparación visual en admin
+- ✅ Actualización mejorada del UI sin reload completo
+
+### Diseño y UX
+- ✅ Estilos adaptables usando CSS Custom Properties
+- ✅ Los themes pueden personalizar colores y espaciado
+- ✅ Dark mode automático
+- ✅ Animaciones suaves y feedback visual
+- ✅ Accesibilidad mejorada (ARIA labels, focus states)
+
+### Código
+- ✅ Eliminación de código duplicado (SDK → lib re-export)
+- ✅ Reducción de ~1000 líneas de código duplicado
+- ✅ Mejor organización y mantenibilidad
+
+### Panel de Administración
+- ✅ Vista mejorada con comparación original vs censurado
+- ✅ Indicador visual de censura
+- ✅ Corrección de endpoint de moderación
+- ✅ Información detallada de metadata
 
 ## Ubicación
 
@@ -108,23 +141,66 @@ export const PostTemplate = (props: PostProps) => {
 
 ## Estilos
 
-Los estilos base están en `styles.css` y siguen la metodología BEM:
+Los estilos base usan **CSS Custom Properties** (variables) para adaptarse a cualquier theme.
+
+### Importar estilos
+
+```css
+/* En tu theme CSS */
+@import url("/lib/comments/styles.css");
+```
+
+### Personalizar colores y espaciado
+
+Sobrescribe las variables CSS en tu theme:
+
+```css
+:root {
+  /* Colores del formulario */
+  --comment-box-bg: #ffffff;
+  --comment-box-border: #e2e8f0;
+  --comment-box-input-focus: #3b82f6;
+  --comment-box-btn-bg: #1e40af;
+
+  /* Colores de la lista */
+  --comments-item-bg: #f8fafc;
+  --comments-author-link: #2563eb;
+
+  /* Espaciado */
+  --comment-spacing: 1.25rem;
+  --comment-border-radius: 0.75rem;
+
+  /* Typography */
+  --comment-font-family: 'Inter', sans-serif;
+  --comment-line-height: 1.7;
+}
+```
+
+### Variables disponibles
+
+Ver `src/lib/comments/styles.css` para la lista completa de variables CSS que puedes personalizar.
+
+### Metodología BEM
+
+Las clases siguen BEM para fácil sobrescritura:
 
 - `.comment-box` - Contenedor del formulario
 - `.comments` - Contenedor de la lista
 - `.comments__item--depth-N` - Comentarios anidados
+- `.comment-box__submit` - Botón de envío
+- etc.
 
-Los themes pueden sobrescribir estos estilos o importar directamente:
+### Dark Mode
+
+El dark mode se activa automáticamente con `prefers-color-scheme: dark`. También puedes sobrescribir las variables en tu theme:
 
 ```css
-/* En tu theme CSS */
-@import url("/themes/base/assets/css/comments.css");
-```
-
-O incluir directamente en el HTML:
-
-```html
-<link rel="stylesheet" href="/lib/comments/styles.css">
+@media (prefers-color-scheme: dark) {
+  :root {
+    --comment-box-bg: #1e293b;
+    --comments-item-bg: #0f172a;
+  }
+}
 ```
 
 ## Características
@@ -149,14 +225,29 @@ El sistema se conecta a estos endpoints:
 - `GET /api/comments/:id` - Obtener comentario por ID
 - `GET /api/comments/content/:contentId` - Obtener comentarios de un post
 
-## Moderación
+## Moderación Inteligente
 
-Los comentarios pasan por moderación antes de ser visibles:
+El sistema determina automáticamente si un comentario debe ser aprobado o requerir moderación:
 
-- `status: "pending"` - Pendiente de aprobación
-- `status: "approved"` - Aprobado y visible
+### Estados de Moderación
+
+- `status: "pending"` - Pendiente de aprobación (requiere moderación manual)
+- `status: "approved"` - Aprobado y visible públicamente
 - `status: "spam"` - Marcado como spam
 - `status: "deleted"` - Eliminado (soft delete)
+
+### Reglas de Moderación Automática
+
+1. **Usuarios de confianza** (3+ comentarios aprobados) → Auto-aprobado ✅
+2. **Contenido censurado** (>20% modificado por filtros) → Requiere moderación ⚠️
+3. **Comentarios muy cortos** (<3 palabras) o muy largos (>500 palabras) → Requiere moderación ⚠️
+4. **Patrones de spam** (buy now, click here, etc.) → Requiere moderación ⚠️
+5. **Usuarios invitados** (sin autenticación) → Requiere moderación ⚠️
+6. **Por defecto** (usuarios autenticados nuevos) → Auto-aprobado ✅
+
+### Personalizar Reglas
+
+Las reglas se pueden ajustar en `src/services/commentService.ts` en la función `determineInitialStatus()`.
 
 ## Seguridad
 

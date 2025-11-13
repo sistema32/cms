@@ -80,6 +80,85 @@ async function decrementCommentCount(contentId: number) {
 }
 
 /**
+ * Determina el estado inicial de un comentario con moderación inteligente
+ * Reglas:
+ * 1. Usuarios autenticados con historial limpio -> approved
+ * 2. Usuarios nuevos o invitados -> pending
+ * 3. Contenido censurado -> pending (puede contener spam)
+ * 4. Comentarios muy cortos o largos -> pending
+ */
+async function determineInitialStatus(params: {
+  authorId?: number | null;
+  authorEmail?: string | null;
+  body: string;
+  bodyCensored: string;
+  ipAddress?: string;
+}): Promise<"approved" | "pending" | "spam"> {
+  const { authorId, authorEmail, body, bodyCensored, ipAddress } = params;
+
+  // Regla 1: Usuarios autenticados con historial
+  if (authorId) {
+    // Contar comentarios aprobados del usuario
+    const approvedCount = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(comments)
+      .where(
+        and(
+          eq(comments.authorId, authorId),
+          eq(comments.status, "approved"),
+        ),
+      );
+
+    const count = Number(approvedCount[0]?.count || 0);
+
+    // Si tiene 3+ comentarios aprobados, auto-aprobar
+    if (count >= 3) {
+      return "approved";
+    }
+  }
+
+  // Regla 2: Contenido censurado = potencial spam
+  if (body !== bodyCensored) {
+    // Si hubo censura significativa (más del 20% del texto cambió)
+    const censorshipRate = 1 - (bodyCensored.length / body.length);
+    if (censorshipRate > 0.2) {
+      return "pending";
+    }
+  }
+
+  // Regla 3: Comentarios muy cortos (posible spam) o muy largos (posible spam)
+  const wordCount = body.split(/\s+/).length;
+  if (wordCount < 3 || wordCount > 500) {
+    return "pending";
+  }
+
+  // Regla 4: Detectar patrones de spam comunes
+  const spamPatterns = [
+    /buy now/i,
+    /click here/i,
+    /limited time/i,
+    /act now/i,
+    /100% free/i,
+    /make money/i,
+    /work from home/i,
+  ];
+
+  for (const pattern of spamPatterns) {
+    if (pattern.test(body)) {
+      return "pending";
+    }
+  }
+
+  // Regla 5: Usuarios invitados van a pending por defecto (moderación manual)
+  if (!authorId) {
+    return "pending";
+  }
+
+  // Por defecto, aprobar
+  return "approved";
+}
+
+/**
  * Crea un nuevo comentario
  * OPTIMIZACIÓN: Combina todas las validaciones en una sola query (o dos si hay parentId)
  * Antes: 2-3 queries, Ahora: 1-2 queries
@@ -145,6 +224,15 @@ export async function createComment(
   // 3. Aplicar censura al contenido sanitizado
   const bodyCensored = await applyCensorship(sanitizedBody);
 
+  // 4. Determinar estado inicial con moderación inteligente
+  const initialStatus = await determineInitialStatus({
+    authorId: data.authorId,
+    authorEmail: data.authorEmail,
+    body: sanitizedBody,
+    bodyCensored,
+    ipAddress: data.ipAddress,
+  });
+
   // Crear comentario
   const [comment] = await db
     .insert(comments)
@@ -159,7 +247,7 @@ export async function createComment(
       bodyCensored, // versión pública sanitizada + censurada
       captchaToken: data.captchaToken,
       captchaProvider: data.captchaProvider,
-      status: "approved", // auto-aprobado según requisitos
+      status: initialStatus,
       ipAddress: data.ipAddress,
       userAgent: data.userAgent,
     })
