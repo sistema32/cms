@@ -24,6 +24,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { sanitizeSearchQuery } from "../utils/sanitization.ts";
 
 export interface CreateCategoryInput {
   name: string;
@@ -538,11 +539,12 @@ export async function searchCategories(
 
   // Filtro por búsqueda de texto
   if (query) {
+    const sanitizedQuery = sanitizeSearchQuery(query);
     conditions.push(
       or(
-        like(categories.name, `%${query}%`),
-        like(categories.slug, `%${query}%`),
-        like(categories.description, `%${query}%`),
+        like(categories.name, `%${sanitizedQuery}%`),
+        like(categories.slug, `%${sanitizedQuery}%`),
+        like(categories.description, `%${sanitizedQuery}%`),
       )!,
     );
   }

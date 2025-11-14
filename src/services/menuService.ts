@@ -1,6 +1,7 @@
 import { db } from "../config/db.ts";
 import { menus, type Menu, type NewMenu } from "../db/schema.ts";
 import { eq, and, isNull, or, like, desc, asc } from "drizzle-orm";
+import { sanitizeSearchQuery } from "../utils/sanitization.ts";
 
 /**
  * ============================================
@@ -51,11 +52,12 @@ export async function getAllMenus(
   const conditions = [];
 
   if (query) {
+    const sanitizedQuery = sanitizeSearchQuery(query);
     conditions.push(
       or(
-        like(menus.name, `%${query}%`),
-        like(menus.slug, `%${query}%`),
-        like(menus.description, `%${query}%`)
+        like(menus.name, `%${sanitizedQuery}%`),
+        like(menus.slug, `%${sanitizedQuery}%`),
+        like(menus.description, `%${sanitizedQuery}%`)
       )!
     );
   }

@@ -17,7 +17,10 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
 const commentsContainer = document.getElementById("comments-container");
 if (commentsContainer) {
   // TODO: Implementar carga de comentarios via API
-  commentsContainer.innerHTML = "<p>Sistema de comentarios próximamente...</p>";
+  // Usar textContent en lugar de innerHTML para prevenir XSS
+  const message = document.createElement("p");
+  message.textContent = "Sistema de comentarios próximamente...";
+  commentsContainer.appendChild(message);
 }
 
 console.log("LexCMS Theme loaded");

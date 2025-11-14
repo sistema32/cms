@@ -13,9 +13,23 @@
 
   const setModeIcon = (isLight) => {
     if (!modeIcon) return;
-    modeIcon.innerHTML = isLight
-      ? '<path d="M12 3a1 1 0 0 1 1 1v1.26a7 7 0 0 1 6.74 6.74H21a1 1 0 1 1 0 2h-1.26a7 7 0 0 1-6.74 6.74V21a1 1 0 1 1-2 0v-1.26a7 7 0 0 1-6.74-6.74H3a1 1 0 1 1 0-2h1.26a7 7 0 0 1 6.74-6.74V4a1 1 0 0 1 1-1Z" stroke="none" fill="currentColor"/>'
-      : '<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79Z" stroke="none" fill="currentColor"/>';
+    // Limpiar contenido existente
+    modeIcon.innerHTML = '';
+
+    // Crear path SVG de manera segura (contenido estático, no del usuario)
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+    if (isLight) {
+      // Ícono de sol
+      path.setAttribute('d', 'M12 3a1 1 0 0 1 1 1v1.26a7 7 0 0 1 6.74 6.74H21a1 1 0 1 1 0 2h-1.26a7 7 0 0 1-6.74 6.74V21a1 1 0 1 1-2 0v-1.26a7 7 0 0 1-6.74-6.74H3a1 1 0 1 1 0-2h1.26a7 7 0 0 1 6.74-6.74V4a1 1 0 0 1 1-1Z');
+    } else {
+      // Ícono de luna
+      path.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79Z');
+    }
+
+    path.setAttribute('stroke', 'none');
+    path.setAttribute('fill', 'currentColor');
+    modeIcon.appendChild(path);
   };
 
   const readThemeFromCookie = () => {

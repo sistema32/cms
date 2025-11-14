@@ -39,3 +39,7 @@ node_modules/
 .bin/
 src/themes/default/assets/css/main.css
 src/admin/assets/css/admin-compiled.css
+
+# Documentación generada
+documentacion-completa.json
+documentacion-unificada.html
