@@ -1,8 +1,8 @@
 import { html } from "hono/html";
 
 /**
- * Notification Panel Component
- * Displays user notifications in a dropdown panel
+ * Notification Panel Component - DaisyUI Native
+ * Displays user notifications using DaisyUI Dropdown component
  */
 
 export interface NotificationItem {
@@ -39,200 +39,113 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
     }
   };
 
-  const getNotificationColor = (type: string) => {
+  const getBadgeColor = (type: string) => {
     switch (type) {
       case "comment":
-        return "text-blue-600 dark:text-blue-400";
+        return "badge-info";
       case "user":
-        return "text-green-600 dark:text-green-400";
+        return "badge-success";
       case "content":
-        return "text-purple-600 dark:text-purple-400";
+        return "badge-primary";
       case "system":
-        return "text-orange-600 dark:text-orange-400";
+        return "badge-warning";
       default:
-        return "text-gray-600 dark:text-gray-400";
+        return "badge-neutral";
     }
   };
 
-  const formatTimeAgo = (dateString: string) => {
-    // This will be handled by JavaScript client-side
-    return dateString;
-  };
-
   return html`
-    <div class="relative">
-      <button
-        id="notificationBtn"
-        class="notifications-btn"
-        onclick="toggleNotificationPanel()"
-        aria-label="Notifications"
-        aria-expanded="false"
-      >
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-          ></path>
-        </svg>
-        ${unreadCount > 0
-          ? html`<span
-              id="notificationBadge"
-              class="notification-badge"
-              data-count="${unreadCount}"
-            ></span>`
-          : ""}
-      </button>
-
-      <!-- Notification Panel -->
-      <div
-        id="notificationPanel"
-        class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-      >
-        <!-- Panel Header -->
-        <div
-          class="px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
-        >
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-semibold">Notificaciones</h3>
-            ${unreadCount > 0
-              ? html`<span
-                  class="text-xs bg-white/20 px-2 py-1 rounded-full"
-                  >${unreadCount} nuevas</span
-                >`
-              : ""}
-          </div>
+    <!-- DaisyUI Dropdown with Indicator -->
+    <div class="dropdown dropdown-end">
+      <div tabindex="0" role="button" class="btn btn-ghost btn-circle" aria-label="Notifications">
+        <div class="indicator">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+          </svg>
+          ${unreadCount > 0
+            ? html`<span class="badge badge-sm badge-primary indicator-item">${unreadCount}</span>`
+            : ''}
         </div>
+      </div>
 
-        <!-- Notifications List -->
-        <div
-          class="max-h-96 overflow-y-auto"
-          id="notificationsList"
-          style="scrollbar-width: thin;"
-        >
-          ${notifications.length > 0
-            ? notifications.map(
-                (notification) => html`
+      <!-- Dropdown Content (Card) -->
+      <div tabindex="0" class="dropdown-content card card-compact w-80 mt-3 shadow-xl bg-base-100 border border-base-300 z-[1]">
+
+        <!-- Card Header with Gradient -->
+        <div class="card-body p-0">
+          <div class="bg-gradient-to-r from-primary to-secondary text-primary-content px-4 py-3 rounded-t-2xl">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-sm">Notificaciones</h3>
+              ${unreadCount > 0
+                ? html`<span class="badge badge-sm bg-base-100/20 border-0">${unreadCount} nuevas</span>`
+                : ''}
+            </div>
+          </div>
+
+          <!-- Notifications List -->
+          <div class="max-h-96 overflow-y-auto" style="scrollbar-width: thin;">
+            ${notifications.length > 0
+              ? notifications.map(notification => html`
                   <a
-                    href="${notification.actionUrl || "#"}"
-                    class="block px-4 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${!notification.isRead
-                      ? "bg-purple-50 dark:bg-purple-900/10"
-                      : ""}"
+                    href="${notification.actionUrl || '#'}"
+                    class="flex items-start gap-3 px-4 py-3 border-b border-base-300 hover:bg-base-200 transition-colors ${!notification.isRead ? 'bg-primary/5' : ''}"
                     onclick="markNotificationAsRead(${notification.id})"
                   >
-                    <div class="flex items-start">
-                      <div
-                        class="flex-shrink-0 mt-1 ${getNotificationColor(
-                          notification.type,
-                        )}"
-                      >
-                        <svg
-                          class="w-5 h-5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          ${getNotificationIcon(notification.type)}
-                        </svg>
+                    <!-- Icon Badge -->
+                    <div class="badge ${getBadgeColor(notification.type)} badge-lg gap-2 shrink-0">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        ${getNotificationIcon(notification.type)}
+                      </svg>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-start justify-between gap-2">
+                        <p class="font-medium text-sm">${notification.title}</p>
+                        ${!notification.isRead
+                          ? html`<span class="badge badge-primary badge-xs shrink-0"></span>`
+                          : ''}
                       </div>
-                      <div class="ml-3 flex-1">
-                        <div class="flex items-start justify-between">
-                          <p
-                            class="text-sm font-medium text-gray-900 dark:text-gray-100"
-                          >
-                            ${notification.title}
-                          </p>
-                          ${!notification.isRead
-                            ? html`<span
-                                class="ml-2 w-2 h-2 bg-purple-600 rounded-full flex-shrink-0"
-                              ></span>`
-                            : ""}
-                        </div>
-                        <p
-                          class="mt-1 text-sm text-gray-600 dark:text-gray-400"
-                        >
-                          ${notification.message}
-                        </p>
-                        <p
-                          class="mt-1 text-xs text-gray-500 dark:text-gray-500"
-                          data-timestamp="${notification.createdAt}"
-                        >
-                          ${formatTimeAgo(notification.createdAt)}
-                        </p>
-                      </div>
+                      <p class="text-sm opacity-70 mt-1">${notification.message}</p>
+                      <p class="text-xs opacity-50 mt-1" data-timestamp="${notification.createdAt}">
+                        ${notification.createdAt}
+                      </p>
                     </div>
                   </a>
-                `,
-              )
-            : html`
-                <div class="px-4 py-8 text-center text-gray-500">
-                  <svg
-                    class="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-                    ></path>
-                  </svg>
-                  <p class="text-sm dark:text-gray-400">
-                    No hay notificaciones
-                  </p>
-                </div>
-              `}
-        </div>
+                `).join('')
+              : html`
+                  <!-- Empty State -->
+                  <div class="flex flex-col items-center justify-center py-12 px-4">
+                    <svg class="w-12 h-12 opacity-20 mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                    </svg>
+                    <p class="text-sm opacity-60">No hay notificaciones</p>
+                  </div>
+                `}
+          </div>
 
-        <!-- Panel Footer -->
-        <div
-          class="px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700"
-        >
-          <div class="flex items-center justify-between text-xs">
-            ${unreadCount > 0
-              ? html`<button
-                  onclick="markAllNotificationsAsRead()"
-                  class="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium"
-                >
-                  Marcar todas como leídas
-                </button>`
-              : html`<span></span>`}
-            <a
-              href="${adminPath}/notifications"
-              class="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 font-medium"
-            >
-              Ver todas →
-            </a>
+          <!-- Card Footer -->
+          <div class="bg-base-200 px-4 py-2 rounded-b-2xl border-t border-base-300">
+            <div class="flex items-center justify-between text-xs">
+              ${unreadCount > 0
+                ? html`<button
+                    onclick="markAllNotificationsAsRead()"
+                    class="btn btn-ghost btn-xs text-primary"
+                  >
+                    Marcar todas como leídas
+                  </button>`
+                : html`<span></span>`}
+              <a href="${adminPath}/notifications" class="btn btn-ghost btn-xs">
+                Ver todas →
+              </a>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
 
-    <style>
-      #notificationsList::-webkit-scrollbar {
-        width: 6px;
-      }
-      #notificationsList::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      #notificationsList::-webkit-scrollbar-thumb {
-        background: rgba(156, 163, 175, 0.3);
-        border-radius: 3px;
-      }
-      #notificationsList::-webkit-scrollbar-thumb:hover {
-        background: rgba(156, 163, 175, 0.5);
-      }
-      .dark #notificationsList::-webkit-scrollbar-thumb {
-        background: rgba(75, 85, 99, 0.5);
-      }
-    </style>
-
     <script>
-      function toggleNotificationPanel() {
-        const panel = document.getElementById('notificationPanel');
-        const btn = document.getElementById('notificationBtn');
-        if (panel && btn) {
-          const isHidden = panel.classList.contains('hidden');
-          panel.classList.toggle('hidden');
-          btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-        }
-      }
-
       function markNotificationAsRead(notificationId) {
         // Send request to mark as read
         fetch('/api/notifications/' + notificationId + '/read', {
@@ -285,18 +198,10 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
         fetch('/api/notifications/unread-count')
           .then(response => response.json())
           .then(data => {
-            const badge = document.getElementById('notificationBadge');
+            const badge = document.querySelector('.indicator-item');
             if (data.count > 0) {
-              if (!badge) {
-                // Create badge if it doesn't exist
-                const btn = document.getElementById('notificationBtn');
-                const newBadge = document.createElement('span');
-                newBadge.id = 'notificationBadge';
-                newBadge.className = 'notification-badge';
-                newBadge.setAttribute('data-count', data.count);
-                btn.appendChild(newBadge);
-              } else {
-                badge.setAttribute('data-count', data.count);
+              if (badge) {
+                badge.textContent = data.count;
               }
             } else if (badge) {
               badge.remove();
@@ -339,16 +244,6 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
 
       // Update timestamps every minute
       setInterval(updateTimestamps, 60000);
-
-      // Close panel when clicking outside
-      document.addEventListener('click', function(event) {
-        const panel = document.getElementById('notificationPanel');
-        const btn = document.getElementById('notificationBtn');
-        if (panel && btn && !panel.contains(event.target) && !btn.contains(event.target)) {
-          panel.classList.add('hidden');
-          btn.setAttribute('aria-expanded', 'false');
-        }
-      });
 
       // Poll for new notifications every 30 seconds
       setInterval(() => {
