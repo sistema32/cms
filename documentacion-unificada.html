@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexCMS - Documentación Unificada</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --bg: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 320px;
+            --header-height: 64px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg-secondary);
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .header .subtitle {
+            margin-left: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            bottom: 0;
+            overflow-y: auto;
+            padding: 1.5rem 0;
+        }
+
+        .sidebar-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .category-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            padding: 0 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-count {
+            display: inline-block;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 9999px;
+            margin-left: 0.5rem;
+        }
+
+        .doc-link {
+            display: block;
+            padding: 0.625rem 1.5rem;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .doc-link:hover {
+            background: var(--bg-secondary);
+            border-left-color: var(--primary);
+        }
+
+        .doc-link.active {
+            background: #eff6ff;
+            border-left-color: var(--primary);
+            color: var(--primary-dark);
+            font-weight: 500;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+        }
+
+        .search-box {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .doc-content {
+            background: var(--bg);
+            padding: 3rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .doc-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .meta-label {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #eff6ff;
+            color: var(--primary-dark);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .doc-summary {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+
+        .welcome-screen {
+            text-align: center;
+            padding: 4rem 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .welcome-screen h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .welcome-screen p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .keyword-tag {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-path {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            background: #f1f5f9;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            color: #475569;
+            display: inline-block;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+
+        .category-docs {
+            padding-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 LexCMS</h1>
+        <span class="subtitle">Documentación Unificada | 86 Documentos en 15 Categorías</span>
+    </div>
+
+    <div class="container">
+        <aside class="sidebar" id="sidebar">
+            <div class="search-box">
+                <input
+                    type="text"
+                    class="search-input"
+                    id="searchInput"
+                    placeholder="🔍 Buscar documentación..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <div id="sidebarCategories">
+                <!-- Categories will be populated by JavaScript -->
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="content">
+                <div class="doc-content welcome-screen">
+                    <h2>👋 Bienvenido a la Documentación de LexCMS</h2>
+                    <p>Selecciona un documento del menú lateral para comenzar</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">86</div>
+                            <div class="stat-label">Documentos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">Categorías</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Cobertura</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Documentation data
+        const docs = {
+            "1": {
+                name: "Introducción y Guías de Inicio",
+                docs: [
+                    { title: "LexCMS - Sistema de Gestión de Contenidos", file: "README.md", summary: "Documentación principal del proyecto LexCMS, un CMS moderno construido con Deno, Hono y Drizzle ORM con sistema de themes y plugins.", keywords: ["introducción", "overview", "características", "inicio rápido"] },
+                    { title: "START - Inicio Rápido", file: "START.md", summary: "Guía rápida de inicio con comandos esenciales para levantar el proyecto, crear contenido y acceder al admin panel.", keywords: ["quick start", "comandos", "workflow"] },
+                    { title: "Getting Started - Guía Completa", file: "test + docs/GETTING_STARTED.md", summary: "Guía detallada paso a paso para configurar y empezar a usar LexCMS, desde la instalación hasta el primer deployment.", keywords: ["tutorial", "instalación", "configuración", "deploy"] }
+                ]
+            },
+            "2": {
+                name: "Arquitectura y Sistemas",
+                docs: [
+                    { title: "Arquitectura del Panel de Administración", file: "ADMIN_PANEL_ARCHITECTURE.md", summary: "Documentación detallada de la arquitectura del panel de administración con estructura de componentes, routing y assets.", keywords: ["admin", "arquitectura", "componentes", "layout"] },
+                    { title: "Sistema de Themes", file: "THEME_SYSTEM_README.md", summary: "Overview del sistema de themes de LexCMS con templates, partials, assets y configuración mediante theme.json.", keywords: ["themes", "templates", "frontend", "personalización"] },
+                    { title: "Análisis del Sistema de Themes", file: "docs/THEME_SYSTEM_ANALYSIS.md", summary: "Análisis técnico profundo del sistema de themes con evaluación de arquitectura, hooks, child themes y SDK.", keywords: ["análisis", "themes", "hooks", "child themes"] },
+                    { title: "Sistema de Plugins", file: "PLUGIN_SYSTEM.md", summary: "Documentación completa del sistema de plugins extensible con hooks, filtros y ejemplos de implementación.", keywords: ["plugins", "extensibilidad", "hooks", "api"] },
+                    { title: "Sistema RBAC", file: "docs/RBAC_SYSTEM.md", summary: "Sistema de control de acceso basado en roles con permisos granulares, middleware y gestión de usuarios.", keywords: ["rbac", "roles", "permisos", "autenticación"] },
+                    { title: "Implementación del CMS", file: "test + docs/CMS_IMPLEMENTATION.md", summary: "Documentación técnica de la implementación completa del CMS con base de datos, API REST y funcionalidades core.", keywords: ["implementación", "arquitectura", "database", "api"] },
+                    { title: "Feature de Paneles de Administración", file: "ADMIN_PANELS_FEATURE.md", summary: "Sistema de paneles personalizados para plugins con registro dinámico, navegación integrada y ejemplos prácticos.", keywords: ["admin panels", "plugins", "personalización"] },
+                    { title: "Sistema de Comentarios", file: "test + docs/COMMENTS_SYSTEM.md", summary: "Sistema completo de comentarios con threading, moderación, censura automática y API REST.", keywords: ["comentarios", "moderación", "threading", "censura"] },
+                    { title: "Implementación del Sistema de Categorías", file: "test + docs/CATEGORY_SYSTEM_IMPLEMENTATION.md", summary: "Sistema mejorado de categorías con subcategorías ilimitadas, SEO completo, soft delete y merge de categorías.", keywords: ["categorías", "taxonomía", "seo", "jerarquía"] },
+                    { title: "Implementación del Sistema de Menús", file: "test + docs/MENU_SYSTEM_IMPLEMENTATION.md", summary: "Sistema de menús con soporte para múltiples ubicaciones, items anidados y gestión visual desde admin panel.", keywords: ["menús", "navegación", "ui"] },
+                    { title: "Sistema de Media", file: "test + docs/MEDIA_SYSTEM.md", summary: "Media Library completa con upload, gestión, metadata, organización por carpetas y integración con editor.", keywords: ["media", "imágenes", "archivos", "uploads"] },
+                    { title: "Sistema de SEO y AI", file: "test + docs/SEO_AI_SYSTEM.md", summary: "Sistema avanzado de SEO con generación automática mediante AI, meta tags, Open Graph, Twitter Cards y Schema.org.", keywords: ["seo", "ai", "meta tags", "optimization"] },
+                    { title: "Sistema de Notificaciones del Admin", file: "docs/ADMIN_NOTIFICATIONS_SYSTEM.md", summary: "Sistema de notificaciones toast y panel con polling automático, tipos de notificación y estilos modernos.", keywords: ["notificaciones", "toast", "admin", "ui"] }
+                ]
+            },
+            "3": {
+                name: "Guías de Desarrollo",
+                docs: [
+                    { title: "Guía de Desarrollo de Themes", file: "docs/THEME_DEVELOPMENT_GUIDE.md", summary: "Guía completa para crear themes personalizados con templates TSX, configuración, assets y mejores prácticas.", keywords: ["desarrollo", "themes", "tutorial", "tsx"] },
+                    { title: "Guía del Theme Customizer", file: "docs/THEME_CUSTOMIZER_GUIDE.md", summary: "Customizer visual en tiempo real para ajustar configuraciones del theme sin editar código.", keywords: ["customizer", "configuración", "visual", "settings"] },
+                    { title: "Guía de Child Themes", file: "docs/CHILD_THEMES_GUIDE.md", summary: "Sistema de themes hijos que heredan funcionalidad del padre permitiendo personalizaciones sin modificar el original.", keywords: ["child themes", "herencia", "personalización"] },
+                    { title: "Guía de Widgets", file: "docs/WIDGETS_GUIDE.md", summary: "Sistema de widgets reutilizables para sidebars y áreas de widgets con gestión desde admin panel.", keywords: ["widgets", "componentes", "reutilización"] },
+                    { title: "Guía de Plugins", file: "PLUGINS_GUIDE.md", summary: "Tutorial completo para crear plugins con hooks, API, lifecycle methods y ejemplos prácticos.", keywords: ["plugins", "desarrollo", "hooks", "api"] },
+                    { title: "Guía de Internacionalización (i18n)", file: "docs/I18N_GUIDE.md", summary: "Sistema de traducción y localización para crear sitios multiidioma con gestión de strings y formatos.", keywords: ["i18n", "traducción", "internacionalización", "idiomas"] },
+                    { title: "Guía de Hooks", file: "src/themes/sdk/HOOKS_GUIDE.md", summary: "Referencia completa de hooks disponibles en el SDK para extender y modificar funcionalidad.", keywords: ["hooks", "sdk", "api", "extensión"] },
+                    { title: "Theme SDK - Documentación", file: "src/themes/sdk/README.md", summary: "SDK completo de TypeScript para desarrollo de themes con helpers, tipos, funciones de rendering y utilidades.", keywords: ["sdk", "typescript", "helpers", "api"] },
+                    { title: "Configuración de Homepage", file: "docs/HOMEPAGE_CONFIGURATION.md", summary: "Guía para configurar la homepage con posts destacados, secciones personalizadas y layouts flexibles.", keywords: ["homepage", "configuración", "layout"] },
+                    { title: "Hot Reload y Preview", file: "docs/HOT_RELOAD_AND_PREVIEW.md", summary: "Sistema de hot reload para desarrollo de themes y preview en tiempo real de cambios.", keywords: ["hot reload", "preview", "desarrollo", "watch"] }
+                ]
+            },
+            "4": {
+                name: "Implementación y Features",
+                docs: [
+                    { title: "Plan del CMS", file: "test + docs/CMS_PLAN.md", summary: "Plan maestro de implementación con roadmap de funcionalidades, prioridades y arquitectura del sistema.", keywords: ["roadmap", "plan", "features", "arquitectura"] },
+                    { title: "Control de Comentarios", file: "test + docs/COMMENTS_CONTROL.md", summary: "Sistema de control y moderación de comentarios con flujos de aprobación, spam detection y gestión masiva.", keywords: ["comentarios", "moderación", "control"] },
+                    { title: "Progreso de Implementación", file: "PROGRESO_IMPLEMENTACION.md", summary: "Estado actual del desarrollo con features completadas, en progreso y pendientes del sistema.", keywords: ["progreso", "estado", "features", "desarrollo"] },
+                    { title: "Resumen de Implementación", file: "docs/IMPLEMENTATION_SUMMARY.md", summary: "Resumen ejecutivo del sistema de themes con 8 de 18 features completadas y roadmap detallado.", keywords: ["resumen", "themes", "implementación"] },
+                    { title: "Resumen Implementación Categorías", file: "test + docs/RESUMEN_IMPLEMENTACION.md", summary: "Implementación 100% completa del sistema de categorías mejorado con SEO, subcategorías y merge.", keywords: ["categorías", "completado", "seo"] },
+                    { title: "Blueprint de Features Restantes", file: "docs/REMAINING_FEATURES_BLUEPRINT.md", summary: "Plan detallado de las funcionalidades pendientes de implementar con especificaciones técnicas.", keywords: ["features", "pendientes", "blueprint"] }
+                ]
+            },
+            "5": {
+                name: "Seguridad",
+                docs: [
+                    { title: "Revisión de Seguridad", file: "test + docs/SECURITY_REVIEW.md", summary: "Revisión comprehensiva de seguridad del sistema con vulnerabilidades encontradas y medidas de mitigación.", keywords: ["seguridad", "vulnerabilidades", "revisión"] },
+                    { title: "Features de Seguridad", file: "test + docs/SECURITY_FEATURES.md", summary: "Catálogo de características de seguridad implementadas: JWT, RBAC, sanitización, rate limiting, CSRF protection.", keywords: ["seguridad", "features", "protección"] },
+                    { title: "Reporte de Correcciones de Seguridad", file: "test + docs/SECURITY_FIXES_REPORT.md", summary: "Reporte detallado de vulnerabilidades corregidas con patches aplicados y mejoras de seguridad.", keywords: ["fixes", "patches", "vulnerabilidades"] },
+                    { title: "Reporte de Tests de Seguridad", file: "test + docs/SECURITY_TEST_REPORT.md", summary: "Resultados de tests de seguridad automatizados y manuales con cobertura de casos y recomendaciones.", keywords: ["testing", "seguridad", "resultados"] }
+                ]
+            },
+            "6": {
+                name: "Rendimiento",
+                docs: [
+                    { title: "Auditoría de Rendimiento", file: "test + docs/PERFORMANCE_AUDIT.md", summary: "Auditoría completa de rendimiento con benchmarks, bottlenecks identificados y oportunidades de optimización.", keywords: ["performance", "auditoría", "benchmarks"] },
+                    { title: "Optimizaciones de Rendimiento", file: "test + docs/PERFORMANCE_OPTIMIZATIONS.md", summary: "Optimizaciones aplicadas al sistema: caching, lazy loading, query optimization y compresión.", keywords: ["optimización", "performance", "caching"] },
+                    { title: "Reporte de Rendimiento", file: "test + docs/PERFORMANCE_REPORT.md", summary: "Métricas de rendimiento del sistema con comparativas antes/después de optimizaciones y resultados de benchmarks.", keywords: ["métricas", "benchmarks", "resultados"] }
+                ]
+            },
+            "7": {
+                name: "Análisis y Auditorías",
+                docs: [
+                    { title: "Análisis y Mejoras Sugeridas", file: "ANALISIS_Y_MEJORAS_SUGERIDAS.md", summary: "Análisis global del código con sugerencias de mejora en arquitectura, patrones y mejores prácticas.", keywords: ["análisis", "mejoras", "código"] },
+                    { title: "Análisis Detallado del Código", file: "CODE_ANALYSIS_DETAILED.md", summary: "Análisis técnico profundo de la calidad del código, complejidad ciclomática y deuda técnica.", keywords: ["análisis", "calidad", "complejidad"] },
+                    { title: "Referencia Rápida de Issues de Código", file: "CODE_ISSUES_QUICK_REFERENCE.md", summary: "Listado rápido de problemas de código detectados con ubicación, severidad y soluciones sugeridas.", keywords: ["issues", "bugs", "referencia"] },
+                    { title: "Auditoría de Valores Hardcoded", file: "HARDCODED_VALUES_AUDIT.md", summary: "Auditoría de valores hardcoded en el código con recomendaciones para usar configuración o constantes.", keywords: ["hardcoded", "configuración", "refactor"] },
+                    { title: "Auditoría de Redundancia", file: "test + docs/REDUNDANCY_AUDIT.md", summary: "Identificación de código duplicado y redundante con oportunidades de refactorización y DRY.", keywords: ["redundancia", "duplicación", "dry"] },
+                    { title: "Reporte de Auditoría SEO", file: "SEO-AUDIT-REPORT.md", summary: "Auditoría SEO del sistema con análisis de meta tags, sitemap, robots.txt y mejores prácticas.", keywords: ["seo", "auditoría", "optimization"] },
+                    { title: "Hallazgos de Revisión de Código", file: "REVISION_CODIGO_HALLAZGOS.md", summary: "Hallazgos de code review con issues críticos, warnings y sugerencias de mejora.", keywords: ["code review", "hallazgos", "quality"] },
+                    { title: "Análisis del Diseño Xoya", file: "docs/XOYA_DESIGN_ANALYSIS.md", summary: "Análisis del template Xoya para inspiración en el rediseño del admin panel.", keywords: ["diseño", "análisis", "inspiración"] }
+                ]
+            },
+            "8": {
+                name: "Mejoras y Propuestas",
+                docs: [
+                    { title: "Gaps Backend-Frontend", file: "GAPS_BACKEND_FRONTEND.md", summary: "Identificación de desconexiones entre backend y frontend con propuestas de integración.", keywords: ["gaps", "backend", "frontend", "integración"] },
+                    { title: "Propuestas de Mejoras", file: "PROPUESTAS_MEJORAS.md", summary: "Conjunto de propuestas de mejora para funcionalidad, UX y arquitectura del sistema.", keywords: ["propuestas", "mejoras", "features"] },
+                    { title: "Mejoras del Sistema de Contenido", file: "MEJORAS_SISTEMA_CONTENIDO.md", summary: "Propuestas específicas para mejorar el sistema de gestión de contenido y editor.", keywords: ["contenido", "editor", "mejoras"] },
+                    { title: "Mejoras del Sistema de Plugins", file: "PLUGIN_SYSTEM_IMPROVEMENTS.md", summary: "Roadmap de mejoras para el sistema de plugins con nuevas capacidades y mejor API.", keywords: ["plugins", "mejoras", "api"] }
+                ]
+            },
+            "9": {
+                name: "Testing y Depuración",
+                docs: [
+                    { title: "Resultados de Tests", file: "test + docs/TEST_RESULTS.md", summary: "Resultados de la suite de tests con cobertura, casos pasados/fallidos y estadísticas.", keywords: ["testing", "resultados", "cobertura"] },
+                    { title: "Test de Notificaciones", file: "docs/TEST_NOTIFICATIONS.md", summary: "Tests específicos del sistema de notificaciones con casos de uso y validación.", keywords: ["notificaciones", "testing", "validación"] },
+                    { title: "Resumen de Correcciones de Comentarios", file: "COMMENTS_FIXES_SUMMARY.md", summary: "Resumen de bugs corregidos en el sistema de comentarios con fixes aplicados.", keywords: ["comentarios", "fixes", "bugs"] },
+                    { title: "Revisión del Sistema de Comentarios", file: "COMMENTS_SYSTEM_REVIEW.md", summary: "Revisión técnica del sistema de comentarios con issues encontrados y soluciones.", keywords: ["comentarios", "revisión", "issues"] },
+                    { title: "Debug del Theme Corporativo", file: "CORPORATE_THEME_DEBUG.md", summary: "Guía de debugging del theme corporativo con problemas comunes y soluciones.", keywords: ["debug", "theme", "troubleshooting"] },
+                    { title: "Guía Detallada de Correcciones", file: "FIX_GUIDE_DETAILED.md", summary: "Guía paso a paso para corregir los problemas más comunes del sistema.", keywords: ["fixes", "guía", "soluciones"] },
+                    { title: "Guía Rápida de Correcciones", file: "QUICK_FIX_GUIDE.md", summary: "Quick fixes para problemas comunes con soluciones rápidas y comandos útiles.", keywords: ["quick fix", "troubleshooting", "comandos"] },
+                    { title: "Corrección del Error CreateHash", file: "FIX_CREATEHASH_ERROR.md", summary: "Solución específica para el error de createHash en Deno con migración de node:crypto.", keywords: ["createHash", "error", "deno", "crypto"] }
+                ]
+            },
+            "10": {
+                name: "Migraciones y Configuración",
+                docs: [
+                    { title: "Setup de RBAC", file: "RBAC_SETUP.md", summary: "Guía de configuración inicial del sistema RBAC con roles, permisos y usuarios.", keywords: ["rbac", "setup", "configuración"] },
+                    { title: "Instalación RBAC Completada", file: "RBAC_INSTALLATION_COMPLETE.md", summary: "Confirmación de instalación exitosa de RBAC con checklist de verificación.", keywords: ["rbac", "instalación", "completado"] },
+                    { title: "Guía de RBAC", file: "test + docs/RBAC_GUIDE.md", summary: "Guía completa de uso del sistema RBAC para desarrolladores y administradores.", keywords: ["rbac", "guía", "permisos"] },
+                    { title: "Instrucciones de Migración", file: "MIGRATION_INSTRUCTIONS.md", summary: "Instrucciones para migrar entre versiones del CMS y actualizar base de datos.", keywords: ["migración", "actualización", "versiones"] },
+                    { title: "Guía de Migración de Crypto", file: "CRYPTO_MIGRATION_GUIDE.md", summary: "Migración de node:crypto a crypto nativo de Deno con ejemplos y solución de problemas.", keywords: ["crypto", "migración", "deno"] },
+                    { title: "DaisyUI", file: "docs/DAISYUI.md", summary: "Configuración y uso de DaisyUI components library con Tailwind CSS.", keywords: ["daisyui", "components", "tailwind"] },
+                    { title: "Compatibilidad con DaisyUI", file: "docs/DAISYUI_COMPATIBILITY.md", summary: "Guía de compatibilidad de DaisyUI con el sistema de themes y componentes personalizados.", keywords: ["daisyui", "compatibilidad", "themes"] },
+                    { title: "Tailwind CSS", file: "test + docs/TAILWIND.md", summary: "Configuración de Tailwind CSS en el proyecto con customización y mejores prácticas.", keywords: ["tailwind", "css", "configuración"] },
+                    { title: "Themes - Configuración", file: "THEMES.md", summary: "Configuración general del sistema de themes con activación, settings y troubleshooting.", keywords: ["themes", "configuración", "setup"] }
+                ]
+            },
+            "11": {
+                name: "Changelog y Progreso",
+                docs: [
+                    { title: "Changelog Admin Panels", file: "CHANGELOG_ADMIN_PANELS.md", summary: "Historial de cambios del sistema de paneles de administración con versiones y mejoras.", keywords: ["changelog", "admin", "historial"] }
+                ]
+            },
+            "12": {
+                name: "Diseño",
+                docs: [
+                    { title: "Sistema de Diseño", file: "docs/design-system.md", summary: "Sistema de diseño moderno del admin panel con paleta de colores, tipografía, componentes y guías visuales.", keywords: ["diseño", "ui", "componentes", "estilo"] },
+                    { title: "Plan de Rediseño del Admin", file: "docs/ADMIN_REDESIGN_PLAN.md", summary: "Plan completo de rediseño del panel de administración con mockups, componentes y cronograma.", keywords: ["rediseño", "admin", "plan", "ui"] },
+                    { title: "README del Rediseño", file: "docs/README-REDESIGN.md", summary: "Documentación del proceso de rediseño con decisiones de diseño y componentes implementados.", keywords: ["rediseño", "documentación", "proceso"] },
+                    { title: "Comparación de Diseños", file: "docs/COMPARISON.md", summary: "Comparación visual y técnica entre diseño actual y propuesto del admin panel.", keywords: ["comparación", "diseño", "antes/después"] }
+                ]
+            },
+            "13": {
+                name: "Plugins",
+                docs: [
+                    { title: "Resumen Plugin Auto-Moderación", file: "PLUGIN_AUTO_MODERATION_SUMMARY.md", summary: "Resumen del plugin de auto-moderación con detección de spam local y via Akismet.", keywords: ["plugin", "moderación", "spam", "akismet"] },
+                    { title: "Plugin Analytics Dashboard", file: "plugins/analytics-dashboard/README.md", summary: "Plugin de demostración que muestra cómo crear paneles personalizados de analíticas en el admin.", keywords: ["plugin", "analytics", "dashboard", "ejemplo"] },
+                    { title: "Plugin CDN Cloudflare", file: "plugins/cdn-cloudflare/README.md", summary: "Plugin para servir archivos media desde Cloudflare CDN mejorando rendimiento y distribución global.", keywords: ["plugin", "cdn", "cloudflare", "media"] },
+                    { title: "Plugin Hello World", file: "plugins/hello-world/README.md", summary: "Plugin de ejemplo básico que demuestra la estructura y API del sistema de plugins.", keywords: ["plugin", "ejemplo", "hello world", "tutorial"] },
+                    { title: "Plugin Auto-Moderación", file: "plugins/auto-moderation/README.md", summary: "Sistema inteligente de moderación automática de comentarios con detección local, Akismet y modo híbrido.", keywords: ["plugin", "moderación", "spam", "ml"] },
+                    { title: "Ejemplos de Auto-Moderación", file: "plugins/auto-moderation/EXAMPLES.md", summary: "Ejemplos prácticos de configuración y uso del plugin de auto-moderación en diferentes escenarios.", keywords: ["ejemplos", "moderación", "configuración"] }
+                ]
+            },
+            "14": {
+                name: "Base de Datos",
+                docs: [
+                    { title: "Módulo de Base de Datos", file: "src/db/README.md", summary: "Documentación del módulo de base de datos con estructura, schema Drizzle y sistema de migraciones.", keywords: ["database", "drizzle", "schema", "migrations"] }
+                ]
+            },
+            "15": {
+                name: "Otros",
+                docs: [
+                    { title: "Sistema de Comentarios - Library", file: "src/lib/comments/README.md", summary: "Librería reutilizable del sistema de comentarios con hooks, funciones de rendering y estilos adaptables.", keywords: ["comentarios", "librería", "hooks", "components"] },
+                    { title: "Ejemplos del Sistema de Actualizaciones", file: "src/lib/system-updates/examples/README.md", summary: "Ejemplos de configuración del sistema de actualizaciones automáticas con formatos JSON y guías de uso.", keywords: ["actualizaciones", "ejemplos", "configuración"] }
+                ]
+            }
+        };
+
+        // Render sidebar
+        function renderSidebar() {
+            const container = document.getElementById('sidebarCategories');
+            container.innerHTML = '';
+
+            Object.keys(docs).forEach(categoryId => {
+                const category = docs[categoryId];
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'sidebar-category';
+
+                const categoryTitle = document.createElement('div');
+                categoryTitle.className = 'category-title';
+                categoryTitle.innerHTML = `
+                    ${category.name}
+                    <span class="category-count">${category.docs.length}</span>
+                `;
+                categoryDiv.appendChild(categoryTitle);
+
+                const docsDiv = document.createElement('div');
+                docsDiv.className = 'category-docs';
+
+                category.docs.forEach(doc => {
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.className = 'doc-link';
+                    link.textContent = doc.title;
+                    link.dataset.file = doc.file;
+                    link.dataset.categoryId = categoryId;
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        showDocument(categoryId, doc);
+
+                        // Update active state
+                        document.querySelectorAll('.doc-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                    };
+                    docsDiv.appendChild(link);
+                });
+
+                categoryDiv.appendChild(docsDiv);
+                container.appendChild(categoryDiv);
+            });
+        }
+
+        // Show document
+        function showDocument(categoryId, doc) {
+            const content = document.getElementById('content');
+            const category = docs[categoryId];
+
+            content.innerHTML = `
+                <div class="doc-content">
+                    <h1>${doc.title}</h1>
+
+                    <div class="doc-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Categoría:</span>
+                            <span class="badge">${category.name}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Archivo:</span>
+                            <span class="file-path">${doc.file}</span>
+                        </div>
+                    </div>
+
+                    <div class="doc-summary">
+                        <strong>📝 Resumen:</strong> ${doc.summary}
+                    </div>
+
+                    ${doc.keywords ? `
+                    <div style="margin-bottom: 2rem;">
+                        <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">🏷️ Keywords:</strong>
+                        ${doc.keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('')}
+                    </div>
+                    ` : ''}
+
+                    <div style="padding: 2rem; background: var(--bg-secondary); border-radius: 0.5rem; text-align: center;">
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                            📄 Para ver el contenido completo de este documento, consulta el archivo:
+                        </p>
+                        <code style="background: var(--bg); padding: 0.75rem 1.5rem; border-radius: 0.5rem; display: inline-block; font-family: monospace; color: var(--primary);">
+                            /home/user/cms/${doc.file}
+                        </code>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+
+            if (!query) {
+                // Show all
+                document.querySelectorAll('.doc-link').forEach(link => {
+                    link.style.display = 'block';
+                });
+                document.querySelectorAll('.sidebar-category').forEach(cat => {
+                    cat.style.display = 'block';
+                });
+                return;
+            }
+
+            // Filter
+            let hasResults = false;
+            document.querySelectorAll('.sidebar-category').forEach(categoryDiv => {
+                let categoryHasResults = false;
+                const links = categoryDiv.querySelectorAll('.doc-link');
+
+                links.forEach(link => {
+                    const title = link.textContent.toLowerCase();
+                    const file = link.dataset.file.toLowerCase();
+
+                    if (title.includes(query) || file.includes(query)) {
+                        link.style.display = 'block';
+                        categoryHasResults = true;
+                        hasResults = true;
+                    } else {
+                        link.style.display = 'none';
+                    }
+                });
+
+                categoryDiv.style.display = categoryHasResults ? 'block' : 'none';
+            });
+
+            if (!hasResults) {
+                console.log('No results found');
+            }
+        });
+
+        // Initialize
+        renderSidebar();
+    </script>
+</body>
+</html>
