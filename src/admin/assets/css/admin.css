@@ -52,7 +52,7 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  @apply bg-base-content/20;
+  @apply bg-base-content bg-opacity-20;
 }
 
 /* Hide scrollbar but keep functionality */
