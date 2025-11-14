@@ -9,6 +9,7 @@ import {
   contentTypes,
 } from "../db/schema.ts";
 import { eq, like, desc } from "drizzle-orm";
+import { sanitizeSearchQuery } from "../utils/sanitization.ts";
 
 export interface CreateTagInput {
   name: string;
@@ -57,8 +58,9 @@ export async function getAllTags(): Promise<Tag[]> {
 
 // Buscar tags por nombre
 export async function searchTags(query: string): Promise<Tag[]> {
+  const sanitizedQuery = sanitizeSearchQuery(query);
   return await db.query.tags.findMany({
-    where: like(tags.name, `%${query}%`),
+    where: like(tags.name, `%${sanitizedQuery}%`),
     orderBy: (tags, { asc }) => [asc(tags.name)],
   });
 }

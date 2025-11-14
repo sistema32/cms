@@ -181,3 +181,131 @@ export function containsXSS(input: string): boolean {
 
   return xssPatterns.some(pattern => pattern.test(input));
 }
+
+/**
+ * Sanitiza una cadena para uso seguro en queries SQL LIKE
+ * Escapa los caracteres especiales de SQL LIKE (%, _) para prevenir SQL injection
+ *
+ * @param input - La entrada del usuario a sanitizar
+ * @returns Cadena sanitizada segura para usar en queries LIKE
+ *
+ * @example
+ * ```typescript
+ * const userInput = "test%_value";
+ * const safe = sanitizeLikeQuery(userInput);
+ * // Resultado: "test\\%\\_value"
+ *
+ * // Uso en Drizzle ORM:
+ * const results = await db.select()
+ *   .from(categories)
+ *   .where(like(categories.name, `%${sanitizeLikeQuery(query)}%`));
+ * ```
+ */
+export function sanitizeLikeQuery(input: string | null | undefined): string {
+  if (!input) {
+    return "";
+  }
+
+  // Convertir a string si no lo es
+  const str = String(input);
+
+  // Escapar caracteres especiales de SQL LIKE
+  // % - coincide con cualquier secuencia de caracteres
+  // _ - coincide con cualquier carácter individual
+  return str.replace(/[%_]/g, "\\$&");
+}
+
+/**
+ * Sanitiza un array de strings para uso en queries SQL LIKE
+ *
+ * @param inputs - Array de entradas del usuario a sanitizar
+ * @returns Array de strings sanitizados
+ */
+export function sanitizeLikeQueryArray(
+  inputs: (string | null | undefined)[],
+): string[] {
+  return inputs.map((input) => sanitizeLikeQuery(input));
+}
+
+/**
+ * Valida y sanitiza una consulta de búsqueda
+ * Elimina caracteres potencialmente peligrosos y limita la longitud
+ *
+ * @param query - La consulta de búsqueda a validar
+ * @param maxLength - Longitud máxima permitida (predeterminado: 100)
+ * @returns Consulta validada y sanitizada
+ */
+export function validateSearchQuery(
+  query: string | null | undefined,
+  maxLength: number = 100,
+): string {
+  if (!query) {
+    return "";
+  }
+
+  // Convertir a string y eliminar espacios
+  let str = String(query).trim();
+
+  // Limitar longitud
+  if (str.length > maxLength) {
+    str = str.substring(0, maxLength);
+  }
+
+  // Eliminar bytes nulos
+  str = str.replace(/\0/g, "");
+
+  // Eliminar caracteres de control excepto newline, tab, carriage return
+  str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  return str;
+}
+
+/**
+ * Combina validación y sanitización LIKE para consultas de búsqueda
+ * Esta es la función recomendada para entradas de búsqueda de usuarios
+ *
+ * @param query - La consulta de búsqueda de la entrada del usuario
+ * @param maxLength - Longitud máxima permitida (predeterminado: 100)
+ * @returns Consulta validada y sanitizada segura para operaciones LIKE
+ *
+ * @example
+ * ```typescript
+ * const userInput = "  test%  ";
+ * const safe = sanitizeSearchQuery(userInput);
+ * // Resultado: "test\\%"
+ *
+ * // Uso:
+ * const results = await db.select()
+ *   .from(posts)
+ *   .where(like(posts.title, `%${sanitizeSearchQuery(query)}%`));
+ * ```
+ */
+export function sanitizeSearchQuery(
+  query: string | null | undefined,
+  maxLength: number = 100,
+): string {
+  const validated = validateSearchQuery(query, maxLength);
+  return sanitizeLikeQuery(validated);
+}
+
+/**
+ * Verifica si una cadena contiene patrones de inyección SQL
+ * Útil para validación adicional
+ *
+ * @param input - Cadena a verificar
+ * @returns true si se encuentran patrones sospechosos
+ */
+export function containsSQLInjectionPattern(input: string): boolean {
+  const suspiciousPatterns = [
+    /(\bor\b|\band\b)\s+\d+\s*=\s*\d+/i, // OR 1=1, AND 1=1
+    /union\s+select/i, // UNION SELECT
+    /;\s*drop\s+table/i, // DROP TABLE
+    /;\s*delete\s+from/i, // DELETE FROM
+    /;\s*insert\s+into/i, // INSERT INTO
+    /;\s*update\s+.+\s+set/i, // UPDATE SET
+    /exec\s*\(/i, // exec()
+    /execute\s*\(/i, // execute()
+  ];
+
+  return suspiciousPatterns.some((pattern) => pattern.test(input));
+}

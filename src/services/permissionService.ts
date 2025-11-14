@@ -3,6 +3,7 @@ import { db } from "../config/db.ts";
 import { permissions, users, rolePermissions } from "../db/schema.ts";
 import type { NewPermission } from "../db/schema.ts";
 import { clearUserPermissionsCache } from "./authorizationService.ts";
+import { sanitizeSearchQuery } from "../utils/sanitization.ts";
 
 export interface PermissionsByModule {
   module: string;
@@ -354,11 +355,12 @@ export async function getUserPermissionsGrouped(userId: number): Promise<Permiss
  * Busca permisos por módulo o descripción
  */
 export async function searchPermissions(query: string) {
+  const sanitizedQuery = sanitizeSearchQuery(query);
   return await db.query.permissions.findMany({
     where: or(
-      like(permissions.module, `%${query}%`),
-      like(permissions.action, `%${query}%`),
-      like(permissions.description, `%${query}%`)
+      like(permissions.module, `%${sanitizedQuery}%`),
+      like(permissions.action, `%${sanitizedQuery}%`),
+      like(permissions.description, `%${sanitizedQuery}%`)
     ),
     orderBy: [desc(permissions.module)],
   });
