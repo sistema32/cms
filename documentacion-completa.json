@@ -1,0 +1,766 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-14",
+    "project": "LexCMS",
+    "totalFiles": 86,
+    "totalCategories": 15,
+    "description": "Documentación unificada de LexCMS organizada por categorías"
+  },
+  "indices": {
+    "1": "Introducción y Guías de Inicio",
+    "2": "Arquitectura y Sistemas",
+    "3": "Guías de Desarrollo",
+    "4": "Implementación y Features",
+    "5": "Seguridad",
+    "6": "Rendimiento",
+    "7": "Análisis y Auditorías",
+    "8": "Mejoras y Propuestas",
+    "9": "Testing y Depuración",
+    "10": "Migraciones y Configuración",
+    "11": "Changelog y Progreso",
+    "12": "Diseño",
+    "13": "Plugins",
+    "14": "Base de Datos",
+    "15": "Otros"
+  },
+  "files": [
+    {
+      "title": "LexCMS - Sistema de Gestión de Contenidos",
+      "file": "README.md",
+      "category": 1,
+      "categoryName": "Introducción y Guías de Inicio",
+      "summary": "Documentación principal del proyecto LexCMS, un CMS moderno construido con Deno, Hono y Drizzle ORM con sistema de themes y plugins.",
+      "keywords": ["introducción", "overview", "características", "inicio rápido"],
+      "size": "large"
+    },
+    {
+      "title": "START - Inicio Rápido",
+      "file": "START.md",
+      "category": 1,
+      "categoryName": "Introducción y Guías de Inicio",
+      "summary": "Guía rápida de inicio con comandos esenciales para levantar el proyecto, crear contenido y acceder al admin panel.",
+      "keywords": ["quick start", "comandos", "workflow"],
+      "size": "medium"
+    },
+    {
+      "title": "Getting Started - Guía Completa",
+      "file": "test + docs/GETTING_STARTED.md",
+      "category": 1,
+      "categoryName": "Introducción y Guías de Inicio",
+      "summary": "Guía detallada paso a paso para configurar y empezar a usar LexCMS, desde la instalación hasta el primer deployment.",
+      "keywords": ["tutorial", "instalación", "configuración", "deploy"],
+      "size": "large"
+    },
+    {
+      "title": "Arquitectura del Panel de Administración",
+      "file": "ADMIN_PANEL_ARCHITECTURE.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Documentación detallada de la arquitectura del panel de administración con estructura de componentes, routing y assets.",
+      "keywords": ["admin", "arquitectura", "componentes", "layout"],
+      "size": "large"
+    },
+    {
+      "title": "Sistema de Themes",
+      "file": "THEME_SYSTEM_README.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Overview del sistema de themes de LexCMS con templates, partials, assets y configuración mediante theme.json.",
+      "keywords": ["themes", "templates", "frontend", "personalización"],
+      "size": "large"
+    },
+    {
+      "title": "Análisis del Sistema de Themes",
+      "file": "docs/THEME_SYSTEM_ANALYSIS.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Análisis técnico profundo del sistema de themes con evaluación de arquitectura, hooks, child themes y SDK.",
+      "keywords": ["análisis", "themes", "hooks", "child themes"],
+      "size": "large"
+    },
+    {
+      "title": "Sistema de Plugins",
+      "file": "PLUGIN_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Documentación completa del sistema de plugins extensible con hooks, filtros y ejemplos de implementación.",
+      "keywords": ["plugins", "extensibilidad", "hooks", "api"],
+      "size": "large"
+    },
+    {
+      "title": "Sistema RBAC",
+      "file": "docs/RBAC_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema de control de acceso basado en roles con permisos granulares, middleware y gestión de usuarios.",
+      "keywords": ["rbac", "roles", "permisos", "autenticación"],
+      "size": "large"
+    },
+    {
+      "title": "Implementación del CMS",
+      "file": "test + docs/CMS_IMPLEMENTATION.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Documentación técnica de la implementación completa del CMS con base de datos, API REST y funcionalidades core.",
+      "keywords": ["implementación", "arquitectura", "database", "api"],
+      "size": "large"
+    },
+    {
+      "title": "Feature de Paneles de Administración",
+      "file": "ADMIN_PANELS_FEATURE.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema de paneles personalizados para plugins con registro dinámico, navegación integrada y ejemplos prácticos.",
+      "keywords": ["admin panels", "plugins", "personalización"],
+      "size": "medium"
+    },
+    {
+      "title": "Sistema de Comentarios",
+      "file": "test + docs/COMMENTS_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema completo de comentarios con threading, moderación, censura automática y API REST.",
+      "keywords": ["comentarios", "moderación", "threading", "censura"],
+      "size": "large"
+    },
+    {
+      "title": "Implementación del Sistema de Categorías",
+      "file": "test + docs/CATEGORY_SYSTEM_IMPLEMENTATION.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema mejorado de categorías con subcategorías ilimitadas, SEO completo, soft delete y merge de categorías.",
+      "keywords": ["categorías", "taxonomía", "seo", "jerarquía"],
+      "size": "large"
+    },
+    {
+      "title": "Implementación del Sistema de Menús",
+      "file": "test + docs/MENU_SYSTEM_IMPLEMENTATION.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema de menús con soporte para múltiples ubicaciones, items anidados y gestión visual desde admin panel.",
+      "keywords": ["menús", "navegación", "ui"],
+      "size": "medium"
+    },
+    {
+      "title": "Sistema de Media",
+      "file": "test + docs/MEDIA_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Media Library completa con upload, gestión, metadata, organización por carpetas y integración con editor.",
+      "keywords": ["media", "imágenes", "archivos", "uploads"],
+      "size": "large"
+    },
+    {
+      "title": "Sistema de SEO y AI",
+      "file": "test + docs/SEO_AI_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema avanzado de SEO con generación automática mediante AI, meta tags, Open Graph, Twitter Cards y Schema.org.",
+      "keywords": ["seo", "ai", "meta tags", "optimization"],
+      "size": "large"
+    },
+    {
+      "title": "Sistema de Notificaciones del Admin",
+      "file": "docs/ADMIN_NOTIFICATIONS_SYSTEM.md",
+      "category": 2,
+      "categoryName": "Arquitectura y Sistemas",
+      "summary": "Sistema de notificaciones toast y panel con polling automático, tipos de notificación y estilos modernos.",
+      "keywords": ["notificaciones", "toast", "admin", "ui"],
+      "size": "large"
+    },
+    {
+      "title": "Guía de Desarrollo de Themes",
+      "file": "docs/THEME_DEVELOPMENT_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Guía completa para crear themes personalizados con templates TSX, configuración, assets y mejores prácticas.",
+      "keywords": ["desarrollo", "themes", "tutorial", "tsx"],
+      "size": "large"
+    },
+    {
+      "title": "Guía del Theme Customizer",
+      "file": "docs/THEME_CUSTOMIZER_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Customizer visual en tiempo real para ajustar configuraciones del theme sin editar código.",
+      "keywords": ["customizer", "configuración", "visual", "settings"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía de Child Themes",
+      "file": "docs/CHILD_THEMES_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Sistema de themes hijos que heredan funcionalidad del padre permitiendo personalizaciones sin modificar el original.",
+      "keywords": ["child themes", "herencia", "personalización"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía de Widgets",
+      "file": "docs/WIDGETS_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Sistema de widgets reutilizables para sidebars y áreas de widgets con gestión desde admin panel.",
+      "keywords": ["widgets", "componentes", "reutilización"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía de Plugins",
+      "file": "PLUGINS_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Tutorial completo para crear plugins con hooks, API, lifecycle methods y ejemplos prácticos.",
+      "keywords": ["plugins", "desarrollo", "hooks", "api"],
+      "size": "large"
+    },
+    {
+      "title": "Guía de Internacionalización (i18n)",
+      "file": "docs/I18N_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Sistema de traducción y localización para crear sitios multiidioma con gestión de strings y formatos.",
+      "keywords": ["i18n", "traducción", "internacionalización", "idiomas"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía de Hooks",
+      "file": "src/themes/sdk/HOOKS_GUIDE.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Referencia completa de hooks disponibles en el SDK para extender y modificar funcionalidad.",
+      "keywords": ["hooks", "sdk", "api", "extensión"],
+      "size": "large"
+    },
+    {
+      "title": "Theme SDK - Documentación",
+      "file": "src/themes/sdk/README.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "SDK completo de TypeScript para desarrollo de themes con helpers, tipos, funciones de rendering y utilidades.",
+      "keywords": ["sdk", "typescript", "helpers", "api"],
+      "size": "large"
+    },
+    {
+      "title": "Configuración de Homepage",
+      "file": "docs/HOMEPAGE_CONFIGURATION.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Guía para configurar la homepage con posts destacados, secciones personalizadas y layouts flexibles.",
+      "keywords": ["homepage", "configuración", "layout"],
+      "size": "medium"
+    },
+    {
+      "title": "Hot Reload y Preview",
+      "file": "docs/HOT_RELOAD_AND_PREVIEW.md",
+      "category": 3,
+      "categoryName": "Guías de Desarrollo",
+      "summary": "Sistema de hot reload para desarrollo de themes y preview en tiempo real de cambios.",
+      "keywords": ["hot reload", "preview", "desarrollo", "watch"],
+      "size": "medium"
+    },
+    {
+      "title": "Plan del CMS",
+      "file": "test + docs/CMS_PLAN.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Plan maestro de implementación con roadmap de funcionalidades, prioridades y arquitectura del sistema.",
+      "keywords": ["roadmap", "plan", "features", "arquitectura"],
+      "size": "large"
+    },
+    {
+      "title": "Control de Comentarios",
+      "file": "test + docs/COMMENTS_CONTROL.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Sistema de control y moderación de comentarios con flujos de aprobación, spam detection y gestión masiva.",
+      "keywords": ["comentarios", "moderación", "control"],
+      "size": "medium"
+    },
+    {
+      "title": "Progreso de Implementación",
+      "file": "PROGRESO_IMPLEMENTACION.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Estado actual del desarrollo con features completadas, en progreso y pendientes del sistema.",
+      "keywords": ["progreso", "estado", "features", "desarrollo"],
+      "size": "large"
+    },
+    {
+      "title": "Resumen de Implementación",
+      "file": "docs/IMPLEMENTATION_SUMMARY.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Resumen ejecutivo del sistema de themes con 8 de 18 features completadas y roadmap detallado.",
+      "keywords": ["resumen", "themes", "implementación"],
+      "size": "large"
+    },
+    {
+      "title": "Resumen Implementación Categorías",
+      "file": "test + docs/RESUMEN_IMPLEMENTACION.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Implementación 100% completa del sistema de categorías mejorado con SEO, subcategorías y merge.",
+      "keywords": ["categorías", "completado", "seo"],
+      "size": "medium"
+    },
+    {
+      "title": "Blueprint de Features Restantes",
+      "file": "docs/REMAINING_FEATURES_BLUEPRINT.md",
+      "category": 4,
+      "categoryName": "Implementación y Features",
+      "summary": "Plan detallado de las funcionalidades pendientes de implementar con especificaciones técnicas.",
+      "keywords": ["features", "pendientes", "blueprint"],
+      "size": "large"
+    },
+    {
+      "title": "Revisión de Seguridad",
+      "file": "test + docs/SECURITY_REVIEW.md",
+      "category": 5,
+      "categoryName": "Seguridad",
+      "summary": "Revisión comprehensiva de seguridad del sistema con vulnerabilidades encontradas y medidas de mitigación.",
+      "keywords": ["seguridad", "vulnerabilidades", "revisión"],
+      "size": "large"
+    },
+    {
+      "title": "Features de Seguridad",
+      "file": "test + docs/SECURITY_FEATURES.md",
+      "category": 5,
+      "categoryName": "Seguridad",
+      "summary": "Catálogo de características de seguridad implementadas: JWT, RBAC, sanitización, rate limiting, CSRF protection.",
+      "keywords": ["seguridad", "features", "protección"],
+      "size": "large"
+    },
+    {
+      "title": "Reporte de Correcciones de Seguridad",
+      "file": "test + docs/SECURITY_FIXES_REPORT.md",
+      "category": 5,
+      "categoryName": "Seguridad",
+      "summary": "Reporte detallado de vulnerabilidades corregidas con patches aplicados y mejoras de seguridad.",
+      "keywords": ["fixes", "patches", "vulnerabilidades"],
+      "size": "medium"
+    },
+    {
+      "title": "Reporte de Tests de Seguridad",
+      "file": "test + docs/SECURITY_TEST_REPORT.md",
+      "category": 5,
+      "categoryName": "Seguridad",
+      "summary": "Resultados de tests de seguridad automatizados y manuales con cobertura de casos y recomendaciones.",
+      "keywords": ["testing", "seguridad", "resultados"],
+      "size": "medium"
+    },
+    {
+      "title": "Auditoría de Rendimiento",
+      "file": "test + docs/PERFORMANCE_AUDIT.md",
+      "category": 6,
+      "categoryName": "Rendimiento",
+      "summary": "Auditoría completa de rendimiento con benchmarks, bottlenecks identificados y oportunidades de optimización.",
+      "keywords": ["performance", "auditoría", "benchmarks"],
+      "size": "large"
+    },
+    {
+      "title": "Optimizaciones de Rendimiento",
+      "file": "test + docs/PERFORMANCE_OPTIMIZATIONS.md",
+      "category": 6,
+      "categoryName": "Rendimiento",
+      "summary": "Optimizaciones aplicadas al sistema: caching, lazy loading, query optimization y compresión.",
+      "keywords": ["optimización", "performance", "caching"],
+      "size": "large"
+    },
+    {
+      "title": "Reporte de Rendimiento",
+      "file": "test + docs/PERFORMANCE_REPORT.md",
+      "category": 6,
+      "categoryName": "Rendimiento",
+      "summary": "Métricas de rendimiento del sistema con comparativas antes/después de optimizaciones y resultados de benchmarks.",
+      "keywords": ["métricas", "benchmarks", "resultados"],
+      "size": "medium"
+    },
+    {
+      "title": "Análisis y Mejoras Sugeridas",
+      "file": "ANALISIS_Y_MEJORAS_SUGERIDAS.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Análisis global del código con sugerencias de mejora en arquitectura, patrones y mejores prácticas.",
+      "keywords": ["análisis", "mejoras", "código"],
+      "size": "large"
+    },
+    {
+      "title": "Análisis Detallado del Código",
+      "file": "CODE_ANALYSIS_DETAILED.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Análisis técnico profundo de la calidad del código, complejidad ciclomática y deuda técnica.",
+      "keywords": ["análisis", "calidad", "complejidad"],
+      "size": "large"
+    },
+    {
+      "title": "Referencia Rápida de Issues de Código",
+      "file": "CODE_ISSUES_QUICK_REFERENCE.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Listado rápido de problemas de código detectados con ubicación, severidad y soluciones sugeridas.",
+      "keywords": ["issues", "bugs", "referencia"],
+      "size": "medium"
+    },
+    {
+      "title": "Auditoría de Valores Hardcoded",
+      "file": "HARDCODED_VALUES_AUDIT.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Auditoría de valores hardcoded en el código con recomendaciones para usar configuración o constantes.",
+      "keywords": ["hardcoded", "configuración", "refactor"],
+      "size": "medium"
+    },
+    {
+      "title": "Auditoría de Redundancia",
+      "file": "test + docs/REDUNDANCY_AUDIT.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Identificación de código duplicado y redundante con oportunidades de refactorización y DRY.",
+      "keywords": ["redundancia", "duplicación", "dry"],
+      "size": "medium"
+    },
+    {
+      "title": "Reporte de Auditoría SEO",
+      "file": "SEO-AUDIT-REPORT.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Auditoría SEO del sistema con análisis de meta tags, sitemap, robots.txt y mejores prácticas.",
+      "keywords": ["seo", "auditoría", "optimization"],
+      "size": "large"
+    },
+    {
+      "title": "Hallazgos de Revisión de Código",
+      "file": "REVISION_CODIGO_HALLAZGOS.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Hallazgos de code review con issues críticos, warnings y sugerencias de mejora.",
+      "keywords": ["code review", "hallazgos", "quality"],
+      "size": "large"
+    },
+    {
+      "title": "Análisis del Diseño Xoya",
+      "file": "docs/XOYA_DESIGN_ANALYSIS.md",
+      "category": 7,
+      "categoryName": "Análisis y Auditorías",
+      "summary": "Análisis del template Xoya para inspiración en el rediseño del admin panel.",
+      "keywords": ["diseño", "análisis", "inspiración"],
+      "size": "medium"
+    },
+    {
+      "title": "Gaps Backend-Frontend",
+      "file": "GAPS_BACKEND_FRONTEND.md",
+      "category": 8,
+      "categoryName": "Mejoras y Propuestas",
+      "summary": "Identificación de desconexiones entre backend y frontend con propuestas de integración.",
+      "keywords": ["gaps", "backend", "frontend", "integración"],
+      "size": "medium"
+    },
+    {
+      "title": "Propuestas de Mejoras",
+      "file": "PROPUESTAS_MEJORAS.md",
+      "category": 8,
+      "categoryName": "Mejoras y Propuestas",
+      "summary": "Conjunto de propuestas de mejora para funcionalidad, UX y arquitectura del sistema.",
+      "keywords": ["propuestas", "mejoras", "features"],
+      "size": "large"
+    },
+    {
+      "title": "Mejoras del Sistema de Contenido",
+      "file": "MEJORAS_SISTEMA_CONTENIDO.md",
+      "category": 8,
+      "categoryName": "Mejoras y Propuestas",
+      "summary": "Propuestas específicas para mejorar el sistema de gestión de contenido y editor.",
+      "keywords": ["contenido", "editor", "mejoras"],
+      "size": "medium"
+    },
+    {
+      "title": "Mejoras del Sistema de Plugins",
+      "file": "PLUGIN_SYSTEM_IMPROVEMENTS.md",
+      "category": 8,
+      "categoryName": "Mejoras y Propuestas",
+      "summary": "Roadmap de mejoras para el sistema de plugins con nuevas capacidades y mejor API.",
+      "keywords": ["plugins", "mejoras", "api"],
+      "size": "medium"
+    },
+    {
+      "title": "Resultados de Tests",
+      "file": "test + docs/TEST_RESULTS.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Resultados de la suite de tests con cobertura, casos pasados/fallidos y estadísticas.",
+      "keywords": ["testing", "resultados", "cobertura"],
+      "size": "medium"
+    },
+    {
+      "title": "Test de Notificaciones",
+      "file": "docs/TEST_NOTIFICATIONS.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Tests específicos del sistema de notificaciones con casos de uso y validación.",
+      "keywords": ["notificaciones", "testing", "validación"],
+      "size": "small"
+    },
+    {
+      "title": "Resumen de Correcciones de Comentarios",
+      "file": "COMMENTS_FIXES_SUMMARY.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Resumen de bugs corregidos en el sistema de comentarios con fixes aplicados.",
+      "keywords": ["comentarios", "fixes", "bugs"],
+      "size": "small"
+    },
+    {
+      "title": "Revisión del Sistema de Comentarios",
+      "file": "COMMENTS_SYSTEM_REVIEW.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Revisión técnica del sistema de comentarios con issues encontrados y soluciones.",
+      "keywords": ["comentarios", "revisión", "issues"],
+      "size": "medium"
+    },
+    {
+      "title": "Debug del Theme Corporativo",
+      "file": "CORPORATE_THEME_DEBUG.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Guía de debugging del theme corporativo con problemas comunes y soluciones.",
+      "keywords": ["debug", "theme", "troubleshooting"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía Detallada de Correcciones",
+      "file": "FIX_GUIDE_DETAILED.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Guía paso a paso para corregir los problemas más comunes del sistema.",
+      "keywords": ["fixes", "guía", "soluciones"],
+      "size": "large"
+    },
+    {
+      "title": "Guía Rápida de Correcciones",
+      "file": "QUICK_FIX_GUIDE.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Quick fixes para problemas comunes con soluciones rápidas y comandos útiles.",
+      "keywords": ["quick fix", "troubleshooting", "comandos"],
+      "size": "medium"
+    },
+    {
+      "title": "Corrección del Error CreateHash",
+      "file": "FIX_CREATEHASH_ERROR.md",
+      "category": 9,
+      "categoryName": "Testing y Depuración",
+      "summary": "Solución específica para el error de createHash en Deno con migración de node:crypto.",
+      "keywords": ["createHash", "error", "deno", "crypto"],
+      "size": "small"
+    },
+    {
+      "title": "Setup de RBAC",
+      "file": "RBAC_SETUP.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Guía de configuración inicial del sistema RBAC con roles, permisos y usuarios.",
+      "keywords": ["rbac", "setup", "configuración"],
+      "size": "medium"
+    },
+    {
+      "title": "Instalación RBAC Completada",
+      "file": "RBAC_INSTALLATION_COMPLETE.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Confirmación de instalación exitosa de RBAC con checklist de verificación.",
+      "keywords": ["rbac", "instalación", "completado"],
+      "size": "small"
+    },
+    {
+      "title": "Guía de RBAC",
+      "file": "test + docs/RBAC_GUIDE.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Guía completa de uso del sistema RBAC para desarrolladores y administradores.",
+      "keywords": ["rbac", "guía", "permisos"],
+      "size": "large"
+    },
+    {
+      "title": "Instrucciones de Migración",
+      "file": "MIGRATION_INSTRUCTIONS.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Instrucciones para migrar entre versiones del CMS y actualizar base de datos.",
+      "keywords": ["migración", "actualización", "versiones"],
+      "size": "medium"
+    },
+    {
+      "title": "Guía de Migración de Crypto",
+      "file": "CRYPTO_MIGRATION_GUIDE.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Migración de node:crypto a crypto nativo de Deno con ejemplos y solución de problemas.",
+      "keywords": ["crypto", "migración", "deno"],
+      "size": "medium"
+    },
+    {
+      "title": "DaisyUI",
+      "file": "docs/DAISYUI.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Configuración y uso de DaisyUI components library con Tailwind CSS.",
+      "keywords": ["daisyui", "components", "tailwind"],
+      "size": "medium"
+    },
+    {
+      "title": "Compatibilidad con DaisyUI",
+      "file": "docs/DAISYUI_COMPATIBILITY.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Guía de compatibilidad de DaisyUI con el sistema de themes y componentes personalizados.",
+      "keywords": ["daisyui", "compatibilidad", "themes"],
+      "size": "small"
+    },
+    {
+      "title": "Tailwind CSS",
+      "file": "test + docs/TAILWIND.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Configuración de Tailwind CSS en el proyecto con customización y mejores prácticas.",
+      "keywords": ["tailwind", "css", "configuración"],
+      "size": "medium"
+    },
+    {
+      "title": "Themes - Configuración",
+      "file": "THEMES.md",
+      "category": 10,
+      "categoryName": "Migraciones y Configuración",
+      "summary": "Configuración general del sistema de themes con activación, settings y troubleshooting.",
+      "keywords": ["themes", "configuración", "setup"],
+      "size": "medium"
+    },
+    {
+      "title": "Changelog Admin Panels",
+      "file": "CHANGELOG_ADMIN_PANELS.md",
+      "category": 11,
+      "categoryName": "Changelog y Progreso",
+      "summary": "Historial de cambios del sistema de paneles de administración con versiones y mejoras.",
+      "keywords": ["changelog", "admin", "historial"],
+      "size": "medium"
+    },
+    {
+      "title": "Sistema de Diseño",
+      "file": "docs/design-system.md",
+      "category": 12,
+      "categoryName": "Diseño",
+      "summary": "Sistema de diseño moderno del admin panel con paleta de colores, tipografía, componentes y guías visuales.",
+      "keywords": ["diseño", "ui", "componentes", "estilo"],
+      "size": "large"
+    },
+    {
+      "title": "Plan de Rediseño del Admin",
+      "file": "docs/ADMIN_REDESIGN_PLAN.md",
+      "category": 12,
+      "categoryName": "Diseño",
+      "summary": "Plan completo de rediseño del panel de administración con mockups, componentes y cronograma.",
+      "keywords": ["rediseño", "admin", "plan", "ui"],
+      "size": "large"
+    },
+    {
+      "title": "README del Rediseño",
+      "file": "docs/README-REDESIGN.md",
+      "category": 12,
+      "categoryName": "Diseño",
+      "summary": "Documentación del proceso de rediseño con decisiones de diseño y componentes implementados.",
+      "keywords": ["rediseño", "documentación", "proceso"],
+      "size": "medium"
+    },
+    {
+      "title": "Comparación de Diseños",
+      "file": "docs/COMPARISON.md",
+      "category": 12,
+      "categoryName": "Diseño",
+      "summary": "Comparación visual y técnica entre diseño actual y propuesto del admin panel.",
+      "keywords": ["comparación", "diseño", "antes/después"],
+      "size": "medium"
+    },
+    {
+      "title": "Resumen Plugin Auto-Moderación",
+      "file": "PLUGIN_AUTO_MODERATION_SUMMARY.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Resumen del plugin de auto-moderación con detección de spam local y via Akismet.",
+      "keywords": ["plugin", "moderación", "spam", "akismet"],
+      "size": "medium"
+    },
+    {
+      "title": "Plugin Analytics Dashboard",
+      "file": "plugins/analytics-dashboard/README.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Plugin de demostración que muestra cómo crear paneles personalizados de analíticas en el admin.",
+      "keywords": ["plugin", "analytics", "dashboard", "ejemplo"],
+      "size": "small"
+    },
+    {
+      "title": "Plugin CDN Cloudflare",
+      "file": "plugins/cdn-cloudflare/README.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Plugin para servir archivos media desde Cloudflare CDN mejorando rendimiento y distribución global.",
+      "keywords": ["plugin", "cdn", "cloudflare", "media"],
+      "size": "medium"
+    },
+    {
+      "title": "Plugin Hello World",
+      "file": "plugins/hello-world/README.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Plugin de ejemplo básico que demuestra la estructura y API del sistema de plugins.",
+      "keywords": ["plugin", "ejemplo", "hello world", "tutorial"],
+      "size": "small"
+    },
+    {
+      "title": "Plugin Auto-Moderación",
+      "file": "plugins/auto-moderation/README.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Sistema inteligente de moderación automática de comentarios con detección local, Akismet y modo híbrido.",
+      "keywords": ["plugin", "moderación", "spam", "ml"],
+      "size": "large"
+    },
+    {
+      "title": "Ejemplos de Auto-Moderación",
+      "file": "plugins/auto-moderation/EXAMPLES.md",
+      "category": 13,
+      "categoryName": "Plugins",
+      "summary": "Ejemplos prácticos de configuración y uso del plugin de auto-moderación en diferentes escenarios.",
+      "keywords": ["ejemplos", "moderación", "configuración"],
+      "size": "medium"
+    },
+    {
+      "title": "Módulo de Base de Datos",
+      "file": "src/db/README.md",
+      "category": 14,
+      "categoryName": "Base de Datos",
+      "summary": "Documentación del módulo de base de datos con estructura, schema Drizzle y sistema de migraciones.",
+      "keywords": ["database", "drizzle", "schema", "migrations"],
+      "size": "small"
+    },
+    {
+      "title": "Sistema de Comentarios - Library",
+      "file": "src/lib/comments/README.md",
+      "category": 15,
+      "categoryName": "Otros",
+      "summary": "Librería reutilizable del sistema de comentarios con hooks, funciones de rendering y estilos adaptables.",
+      "keywords": ["comentarios", "librería", "hooks", "components"],
+      "size": "large"
+    },
+    {
+      "title": "Ejemplos del Sistema de Actualizaciones",
+      "file": "src/lib/system-updates/examples/README.md",
+      "category": 15,
+      "categoryName": "Otros",
+      "summary": "Ejemplos de configuración del sistema de actualizaciones automáticas con formatos JSON y guías de uso.",
+      "keywords": ["actualizaciones", "ejemplos", "configuración"],
+      "size": "medium"
+    }
+  ]
+}
