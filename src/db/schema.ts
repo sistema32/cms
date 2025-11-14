@@ -645,7 +645,10 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     references: [contentTypes.id],
   }),
   contentCategories: many(contentCategories),
-  seo: one(categorySeo),
+  seo: one(categorySeo, {
+    fields: [categories.id],
+    references: [categorySeo.categoryId],
+  }),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -675,7 +678,10 @@ export const contentRelations = relations(content, ({ one, many }) => ({
   }),
   contentCategories: many(contentCategories),
   contentTags: many(contentTags),
-  seo: one(contentSeo),
+  seo: one(contentSeo, {
+    fields: [content.id],
+    references: [contentSeo.contentId],
+  }),
   meta: many(contentMeta),
   comments: many(comments),
   revisions: many(contentRevisions),
@@ -723,7 +729,10 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
     references: [users.id],
   }),
   sizes: many(mediaSizes),
-  seo: one(mediaSeo),
+  seo: one(mediaSeo, {
+    fields: [media.id],
+    references: [mediaSeo.mediaId],
+  }),
 }));
 
 export const mediaSizesRelations = relations(mediaSizes, ({ one }) => ({
