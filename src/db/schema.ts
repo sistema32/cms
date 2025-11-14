@@ -609,10 +609,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.roleId],
     references: [roles.id],
   }),
-  twoFactor: one(user2FA, {
-    fields: [users.id],
-    references: [user2FA.userId],
-  }),
+  twoFactor: one(user2FA),
   content: many(content),
   media: many(media),
   comments: many(comments),
