@@ -18,6 +18,7 @@ import { UsersPageImproved } from "../admin/pages/UsersImproved.tsx";
 import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
 import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
+import { SettingsNexusPage } from "../admin/pages/SettingsNexus.tsx";
 import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
 import { ThemePreviewPage } from "../admin/pages/ThemePreviewPage.tsx";
 import { ThemeCustomizerPage } from "../admin/pages/ThemeCustomizerPage.tsx";
@@ -3872,11 +3873,32 @@ adminRouter.get("/settings", async (c) => {
       ? requestedCategory
       : fallbackCategory;
 
-    return c.html(SettingsPage({
-      user: { name: user.name || user.email, email: user.email },
+    // Get notifications for the user
+    let notifications = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SettingsNexusPage({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email
+      },
       settings: resolvedSettings,
       categories,
       selectedCategory,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     return c.text("Error al cargar configuración", 500);
