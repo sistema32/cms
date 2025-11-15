@@ -15,6 +15,7 @@ import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
 import { CategoriesPage } from "../admin/pages/Categories.tsx";
 import { TagsPage } from "../admin/pages/Tags.tsx";
 import { UsersPageImproved } from "../admin/pages/UsersImproved.tsx";
+import { UsersNexusPage } from "../admin/pages/UsersNexus.tsx";
 import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
 import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
@@ -3232,8 +3233,27 @@ adminRouter.get("/users", async (c) => {
       permissionService.getUserPermissions(user.userId),
     ]);
 
-    return c.html(UsersPageImproved({
-      user: { name: user.name || user.email, email: user.email },
+    // Get notifications for the user
+    let notifications = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(UsersNexusPage({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email
+      },
       users: usersResult.users,
       roles: rolesData,
       stats,
@@ -3245,6 +3265,8 @@ adminRouter.get("/users", async (c) => {
         limit: filters.limit || 20,
       },
       userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading users:", error);
