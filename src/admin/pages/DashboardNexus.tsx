@@ -35,23 +35,24 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
 
   const content = html`
     <style>
-      /* ========== DASHBOARD STYLES ========== */
+      /* ========== NEXUS DASHBOARD STYLES ========== */
       .dashboard-title {
         font-size: 2rem;
         font-weight: 700;
-        color: oklch(var(--bc));
+        color: var(--nexus-base-content, #1e2328);
         margin-bottom: 0.5rem;
         letter-spacing: -0.025em;
       }
 
       .dashboard-subtitle {
         font-size: 0.9375rem;
-        color: oklch(var(--bc) / 0.65);
+        color: var(--nexus-base-content, #1e2328);
+        opacity: 0.65;
         margin-bottom: 2rem;
         font-weight: 400;
       }
 
-      /* ========== STAT CARDS ========== */
+      /* ========== STAT CARDS (NEXUS STYLE) ========== */
       .stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -60,20 +61,20 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
       }
 
       .stat-card {
-        background: oklch(var(--b1));
-        border-radius: 1rem;
-        padding: 1.5rem;
-        border: 1px solid oklch(var(--bc) / 0.08);
-        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+        background: var(--nexus-base-100, #fff);
+        border-radius: var(--nexus-radius-lg, 0.75rem);
+        padding: var(--nexus-card-padding, 20px);
+        border: 1px solid var(--nexus-base-200, #eef0f2);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.03);
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
       }
 
       .stat-card:hover {
-        box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.08), 0 6px 8px -4px rgb(0 0 0 / 0.06);
+        box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.06);
         transform: translateY(-2px);
-        border-color: oklch(var(--bc) / 0.12);
+        border-color: var(--nexus-base-300, #dcdee0);
       }
 
       .stat-card-header {
@@ -86,30 +87,30 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
       .stat-card-icon {
         width: 48px;
         height: 48px;
-        border-radius: 0.75rem;
+        border-radius: var(--nexus-radius-md, 0.5rem);
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
       .stat-card-icon.primary {
-        background: oklch(var(--p) / 0.1);
-        color: oklch(var(--p));
+        background: rgba(22, 123, 255, 0.1);
+        color: var(--nexus-primary, #167bff);
       }
 
       .stat-card-icon.success {
-        background: oklch(var(--su) / 0.1);
-        color: oklch(var(--su));
+        background: rgba(11, 191, 88, 0.1);
+        color: var(--nexus-success, #0bbf58);
       }
 
       .stat-card-icon.info {
-        background: oklch(var(--in) / 0.1);
-        color: oklch(var(--in));
+        background: rgba(20, 180, 255, 0.1);
+        color: var(--nexus-info, #14b4ff);
       }
 
       .stat-card-icon.warning {
-        background: oklch(var(--wa) / 0.1);
-        color: oklch(var(--wa));
+        background: rgba(245, 165, 36, 0.1);
+        color: var(--nexus-warning, #f5a524);
       }
 
       .stat-card-trend {
@@ -119,23 +120,23 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
         font-size: 0.75rem;
         font-weight: 600;
         padding: 0.25rem 0.5rem;
-        border-radius: 0.375rem;
+        border-radius: var(--nexus-radius-sm, 0.25rem);
       }
 
       .stat-card-trend.up {
-        background: oklch(var(--su) / 0.1);
-        color: oklch(var(--su));
+        background: rgba(11, 191, 88, 0.1);
+        color: var(--nexus-success, #0bbf58);
       }
 
       .stat-card-trend.down {
-        background: oklch(var(--er) / 0.1);
-        color: oklch(var(--er));
+        background: rgba(243, 18, 96, 0.1);
+        color: var(--nexus-error, #f31260);
       }
 
       .stat-card-value {
         font-size: 2.25rem;
         font-weight: 700;
-        color: oklch(var(--bc));
+        color: var(--nexus-base-content, #1e2328);
         line-height: 1;
         margin-bottom: 0.5rem;
         letter-spacing: -0.025em;
@@ -143,7 +144,8 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
 
       .stat-card-label {
         font-size: 0.875rem;
-        color: oklch(var(--bc) / 0.65);
+        color: var(--nexus-base-content, #1e2328);
+        opacity: 0.65;
         font-weight: 500;
       }
 
@@ -153,13 +155,13 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
         opacity: 0.5;
       }
 
-      /* ========== CONTENT CARDS ========== */
+      /* ========== CONTENT CARDS (NEXUS STYLE) ========== */
       .content-card {
-        background: oklch(var(--b1));
-        border-radius: 1rem;
-        padding: 1.5rem;
-        border: 1px solid oklch(var(--bc) / 0.08);
-        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+        background: var(--nexus-base-100, #fff);
+        border-radius: var(--nexus-radius-lg, 0.75rem);
+        padding: var(--nexus-card-padding, 20px);
+        border: 1px solid var(--nexus-base-200, #eef0f2);
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.03);
       }
 
       .content-card-header {
@@ -172,13 +174,13 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
       .content-card-title {
         font-size: 1.125rem;
         font-weight: 700;
-        color: oklch(var(--bc));
+        color: var(--nexus-base-content, #1e2328);
         letter-spacing: -0.0125em;
       }
 
       .content-card-action {
         font-size: 0.875rem;
-        color: oklch(var(--p));
+        color: var(--nexus-primary, #167bff);
         text-decoration: none;
         font-weight: 500;
         transition: opacity 0.2s;
@@ -200,24 +202,24 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
         align-items: start;
         gap: 1rem;
         padding: 1rem;
-        border-radius: 0.5rem;
+        border-radius: var(--nexus-radius-md, 0.5rem);
         transition: background 0.2s;
       }
 
       .activity-item:hover {
-        background: oklch(var(--b2));
+        background: var(--nexus-base-200, #eef0f2);
       }
 
       .activity-icon {
         width: 40px;
         height: 40px;
-        border-radius: 0.5rem;
+        border-radius: var(--nexus-radius-md, 0.5rem);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        background: oklch(var(--p) / 0.1);
-        color: oklch(var(--p));
+        background: rgba(22, 123, 255, 0.1);
+        color: var(--nexus-primary, #167bff);
       }
 
       .activity-content {
@@ -228,25 +230,27 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
       .activity-title {
         font-size: 0.875rem;
         font-weight: 600;
-        color: oklch(var(--bc));
+        color: var(--nexus-base-content, #1e2328);
         margin-bottom: 0.25rem;
         line-height: 1.4;
       }
 
       .activity-description {
         font-size: 0.8125rem;
-        color: oklch(var(--bc) / 0.65);
+        color: var(--nexus-base-content, #1e2328);
+        opacity: 0.65;
         line-height: 1.5;
       }
 
       .activity-time {
         font-size: 0.75rem;
-        color: oklch(var(--bc) / 0.55);
+        color: var(--nexus-base-content, #1e2328);
+        opacity: 0.55;
         white-space: nowrap;
         font-weight: 500;
       }
 
-      /* ========== QUICK ACTIONS ========== */
+      /* ========== QUICK ACTIONS (NEXUS STYLE) ========== */
       .quick-actions {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -261,34 +265,34 @@ export const DashboardNexusPage = (props: DashboardNexusProps) => {
         justify-content: center;
         gap: 0.75rem;
         padding: 1.5rem;
-        background: oklch(var(--b1));
-        border: 2px dashed oklch(var(--bc) / 0.2);
-        border-radius: 0.75rem;
+        background: var(--nexus-base-100, #fff);
+        border: 2px dashed var(--nexus-base-300, #dcdee0);
+        border-radius: var(--nexus-radius-lg, 0.75rem);
         cursor: pointer;
         transition: all 0.2s;
         text-decoration: none;
       }
 
       .quick-action-btn:hover {
-        border-color: oklch(var(--p));
-        background: oklch(var(--p) / 0.05);
+        border-color: var(--nexus-primary, #167bff);
+        background: rgba(22, 123, 255, 0.05);
       }
 
       .quick-action-icon {
         width: 40px;
         height: 40px;
-        border-radius: 0.5rem;
+        border-radius: var(--nexus-radius-md, 0.5rem);
         display: flex;
         align-items: center;
         justify-content: center;
-        background: oklch(var(--p) / 0.1);
-        color: oklch(var(--p));
+        background: rgba(22, 123, 255, 0.1);
+        color: var(--nexus-primary, #167bff);
       }
 
       .quick-action-label {
         font-size: 0.875rem;
         font-weight: 600;
-        color: oklch(var(--bc));
+        color: var(--nexus-base-content, #1e2328);
       }
 
       /* ========== RESPONSIVE ========== */
