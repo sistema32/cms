@@ -899,19 +899,50 @@ export const RolesNexusPage = (props: RolesNexusPageProps) => {
           }
         });
 
-        // Build content
-        let content = '';
-        for (const [module, actions] of Object.entries(permsByModule)) {
-          content += '<div class="permission-group">';
-          content += '<div class="permission-group-header">' + module + ' <span class="permission-count">(' + actions.length + ')</span></div>';
-          content += '<div class="permission-items">';
-          actions.forEach(action => {
-            content += '<div class="permission-item"><span class="permission-action">' + action + '</span></div>';
-          });
-          content += '</div></div>';
+        // Build content using DOM API (XSS safe)
+        const container = document.getElementById('viewPermissionsContent');
+        container.innerHTML = ''; // Clear previous content
+
+        if (Object.keys(permsByModule).length === 0) {
+          const emptyMsg = document.createElement('p');
+          emptyMsg.style.opacity = '0.5';
+          emptyMsg.textContent = 'Sin permisos asignados';
+          container.appendChild(emptyMsg);
+        } else {
+          for (const [module, actions] of Object.entries(permsByModule)) {
+            const group = document.createElement('div');
+            group.className = 'permission-group';
+
+            const header = document.createElement('div');
+            header.className = 'permission-group-header';
+            header.textContent = module + ' '; // XSS safe
+
+            const count = document.createElement('span');
+            count.className = 'permission-count';
+            count.textContent = '(' + actions.length + ')';
+            header.appendChild(count);
+
+            const items = document.createElement('div');
+            items.className = 'permission-items';
+
+            actions.forEach(action => {
+              const item = document.createElement('div');
+              item.className = 'permission-item';
+
+              const actionSpan = document.createElement('span');
+              actionSpan.className = 'permission-action';
+              actionSpan.textContent = action; // XSS safe
+
+              item.appendChild(actionSpan);
+              items.appendChild(item);
+            });
+
+            group.appendChild(header);
+            group.appendChild(items);
+            container.appendChild(group);
+          }
         }
 
-        document.getElementById('viewPermissionsContent').innerHTML = content || '<p style="opacity: 0.5;">Sin permisos asignados</p>';
         modal.showModal();
       }
 
