@@ -22,7 +22,11 @@
       "Bash(for theme in base corporate magazine minimalist modern default)",
       "Bash(do echo -n \"$theme: \")",
       "Bash(lsof:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "WebFetch(domain:nexus.daisyui.com)",
+      "WebSearch",
+      "WebFetch(domain:daisyui.com)",
+      "Bash(npx tailwindcss:*)"
     ],
     "deny": [],
     "ask": []
