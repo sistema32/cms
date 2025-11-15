@@ -5,7 +5,8 @@ import { join } from "@std/path";
 import { env } from "../config/env.ts";
 import { notificationService } from "../lib/email/index.ts";
 import { DashboardNexusPage } from "../admin/pages/DashboardNexus.tsx";
-import { LoginPage } from "../admin/pages/Login.tsx";
+import { LoginNexusPage } from "../admin/pages/Login.tsx";
+import { LoginNexusPage } from "../admin/pages/LoginNexus.tsx";
 import { ContentListPage } from "../admin/pages/ContentList.tsx";
 import { ContentFormPage } from "../admin/pages/ContentForm.tsx";
 import { PostFormPage } from "../admin/pages/PostFormPage.tsx";
@@ -319,7 +320,7 @@ adminRouter.get("/login", async (c) => {
   };
 
   return c.html(
-    LoginPage({
+    LoginNexusPage({
       error: error ? errorMessages[error] : undefined,
     }),
   );
@@ -336,7 +337,7 @@ adminRouter.post("/login", async (c) => {
 
     if (!email || !password) {
       return c.html(
-        LoginPage({
+        LoginNexusPage({
           error: "Email y contraseña son requeridos",
           email,
         }),
@@ -350,7 +351,7 @@ adminRouter.post("/login", async (c) => {
 
     if (!user) {
       return c.html(
-        LoginPage({
+        LoginNexusPage({
           error: "Email o contraseña incorrectos",
           email,
         }),
@@ -361,7 +362,7 @@ adminRouter.post("/login", async (c) => {
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
       return c.html(
-        LoginPage({
+        LoginNexusPage({
           error: "Email o contraseña incorrectos",
           email,
         }),
@@ -380,7 +381,7 @@ adminRouter.post("/login", async (c) => {
       });
 
       return c.html(
-        LoginPage({
+        LoginNexusPage({
           email,
           requires2FA: true,
         }),
@@ -405,7 +406,7 @@ adminRouter.post("/login", async (c) => {
   } catch (error) {
     console.error("Login error:", error);
     return c.html(
-      LoginPage({
+      LoginNexusPage({
         error: "Error al iniciar sesión. Por favor, intenta de nuevo",
       }),
     );
@@ -441,7 +442,7 @@ adminRouter.post("/login/verify-2fa", async (c) => {
 
     if (!isValid) {
       return c.html(
-        LoginPage({
+        LoginNexusPage({
           email,
           requires2FA: true,
           error: "Código 2FA inválido",
