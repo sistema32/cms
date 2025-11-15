@@ -17,6 +17,7 @@ import { TagsPage } from "../admin/pages/Tags.tsx";
 import { UsersPageImproved } from "../admin/pages/UsersImproved.tsx";
 import { UsersNexusPage } from "../admin/pages/UsersNexus.tsx";
 import { RolesPageImproved } from "../admin/pages/RolesPageImproved.tsx";
+import { RolesNexusPage } from "../admin/pages/RolesNexus.tsx";
 import { PermissionsPageImproved } from "../admin/pages/PermissionsPageImproved.tsx";
 import { SettingsPage } from "../admin/pages/Settings.tsx";
 import { SettingsNexusPage } from "../admin/pages/SettingsNexus.tsx";
@@ -3462,13 +3463,34 @@ adminRouter.get("/roles", async (c) => {
       return a.action.localeCompare(b.action, "es-ES");
     });
 
+    // Get notifications for the user
+    let notifications = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     return c.html(
-      RolesPageImproved({
-        user: { name: user.name || user.email, email: user.email },
+      RolesNexusPage({
+        user: {
+          id: user.userId,
+          name: user.name || user.email,
+          email: user.email
+        },
         roles: formattedRoles,
         permissions: sortedPermissions,
         stats,
         userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+        notifications,
+        unreadNotificationCount,
       })
     );
   } catch (error: any) {
