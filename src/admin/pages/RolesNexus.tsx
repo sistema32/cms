@@ -611,8 +611,9 @@ export const RolesNexusPage = (props: RolesNexusPageProps) => {
                         ` : ""}
                         ${!role.isSystem && canDelete ? html`
                           <button
-                            onclick="deleteRole(${role.id}, '${role.name.replace(/'/g, "\\'")}')"
-                            class="action-btn danger"
+                            data-role-id="${role.id}"
+                            data-role-name="${role.name}"
+                            class="action-btn danger btn-delete-role"
                             title="Eliminar"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -976,6 +977,19 @@ export const RolesNexusPage = (props: RolesNexusPageProps) => {
           }
         });
       }
+
+      // Initialize event listeners (XSS safe - no inline onclick)
+      document.addEventListener('DOMContentLoaded', function() {
+        // Delete role buttons
+        document.addEventListener('click', function(e) {
+          const deleteBtn = e.target.closest('.btn-delete-role');
+          if (deleteBtn) {
+            const roleId = parseInt(deleteBtn.dataset.roleId);
+            const roleName = deleteBtn.dataset.roleName;
+            deleteRole(roleId, roleName);
+          }
+        });
+      });
     </script>`)}
   `;
 

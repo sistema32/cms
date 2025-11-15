@@ -640,8 +640,12 @@ export const UsersNexusPage = (props: UsersNexusPageProps) => {
                     <div class="actions-cell">
                       ${canUpdate ? html`
                         <button
-                          onclick="editUser(${u.id}, '${(u.name || "").replace(/'/g, "\\'")}', '${u.email}', ${u.role?.id || "null"}, '${u.status || "active"}')"
-                          class="action-btn"
+                          data-user-id="${u.id}"
+                          data-user-name="${u.name || ""}"
+                          data-user-email="${u.email}"
+                          data-user-role-id="${u.role?.id || ""}"
+                          data-user-status="${u.status || "active"}"
+                          class="action-btn btn-edit-user"
                           title="Editar"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -652,8 +656,9 @@ export const UsersNexusPage = (props: UsersNexusPageProps) => {
                       ` : ""}
                       ${canDelete && u.email !== user.email && u.id !== 1 ? html`
                         <button
-                          onclick="deleteUser(${u.id}, '${u.email}')"
-                          class="action-btn danger"
+                          data-user-id="${u.id}"
+                          data-user-email="${u.email}"
+                          class="action-btn danger btn-delete-user"
                           title="Eliminar"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -930,6 +935,30 @@ export const UsersNexusPage = (props: UsersNexusPageProps) => {
           alert('Error de conexión');
         }
       }
+
+      // Initialize event listeners (XSS safe - no inline onclick)
+      document.addEventListener('DOMContentLoaded', function() {
+        // Edit user buttons
+        document.addEventListener('click', function(e) {
+          const editBtn = e.target.closest('.btn-edit-user');
+          if (editBtn) {
+            const id = parseInt(editBtn.dataset.userId);
+            const name = editBtn.dataset.userName;
+            const email = editBtn.dataset.userEmail;
+            const roleId = editBtn.dataset.userRoleId ? parseInt(editBtn.dataset.userRoleId) : null;
+            const status = editBtn.dataset.userStatus;
+            editUser(id, name, email, roleId, status);
+          }
+
+          // Delete user buttons
+          const deleteBtn = e.target.closest('.btn-delete-user');
+          if (deleteBtn) {
+            const id = parseInt(deleteBtn.dataset.userId);
+            const email = deleteBtn.dataset.userEmail;
+            deleteUser(id, email);
+          }
+        });
+      });
     </script>`)}
   `;
 
