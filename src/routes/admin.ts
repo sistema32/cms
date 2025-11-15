@@ -5,9 +5,10 @@ import { join } from "@std/path";
 import { env } from "../config/env.ts";
 import { notificationService } from "../lib/email/index.ts";
 import { DashboardNexusPage } from "../admin/pages/DashboardNexus.tsx";
-import { LoginNexusPage } from "../admin/pages/Login.tsx";
+import { LoginPage } from "../admin/pages/Login.tsx";
 import { LoginNexusPage } from "../admin/pages/LoginNexus.tsx";
-import { ContentListPage } from "../admin/pages/ContentList.tsx";
+import { ContentListNexusPage } from "../admin/pages/ContentList.tsx";
+import { ContentListNexusPage } from "../admin/pages/ContentListNexus.tsx";
 import { ContentFormPage } from "../admin/pages/ContentForm.tsx";
 import { PostFormPage } from "../admin/pages/PostFormPage.tsx";
 import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
@@ -640,7 +641,7 @@ adminRouter.get("/content", async (c) => {
     const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit);
 
     return c.html(
-      ContentListPage({
+      ContentListNexusPage({
         user: { name: user.name as string | null, email: user.email },
         contents: contents.map((item) => ({
           id: item.id,
@@ -917,7 +918,7 @@ adminRouter.get("/posts", async (c) => {
 
     const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit) || 1;
 
-    return c.html(ContentListPage({
+    return c.html(ContentListNexusPage({
       user: {
         name: user.name || user.email,
         email: user.email,
@@ -1225,7 +1226,7 @@ adminRouter.get("/pages", async (c) => {
 
     const totalPages = Math.ceil((totalResult[0]?.count || 0) / limit) || 1;
 
-    return c.html(ContentListPage({
+    return c.html(ContentListNexusPage({
       user: {
         name: user.name || user.email,
         email: user.email,
