@@ -10,6 +10,7 @@ import {
 import { eq, desc, count, and, isNull } from "drizzle-orm";
 import * as themeService from "../services/themeService.ts";
 import * as settingsService from "../services/settingsService.ts";
+import * as contentTypeService from "../services/contentTypeService.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { SEOHelper } from "../lib/seo/SEOHelper.ts";
 import { StructuredDataGenerator } from "../lib/seo/StructuredDataGenerator.ts";
@@ -235,6 +236,64 @@ async function getThemeTemplate(templateName: string) {
   // Try 3: Emergency fallback
   await notifyAdminAboutMissingTemplate(templateName, activeTheme);
   return createEmergencyTemplate(templateName, activeTheme);
+}
+
+/**
+ * Carga un template de página con sistema de fallback multinivel
+ * @param templateName - Nombre del template personalizado (ej: "page-inicio")
+ * @param activeTheme - Tema activo
+ * @returns Template module
+ */
+async function loadPageTemplate(templateName: string | null, activeTheme: string) {
+  // Nivel 1: Template personalizado en tema activo
+  // Ejemplo: themes/modern/templates/pages/page-inicio.tsx
+  if (templateName) {
+    const customPath = `src/themes/${activeTheme}/templates/pages/${templateName}.tsx`;
+    const fullPath = join(Deno.cwd(), customPath);
+
+    try {
+      await Deno.stat(fullPath);
+      const module = await loadThemeModule(customPath);
+      console.log(`✅ Cargando template personalizado: ${templateName} (${activeTheme})`);
+      return module.default;
+    } catch (error) {
+      console.log(`⚠️ Template personalizado no encontrado: ${templateName} en ${activeTheme}`);
+    }
+  }
+
+  // Nivel 2: Template default del tema activo
+  // Ejemplo: themes/modern/templates/page.tsx
+  const themeDefaultPath = `src/themes/${activeTheme}/templates/page.tsx`;
+  const themeDefaultFullPath = join(Deno.cwd(), themeDefaultPath);
+
+  try {
+    await Deno.stat(themeDefaultFullPath);
+    const module = await loadThemeModule(themeDefaultPath);
+    console.log(`✅ Usando template default del tema: ${activeTheme}`);
+    return module.default;
+  } catch (error) {
+    console.log(`⚠️ Template default no encontrado en tema: ${activeTheme}`);
+  }
+
+  // Nivel 3: Template default del tema base (fallback final)
+  // Ejemplo: themes/base/templates/page.tsx
+  const basePath = `src/themes/base/templates/page.tsx`;
+  const baseFullPath = join(Deno.cwd(), basePath);
+
+  try {
+    await Deno.stat(baseFullPath);
+    const module = await loadThemeModule(basePath);
+    console.log(`✅ Usando template default del tema base (fallback)`);
+    return module.default;
+  } catch (error) {
+    console.error(`❌ CRITICAL: No se pudo cargar ningún template de página!`);
+  }
+
+  // Nivel 4: Error crítico
+  const errorMsg = `No se pudo cargar ningún template de página. Template solicitado: ${templateName}, Tema: ${activeTheme}`;
+  console.error(errorMsg);
+  await notifyAdminAboutMissingTemplate(templateName || 'page', activeTheme);
+  return createEmergencyTemplate(templateName || 'page', activeTheme);
 }
 
 /**
@@ -525,7 +584,6 @@ async function renderBlogTemplate(c: any, page = 1) {
 async function renderPageById(c: any, pageId: number) {
   const activeTheme = await themeService.getActiveTheme();
   const themeHelpers = await getThemeHelpers();
-  const PageTemplate = await getThemeTemplate("page");
 
   // Buscar la página por ID
   const page = await db.query.content.findFirst({
@@ -540,6 +598,9 @@ async function renderPageById(c: any, pageId: number) {
   if (!page) {
     return c.text("Página no encontrada", 404);
   }
+
+  // Cargar template con sistema de fallback multinivel
+  const PageTemplate = await loadPageTemplate(page.template, activeTheme);
 
   const site = await themeHelpers.getSiteData();
   const custom = await themeHelpers.getCustomSettings();
@@ -823,6 +884,108 @@ frontendRouter.get("/tag/:slug", async (c) => {
   } catch (error: any) {
     console.error("Error rendering tag:", error);
     return c.text("Error al cargar el tag", 500);
+  }
+});
+
+/**
+ * GET /:slug - Página estática
+ * Renderiza páginas con templates personalizados o default
+ */
+frontendRouter.get("/:slug", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    const blogBase = await getBlogBase();
+
+    // Evitar conflicto con la ruta del blog
+    if (slug === blogBase) {
+      return c.notFound();
+    }
+
+    // Obtener el tipo de contenido "page"
+    const pageType = await contentTypeService.getContentTypeBySlug("page");
+    if (!pageType) {
+      console.error("❌ Content type 'page' no encontrado");
+      return c.notFound();
+    }
+
+    // Buscar la página por slug
+    const page = await db.query.content.findFirst({
+      where: and(
+        eq(content.slug, slug),
+        eq(content.contentTypeId, pageType.id),
+        eq(content.status, "published")
+      ),
+      with: {
+        author: true,
+        featuredImage: true,
+        contentSeo: true,
+      },
+    });
+
+    if (!page) {
+      return c.notFound();
+    }
+
+    // Cargar theme y helpers
+    const activeTheme = await themeService.getActiveTheme();
+    const themeHelpers = await getThemeHelpers();
+
+    // Cargar template con sistema de fallback multinivel
+    const PageTemplate = await loadPageTemplate(page.template, activeTheme);
+
+    const site = await themeHelpers.getSiteData();
+    const custom = await themeHelpers.getCustomSettings();
+    const commonData = await loadCommonTemplateData();
+    const blogUrl = await getBlogBase().then(base => `/${base}`);
+
+    const pageData = {
+      id: page.id,
+      title: page.title,
+      slug: page.slug,
+      body: page.body || "",
+      featureImage: page.featuredImage?.url || undefined,
+      createdAt: page.createdAt,
+      updatedAt: page.updatedAt,
+      author: {
+        id: page.author.id,
+        name: page.author.name || page.author.email,
+        email: page.author.email,
+      },
+    };
+
+    // Generar breadcrumbs para página
+    const breadcrumbs = [
+      { label: 'Inicio', url: '/' },
+      { label: page.title, url: `/${page.slug}` },
+    ];
+
+    // Generar meta tags SEO completos
+    const seoMetaTags = await generateSEOMetaTags({
+      content: page,
+      url: `/${page.slug}`,
+      pageType: 'website',
+      author: pageData.author,
+      breadcrumbs,
+    });
+
+    console.log(`📄 Rendering page: ${slug} with template: ${page.template || 'default'}`);
+
+    return c.html(
+      PageTemplate({
+        site,
+        custom,
+        activeTheme,
+        page: pageData,
+        blogUrl,
+        menu: commonData.headerMenu,
+        footerMenu: commonData.footerMenu,
+        categories: commonData.categories,
+        seoMetaTags,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error rendering page:", error);
+    return c.text("Error al cargar la página", 500);
   }
 });
 

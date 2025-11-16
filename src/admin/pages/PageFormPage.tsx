@@ -1,3 +1,4 @@
+import { html } from "hono/html";
 import { ContentEditorPage } from "../components/ContentEditorPage.tsx";
 import type { SeoFormValues } from "../components/SeoFields.tsx";
 
@@ -19,6 +20,7 @@ interface PageFormPageProps {
     password?: string | null;
     scheduledAt?: string | null;
     publishedAt?: string | null;
+    template?: string | null;
   };
   availableParents?: Array<
     { id: number; name: string; slug?: string }
@@ -52,6 +54,27 @@ export const PageFormPage = (props: PageFormPageProps) => {
   } = props;
 
   const isEdit = Boolean(page);
+
+  // Sección de template personalizado
+  const templateSection = html`
+    <div class="mb-4">
+      <label class="form-label" for="template">
+        Template personalizado
+      </label>
+      <input
+        type="text"
+        id="template"
+        name="template"
+        class="form-input"
+        placeholder="page-inicio"
+        value="${page?.template || ''}"
+      />
+      <p class="text-xs text-gray-500 mt-1">
+        Nombre del template personalizado (ej: "page-inicio", "page-contacto").
+        Déjalo vacío para usar el template por defecto.
+      </p>
+    </div>
+  `;
 
   return ContentEditorPage({
     user,
@@ -99,6 +122,7 @@ export const PageFormPage = (props: PageFormPageProps) => {
     showVisibility: true, // Mostrar selector de visibilidad
     showScheduling: true, // Mostrar programación de publicación
     showCommentsControl: false, // Las páginas normalmente no tienen comentarios
+    additionalSidebarSections: [templateSection], // Agregar selector de template
   });
 };
 
