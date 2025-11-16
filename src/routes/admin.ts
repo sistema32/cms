@@ -1305,6 +1305,7 @@ adminRouter.post("/pages/new", async (c) => {
       status: status && ["draft", "published", "archived"].includes(status)
         ? status
         : "draft",
+      template: parseNullableField(body.template) ?? undefined,
       authorId: user.userId,
       seo: extractSeoPayload(body as Record<string, unknown>),
     });
@@ -1369,6 +1370,7 @@ adminRouter.get("/pages/edit/:id", async (c) => {
         excerpt: pageItem.excerpt,
         body: pageItem.body,
         status: pageItem.status,
+        template: pageItem.template,
       },
       seo,
     }));
@@ -1411,6 +1413,7 @@ adminRouter.post("/pages/edit/:id", async (c) => {
       status: status && ["draft", "published", "archived"].includes(status)
         ? status
         : pageItem.status,
+      template: parseNullableField(body.template),
       seo: extractSeoPayload(body as Record<string, unknown>),
     });
 

@@ -27,6 +27,7 @@ export interface CreateContentInput {
   status?: "draft" | "published" | "scheduled" | "archived";
   visibility?: "public" | "private" | "password";
   password?: string;
+  template?: string; // Template personalizado para páginas
   publishedAt?: Date;
   scheduledAt?: Date;
   featured?: boolean;
@@ -71,6 +72,7 @@ export interface UpdateContentInput {
   status?: "draft" | "published" | "scheduled" | "archived";
   visibility?: "public" | "private" | "password";
   password?: string;
+  template?: string; // Template personalizado para páginas
   publishedAt?: Date;
   scheduledAt?: Date;
   featured?: boolean;
@@ -175,6 +177,7 @@ export async function createContent(
       status: data.status || "draft",
       visibility: data.visibility || "public",
       password: data.password,
+      template: data.template,
       publishedAt: data.publishedAt,
       scheduledAt: data.scheduledAt,
       featured: data.featured || false,
@@ -467,6 +470,7 @@ export async function updateContent(
       status: data.status,
       visibility: data.visibility,
       password: data.password,
+      template: data.template,
       publishedAt: data.publishedAt,
       scheduledAt: data.scheduledAt,
       featured: data.featured,
