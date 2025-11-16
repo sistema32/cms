@@ -2,12 +2,11 @@ import { html, raw } from "hono/html";
 import { env } from "../../config/env.ts";
 import { ToastContainer } from "./Toast.tsx";
 import { NotificationPanel, type NotificationItem } from "./NotificationPanel.tsx";
-import { CSS_VARIABLES } from "../config/colors.ts";
 import { ROUTES, getAdminAsset } from "../config/routes.ts";
 
 /**
- * Admin Layout Component - Mosaic Design System
- * Updated to use 100% DaisyUI native components
+ * Admin Layout - Nexus Design System
+ * Modern, clean interface with professional styling
  */
 
 interface AdminLayoutProps {
@@ -33,14 +32,18 @@ interface AdminLayoutProps {
 
 interface NavItem {
   id: string;
+  icon: string;
+  label: string;
+  path?: string;
+  children?: NavSubItem[];
+  badge?: string;
+}
+
+interface NavSubItem {
+  id: string;
   label: string;
   path: string;
   availableTag?: string;
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
 }
 
 export const AdminLayout = (props: AdminLayoutProps) => {
@@ -56,18 +59,28 @@ export const AdminLayout = (props: AdminLayoutProps) => {
   } = props;
   const adminPath = env.ADMIN_PATH;
 
+  const userName = user?.name || user?.email?.split('@')[0] || 'Usuario';
+
   // Build plugin panel navigation items
-  const pluginPanelItems: NavItem[] = pluginPanels.map(panel => ({
+  const pluginPanelChildren: NavSubItem[] = pluginPanels.map(panel => ({
     id: `plugin.${panel.pluginName}.${panel.id}`,
     label: panel.title,
     path: `/plugins/${panel.pluginName}/${panel.path}`,
   }));
 
-  // Consolidated navigation structure
-  const navSections: NavSection[] = [
+  // Navigation structure - Nexus style
+  const navItems: NavItem[] = [
     {
-      title: "Contenido",
-      items: [
+      id: "dashboard",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>',
+      label: "Dashboard",
+      path: "/",
+    },
+    {
+      id: "content",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+      label: "Contenido",
+      children: [
         { id: "content.posts", label: "Entradas", path: `/${ROUTES.POSTS}` },
         { id: "content.pages", label: "Páginas", path: `/${ROUTES.PAGES}` },
         { id: "content.categories", label: "Categorías", path: `/${ROUTES.CATEGORIES}` },
@@ -77,50 +90,112 @@ export const AdminLayout = (props: AdminLayoutProps) => {
       ],
     },
     {
-      title: "Control de Acceso",
-      items: [
+      id: "access",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>',
+      label: "Control de Acceso",
+      children: [
         { id: "access.users", label: "Usuarios", path: `/${ROUTES.USERS}` },
         { id: "access.roles", label: "Roles", path: `/${ROUTES.ROLES}` },
         { id: "access.permissions", label: "Permisos", path: `/${ROUTES.PERMISSIONS}` },
       ],
     },
     {
-      title: "Apariencia",
-      items: [
+      id: "appearance",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>',
+      label: "Apariencia",
+      children: [
         { id: "appearance.themes", label: "Themes", path: `/${ROUTES.THEMES}` },
         { id: "appearance.menus", label: "Menús", path: `/${ROUTES.MENUS}` },
+        { id: "appearance.widgets", label: "Widgets", path: "/appearance/widgets" },
       ],
     },
     {
-      title: "Plugins",
-      items: [
+      id: "plugins",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>',
+      label: "Plugins",
+      children: pluginPanelChildren.length > 0 ? [
         { id: "plugins.all", label: "Todos los Plugins", path: `/${ROUTES.PLUGINS}` },
-        ...pluginPanelItems,
-      ],
+        ...pluginPanelChildren,
+      ] : undefined,
+      path: pluginPanelChildren.length === 0 ? `/${ROUTES.PLUGINS}` : undefined,
     },
     {
-      title: "Sistema",
-      items: [
+      id: "system",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>',
+      label: "Sistema",
+      children: [
         { id: "system.backups", label: "Backups", path: "/backups" },
         { id: "system.updates", label: "Actualizaciones", path: "/system-updates" },
       ],
     },
     {
-      title: "Configuración",
-      items: [
-        { id: "settings.general", label: "General", path: `/${ROUTES.SETTINGS_GENERAL}` },
-        { id: "settings.reading", label: "Lectura", path: `/${ROUTES.SETTINGS_READING}` },
-        { id: "settings.writing", label: "Escritura", path: `/${ROUTES.SETTINGS_WRITING}` },
-        { id: "settings.discussion", label: "Comentarios", path: `/${ROUTES.SETTINGS_DISCUSSION}` },
-        { id: "settings.media", label: "Medios", path: `/${ROUTES.SETTINGS_MEDIA}` },
-        { id: "settings.seo", label: "SEO", path: `/${ROUTES.SETTINGS_SEO}` },
-        { id: "settings.advanced", label: "Avanzado", path: `/${ROUTES.SETTINGS_ADVANCED}` },
-      ].map(item => ({
-        ...item,
-        availableTag: settingsAvailability[item.id] === false ? "Sin datos" : undefined,
-      })),
+      id: "settings",
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>',
+      label: "Configuración",
+      children: [
+        { id: "settings.general", label: "General", path: `/${ROUTES.SETTINGS_GENERAL}`, availableTag: settingsAvailability["settings.general"] === false ? "Sin datos" : undefined },
+        { id: "settings.reading", label: "Lectura", path: `/${ROUTES.SETTINGS_READING}`, availableTag: settingsAvailability["settings.reading"] === false ? "Sin datos" : undefined },
+        { id: "settings.writing", label: "Escritura", path: `/${ROUTES.SETTINGS_WRITING}`, availableTag: settingsAvailability["settings.writing"] === false ? "Sin datos" : undefined },
+        { id: "settings.discussion", label: "Comentarios", path: `/${ROUTES.SETTINGS_DISCUSSION}`, availableTag: settingsAvailability["settings.discussion"] === false ? "Sin datos" : undefined },
+        { id: "settings.media", label: "Medios", path: `/${ROUTES.SETTINGS_MEDIA}`, availableTag: settingsAvailability["settings.media"] === false ? "Sin datos" : undefined },
+        { id: "settings.seo", label: "SEO", path: `/${ROUTES.SETTINGS_SEO}`, availableTag: settingsAvailability["settings.seo"] === false ? "Sin datos" : undefined },
+        { id: "settings.advanced", label: "Avanzado", path: `/${ROUTES.SETTINGS_ADVANCED}`, availableTag: settingsAvailability["settings.advanced"] === false ? "Sin datos" : undefined },
+      ],
     },
   ];
+
+  const isItemActive = (itemId: string) => {
+    return activePage === itemId || activePage.startsWith(itemId + ".");
+  };
+
+  const renderNavItem = (item: NavItem) => {
+    const active = isItemActive(item.id);
+    const hasChildren = item.children && item.children.length > 0;
+
+    if (hasChildren) {
+      // Dropdown menu item
+      return `
+        <li>
+          <details ${active ? 'open' : ''}>
+            <summary class="${active ? 'active' : ''}">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${item.icon}
+              </svg>
+              <span>${item.label}</span>
+              <svg class="chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </summary>
+            <ul>
+              ${item.children!.map((child) => `
+                <li>
+                  <a
+                    href="${adminPath}${child.path}"
+                    class="${activePage === child.id ? 'active' : ''}"
+                  >
+                    ${child.label}
+                    ${child.availableTag ? `<span class="nexus-badge-warning">${child.availableTag}</span>` : ''}
+                  </a>
+                </li>
+              `).join('')}
+            </ul>
+          </details>
+        </li>
+      `;
+    } else {
+      // Simple link
+      return `
+        <li>
+          <a href="${adminPath}${item.path}" class="${active ? 'active' : ''}">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              ${item.icon}
+            </svg>
+            <span>${item.label}</span>
+          </a>
+        </li>
+      `;
+    }
+  };
 
   return html`
     <!DOCTYPE html>
@@ -130,7 +205,7 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - LexCMS Admin</title>
         <script>
-          // Dark mode initialization - must run BEFORE page renders to prevent flash
+          // Dark mode initialization - must run BEFORE page renders
           const savedTheme = localStorage.getItem('theme');
           const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -144,259 +219,879 @@ export const AdminLayout = (props: AdminLayoutProps) => {
         <link rel="stylesheet" href="${getAdminAsset('css/admin-compiled.css')}">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-          body { font-family: 'Inter', sans-serif; }
-
-          /* Mosaic color palette */
+          /* ========== NEXUS DESIGN SYSTEM VARIABLES ========== */
           :root {
-            --violet-500: ${CSS_VARIABLES['--violet-500']};
-            --violet-600: ${CSS_VARIABLES['--violet-600']};
+            --sidebar-width: 280px;
+            --header-height: 72px;
+
+            /* Nexus Color System - Light Theme */
+            --nexus-primary: #167bff;
+            --nexus-primary-content: #fff;
+            --nexus-secondary: #9c5de8;
+            --nexus-accent: #00d3bb;
+            --nexus-success: #0bbf58;
+            --nexus-warning: #f5a524;
+            --nexus-error: #f31260;
+            --nexus-info: #14b4ff;
+
+            /* Base Colors */
+            --nexus-base-100: #fff;
+            --nexus-base-200: #eef0f2;
+            --nexus-base-300: #dcdee0;
+            --nexus-base-content: #1e2328;
+
+            /* Background Colors */
+            --nexus-root-bg: #fafbfc;
+            --nexus-sidebar-bg: #fff;
+            --nexus-topbar-bg: #fff;
+
+            /* Border Radius - Nexus uses smaller, more subtle radii */
+            --nexus-radius-sm: 0.25rem;
+            --nexus-radius-md: 0.5rem;
+            --nexus-radius-lg: 0.75rem;
+
+            /* Spacing */
+            --nexus-card-padding: 20px;
           }
 
-          /* Custom scrollbar for sidebar */
-          .menu-scrollbar::-webkit-scrollbar {
+          [data-theme="dark"] {
+            /* Nexus Color System - Dark Theme */
+            --nexus-primary: #378dff;
+            --nexus-primary-content: #fff;
+            --nexus-secondary: #b071ff;
+            --nexus-accent: #00d3bb;
+            --nexus-success: #0bbf58;
+            --nexus-warning: #f5a524;
+            --nexus-error: #f31260;
+            --nexus-info: #14b4ff;
+
+            /* Base Colors */
+            --nexus-base-100: #181c20;
+            --nexus-base-200: #22262a;
+            --nexus-base-300: #2c3034;
+            --nexus-base-content: #f0f4f8;
+
+            /* Background Colors */
+            --nexus-root-bg: #121416;
+            --nexus-sidebar-bg: #181c20;
+            --nexus-topbar-bg: #181b1f;
+          }
+
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: var(--nexus-root-bg);
+          }
+
+          /* ========== LAYOUT ========== */
+          .nexus-layout {
+            display: flex;
+            min-height: 100vh;
+          }
+
+          /* ========== SIDEBAR ========== */
+          .nexus-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--nexus-sidebar-bg);
+            border-right: 1px solid var(--nexus-base-300);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.03);
+          }
+
+          .nexus-sidebar.closed {
+            transform: translateX(-100%);
+          }
+
+          /* Sidebar Header */
+          .nexus-sidebar-header {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--nexus-base-200);
+          }
+
+          .nexus-sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+          }
+
+          .nexus-sidebar-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--nexus-primary) 0%, var(--nexus-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.025em;
+          }
+
+          .sidebar-close-btn {
+            display: none;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--nexus-radius-sm);
+            background: transparent;
+            border: none;
+            color: var(--nexus-base-content);
+            opacity: 0.6;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .sidebar-close-btn:hover {
+            background: var(--nexus-base-200);
+            opacity: 1;
+          }
+
+          /* Sidebar Navigation */
+          .nexus-sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.75rem 0.75rem;
+          }
+
+          .nexus-sidebar-nav::-webkit-scrollbar {
             width: 6px;
           }
-          .menu-scrollbar::-webkit-scrollbar-track {
+
+          .nexus-sidebar-nav::-webkit-scrollbar-track {
             background: transparent;
           }
-          .menu-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.1);
+
+          .nexus-sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--nexus-base-300);
             border-radius: 3px;
           }
-          .dark .menu-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+
+          .nexus-sidebar-nav::-webkit-scrollbar-thumb:hover {
+            background: var(--nexus-primary);
+            opacity: 0.5;
+          }
+
+          .nexus-sidebar-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+
+          .nexus-sidebar-nav > ul > li {
+            margin-bottom: 0.125rem;
+          }
+
+          /* Main menu items */
+          .nexus-sidebar-nav > ul > li > a,
+          .nexus-sidebar-nav > ul > li > details > summary {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--nexus-radius-md);
+            font-weight: 500;
+            font-size: 0.875rem;
+            line-height: 1.25;
+            color: var(--nexus-base-content);
+            opacity: 0.7;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+            position: relative;
+          }
+
+          .nexus-sidebar-nav > ul > li > a > svg,
+          .nexus-sidebar-nav > ul > li > details > summary > svg:first-child {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            stroke-width: 2;
+            color: var(--nexus-base-content);
+            opacity: 0.6;
+            transition: all 0.2s;
+          }
+
+          .nexus-sidebar-nav > ul > li > a > span,
+          .nexus-sidebar-nav > ul > li > details > summary > span {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          /* Chevron icon */
+          .chevron-icon {
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+            margin-left: auto;
+            stroke-width: 2.5;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          details[open] > summary .chevron-icon {
+            transform: rotate(180deg);
+          }
+
+          .nexus-sidebar-nav > ul > li > a:hover,
+          .nexus-sidebar-nav > ul > li > details > summary:hover {
+            background: rgba(22, 123, 255, 0.08);
+            color: var(--nexus-primary);
+            opacity: 1;
+          }
+
+          .nexus-sidebar-nav > ul > li > a:hover > svg,
+          .nexus-sidebar-nav > ul > li > details > summary:hover > svg {
+            color: var(--nexus-primary);
+            opacity: 1;
+          }
+
+          .nexus-sidebar-nav > ul > li > a.active,
+          .nexus-sidebar-nav > ul > li > details[open] > summary.active {
+            background: rgba(22, 123, 255, 0.12);
+            color: var(--nexus-primary);
+            font-weight: 600;
+            opacity: 1;
+          }
+
+          .nexus-sidebar-nav > ul > li > details[open] > summary {
+            color: var(--nexus-base-content);
+            opacity: 1;
+          }
+
+          .nexus-sidebar-nav > ul > li > a.active > svg,
+          .nexus-sidebar-nav > ul > li > details[open] > summary > svg:first-child {
+            color: var(--nexus-primary);
+            opacity: 1;
+          }
+
+          /* Remove default details marker */
+          .nexus-sidebar-nav details > summary {
+            list-style: none;
+          }
+
+          .nexus-sidebar-nav details > summary::-webkit-details-marker {
+            display: none;
+          }
+
+          /* Submenu container */
+          .nexus-sidebar-nav details > ul {
+            padding: 0.25rem 0 0.5rem 0;
+            animation: slideDown 0.2s ease-out;
+          }
+
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              max-height: 0;
+            }
+            to {
+              opacity: 1;
+              max-height: 500px;
+            }
+          }
+
+          /* Submenu items */
+          .nexus-sidebar-nav details > ul > li {
+            margin: 0;
+          }
+
+          .nexus-sidebar-nav details > ul > li > a {
+            display: flex;
+            align-items: center;
+            padding: 0.625rem 1rem 0.625rem 3rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--nexus-base-content);
+            opacity: 0.65;
+            border-radius: var(--nexus-radius-sm);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            position: relative;
+          }
+
+          .nexus-sidebar-nav details > ul > li > a::before {
+            content: "";
+            position: absolute;
+            left: 1.75rem;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--nexus-base-content);
+            opacity: 0.25;
+            transition: all 0.2s;
+          }
+
+          .nexus-sidebar-nav details > ul > li > a:hover {
+            background: rgba(22, 123, 255, 0.08);
+            color: var(--nexus-primary);
+            opacity: 1;
+            padding-left: 3.25rem;
+          }
+
+          .nexus-sidebar-nav details > ul > li > a:hover::before {
+            background: var(--nexus-primary);
+            opacity: 1;
+            transform: scale(1.25);
+          }
+
+          .nexus-sidebar-nav details > ul > li > a.active {
+            background: rgba(22, 123, 255, 0.15);
+            color: var(--nexus-primary);
+            font-weight: 600;
+            opacity: 1;
+            padding-left: 2.875rem;
+            border-left: 3px solid var(--nexus-primary);
+          }
+
+          .nexus-sidebar-nav details > ul > li > a.active::before {
+            display: none;
+          }
+
+          .nexus-badge-warning {
+            display: inline-block;
+            padding: 0.125rem 0.375rem;
+            font-size: 0.625rem;
+            font-weight: 600;
+            border-radius: var(--nexus-radius-sm);
+            background: var(--nexus-warning);
+            color: #fff;
+            margin-left: auto;
+          }
+
+          /* Sidebar Footer */
+          .nexus-sidebar-footer {
+            padding: 0.75rem;
+            border-top: 1px solid var(--nexus-base-200);
+          }
+
+          .nexus-sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: var(--nexus-radius-md);
+            transition: all 0.15s;
+            cursor: pointer;
+          }
+
+          .nexus-sidebar-user:hover {
+            background: var(--nexus-base-200);
+          }
+
+          .nexus-sidebar-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--nexus-primary) 0%, var(--nexus-secondary) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border: 2px solid rgba(22, 123, 255, 0.2);
+          }
+
+          .nexus-sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .nexus-sidebar-user-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--nexus-base-content);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .nexus-sidebar-user-role {
+            font-size: 0.75rem;
+            color: var(--nexus-base-content);
+            opacity: 0.5;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          /* ========== MAIN CONTENT ========== */
+          .nexus-main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          .nexus-main.expanded {
+            margin-left: 0;
+          }
+
+          /* ========== HEADER ========== */
+          .nexus-header {
+            height: var(--header-height);
+            background: var(--nexus-topbar-bg);
+            border-bottom: 1px solid var(--nexus-base-200);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            gap: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.02);
+          }
+
+          .mobile-menu-btn {
+            display: none;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--nexus-radius-md);
+            background: transparent;
+            border: none;
+            color: var(--nexus-base-content);
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .mobile-menu-btn:hover {
+            background: var(--nexus-base-200);
+          }
+
+          .nexus-breadcrumbs {
+            flex: 1;
+          }
+
+          .nexus-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+
+          .nexus-icon-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--nexus-radius-md);
+            background: transparent;
+            border: none;
+            color: var(--nexus-base-content);
+            opacity: 0.7;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .nexus-icon-btn:hover {
+            background: var(--nexus-base-200);
+            opacity: 1;
+          }
+
+          .theme-toggle {
+            position: relative;
+          }
+
+          .theme-toggle input {
+            position: absolute;
+            opacity: 0;
+          }
+
+          .theme-toggle svg {
+            width: 1.25rem;
+            height: 1.25rem;
+          }
+
+          /* Notification Badge */
+          .notification-badge {
+            position: relative;
+          }
+
+          .notification-badge-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--nexus-error);
+            color: white;
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 0.125rem 0.375rem;
+            border-radius: 9999px;
+            min-width: 18px;
+            text-align: center;
+          }
+
+          /* User Dropdown */
+          .user-dropdown {
+            position: relative;
+          }
+
+          .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: var(--nexus-radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .user-dropdown-toggle:hover {
+            background: var(--nexus-base-200);
+          }
+
+          .user-dropdown-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--nexus-primary) 0%, var(--nexus-secondary) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+          }
+
+          .user-dropdown-info {
+            display: none;
+          }
+
+          .user-dropdown-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--nexus-base-content);
+          }
+
+          .user-dropdown-chevron {
+            width: 1rem;
+            height: 1rem;
+            opacity: 0.5;
+          }
+
+          .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            min-width: 200px;
+            background: var(--nexus-base-100);
+            border: 1px solid var(--nexus-base-300);
+            border-radius: var(--nexus-radius-md);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 0.5rem;
+            z-index: 50;
+          }
+
+          .user-dropdown-menu.show {
+            display: block;
+          }
+
+          .user-dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.75rem;
+            border-radius: var(--nexus-radius-sm);
+            color: var(--nexus-base-content);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.15s;
+          }
+
+          .user-dropdown-menu a:hover {
+            background: var(--nexus-base-200);
+          }
+
+          .user-dropdown-menu a.danger {
+            color: var(--nexus-error);
+          }
+
+          .user-dropdown-menu a svg {
+            width: 1rem;
+            height: 1rem;
+            opacity: 0.6;
+          }
+
+          .user-dropdown-divider {
+            height: 1px;
+            background: var(--nexus-base-200);
+            margin: 0.5rem 0;
+          }
+
+          /* ========== CONTENT ========== */
+          .nexus-content {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+          }
+
+          /* ========== MOBILE OVERLAY ========== */
+          .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+            backdrop-filter: blur(2px);
+          }
+
+          .mobile-overlay.show {
+            display: block;
+          }
+
+          /* ========== RESPONSIVE ========== */
+          @media (max-width: 1024px) {
+            .nexus-sidebar {
+              transform: translateX(-100%);
+            }
+
+            .nexus-sidebar.open {
+              transform: translateX(0);
+            }
+
+            .nexus-main {
+              margin-left: 0;
+            }
+
+            .mobile-menu-btn,
+            .sidebar-close-btn {
+              display: flex;
+            }
+
+            .user-dropdown-info {
+              display: block;
+            }
+          }
+
+          @media (max-width: 640px) {
+            .nexus-header {
+              padding: 0 1rem;
+            }
+
+            .nexus-content {
+              padding: 1.5rem 1rem;
+            }
           }
         </style>
       </head>
-      <body class="antialiased">
+      <body>
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
 
-        <!-- DaisyUI Drawer Layout -->
-        <div class="drawer lg:drawer-open">
-          <input id="admin-drawer" type="checkbox" class="drawer-toggle" />
-
-          <!-- Page Content -->
-          <div class="drawer-content flex flex-col">
-
-            <!-- Navbar (Header) -->
-            <div class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-30 backdrop-blur-md bg-base-100/90">
-              <div class="flex-none lg:hidden">
-                <label for="admin-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                  </svg>
-                </label>
-              </div>
-
-              <div class="flex-1"></div>
-
-              <div class="flex-none gap-2">
-
-                <!-- Theme Toggle (DaisyUI Swap) -->
-                <label class="swap swap-rotate btn btn-ghost btn-circle">
-                  <input type="checkbox" class="theme-controller" value="dark" />
-
-                  <!-- Sun icon -->
-                  <svg class="swap-off fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
-                  </svg>
-
-                  <!-- Moon icon -->
-                  <svg class="swap-on fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>
-                  </svg>
-                </label>
-
-                <!-- Notifications Dropdown -->
-                ${NotificationPanel({ adminPath, notifications, unreadCount: unreadNotificationCount })}
-
-                <!-- Divider -->
-                <div class="divider divider-horizontal mx-0"></div>
-
-                <!-- User Menu Dropdown -->
-                <div class="dropdown dropdown-end">
-                  <div tabindex="0" role="button" class="btn btn-ghost gap-2">
-                    <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content w-8 rounded-full">
-                        <span class="text-xs">${(user?.name || user?.email || 'U').substring(0, 2).toUpperCase()}</span>
-                      </div>
-                    </div>
-                    <span class="hidden sm:inline-block text-sm">${user?.name || user?.email}</span>
-                    <svg class="w-3 h-3 fill-current opacity-60" viewBox="0 0 12 12">
-                      <path d="M5.9 11.4L.5 6l1.4-1.4 4 4 4-4L11.3 6z" />
-                    </svg>
-                  </div>
-                  <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-300">
-                    <li>
-                      <a href="${adminPath}/profile">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                        </svg>
-                        Mi Perfil
-                      </a>
-                    </li>
-                    <li>
-                      <a href="${adminPath}/settings">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
-                        </svg>
-                        Configuración
-                      </a>
-                    </li>
-                    <div class="divider my-0"></div>
-                    <li>
-                      <a href="${adminPath}/logout" class="text-error">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
-                        </svg>
-                        Cerrar Sesión
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-
-              </div>
+        <div class="nexus-layout">
+          <!-- Sidebar -->
+          <aside class="nexus-sidebar" id="sidebar">
+            <!-- Sidebar Header -->
+            <div class="nexus-sidebar-header">
+              <a href="${adminPath}/" class="nexus-sidebar-brand">
+                <span class="nexus-sidebar-logo">LexCMS</span>
+              </a>
+              <button class="sidebar-close-btn" id="sidebarCloseBtn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
 
-            <!-- Main Content -->
-            <main class="flex-1 p-4 sm:p-6 lg:p-8">
+            <!-- Sidebar Navigation -->
+            <nav class="nexus-sidebar-nav">
+              <ul>
+                ${raw(navItems.map(renderNavItem).join(''))}
+              </ul>
+            </nav>
+
+            <!-- Sidebar Footer - User Info -->
+            <div class="nexus-sidebar-footer">
+              <div class="nexus-sidebar-user">
+                <div class="nexus-sidebar-user-avatar">
+                  ${userName.substring(0, 2).toUpperCase()}
+                </div>
+                <div class="nexus-sidebar-user-info">
+                  <div class="nexus-sidebar-user-name">${userName}</div>
+                  <div class="nexus-sidebar-user-role">Administrador</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main Content Area -->
+          <div class="nexus-main" id="mainContent">
+            <!-- Header / Top Bar -->
+            <header class="nexus-header">
+              <!-- Mobile Menu Button -->
+              <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+
+              <!-- Breadcrumbs -->
+              <div class="nexus-breadcrumbs"></div>
+
+              <!-- Header Actions -->
+              <div class="nexus-header-actions">
+                <!-- Theme Toggle -->
+                <label class="nexus-icon-btn theme-toggle">
+                  <input type="checkbox" class="theme-controller" />
+                  <svg class="sun-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+                  </svg>
+                  <svg class="moon-icon" fill="currentColor" viewBox="0 0 20 20" style="display: none;">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                  </svg>
+                </label>
+
+                <!-- Notifications -->
+                <div class="notification-badge">
+                  ${NotificationPanel({ adminPath, notifications, unreadCount: unreadNotificationCount })}
+                </div>
+
+                <!-- User Dropdown -->
+                <div class="user-dropdown">
+                  <div class="user-dropdown-toggle" id="userDropdownToggle">
+                    <div class="user-dropdown-avatar">
+                      ${userName.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div class="user-dropdown-info">
+                      <div class="user-dropdown-name">${userName}</div>
+                    </div>
+                    <svg class="user-dropdown-chevron" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                  <div class="user-dropdown-menu" id="userDropdownMenu">
+                    <a href="${adminPath}/profile">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                      </svg>
+                      Mi Perfil
+                    </a>
+                    <a href="${adminPath}/settings">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                      </svg>
+                      Configuración
+                    </a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="${adminPath}/logout" class="danger">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+                      </svg>
+                      Cerrar Sesión
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="nexus-content">
               ${children}
             </main>
-
           </div>
-
-          <!-- Sidebar (Drawer Side) -->
-          <div class="drawer-side z-40">
-            <label for="admin-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-
-            <aside class="bg-base-100 min-h-full w-64 flex flex-col">
-
-              <!-- Logo -->
-              <div class="p-4 mb-4">
-                <a href="${adminPath}/" class="flex items-center justify-center">
-                  <svg class="fill-primary" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-                    <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
-                  </svg>
-                </a>
-              </div>
-
-              <!-- Navigation Menu -->
-              <div class="flex-1 overflow-y-auto menu-scrollbar">
-                <ul class="menu menu-sm px-4 gap-1">
-
-                  <!-- Dashboard -->
-                  <li class="menu-title opacity-60">
-                    <span>Principal</span>
-                  </li>
-                  <li>
-                    <a href="${adminPath}/" class="${activePage === 'dashboard' ? 'active' : ''}">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5.936.278A7.983 7.983 0 0 1 8 0a8 8 0 1 1-8 8c0-.722.104-1.413.278-2.064a1 1 0 1 1 1.932.516A5.99 5.99 0 0 0 2 8a6 6 0 1 0 6-6c-.53 0-1.045.076-1.548.21A1 1 0 1 1 5.936.278Z" />
-                        <path d="M6.068 7.482A2.003 2.003 0 0 0 8 10a2 2 0 1 0-.518-3.932L3.707 2.293a1 1 0 0 0-1.414 1.414l3.775 3.775Z" />
-                      </svg>
-                      Dashboard
-                    </a>
-                  </li>
-
-                  ${raw(navSections.map(section => renderNavSection(section, activePage, adminPath)).join(''))}
-
-                </ul>
-              </div>
-
-            </aside>
-          </div>
-
         </div>
 
         ${ToastContainer()}
 
         <script>
-          // Sync theme toggle with current theme on load
-          (function() {
+          // Mobile menu toggle
+          const sidebar = document.getElementById('sidebar');
+          const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+          const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+          const mobileOverlay = document.getElementById('mobileOverlay');
+
+          mobileMenuBtn?.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            mobileOverlay.classList.add('show');
+          });
+
+          sidebarCloseBtn?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            mobileOverlay.classList.remove('show');
+          });
+
+          mobileOverlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            mobileOverlay.classList.remove('show');
+          });
+
+          // User dropdown toggle
+          const userDropdownToggle = document.getElementById('userDropdownToggle');
+          const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+          userDropdownToggle?.addEventListener('click', () => {
+            userDropdownMenu.classList.toggle('show');
+          });
+
+          document.addEventListener('click', (e) => {
+            if (!userDropdownToggle?.contains(e.target) && !userDropdownMenu?.contains(e.target)) {
+              userDropdownMenu?.classList.remove('show');
+            }
+          });
+
+          // Theme toggle
+          const themeToggle = document.querySelector('.theme-controller');
+          const sunIcon = document.querySelector('.sun-icon');
+          const moonIcon = document.querySelector('.moon-icon');
+
+          function updateThemeIcons() {
             const isDark = document.documentElement.classList.contains('dark');
-            const themeToggle = document.querySelector('.theme-controller');
+            if (sunIcon && moonIcon) {
+              sunIcon.style.display = isDark ? 'none' : 'block';
+              moonIcon.style.display = isDark ? 'block' : 'none';
+            }
             if (themeToggle) {
               themeToggle.checked = isDark;
             }
-          })();
+          }
 
-          // Theme toggle handler
-          document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.querySelector('.theme-controller');
-            if (themeToggle) {
-              themeToggle.addEventListener('change', function(e) {
-                const html = document.documentElement;
-                if (e.target.checked) {
-                  html.classList.add('dark');
-                  html.setAttribute('data-theme', 'dark');
-                  localStorage.setItem('theme', 'dark');
-                } else {
-                  html.classList.remove('dark');
-                  html.setAttribute('data-theme', 'light');
-                  localStorage.setItem('theme', 'light');
-                }
-              });
+          updateThemeIcons();
+
+          themeToggle?.addEventListener('change', function() {
+            const html = document.documentElement;
+            if (this.checked) {
+              html.classList.add('dark');
+              html.setAttribute('data-theme', 'dark');
+              localStorage.setItem('theme', 'dark');
+            } else {
+              html.classList.remove('dark');
+              html.setAttribute('data-theme', 'light');
+              localStorage.setItem('theme', 'light');
             }
+            updateThemeIcons();
           });
         </script>
-
       </body>
     </html>
   `;
-};
-
-// Render navigation section with DaisyUI Menu
-function renderNavSection(section: NavSection, activePage: string, adminPath: string): string {
-  return `
-    <li class="menu-title opacity-60 mt-4">
-      <span>${section.title}</span>
-    </li>
-    ${section.items.map(item => renderNavItem(item, activePage, adminPath)).join('')}
-  `;
-}
-
-// Render navigation item with DaisyUI Menu item
-function renderNavItem(item: NavItem, activePage: string, adminPath: string): string {
-  const isActive = activePage === item.id;
-  const fullPath = adminPath + item.path;
-  const icon = ICON_MAP[item.label] || ICON_MAP.default;
-
-  return `
-    <li>
-      <a href="${fullPath}" class="${isActive ? 'active' : ''}">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="${icon}"></path>
-        </svg>
-        <span>${item.label}</span>
-        ${item.availableTag ? `<span class="badge badge-warning badge-xs">${item.availableTag}</span>` : ''}
-      </a>
-    </li>
-  `;
-}
-
-// Icon mapping (simplified)
-const ICON_MAP: Record<string, string> = {
-  'Entradas': 'M19,5V7H17V5H19M15,5V7H13V5H15M11,5V7H9V5H11M7,5V7H5V5H7M19,9V11H17V9H19M15,9V11H13V9H15M11,9V11H9V9H11M7,9V11H5V9H7M19,13V15H17V13H19M15,13V15H13V13H15M11,13V15H9V13H11M7,13V15H5V13H7M19,17V19H17V17H19M15,17V19H13V17H15M11,17V19H9V17H11M7,17V19H5V17H7Z',
-  'Páginas': 'M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z',
-  'Categorías': 'M4,12V20H20V12H4M3,11H21L19,9H5L3,11M5,3H19V8H5V3M10,7H14V5H10V7Z',
-  'Tags': 'M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.77,14.05 22,13.55 22,13C22,12.45 21.77,11.95 21.41,11.58Z',
-  'Comentarios': 'M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z',
-  'Medios': 'M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M12,7L17,12H14V16H10V12H7L12,7Z',
-  'Usuarios': 'M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z',
-  'Roles': 'M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C14.8,12.1 14.4,12.5 13.5,12.5H10.5C9.6,12.5 9.2,12.1 9.2,11V9.5C9.2,8.1 10.6,7 12,7M9,13H15V15H9V13Z',
-  'Permisos': 'M12,1A9,9 0 0,0 3,10V17A9,9 0 0,0 12,26A9,9 0 0,0 21,17V10A9,9 0 0,0 12,1M12,3A7,7 0 0,1 19,10V17A7,7 0 0,1 12,24A7,7 0 0,1 5,17V10A7,7 0 0,1 12,3M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z',
-  'Themes': 'M12,3C7.03,3 3,7.03 3,12C3,16.97 7.03,21 12,21C16.97,21 21,16.97 21,12C21,7.03 16.97,3 12,3M12,5C15.31,5 18,7.69 18,11C18,12.9 17.09,14.58 15.66,15.72L15.41,15.5L14,16.92L12.59,15.5L12.34,15.72C10.91,14.58 10,12.9 10,11C10,7.69 12.69,5 16,5V5Z',
-  'Menús': 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z',
-  'Todos los Plugins': 'M20.5,11H19V7C19,5.89 18.1,5 17,5H13V3.5A2.5,2.5 0 0,0 10.5,1A2.5,2.5 0 0,0 8,3.5V5H4A2,2 0 0,0 2,7V10.8H3.5C5,10.8 6.2,12 6.2,13.5C6.2,15 5,16.2 3.5,16.2H2V20A2,2 0 0,0 4,22H7.8V20.5C7.8,19 9,17.8 10.5,17.8C12,17.8 13.2,19 13.2,20.5V22H17A2,2 0 0,0 19,20V16H20.5A2.5,2.5 0 0,0 23,13.5A2.5,2.5 0 0,0 20.5,11Z',
-  'Backups': 'M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M6.12,15.5L9.86,19.24L11.28,17.83L8.95,15.5L11.28,13.17L9.86,11.76L6.12,15.5M17.28,15.5L13.54,11.76L12.12,13.17L14.45,15.5L12.12,17.83L13.54,19.24L17.28,15.5Z',
-  'Actualizaciones': 'M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6Z',
-  'General': 'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z',
-  'Lectura': 'M18,2A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H18M18,4H13V12L10.5,9.75L8,12V4H6V20H18V4Z',
-  'Escritura': 'M20.71,4.63L19.37,3.29C19,2.9 18.35,2.9 17.96,3.29L9,12.25L11.75,15L20.71,6.04C21.1,5.65 21.1,5 20.71,4.63M2,20.27L4.25,18H6.75L2,20.27Z',
-  'SEO': 'M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17Z',
-  'Avanzado': 'M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,2L14.33,6.5L19,7.67L15.5,11L16.67,15.67L12,13.33L7.33,15.67L8.5,11L5,7.67L9.67,6.5L12,2Z',
-  'default': 'M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z',
 };
 
 export default AdminLayout;

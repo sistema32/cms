@@ -408,3 +408,5 @@ export const PermissionsNexus = (props: PermissionsPageProps) => {
     unreadNotificationCount,
   });
 };
+
+export default PermissionsNexus;
