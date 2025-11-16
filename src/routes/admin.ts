@@ -7,31 +7,32 @@ import { notificationService } from "../lib/email/index.ts";
 import { DashboardNexusPage } from "../admin/pages/DashboardNexus.tsx";
 import { LoginNexusPage } from "../admin/pages/LoginNexus.tsx";
 import { ContentListNexusPage } from "../admin/pages/ContentListNexus.tsx";
-import { ContentFormPage } from "../admin/pages/ContentForm.tsx";
-import { PostFormPage } from "../admin/pages/PostFormPage.tsx";
-import { PageFormPage } from "../admin/pages/PageFormPage.tsx";
+import { ContentFormNexusPage } from "../admin/pages/ContentFormNexus.tsx";
+import { PostFormNexusPage } from "../admin/pages/PostFormNexus.tsx";
+import { PageFormNexusPage } from "../admin/pages/PageFormNexus.tsx";
 import { CategoriesNexusPage } from "../admin/pages/CategoriesNexus.tsx";
 import { TagsNexusPage } from "../admin/pages/TagsNexus.tsx";
 import { UsersNexusPage } from "../admin/pages/UsersNexus.tsx";
 import { RolesNexusPage } from "../admin/pages/RolesNexus.tsx";
 import { PermissionsNexusPage } from "../admin/pages/PermissionsNexus.tsx";
 import { SettingsNexusPage } from "../admin/pages/SettingsNexus.tsx";
-import { ThemesPage } from "../admin/pages/ThemesPage.tsx";
-import { ThemePreviewPage } from "../admin/pages/ThemePreviewPage.tsx";
-import { ThemeCustomizerPage } from "../admin/pages/ThemeCustomizerPage.tsx";
-import { ThemeEditorPage } from "../admin/pages/ThemeEditorPage.tsx";
-import { ThemeSettingsPage } from "../admin/pages/ThemeSettingsPage.tsx";
-import { ThemeBrowserPage } from "../admin/pages/ThemeBrowserPage.tsx";
-import { WidgetsPage } from "../admin/pages/WidgetsPage.tsx";
-import { AppearanceMenusPage } from "../admin/pages/AppearanceMenusPage.tsx";
-import { MediaLibraryPage } from "../admin/pages/MediaLibraryPage.tsx";
-import { PluginsInstalledPage } from "../admin/pages/PluginsInstalledPage.tsx";
-import { PluginsAvailablePage } from "../admin/pages/PluginsAvailablePage.tsx";
-import { PluginsMarketplacePage } from "../admin/pages/PluginsMarketplacePage.tsx";
-import { NotificationsPage } from "../admin/pages/NotificationsPage.tsx";
-import { BackupsPage } from "../admin/pages/BackupsPage.tsx";
-import { SystemUpdatesPage } from "../admin/pages/SystemUpdatesPage.tsx";
-import { CommentsPage } from "../admin/pages/CommentsPage.tsx";
+import { ThemesNexusPage } from "../admin/pages/ThemesNexus.tsx";
+import { ThemePreviewNexusPage } from "../admin/pages/ThemePreviewNexus.tsx";
+import { ThemeCustomizerNexusPage } from "../admin/pages/ThemeCustomizerNexus.tsx";
+import { ThemeEditorNexusPage } from "../admin/pages/ThemeEditorNexus.tsx";
+import { ThemeSettingsNexusPage } from "../admin/pages/ThemeSettingsNexus.tsx";
+import { ThemeBrowserNexusPage } from "../admin/pages/ThemeBrowserNexus.tsx";
+import { WidgetsNexusPage } from "../admin/pages/WidgetsNexus.tsx";
+import { AppearanceMenusNexusPage } from "../admin/pages/AppearanceMenusNexus.tsx";
+import { MediaLibraryNexusPage } from "../admin/pages/MediaLibraryNexus.tsx";
+import { PluginsInstalledNexusPage } from "../admin/pages/PluginsInstalledNexus.tsx";
+import { PluginsAvailableNexusPage } from "../admin/pages/PluginsAvailableNexus.tsx";
+import { PluginsMarketplaceNexusPage } from "../admin/pages/PluginsMarketplaceNexus.tsx";
+import { NotificationsNexusPage } from "../admin/pages/NotificationsNexus.tsx";
+import { BackupsNexusPage } from "../admin/pages/BackupsNexus.tsx";
+import { SystemUpdatesNexusPage } from "../admin/pages/SystemUpdatesNexus.tsx";
+import { CommentsNexusPage } from "../admin/pages/CommentsNexus.tsx";
+import { AutoModerationNexusPage } from "../admin/pages/AutoModerationNexus.tsx";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -591,8 +592,9 @@ adminRouter.get("/notifications", async (c) => {
     }
 
     return c.html(
-      NotificationsPage({
+      NotificationsNexusPage({
         user: {
+          id: user.userId,
           name: user.name as string | null || user.email,
           email: user.email,
         },
@@ -667,6 +669,16 @@ adminRouter.get("/content/new", async (c) => {
   try {
     const user = c.get("user");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [contentTypesData, categoriesData, tagsData] = await Promise.all([
       db.query.contentTypes.findMany(),
       db.query.categories.findMany(),
@@ -674,11 +686,13 @@ adminRouter.get("/content/new", async (c) => {
     ]);
 
 return c.html(
-      ContentFormPage({
-        user: { name: user.name as string | null, email: user.email },
+      ContentFormNexusPage({
+        user: { id: user.userId, name: user.name as string | null, email: user.email },
         contentTypes: contentTypesData,
         categories: categoriesData,
         tags: tagsData,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -777,6 +791,16 @@ adminRouter.get("/content/edit/:id", async (c) => {
     });
     const selectedTags = selectedTagsData.map((t) => t.tagId);
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     // Get all content types, categories, and tags for selects
     const [contentTypesData, categoriesData, tagsData] = await Promise.all([
       db.query.contentTypes.findMany(),
@@ -784,14 +808,16 @@ adminRouter.get("/content/edit/:id", async (c) => {
       db.query.tags.findMany(),
     ]);
 
-    return c.html(ContentFormPage({
-      user: { name: user.name, email: user.email },
+    return c.html(ContentFormNexusPage({
+      user: { id: user.userId, name: user.name, email: user.email },
       content: contentItem,
       contentTypes: contentTypesData,
       categories: categoriesData,
       tags: tagsData,
       selectedCategories,
       selectedTags,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading content for edit:", error);
@@ -953,6 +979,16 @@ adminRouter.get("/posts/new", async (c) => {
     const user = c.get("user");
     const postType = await getContentTypeBySlug("post");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [categoriesData, tagsData] = await Promise.all([
       db.query.categories.findMany({
         where: eq(categories.contentTypeId, postType.id),
@@ -963,8 +999,9 @@ adminRouter.get("/posts/new", async (c) => {
       }),
     ]);
 
-    return c.html(PostFormPage({
+    return c.html(PostFormNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -973,6 +1010,8 @@ adminRouter.get("/posts/new", async (c) => {
       selectedCategories: [],
       selectedTags: [],
       seo: {},
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error rendering new post form:", error);
@@ -1052,6 +1091,16 @@ adminRouter.get("/posts/edit/:id", async (c) => {
       return c.text("Entrada no encontrada", 404);
     }
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [categoriesData, tagsData, seoData] = await Promise.all([
       db.query.categories.findMany({
         where: eq(categories.contentTypeId, postType.id),
@@ -1088,8 +1137,9 @@ adminRouter.get("/posts/edit/:id", async (c) => {
       }
       : {};
 
-    return c.html(PostFormPage({
+    return c.html(PostFormNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1106,6 +1156,8 @@ adminRouter.get("/posts/edit/:id", async (c) => {
       selectedCategories,
       selectedTags,
       seo,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading post for edit:", error);
@@ -1260,12 +1312,25 @@ adminRouter.get("/pages/new", async (c) => {
   try {
     const user = c.get("user");
 
-    return c.html(PageFormPage({
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(PageFormNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
       seo: {},
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error rendering new page form:", error);
@@ -1333,6 +1398,16 @@ adminRouter.get("/pages/edit/:id", async (c) => {
       return c.text("Página no encontrada", 404);
     }
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const seoData = await db.query.contentSeo.findFirst({
       where: eq(contentSeo.contentId, id),
     });
@@ -1357,8 +1432,9 @@ adminRouter.get("/pages/edit/:id", async (c) => {
       }
       : {};
 
-    return c.html(PageFormPage({
+    return c.html(PageFormNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1371,6 +1447,8 @@ adminRouter.get("/pages/edit/:id", async (c) => {
         status: pageItem.status,
       },
       seo,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading page for edit:", error);
@@ -1455,13 +1533,25 @@ adminRouter.get("/media", async (c) => {
     const offset = Number(c.req.query("offset")) || 0;
     const type = c.req.query("type");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const mediaList = await mediaService.listMedia(limit, offset, type);
 
-    return c.html(MediaLibraryPage({
-      user: { name: user.name || user.email, email: user.email },
+    return c.html(MediaLibraryNexusPage({
+      user: { id: user.userId, name: user.name || user.email, email: user.email },
       media: mediaList as any[],
       limit,
       offset,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading media library:", error);
@@ -1592,6 +1682,17 @@ adminRouter.get("/appearance/themes", async (c) => {
 adminRouter.get("/appearance/themes/browser", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const activeTheme = await themeService.getActiveTheme();
     const themeNames = await themeService.listAvailableThemes();
 
@@ -1613,13 +1714,16 @@ adminRouter.get("/appearance/themes/browser", async (c) => {
       }),
     );
 
-    return c.html(ThemeBrowserPage({
+    return c.html(ThemeBrowserNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
       themes,
       activeTheme,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error rendering themes browser:", error);
@@ -1633,6 +1737,17 @@ adminRouter.get("/appearance/themes/browser", async (c) => {
 adminRouter.get("/appearance/themes/settings", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const settingsSaved = c.req.query("saved") === "1";
     const activeTheme = await themeService.getActiveTheme();
     const activeConfig = await themeService.loadThemeConfig(activeTheme);
@@ -1689,14 +1804,17 @@ adminRouter.get("/appearance/themes/settings", async (c) => {
       screenshots: activeConfig.screenshots,
     };
 
-    return c.html(ThemeSettingsPage({
+    return c.html(ThemeSettingsNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
       theme,
       customSettings,
       settingsSaved,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error rendering theme settings:", error);
@@ -1819,6 +1937,17 @@ adminRouter.post("/appearance/themes/custom-settings", async (c) => {
 adminRouter.get("/appearance/themes/preview", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const themeName = c.req.query("theme");
 
     if (!themeName) {
@@ -1836,8 +1965,9 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
       user.id
     );
 
-    return c.html(ThemePreviewPage({
+    return c.html(ThemePreviewNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1845,6 +1975,8 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
       themeDisplayName: config.displayName || config.name,
       previewUrl: "/",
       previewToken: session.token,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading theme preview:", error);
@@ -1858,6 +1990,17 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
 adminRouter.get("/appearance/themes/customize", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const themeName = c.req.query("theme") || await themeService.getActiveTheme();
 
     const config = await themeService.loadThemeConfig(themeName);
@@ -1892,8 +2035,9 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
       }
     );
 
-    return c.html(ThemeCustomizerPage({
+    return c.html(ThemeCustomizerNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1901,6 +2045,8 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
       themeDisplayName: config.displayName || config.name,
       customSettings,
       sessionId: session.id,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading theme customizer:", error);
@@ -1914,6 +2060,17 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
 adminRouter.get("/appearance/themes/editor", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const themeName = c.req.query("theme") || await themeService.getActiveTheme();
     const filePath = c.req.query("file");
 
@@ -1977,8 +2134,9 @@ adminRouter.get("/appearance/themes/editor", async (c) => {
       }
     }
 
-    return c.html(ThemeEditorPage({
+    return c.html(ThemeEditorNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1987,6 +2145,8 @@ adminRouter.get("/appearance/themes/editor", async (c) => {
       currentFile: filePath,
       currentContent,
       error,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading theme editor:", error);
@@ -2034,6 +2194,17 @@ adminRouter.post("/api/admin/themes/editor/save", async (c) => {
 adminRouter.get("/appearance/widgets", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const activeTheme = await themeService.getActiveTheme();
     const config = await themeService.getActiveThemeConfig();
 
@@ -2041,14 +2212,17 @@ adminRouter.get("/appearance/widgets", async (c) => {
     const widgetAreas = await widgetService.getWidgetAreasForTheme(activeTheme);
     const availableWidgets = widgetService.getAvailableWidgetTypes();
 
-    return c.html(WidgetsPage({
+    return c.html(WidgetsNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
       widgetAreas,
       availableWidgets,
       activeTheme,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error loading widgets page:", error);
@@ -2761,6 +2935,17 @@ adminRouter.post("/api/admin/widgets/validate", async (c) => {
 adminRouter.get("/appearance/menus", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const menusResult = await menuService.getAllMenus({
       limit: 100,
       orderBy: "name",
@@ -2830,8 +3015,9 @@ adminRouter.get("/appearance/menus", async (c) => {
         : Promise.resolve([]),
     ]);
 
-    return c.html(AppearanceMenusPage({
+    return c.html(AppearanceMenusNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -2840,6 +3026,8 @@ adminRouter.get("/appearance/menus", async (c) => {
       categories: categoriesData,
       posts: postsData,
       pages: pagesData,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error rendering appearance menus page:", error);
@@ -3074,6 +3262,17 @@ adminRouter.post("/appearance/menus/items/update", async (c) => {
 adminRouter.get("/categories", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const categoriesData = await db.query.categories.findMany({
       with: {
         contentCategories: true,
@@ -3086,9 +3285,11 @@ adminRouter.get("/categories", async (c) => {
       _count: { content: cat.contentCategories?.length || 0 },
     }));
 
-    return c.html(CategoriesPage({
-      user: { name: user.name || user.email, email: user.email },
+    return c.html(CategoriesNexusPage({
+      user: { id: user.userId, name: user.name || user.email, email: user.email },
       categories: categoriesWithCount,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     console.error("Error:", error);
@@ -3141,6 +3342,17 @@ adminRouter.post("/categories/delete/:id", async (c) => {
 adminRouter.get("/tags", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const tagsData = await db.query.tags.findMany({
       with: {
         contentTags: true,
@@ -3153,9 +3365,11 @@ adminRouter.get("/tags", async (c) => {
       _count: { content: tag.contentTags?.length || 0 },
     }));
 
-    return c.html(TagsPage({
-      user: { name: user.name || user.email, email: user.email },
+    return c.html(TagsNexusPage({
+      user: { id: user.userId, name: user.name || user.email, email: user.email },
       tags: tagsWithCount,
+      notifications,
+      unreadNotificationCount,
     }));
   } catch (error: any) {
     return c.text("Error al cargar tags", 500);
@@ -3674,6 +3888,16 @@ adminRouter.get("/permissions", async (c) => {
       return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver permisos</p>`, 403);
     }
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [permissionsData, permissionsByModule, modules, stats, userPermissions] = await Promise.all([
       permissionService.getAllPermissions(),
       permissionService.getPermissionsGroupedByModule(),
@@ -3689,13 +3913,15 @@ adminRouter.get("/permissions", async (c) => {
     });
 
     return c.html(
-      PermissionsPageImproved({
-        user: { name: user.name || user.email, email: user.email },
+      PermissionsNexusPage({
+        user: { id: user.userId, name: user.name || user.email, email: user.email },
         permissions: sortedPermissions,
         permissionsByModule,
         modules,
         stats,
         userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+        notifications,
+        unreadNotificationCount,
       })
     );
   } catch (error: any) {
@@ -4106,6 +4332,16 @@ adminRouter.get("/plugins/installed", async (c) => {
   try {
     const user = c.get("user");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [installedPlugins, stats] = await Promise.all([
       pluginService.getAllPlugins(),
       pluginService.getPluginStats(),
@@ -4146,13 +4382,16 @@ adminRouter.get("/plugins/installed", async (c) => {
     );
 
     return c.html(
-      PluginsInstalledPage({
+      PluginsInstalledNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
         plugins: detailedPlugins as any[],
         stats,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4167,6 +4406,16 @@ adminRouter.get("/plugins/installed", async (c) => {
 adminRouter.get("/plugins/available", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
 
     const [availablePlugins, stats] = await Promise.all([
       pluginService.getAvailablePlugins(),
@@ -4203,13 +4452,16 @@ adminRouter.get("/plugins/available", async (c) => {
     );
 
     return c.html(
-      PluginsAvailablePage({
+      PluginsAvailableNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
         plugins: pluginsWithManifest as any[],
         stats,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4224,6 +4476,16 @@ adminRouter.get("/plugins/available", async (c) => {
 adminRouter.get("/plugins/marketplace", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
 
     // Load marketplace plugins from JSON file
     const marketplaceData = await Deno.readTextFile(
@@ -4244,8 +4506,9 @@ adminRouter.get("/plugins/marketplace", async (c) => {
     ].sort();
 
     return c.html(
-      PluginsMarketplacePage({
+      PluginsMarketplaceNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
@@ -4253,6 +4516,8 @@ adminRouter.get("/plugins/marketplace", async (c) => {
         stats,
         categories,
         installedPluginNames,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4327,6 +4592,17 @@ adminRouter.get("/plugins/:pluginName/*", async (c) => {
 adminRouter.get("/comments", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const filter = c.req.query("filter") || "all";
     const page = parseInt(c.req.query("page") || "1");
     const limit = 50;
@@ -4432,8 +4708,9 @@ adminRouter.get("/comments", async (c) => {
     }));
 
     return c.html(
-      CommentsPage({
+      CommentsNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
@@ -4442,6 +4719,8 @@ adminRouter.get("/comments", async (c) => {
         filter,
         page,
         totalPages,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4462,6 +4741,17 @@ adminRouter.get("/comments", async (c) => {
 adminRouter.get("/auto-moderation", async (c) => {
   try {
     const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
     const plugin = getAutoModeration();
 
@@ -4483,11 +4773,10 @@ adminRouter.get("/auto-moderation", async (c) => {
       }
     }
 
-    const { AutoModerationPage } = await import("../admin/pages/AutoModerationPage.tsx");
-
     return c.html(
-      AutoModerationPage({
+      AutoModerationNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
@@ -4505,6 +4794,8 @@ adminRouter.get("/auto-moderation", async (c) => {
           sendFeedback: config.learning.sendFeedback,
         },
         stats,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4611,19 +4902,32 @@ adminRouter.get("/backups", async (c) => {
   try {
     const user = c.get("user");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     const [backups, stats] = await Promise.all([
       backupManager.getBackups({ limit: 100 }),
       backupManager.getStats(),
     ]);
 
     return c.html(
-      BackupsPage({
+      BackupsNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
         backups: backups as any[],
         stats: stats as any,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
@@ -4718,6 +5022,16 @@ adminRouter.get("/system-updates", async (c) => {
   try {
     const user = c.get("user");
 
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      const notifs = await notificationService.getUserNotifications(user.userId);
+      notifications = notifs;
+      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
     // Check for updates
     const checkResult = await systemUpdatesService.checkForUpdates();
 
@@ -4725,8 +5039,9 @@ adminRouter.get("/system-updates", async (c) => {
     const config = getUpdateConfig();
 
     return c.html(
-      SystemUpdatesPage({
+      SystemUpdatesNexusPage({
         user: {
+          id: user.userId,
           name: user.name || user.email,
           email: user.email,
         },
@@ -4736,6 +5051,8 @@ adminRouter.get("/system-updates", async (c) => {
         news: checkResult.news,
         config,
         lastChecked: checkResult.lastChecked,
+        notifications,
+        unreadNotificationCount,
       }),
     );
   } catch (error: any) {
