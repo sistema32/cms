@@ -171,9 +171,62 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
+          /* ========== NEXUS DESIGN SYSTEM VARIABLES ========== */
           :root {
             --sidebar-width: 280px;
             --header-height: 72px;
+
+            /* Nexus Color System - Light Theme */
+            --nexus-primary: #167bff;
+            --nexus-primary-content: #fff;
+            --nexus-secondary: #9c5de8;
+            --nexus-accent: #00d3bb;
+            --nexus-success: #0bbf58;
+            --nexus-warning: #f5a524;
+            --nexus-error: #f31260;
+            --nexus-info: #14b4ff;
+
+            /* Base Colors */
+            --nexus-base-100: #fff;
+            --nexus-base-200: #eef0f2;
+            --nexus-base-300: #dcdee0;
+            --nexus-base-content: #1e2328;
+
+            /* Background Colors */
+            --nexus-root-bg: #fafbfc;
+            --nexus-sidebar-bg: #fff;
+            --nexus-topbar-bg: #fff;
+
+            /* Border Radius - Nexus uses smaller, more subtle radii */
+            --nexus-radius-sm: 0.25rem;
+            --nexus-radius-md: 0.5rem;
+            --nexus-radius-lg: 0.75rem;
+
+            /* Spacing */
+            --nexus-card-padding: 20px;
+          }
+
+          [data-theme="dark"] {
+            /* Nexus Color System - Dark Theme */
+            --nexus-primary: #378dff;
+            --nexus-primary-content: #fff;
+            --nexus-secondary: #b071ff;
+            --nexus-accent: #00d3bb;
+            --nexus-success: #0bbf58;
+            --nexus-warning: #f5a524;
+            --nexus-error: #f31260;
+            --nexus-info: #14b4ff;
+
+            /* Base Colors */
+            --nexus-base-100: #181c20;
+            --nexus-base-200: #22262a;
+            --nexus-base-300: #2c3034;
+            --nexus-base-content: #f0f4f8;
+
+            /* Background Colors */
+            --nexus-root-bg: #121416;
+            --nexus-sidebar-bg: #181c20;
+            --nexus-topbar-bg: #181b1f;
           }
 
           * {
@@ -186,7 +239,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background: oklch(var(--b2));
+            background: var(--nexus-root-bg);
           }
 
           /* ========== LAYOUT ========== */
@@ -202,12 +255,13 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             top: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: oklch(var(--b1));
-            border-right: 1px solid oklch(var(--bc) / 0.08);
+            background: var(--nexus-sidebar-bg);
+            border-right: 1px solid var(--nexus-base-300);
             display: flex;
             flex-direction: column;
             z-index: 50;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.03);
           }
 
           .nexus-sidebar.closed {
@@ -221,7 +275,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
-            border-bottom: 1px solid oklch(var(--bc) / 0.08);
+            border-bottom: 1px solid var(--nexus-base-200);
           }
 
           .nexus-sidebar-brand {
@@ -234,7 +288,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           .nexus-sidebar-logo {
             font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, oklch(var(--p)) 0%, oklch(var(--s)) 100%);
+            background: linear-gradient(135deg, var(--nexus-primary) 0%, var(--nexus-secondary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -247,17 +301,18 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             height: 32px;
             align-items: center;
             justify-content: center;
-            border-radius: 0.375rem;
+            border-radius: var(--nexus-radius-sm);
             background: transparent;
             border: none;
-            color: oklch(var(--bc) / 0.6);
+            color: var(--nexus-base-content);
+            opacity: 0.6;
             cursor: pointer;
             transition: all 0.2s;
           }
 
           .sidebar-close-btn:hover {
-            background: oklch(var(--bc) / 0.08);
-            color: oklch(var(--bc));
+            background: var(--nexus-base-200);
+            opacity: 1;
           }
 
           /* Sidebar Navigation */
@@ -277,12 +332,13 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           }
 
           .nexus-sidebar-nav::-webkit-scrollbar-thumb {
-            background: oklch(var(--bc) / 0.1);
+            background: var(--nexus-base-300);
             border-radius: 3px;
           }
 
           .nexus-sidebar-nav::-webkit-scrollbar-thumb:hover {
-            background: oklch(var(--bc) / 0.2);
+            background: var(--nexus-primary);
+            opacity: 0.5;
           }
 
           .nexus-sidebar-nav ul {
@@ -302,11 +358,12 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: var(--nexus-radius-md);
             font-weight: 500;
             font-size: 0.875rem;
             line-height: 1.25;
-            color: oklch(var(--bc) / 0.7);
+            color: var(--nexus-base-content);
+            opacity: 0.7;
             transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             text-decoration: none;
@@ -319,8 +376,9 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             width: 1.25rem;
             height: 1.25rem;
             stroke-width: 2;
-            color: oklch(var(--bc) / 0.5);
-            transition: color 0.2s;
+            color: var(--nexus-base-content);
+            opacity: 0.6;
+            transition: all 0.2s;
           }
 
           .nexus-sidebar-nav > ul > li > a > span,
@@ -347,29 +405,34 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
 
           .nexus-sidebar-nav > ul > li > a:hover,
           .nexus-sidebar-nav > ul > li > details > summary:hover {
-            background: oklch(var(--p) / 0.08);
-            color: oklch(var(--p));
+            background: rgba(22, 123, 255, 0.08);
+            color: var(--nexus-primary);
+            opacity: 1;
           }
 
           .nexus-sidebar-nav > ul > li > a:hover > svg,
           .nexus-sidebar-nav > ul > li > details > summary:hover > svg {
-            color: oklch(var(--p));
+            color: var(--nexus-primary);
+            opacity: 1;
           }
 
           .nexus-sidebar-nav > ul > li > a.active,
           .nexus-sidebar-nav > ul > li > details[open] > summary.active {
-            background: oklch(var(--p) / 0.12);
-            color: oklch(var(--p));
+            background: rgba(22, 123, 255, 0.12);
+            color: var(--nexus-primary);
             font-weight: 600;
+            opacity: 1;
           }
 
           .nexus-sidebar-nav > ul > li > details[open] > summary {
-            color: oklch(var(--bc));
+            color: var(--nexus-base-content);
+            opacity: 1;
           }
 
           .nexus-sidebar-nav > ul > li > a.active > svg,
           .nexus-sidebar-nav > ul > li > details[open] > summary > svg:first-child {
-            color: oklch(var(--p));
+            color: var(--nexus-primary);
+            opacity: 1;
           }
 
           /* Remove default details marker */
@@ -409,8 +472,9 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             padding: 0.625rem 1rem 0.625rem 3rem;
             font-size: 0.8125rem;
             font-weight: 500;
-            color: oklch(var(--bc) / 0.65);
-            border-radius: 0.375rem;
+            color: var(--nexus-base-content);
+            opacity: 0.65;
+            border-radius: var(--nexus-radius-sm);
             transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
             position: relative;
@@ -423,27 +487,31 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background: oklch(var(--bc) / 0.25);
+            background: var(--nexus-base-content);
+            opacity: 0.25;
             transition: all 0.2s;
           }
 
           .nexus-sidebar-nav details > ul > li > a:hover {
-            background: oklch(var(--p) / 0.08);
-            color: oklch(var(--p));
+            background: rgba(22, 123, 255, 0.08);
+            color: var(--nexus-primary);
+            opacity: 1;
             padding-left: 3.25rem;
           }
 
           .nexus-sidebar-nav details > ul > li > a:hover::before {
-            background: oklch(var(--p));
+            background: var(--nexus-primary);
+            opacity: 1;
             transform: scale(1.25);
           }
 
           .nexus-sidebar-nav details > ul > li > a.active {
-            background: oklch(var(--p) / 0.15);
-            color: oklch(var(--p));
+            background: rgba(22, 123, 255, 0.15);
+            color: var(--nexus-primary);
             font-weight: 600;
+            opacity: 1;
             padding-left: 2.875rem;
-            border-left: 3px solid oklch(var(--p));
+            border-left: 3px solid var(--nexus-primary);
           }
 
           .nexus-sidebar-nav details > ul > li > a.active::before {
@@ -453,7 +521,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           /* Sidebar Footer */
           .nexus-sidebar-footer {
             padding: 0.75rem;
-            border-top: 1px solid oklch(var(--bc) / 0.08);
+            border-top: 1px solid var(--nexus-base-200);
           }
 
           .nexus-sidebar-user {
@@ -461,13 +529,13 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem;
-            border-radius: 0.5rem;
+            border-radius: var(--nexus-radius-md);
             transition: all 0.15s;
             cursor: pointer;
           }
 
           .nexus-sidebar-user:hover {
-            background: oklch(var(--bc) / 0.05);
+            background: var(--nexus-base-200);
           }
 
           .nexus-sidebar-user-avatar {
@@ -475,7 +543,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             height: 36px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid oklch(var(--p) / 0.2);
+            border: 2px solid rgba(22, 123, 255, 0.2);
           }
 
           .nexus-sidebar-user-info {
@@ -486,7 +554,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           .nexus-sidebar-user-name {
             font-size: 0.875rem;
             font-weight: 600;
-            color: oklch(var(--bc));
+            color: var(--nexus-base-content);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -494,7 +562,8 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
 
           .nexus-sidebar-user-role {
             font-size: 0.75rem;
-            color: oklch(var(--bc) / 0.5);
+            color: var(--nexus-base-content);
+            opacity: 0.5;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -517,8 +586,8 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           /* ========== HEADER ========== */
           .nexus-header {
             height: var(--header-height);
-            background: oklch(var(--b1));
-            border-bottom: 1px solid oklch(var(--bc) / 0.08);
+            background: var(--nexus-topbar-bg);
+            border-bottom: 1px solid var(--nexus-base-200);
             display: flex;
             align-items: center;
             padding: 0 2rem;
@@ -526,6 +595,7 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             position: sticky;
             top: 0;
             z-index: 40;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.02);
           }
 
           .mobile-menu-btn {
@@ -534,16 +604,16 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             height: 40px;
             align-items: center;
             justify-content: center;
-            border-radius: 0.5rem;
+            border-radius: var(--nexus-radius-md);
             background: transparent;
             border: none;
-            color: oklch(var(--bc));
+            color: var(--nexus-base-content);
             cursor: pointer;
             transition: all 0.2s;
           }
 
           .mobile-menu-btn:hover {
-            background: oklch(var(--bc) / 0.08);
+            background: var(--nexus-base-200);
           }
 
           .nexus-breadcrumbs {
@@ -573,24 +643,27 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
           }
 
           .breadcrumbs ul li a {
-            color: oklch(var(--bc) / 0.6);
+            color: var(--nexus-base-content);
+            opacity: 0.6;
             text-decoration: none;
-            transition: color 0.15s;
+            transition: all 0.15s;
             font-weight: 500;
           }
 
           .breadcrumbs ul li a:hover {
-            color: oklch(var(--p));
+            color: var(--nexus-primary);
+            opacity: 1;
           }
 
           .breadcrumbs ul li:last-child {
-            color: oklch(var(--bc));
+            color: var(--nexus-base-content);
             font-weight: 600;
           }
 
           .breadcrumbs ul li:not(:last-child)::after {
             content: "/";
-            color: oklch(var(--bc) / 0.3);
+            color: var(--nexus-base-content);
+            opacity: 0.3;
           }
 
           .nexus-header-actions {
@@ -608,22 +681,23 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             width: 100%;
             height: 40px;
             padding: 0 1rem 0 2.5rem;
-            border: 1px solid oklch(var(--bc) / 0.15);
-            border-radius: 0.5rem;
+            border: 1px solid var(--nexus-base-300);
+            border-radius: var(--nexus-radius-md);
             font-size: 0.875rem;
-            background: oklch(var(--b1));
-            color: oklch(var(--bc));
+            background: var(--nexus-base-100);
+            color: var(--nexus-base-content);
             transition: all 0.2s;
           }
 
           .nexus-search input:focus {
             outline: none;
-            border-color: oklch(var(--p));
-            box-shadow: 0 0 0 3px oklch(var(--p) / 0.1);
+            border-color: var(--nexus-primary);
+            box-shadow: 0 0 0 3px rgba(22, 123, 255, 0.1);
           }
 
           .nexus-search input::placeholder {
-            color: oklch(var(--bc) / 0.4);
+            color: var(--nexus-base-content);
+            opacity: 0.4;
           }
 
           .nexus-search-icon {
@@ -633,7 +707,8 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             transform: translateY(-50%);
             width: 1rem;
             height: 1rem;
-            color: oklch(var(--bc) / 0.4);
+            color: var(--nexus-base-content);
+            opacity: 0.4;
             pointer-events: none;
           }
 
@@ -643,17 +718,18 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.5rem;
+            border-radius: var(--nexus-radius-md);
             background: transparent;
             border: none;
-            color: oklch(var(--bc) / 0.7);
+            color: var(--nexus-base-content);
+            opacity: 0.7;
             cursor: pointer;
             transition: all 0.2s;
           }
 
           .nexus-icon-btn:hover {
-            background: oklch(var(--bc) / 0.08);
-            color: oklch(var(--bc));
+            background: var(--nexus-base-200);
+            opacity: 1;
           }
 
           /* ========== CONTENT ========== */
