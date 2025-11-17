@@ -1,6 +1,7 @@
 import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
 import { NexusCard, NexusButton, NexusBadge } from "../components/nexus/NexusComponents.tsx";
+import { env } from "../../config/env.ts";
 
 interface PostFormNexusProps {
   user: {
@@ -62,8 +63,8 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
   const isEdit = !!post;
   const pageTitle = isEdit ? "Editar Entrada" : "Nueva Entrada";
   const formAction = isEdit
-    ? `/admincp/posts/edit/${post!.id}`
-    : "/admincp/posts/new";
+    ? `${env.ADMIN_PATH}/posts/edit/${post!.id}`
+    : `${env.ADMIN_PATH}/posts/new`;
 
   const content_html = html`
     <style>
@@ -607,7 +608,7 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
             ${NexusButton({
               label: "Cancelar",
               type: "outline",
-              href: "/admincp/posts"
+              href: `${env.ADMIN_PATH}/posts`
             })}
             ${NexusButton({
               label: isEdit ? "Actualizar Entrada" : "Publicar Entrada",

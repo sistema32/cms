@@ -1,6 +1,7 @@
 import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
 import { NexusCard, NexusButton, NexusBadge } from "../components/nexus/NexusComponents.tsx";
+import { env } from "../../config/env.ts";
 
 interface PageFormNexusProps {
   user: {
@@ -64,8 +65,8 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
   const isEdit = !!page;
   const pageTitle = isEdit ? "Editar Página" : "Nueva Página";
   const formAction = isEdit
-    ? `/admincp/pages/edit/${page!.id}`
-    : "/admincp/pages/new";
+    ? `${env.ADMIN_PATH}/pages/edit/${page!.id}`
+    : `${env.ADMIN_PATH}/pages/new`;
 
   const content_html = html`
     <style>
@@ -583,7 +584,7 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
             ${NexusButton({
               label: "Cancelar",
               type: "outline",
-              href: "/admincp/pages"
+              href: `${env.ADMIN_PATH}/pages`
             })}
             ${NexusButton({
               label: isEdit ? "Actualizar Página" : "Publicar Página",
