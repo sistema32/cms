@@ -642,7 +642,11 @@ adminRouter.get("/content", async (c) => {
 
     return c.html(
       ContentListNexusPage({
-        user: { name: user.name as string | null, email: user.email },
+        user: {
+          id: user.userId,
+          name: user.name as string | null,
+          email: user.email
+        },
         contents: contents.map((item) => ({
           id: item.id,
           title: item.title,
@@ -944,6 +948,7 @@ adminRouter.get("/posts", async (c) => {
 
     return c.html(ContentListNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },
@@ -1278,6 +1283,7 @@ adminRouter.get("/pages", async (c) => {
 
     return c.html(ContentListNexusPage({
       user: {
+        id: user.userId,
         name: user.name || user.email,
         email: user.email,
       },

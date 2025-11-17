@@ -181,7 +181,6 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas del Admin Panel (antes del frontend)
   app.route(env.ADMIN_PATH, adminRouter);
-  app.route(`${env.ADMIN_PATH}/`, adminRouter);
 
   // Registrar rutas del Frontend (ÚLTIMO para que no interfiera con API)
   app.route("/", frontendRouter);
