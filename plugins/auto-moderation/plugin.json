@@ -1,0 +1,13 @@
+{
+    "id": "auto-moderation",
+    "name": "Auto Moderation",
+    "version": "1.0.0",
+    "description": "Automated spam detection and content moderation",
+    "author": "LexCMS",
+    "entry": "entry.ts",
+    "permissions": [
+        "network:external",
+        "system:files"
+    ],
+    "dependencies": {}
+}

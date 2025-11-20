@@ -54,7 +54,18 @@ export default class AnalyticsDashboardPlugin implements PluginClass {
    * Render the analytics panel
    */
   private async renderAnalyticsPanel(context: any) {
-    const { user, settings } = context;
+    const { user, settings, pluginPanels = [] } = context;
+
+    // Filter panels for menu
+    const menuPanels = pluginPanels
+      .filter((p: any) => p.showInMenu !== false)
+      .map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        pluginName: p.pluginName,
+        path: p.path,
+        icon: p.icon,
+      }));
 
     // Fetch some analytics data (simulated)
     const analyticsData = await this.getAnalyticsData();
@@ -63,7 +74,7 @@ export default class AnalyticsDashboardPlugin implements PluginClass {
       title: 'Analíticas',
       activePage: 'plugin.analytics-dashboard.analytics',
       user,
-      pluginPanels: await this.getPluginPanels(),
+      pluginPanels: menuPanels,
       children: html`
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
 
@@ -207,13 +218,24 @@ export default class AnalyticsDashboardPlugin implements PluginClass {
    * Render the reports panel
    */
   private async renderReportsPanel(context: any) {
-    const { user } = context;
+    const { user, pluginPanels = [] } = context;
+
+    // Filter panels for menu
+    const menuPanels = pluginPanels
+      .filter((p: any) => p.showInMenu !== false)
+      .map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        pluginName: p.pluginName,
+        path: p.path,
+        icon: p.icon,
+      }));
 
     return html`${AdminLayout({
       title: 'Reportes',
       activePage: 'plugin.analytics-dashboard.reports',
       user,
-      pluginPanels: await this.getPluginPanels(),
+      pluginPanels: menuPanels,
       children: html`
         <div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
 
@@ -276,28 +298,5 @@ export default class AnalyticsDashboardPlugin implements PluginClass {
         { path: '/sobre-nosotros', views: 3456, percentage: 7.6 },
       ],
     };
-  }
-
-  /**
-   * Get plugin panels for navigation
-   */
-  private async getPluginPanels() {
-    try {
-      const { AdminPanelRegistry } = await import('../../src/lib/plugin-system/index.ts');
-      const allPanels = AdminPanelRegistry.getAllPanels();
-
-      return allPanels
-        .filter(panel => panel.showInMenu !== false)
-        .map(panel => ({
-          id: panel.id,
-          title: panel.title,
-          pluginName: panel.pluginName,
-          path: panel.path,
-          icon: panel.icon,
-        }));
-    } catch (error) {
-      console.error('Error loading plugin panels:', error);
-      return [];
-    }
   }
 }

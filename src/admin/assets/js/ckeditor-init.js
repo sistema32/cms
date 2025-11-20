@@ -175,8 +175,7 @@ async function initCKEditor(config) {
     const images = items.filter((item) => item.type === 'image');
     if (!images.length) {
       const placeholder = document.createElement('div');
-      placeholder.className =
-        'col-span-full text-center py-8 text-gray-600 dark:text-gray-400';
+      placeholder.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666;';
       placeholder.textContent = 'No hay imágenes disponibles';
       grid.appendChild(placeholder);
       return;
@@ -184,28 +183,37 @@ async function initCKEditor(config) {
 
     images.forEach((media) => {
       const card = document.createElement('div');
-      card.className =
-        'media-item-modal relative group cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-purple-400 transition-colors';
+      card.style.cssText = 'position: relative; cursor: pointer; border-radius: 0.5rem; overflow: hidden; border: 2px solid transparent; transition: border-color 0.2s;';
       card.dataset.url = media.url || '';
       card.dataset.filename = media.originalFilename || '';
-      card.addEventListener('click', () => selectMedia(card));
 
       const thumb = document.createElement('div');
-      thumb.className = 'aspect-square bg-gray-100 dark:bg-gray-700';
+      thumb.style.cssText = 'aspect-ratio: 1; background: #f3f4f6; position: relative;';
       const img = document.createElement('img');
       img.src = media.url || '';
       img.alt = media.originalFilename || '';
-      img.className = 'w-full h-full object-cover';
+      img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
       img.loading = 'lazy';
       thumb.appendChild(img);
 
       const overlay = document.createElement('div');
-      overlay.className =
-        'absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center';
+      overlay.style.cssText = 'position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0); transition: background-color 0.2s; display: flex; align-items: center; justify-content: center;';
       const overlayText = document.createElement('div');
-      overlayText.className = 'opacity-0 group-hover:opacity-100 text-white text-sm font-medium';
+      overlayText.style.cssText = 'opacity: 0; color: white; font-size: 0.875rem; font-weight: 500; transition: opacity 0.2s;';
       overlayText.textContent = 'Usar imagen';
       overlay.appendChild(overlayText);
+
+      card.addEventListener('click', () => selectMedia(card));
+      card.addEventListener('mouseenter', () => {
+        card.style.borderColor = '#167bff';
+        overlayText.style.opacity = '1';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = 'transparent';
+        overlayText.style.opacity = '0';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      });
 
       card.appendChild(thumb);
       card.appendChild(overlay);
@@ -216,14 +224,65 @@ async function initCKEditor(config) {
   const showMediaLayout = () => {
     if (!mediaContent) return;
     mediaContent.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <button type="button" class="btn-secondary" onclick="document.getElementById('mediaUploadInput-` + name + `').click()">Subir imagen</button>
-        <input type="file" id="mediaUploadInput-` + name + `" class="hidden" accept="image/*" />
-        <div class="flex-1 min-w-[12rem]"><input type="text" id="mediaPickerSearch-` + name + `" class="form-input" placeholder="Buscar por nombre..." /></div>
+      <style>
+        .media-upload-bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+        .media-upload-btn {
+          padding: 0.5rem 1rem;
+          background: #167bff;
+          color: white;
+          border: none;
+          border-radius: 0.375rem;
+          cursor: pointer;
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: background 0.2s;
+        }
+        .media-upload-btn:hover {
+          background: #0d5fd6;
+        }
+        .media-search-input {
+          flex: 1;
+          min-width: 12rem;
+          padding: 0.5rem 1rem;
+          border: 1px solid #ddd;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+        }
+        .media-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 1rem;
+        }
+        @media (max-width: 768px) {
+          .media-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+      </style>
+      <div class="media-upload-bar">
+        <button type="button" class="media-upload-btn" id="mediaUploadBtn-` + name + `">Subir imagen</button>
+        <input type="file" id="mediaUploadInput-` + name + `" style="display: none;" accept="image/*" />
+        <input type="text" id="mediaPickerSearch-` + name + `" class="media-search-input" placeholder="Buscar por nombre..." />
       </div>
-      <div id="` + name + `_grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
-      <div id="` + name + `_uploadMessage" class="hidden text-sm mt-3"></div>
+      <div id="` + name + `_grid" class="media-grid"></div>
+      <div id="` + name + `_uploadMessage" style="display: none; font-size: 0.875rem; margin-top: 1rem;"></div>
     `;
+
+    // Attach upload button click handler
+    const uploadBtn = mediaContent.querySelector('#mediaUploadBtn-' + name);
+    const uploadInput = mediaContent.querySelector('#mediaUploadInput-' + name);
+    if (uploadBtn && uploadInput) {
+      uploadBtn.addEventListener('click', () => {
+        uploadInput.click();
+      });
+    }
   };
 
   const loadMediaLibrary = async () => {
@@ -231,7 +290,7 @@ async function initCKEditor(config) {
     const grid = mediaContent?.querySelector('#' + name + '_grid');
     if (grid) {
       grid.innerHTML =
-        '<div class="col-span-full text-center py-8 text-gray-600 dark:text-gray-400">Cargando biblioteca de medios...</div>';
+        '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #666;">Cargando biblioteca de medios...</div>';
     }
 
     const searchInput = mediaContent?.querySelector('#mediaPickerSearch-' + name);
@@ -273,9 +332,8 @@ async function initCKEditor(config) {
           formData.append('file', files[0]);
           if (uploadMessage) {
             uploadMessage.textContent = 'Subiendo imagen...';
-            uploadMessage.className =
-              'text-sm text-blue-600 dark:text-blue-400 mt-3';
-            uploadMessage.classList.remove('hidden');
+            uploadMessage.style.display = 'block';
+            uploadMessage.style.color = '#0d5fd6';
           }
           try {
             const res = await fetch(mediaUploadEndpoint, {
@@ -300,16 +358,20 @@ async function initCKEditor(config) {
 
             if (uploadMessage) {
               uploadMessage.textContent = 'Imagen subida correctamente';
-              uploadMessage.className =
-                'text-sm text-green-600 dark:text-green-400 mt-3';
+              uploadMessage.style.display = 'block';
+              uploadMessage.style.color = '#10b981';
             }
+            // Reset the file input so the same file can be uploaded again
+            if (target) target.value = '';
             await loadMediaLibrary();
           } catch (error) {
             if (uploadMessage) {
               uploadMessage.textContent = error.message || 'Error al subir imagen';
-              uploadMessage.className =
-                'text-sm text-red-600 dark:text-red-400 mt-3';
+              uploadMessage.style.display = 'block';
+              uploadMessage.style.color = '#f31260';
             }
+            // Reset the file input
+            if (target) target.value = '';
           }
         });
       }
@@ -318,7 +380,7 @@ async function initCKEditor(config) {
       if (mediaContent) {
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
         mediaContent.innerHTML =
-          '<div class="text-center py-8 text-red-600"><p>Error al cargar la biblioteca de medios</p><p class="text-sm mt-2">' + errorMsg + '</p></div>';
+          '<div style="text-align: center; padding: 2rem; color: #f31260;"><p>Error al cargar la biblioteca de medios</p><p style="font-size: 0.875rem; margin-top: 0.5rem;">' + errorMsg + '</p></div>';
       }
     }
   };

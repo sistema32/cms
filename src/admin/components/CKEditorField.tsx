@@ -6,6 +6,8 @@ interface CKEditorFieldProps {
   value?: string;
   placeholder?: string;
   required?: boolean;
+  mediaListEndpoint?: string;
+  mediaUploadEndpoint?: string;
 }
 
 export const CKEditorField = (props: CKEditorFieldProps) => {
@@ -14,6 +16,8 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
     value = "",
     placeholder = "Escribe tu contenido aquí...",
     required = false,
+    mediaListEndpoint = "/api/media",
+    mediaUploadEndpoint = "/api/media",
   } = props;
 
   const editorId = `ckeditor-${name}`;
@@ -22,8 +26,6 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
   const mediaModalId = `mediaPicker-${name}`;
   const mediaContentId = `mediaPickerContent-${name}`;
   const bundlePath = `${env.ADMIN_PATH}/assets/js/ckeditor-bundle.js`;
-  const mediaListEndpoint = `/api/media`;
-  const mediaUploadEndpoint = `/api/media`;
 
   return html`
     <style>

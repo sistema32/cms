@@ -35,7 +35,23 @@ if (!seedResult.success) {
   Deno.exit(1);
 }
 
+// Step 3: Run security permissions seed
+console.log("\nStep 3: Seeding security permissions...");
+const securitySeedProcess = new Deno.Command("deno", {
+  args: ["run", "--allow-all", "src/db/seeds/security-permissions.ts"],
+  stdout: "inherit",
+  stderr: "inherit",
+});
+
+const securitySeedResult = await securitySeedProcess.output();
+
+if (!securitySeedResult.success) {
+  console.error("\n❌ Security permissions seeding failed!");
+  Deno.exit(1);
+}
+
 console.log("\n✅ Database setup complete!");
 console.log("\nYou can now:");
 console.log("  - Run 'deno task dev' to start the development server");
 console.log("  - Login with admin@example.com / admin123");
+console.log("  - Access security panel at /admincp/security/dashboard");

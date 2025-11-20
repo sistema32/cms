@@ -97,6 +97,9 @@ export interface Plugin {
 
   // Plugin class instance
   instance?: PluginClass;
+
+  // Plugin worker instance
+  worker?: any; // PluginWorker
 }
 
 /**
@@ -204,6 +207,7 @@ export interface MarketplacePlugin {
   price: 'free' | 'paid';
   homepage: string;
   downloadUrl?: string;
+  tags?: string[];
 }
 
 /**

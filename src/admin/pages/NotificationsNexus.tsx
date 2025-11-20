@@ -1,6 +1,7 @@
 import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
 import { NexusCard, NexusButton, NexusBadge } from "../components/nexus/NexusComponents.tsx";
+import { withAdminPageLogging } from "./withAdminPageLogging.tsx";
 
 interface NotificationsNexusPageProps {
   user: {
@@ -17,13 +18,20 @@ interface NotificationsNexusPageProps {
     createdAt: Date;
   }>;
   unreadNotificationCount?: number;
+  // Props para la barra de depuración
+  request?: Request;
+  response?: Response;
+  startTime?: number;
 }
 
-export const NotificationsNexusPage = (props: NotificationsNexusPageProps) => {
+const PageComponent = (props: NotificationsNexusPageProps) => {
   const {
     user,
     notifications = [],
     unreadNotificationCount = 0,
+    request,
+    response,
+    startTime,
   } = props;
 
   const getNotificationIcon = (type: string) => {
@@ -267,8 +275,8 @@ export const NotificationsNexusPage = (props: NotificationsNexusPageProps) => {
         ${NexusButton({
           label: "Marcar todas como leídas",
           type: "outline",
-          size: "sm",
-          onClick: "markAllAsRead()"
+          size: "sm", // El onClick se manejará con un event listener
+          attributes: { "data-action": "mark-all-read" }
         })}
       ` : ''}
     </div>
@@ -322,85 +330,80 @@ export const NotificationsNexusPage = (props: NotificationsNexusPageProps) => {
     `}
 
     ${raw(`
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const notificationsList = document.querySelector('.notifications-list');
+      <script type="module">
+        // Este código podría vivir en un archivo separado, ej: /assets/js/notifications.js
+        
+        // 1. Cliente API centralizado (ejemplo)
+        const apiClient = {
+          _fetch: (url, options = {}) => {
+            const headers = {
+              'Authorization': 'Bearer ' + localStorage.getItem('token'),
+              'Content-Type': 'application/json',
+              ...options.headers,
+            };
+            return fetch(url, { ...options, headers });
+          },
+          markNotificationAsRead: (notificationId) => {
+            return apiClient._fetch('/api/notifications/' + notificationId + '/read', { method: 'PATCH' });
+          },
+          markAllNotificationsAsRead: () => {
+            return apiClient._fetch('/api/notifications/mark-all-read', { method: 'PATCH' });
+          }
+        };
 
-          // XSS safe - Mark all as read
-          window.markAllAsRead = function() {
-            if (!confirm('¿Marcar todas las notificaciones como leídas?')) return;
+        // 2. Lógica de UI desacoplada
+        function updateUnreadCountBadge(newCount) {
+          const badgeContainer = document.querySelector('.page-header-nexus .nexus-badge')?.parentElement;
+          if (!badgeContainer) return;
 
-            fetch('/api/notifications/mark-all-read', {
-              method: 'PATCH',
-              headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-              }
-            })
-            .then(response => {
+          let newBadgeHTML;
+          if (newCount > 0) {
+            newBadgeHTML = \`${NexusBadge({ label: `${newCount} sin leer`, type: "primary", soft: true })}\`;
+          } else {
+            newBadgeHTML = \`${NexusBadge({ label: "Todo al día", type: "success", soft: true })}\`;
+          }
+          badgeContainer.innerHTML = newBadgeHTML;
+        }
+
+        function handleMarkAsRead(notificationItem) {
+          notificationItem.classList.remove('unread');
+          notificationItem.querySelector('[data-action="mark-read"]')?.closest('.notification-actions')?.remove();
+          
+          const currentCount = document.querySelectorAll('.notification-item.unread').length;
+          updateUnreadCountBadge(currentCount);
+        }
+
+        // 3. Listeners de eventos
+        document.addEventListener('click', async (e) => {
+          const markReadBtn = e.target.closest('[data-action="mark-read"]');
+          const markAllReadBtn = e.target.closest('[data-action="mark-all-read"]');
+
+          if (markReadBtn) {
+            const notificationItem = markReadBtn.closest('[data-notification-id]');
+            const notificationId = notificationItem?.dataset.notificationId;
+            if (!notificationId) return;
+
+            try {
+              const response = await apiClient.markNotificationAsRead(notificationId);
               if (response.ok) {
-                window.location.reload();
+                handleMarkAsRead(notificationItem);
               } else {
-                alert('Error al marcar notificaciones');
+                alert('Error al marcar la notificación.');
               }
-            })
-            .catch(error => {
+            } catch (error) {
               console.error('Error:', error);
-              alert('Error al marcar notificaciones');
-            });
-          };
+              alert('Error de red al marcar la notificación.');
+            }
+          }
 
-          // XSS safe - Mark single notification as read
-          if (notificationsList) {
-            notificationsList.addEventListener('click', function(e) {
-              const actionBtn = e.target.closest('[data-action="mark-read"]');
-              if (!actionBtn) return;
-
-              const notificationItem = actionBtn.closest('[data-notification-id]');
-              const notificationId = notificationItem?.getAttribute('data-notification-id');
-
-              if (!notificationId) return;
-
-              fetch('/api/notifications/' + notificationId + '/read', {
-                method: 'PATCH',
-                headers: {
-                  'Authorization': 'Bearer ' + localStorage.getItem('token')
-                }
-              })
-              .then(response => {
-                if (response.ok) {
-                  // XSS safe - Update UI
-                  notificationItem.classList.remove('unread');
-                  actionBtn.parentElement?.remove();
-
-                  // Update badge
-                  const badge = document.querySelector('.page-header-nexus .nexus-badge');
-                  if (badge) {
-                    const currentCount = parseInt(badge.textContent?.match(/\\d+/)?.[0] || '0');
-                    const newCount = Math.max(0, currentCount - 1);
-
-                    if (newCount === 0) {
-                      // XSS safe - Create new badge element
-                      const newBadge = document.createElement('span');
-                      newBadge.className = 'nexus-badge nexus-badge-success nexus-badge-soft nexus-badge-md';
-                      const textNode = document.createTextNode('Todo al día');
-                      newBadge.appendChild(textNode);
-                      badge.parentElement?.replaceChild(newBadge, badge);
-                    } else {
-                      // XSS safe - Update text content
-                      const textNode = document.createTextNode(newCount + ' sin leer');
-                      badge.textContent = '';
-                      badge.appendChild(textNode);
-                    }
-                  }
-                } else {
-                  alert('Error al marcar notificación');
-                }
-              })
-              .catch(error => {
-                console.error('Error:', error);
-                alert('Error al marcar notificación');
-              });
-            });
+          if (markAllReadBtn) {
+            if (!confirm('¿Marcar todas las notificaciones como leídas?')) return;
+            const response = await apiClient.markAllNotificationsAsRead();
+            if (response.ok) {
+              window.location.reload(); // Simple reload for now
+            } else {
+              alert('Error al marcar todas las notificaciones.');
+            }
           }
         });
       </script>
@@ -414,7 +417,12 @@ export const NotificationsNexusPage = (props: NotificationsNexusPageProps) => {
     user,
     notifications,
     unreadNotificationCount,
+    request,
+    response,
+    startTime,
   });
 };
+
+export const NotificationsNexusPage = withAdminPageLogging(PageComponent, import.meta.url);
 
 export default NotificationsNexusPage;

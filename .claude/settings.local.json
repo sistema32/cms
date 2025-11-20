@@ -26,7 +26,15 @@
       "WebFetch(domain:nexus.daisyui.com)",
       "WebSearch",
       "WebFetch(domain:daisyui.com)",
-      "Bash(npx tailwindcss:*)"
+      "Bash(npx tailwindcss:*)",
+      "Bash(node -c:*)",
+      "Bash(deno fmt:*)",
+      "Bash(deno eval:*)",
+      "Bash(awk:*)",
+      "Bash(timeout 10 deno task dev:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 15 deno task:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,12 +2,12 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { db } from "../config/db.ts";
 import {
-  content,
   categories as categoriesSchema,
-  tags as tagsSchema,
   comments,
+  content,
+  tags as tagsSchema,
 } from "../db/schema.ts";
-import { eq, desc, count, and, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import * as themeService from "../services/themeService.ts";
 import * as settingsService from "../services/settingsService.ts";
 import * as contentTypeService from "../services/contentTypeService.ts";
@@ -182,20 +182,22 @@ function createEmergencyTemplate(templateName: string, themeName: string) {
  */
 async function notifyAdminAboutMissingTemplate(
   templateName: string,
-  themeName: string
+  themeName: string,
 ) {
   try {
     const errorKey = `theme_error_missing_template_${Date.now()}`;
     await settingsService.updateSetting(
       errorKey,
       JSON.stringify({
-        type: 'missing_template',
+        type: "missing_template",
         template: templateName,
         theme: themeName,
         timestamp: new Date().toISOString(),
-      })
+      }),
     );
-    console.error(`❌ CRITICAL: Missing template "${templateName}.tsx" in theme "${themeName}" - Error logged to settings`);
+    console.error(
+      `❌ CRITICAL: Missing template "${templateName}.tsx" in theme "${themeName}" - Error logged to settings`,
+    );
   } catch (error) {
     console.error("Failed to log missing template error:", error);
   }
@@ -208,7 +210,8 @@ async function getThemeTemplate(templateName: string) {
   const activeTheme = await themeService.getActiveTheme();
 
   // Try 1: Active theme
-  const templatePath = `src/themes/${activeTheme}/templates/${templateName}.tsx`;
+  const templatePath =
+    `src/themes/${activeTheme}/templates/${templateName}.tsx`;
   const fullPath = join(Deno.cwd(), templatePath);
 
   try {
@@ -217,19 +220,20 @@ async function getThemeTemplate(templateName: string) {
     return module.default;
   } catch (error) {
     console.warn(
-      `⚠️  Template ${templateName}.tsx not found in theme ${activeTheme}, trying fallback...`
+      `⚠️  Template ${templateName}.tsx not found in theme ${activeTheme}, trying fallback...`,
     );
   }
 
   // Try 2: Default theme
   try {
-    const defaultTemplatePath = `src/themes/default/templates/${templateName}.tsx`;
+    const defaultTemplatePath =
+      `src/themes/default/templates/${templateName}.tsx`;
     const module = await loadThemeModule(defaultTemplatePath);
     console.log(`✅ Using fallback template from default theme`);
     return module.default;
   } catch (error) {
     console.error(
-      `❌ CRITICAL: Template ${templateName}.tsx not found in default theme!`
+      `❌ CRITICAL: Template ${templateName}.tsx not found in default theme!`,
     );
   }
 
@@ -244,20 +248,28 @@ async function getThemeTemplate(templateName: string) {
  * @param activeTheme - Tema activo
  * @returns Template module
  */
-async function loadPageTemplate(templateName: string | null, activeTheme: string) {
+async function loadPageTemplate(
+  templateName: string | null,
+  activeTheme: string,
+) {
   // Nivel 1: Template personalizado en tema activo
   // Ejemplo: themes/modern/templates/pages/page-inicio.tsx
   if (templateName) {
-    const customPath = `src/themes/${activeTheme}/templates/pages/${templateName}.tsx`;
+    const customPath =
+      `src/themes/${activeTheme}/templates/pages/${templateName}.tsx`;
     const fullPath = join(Deno.cwd(), customPath);
 
     try {
       await Deno.stat(fullPath);
       const module = await loadThemeModule(customPath);
-      console.log(`✅ Cargando template personalizado: ${templateName} (${activeTheme})`);
+      console.log(
+        `✅ Cargando template personalizado: ${templateName} (${activeTheme})`,
+      );
       return module.default;
     } catch (error) {
-      console.log(`⚠️ Template personalizado no encontrado: ${templateName} en ${activeTheme}`);
+      console.log(
+        `⚠️ Template personalizado no encontrado: ${templateName} en ${activeTheme}`,
+      );
     }
   }
 
@@ -290,10 +302,11 @@ async function loadPageTemplate(templateName: string | null, activeTheme: string
   }
 
   // Nivel 4: Error crítico
-  const errorMsg = `No se pudo cargar ningún template de página. Template solicitado: ${templateName}, Tema: ${activeTheme}`;
+  const errorMsg =
+    `No se pudo cargar ningún template de página. Template solicitado: ${templateName}, Tema: ${activeTheme}`;
   console.error(errorMsg);
-  await notifyAdminAboutMissingTemplate(templateName || 'page', activeTheme);
-  return createEmergencyTemplate(templateName || 'page', activeTheme);
+  await notifyAdminAboutMissingTemplate(templateName || "page", activeTheme);
+  return createEmergencyTemplate(templateName || "page", activeTheme);
 }
 
 /**
@@ -301,7 +314,7 @@ async function loadPageTemplate(templateName: string | null, activeTheme: string
  * Con caching para mejorar performance
  */
 async function loadCommonTemplateData() {
-  const cacheKey = 'common_template_data';
+  const cacheKey = "common_template_data";
   const cached = commonDataCache.get(cacheKey);
 
   // Retornar desde cache si es válido
@@ -346,7 +359,7 @@ const urlOptimizer = new URLOptimizer();
 async function generateSEOMetaTags(options: {
   content?: any;
   url: string;
-  pageType?: 'article' | 'website' | 'blog';
+  pageType?: "article" | "website" | "blog";
   title?: string;
   description?: string;
   image?: string;
@@ -359,7 +372,7 @@ async function generateSEOMetaTags(options: {
   const {
     content: contentData,
     url,
-    pageType = 'website',
+    pageType = "website",
     title: defaultTitle,
     description: defaultDescription,
     image: defaultImage,
@@ -371,8 +384,14 @@ async function generateSEOMetaTags(options: {
   } = options;
 
   const site = await settingsService.getSetting("site_name", "LexCMS");
-  const siteUrl = await settingsService.getSetting("site_url", env.BASE_URL || "http://localhost:8000");
-  const twitterHandle = await settingsService.getSetting("twitter_handle", "@lexcms");
+  const siteUrl = await settingsService.getSetting(
+    "site_url",
+    env.BASE_URL || "http://localhost:8000",
+  );
+  const twitterHandle = await settingsService.getSetting(
+    "twitter_handle",
+    "@lexcms",
+  );
 
   let metadata: any = {
     title: defaultTitle || site,
@@ -398,23 +417,30 @@ async function generateSEOMetaTags(options: {
     const seoData = contentData.contentSeo;
 
     // Título
-    const finalTitle = seoData?.metaTitle || contentData.title || defaultTitle || site;
+    const finalTitle = seoData?.metaTitle || contentData.title ||
+      defaultTitle || site;
     metadata.title = finalTitle;
     metadata.openGraph.title = seoData?.ogTitle || finalTitle;
     metadata.twitterCard.title = seoData?.twitterTitle || finalTitle;
 
     // Descripción
-    const finalDescription = seoData?.metaDescription || contentData.excerpt || defaultDescription || "";
+    const finalDescription = seoData?.metaDescription || contentData.excerpt ||
+      defaultDescription || "";
     metadata.description = finalDescription;
     metadata.openGraph.description = seoData?.ogDescription || finalDescription;
-    metadata.twitterCard.description = seoData?.twitterDescription || finalDescription;
+    metadata.twitterCard.description = seoData?.twitterDescription ||
+      finalDescription;
 
     // Imagen
-    const finalImage = seoData?.ogImage || contentData.featuredImage?.url || contentData.featureImage || defaultImage;
+    const finalImage = seoData?.ogImage || contentData.featuredImage?.url ||
+      contentData.featureImage || defaultImage;
     if (finalImage) {
-      metadata.openGraph.image = finalImage.startsWith('http') ? finalImage : `${siteUrl}${finalImage}`;
+      metadata.openGraph.image = finalImage.startsWith("http")
+        ? finalImage
+        : `${siteUrl}${finalImage}`;
       metadata.twitterCard.image = metadata.openGraph.image;
-      metadata.twitterCard.imageAlt = seoData?.twitterImageAlt || contentData.title;
+      metadata.twitterCard.imageAlt = seoData?.twitterImageAlt ||
+        contentData.title;
     }
 
     // Canonical
@@ -427,18 +453,18 @@ async function generateSEOMetaTags(options: {
     const noFollow = seoData?.noFollow || false;
     if (noIndex || noFollow) {
       const robots = [];
-      if (noIndex) robots.push('noindex');
-      else robots.push('index');
-      if (noFollow) robots.push('nofollow');
-      else robots.push('follow');
-      metadata.robots = robots.join(',');
+      if (noIndex) robots.push("noindex");
+      else robots.push("index");
+      if (noFollow) robots.push("nofollow");
+      else robots.push("follow");
+      metadata.robots = robots.join(",");
     }
 
     // Open Graph type para artículos
-    if (pageType === 'article' && seoData?.ogType) {
+    if (pageType === "article" && seoData?.ogType) {
       metadata.openGraph.type = seoData.ogType;
-    } else if (pageType === 'article') {
-      metadata.openGraph.type = 'article';
+    } else if (pageType === "article") {
+      metadata.openGraph.type = "article";
       metadata.openGraph.publishedTime = contentData.publishedAt?.toISOString();
       metadata.openGraph.modifiedTime = contentData.updatedAt?.toISOString();
       if (author) {
@@ -453,18 +479,21 @@ async function generateSEOMetaTags(options: {
     }
 
     // Structured Data (Schema.org)
-    if (pageType === 'article') {
+    if (pageType === "article") {
       const articleSchema = structuredDataGenerator.generateArticleSchema({
         title: finalTitle,
         description: finalDescription,
         url: metadata.canonical,
         image: metadata.openGraph.image || "",
-        datePublished: contentData.publishedAt?.toISOString() || contentData.createdAt?.toISOString(),
+        datePublished: contentData.publishedAt?.toISOString() ||
+          contentData.createdAt?.toISOString(),
         dateModified: contentData.updatedAt?.toISOString(),
-        author: author ? {
-          name: author.name,
-          url: `${siteUrl}/author/${author.email}`,
-        } : undefined,
+        author: author
+          ? {
+            name: author.name,
+            url: `${siteUrl}/author/${author.email}`,
+          }
+          : undefined,
       });
       metadata.schema = articleSchema;
     } else if (seoData?.schemaJson) {
@@ -483,7 +512,9 @@ async function generateSEOMetaTags(options: {
   // Agregar breadcrumbs si existen
   if (breadcrumbs && breadcrumbs.length > 0) {
     const breadcrumbSchema = urlOptimizer.generateBreadcrumbSchema(breadcrumbs);
-    metaTags += `\n<script type="application/ld+json">\n${JSON.stringify(breadcrumbSchema, null, 2)}\n</script>`;
+    metaTags += `\n<script type="application/ld+json">\n${
+      JSON.stringify(breadcrumbSchema, null, 2)
+    }\n</script>`;
   }
 
   // Agregar pagination links
@@ -497,9 +528,10 @@ async function generateSEOMetaTags(options: {
   }
 
   // Preload de recursos críticos
-  metaTags += '\n<!-- Preload Critical Resources -->';
+  metaTags += "\n<!-- Preload Critical Resources -->";
   metaTags += `\n<link rel="preconnect" href="${siteUrl}" />`;
-  metaTags += '\n<link rel="dns-prefetch" href="https://fonts.googleapis.com" />';
+  metaTags +=
+    '\n<link rel="dns-prefetch" href="https://fonts.googleapis.com" />';
 
   return metaTags;
 }
@@ -519,7 +551,9 @@ async function renderBlogTemplate(c: any, page = 1) {
   const custom = await themeHelpers.getCustomSettings();
   const commonData = await loadCommonTemplateData();
 
-  const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(page);
+  const { posts, total, totalPages } = await themeHelpers.getPaginatedPosts(
+    page,
+  );
 
   // Si la página no existe, 404
   if (page > totalPages && totalPages > 0) {
@@ -533,7 +567,9 @@ async function renderBlogTemplate(c: any, page = 1) {
   // Generar pagination links
   const paginationLinks: { prev?: string; next?: string } = {};
   if (page > 1) {
-    paginationLinks.prev = page === 2 ? `/${blogBase}` : `/${blogBase}/page/${page - 1}`;
+    paginationLinks.prev = page === 2
+      ? `/${blogBase}`
+      : `/${blogBase}/page/${page - 1}`;
   }
   if (page < totalPages) {
     paginationLinks.next = `/${blogBase}/page/${page + 1}`;
@@ -541,19 +577,25 @@ async function renderBlogTemplate(c: any, page = 1) {
 
   // Generar breadcrumbs
   const breadcrumbs = [
-    { label: 'Inicio', url: '/' },
-    { label: 'Blog', url: `/${blogBase}` },
+    { label: "Inicio", url: "/" },
+    { label: "Blog", url: `/${blogBase}` },
   ];
   if (page > 1) {
-    breadcrumbs.push({ label: `Página ${page}`, url: `/${blogBase}/page/${page}` });
+    breadcrumbs.push({
+      label: `Página ${page}`,
+      url: `/${blogBase}/page/${page}`,
+    });
   }
 
   // Generar meta tags SEO completos
-  const blogTitle = page > 1 ? `Blog - Página ${page}` : 'Blog';
-  const blogDescription = await settingsService.getSetting("blog_description", "Todos nuestros artículos");
+  const blogTitle = page > 1 ? `Blog - Página ${page}` : "Blog";
+  const blogDescription = await settingsService.getSetting(
+    "blog_description",
+    "Todos nuestros artículos",
+  );
   const seoMetaTags = await generateSEOMetaTags({
     url: page === 1 ? `/${blogBase}` : `/${blogBase}/page/${page}`,
-    pageType: 'blog',
+    pageType: "blog",
     title: blogTitle,
     description: blogDescription,
     breadcrumbs,
@@ -574,7 +616,7 @@ async function renderBlogTemplate(c: any, page = 1) {
       menu: commonData.headerMenu,
       footerMenu: commonData.footerMenu,
       seoMetaTags,
-    })
+    }),
   );
 }
 
@@ -591,7 +633,7 @@ async function renderPageById(c: any, pageId: number) {
     with: {
       author: true,
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
@@ -605,7 +647,7 @@ async function renderPageById(c: any, pageId: number) {
   const site = await themeHelpers.getSiteData();
   const custom = await themeHelpers.getCustomSettings();
   const commonData = await loadCommonTemplateData();
-  const blogUrl = await getBlogBase().then(base => `/${base}`);
+  const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
   const pageData = {
     id: page.id,
@@ -624,7 +666,7 @@ async function renderPageById(c: any, pageId: number) {
 
   // Generar breadcrumbs para página
   const breadcrumbs = [
-    { label: 'Inicio', url: '/' },
+    { label: "Inicio", url: "/" },
     { label: page.title, url: `/${page.slug}` },
   ];
 
@@ -632,7 +674,7 @@ async function renderPageById(c: any, pageId: number) {
   const seoMetaTags = await generateSEOMetaTags({
     content: page,
     url: `/${page.slug}`,
-    pageType: 'website',
+    pageType: "website",
     author: pageData.author,
     breadcrumbs,
   });
@@ -648,7 +690,7 @@ async function renderPageById(c: any, pageId: number) {
       footerMenu: commonData.footerMenu,
       categories: commonData.categories,
       seoMetaTags,
-    })
+    }),
   );
 }
 
@@ -662,11 +704,11 @@ async function renderHomeTemplate(c: any) {
 
   const site = await themeHelpers.getSiteData();
   const custom = await themeHelpers.getCustomSettings();
-  const blogUrl = await getBlogBase().then(base => `/${base}`);
+  const blogUrl = await getBlogBase().then((base) => `/${base}`);
   const commonData = await loadCommonTemplateData();
 
   const featuredPosts = await themeHelpers.getFeaturedPosts(
-    custom.homepage_featured_count || 6
+    custom.homepage_featured_count || 6,
   );
 
   return c.html(
@@ -679,7 +721,7 @@ async function renderHomeTemplate(c: any) {
       blogUrl,
       menu: commonData.headerMenu,
       footerMenu: commonData.footerMenu,
-    })
+    }),
   );
 }
 
@@ -695,7 +737,10 @@ async function renderHomeTemplate(c: any) {
  */
 frontendRouter.get("/", async (c) => {
   try {
-    const frontPageType = await settingsService.getSetting("front_page_type", "posts");
+    const frontPageType = await settingsService.getSetting(
+      "front_page_type",
+      "posts",
+    );
     const frontPageId = await settingsService.getSetting("front_page_id", null);
 
     // Opción 1: Mostrar lista de posts en la homepage
@@ -713,7 +758,6 @@ frontendRouter.get("/", async (c) => {
     // Opción 3: Fallback al template home.tsx tradicional
     console.log("📄 Rendering homepage with home.tsx template");
     return await renderHomeTemplate(c);
-
   } catch (error: any) {
     console.error("Error rendering home:", error);
     return c.text("Error al cargar la página", 500);
@@ -729,7 +773,10 @@ frontendRouter.get("/", async (c) => {
 frontendRouter.get("/page/:page", async (c) => {
   try {
     const page = parseInt(c.req.param("page")) || 1;
-    const frontPageType = await settingsService.getSetting("front_page_type", "posts");
+    const frontPageType = await settingsService.getSetting(
+      "front_page_type",
+      "posts",
+    );
 
     // Solo funciona si los posts están en la homepage
     if (frontPageType !== "posts") {
@@ -744,7 +791,6 @@ frontendRouter.get("/page/:page", async (c) => {
 
     console.log(`📄 Rendering homepage page ${page}`);
     return await renderBlogTemplate(c, page);
-
   } catch (error: any) {
     console.error("Error rendering page:", error);
     return c.text("Error al cargar la página", 500);
@@ -772,7 +818,7 @@ frontendRouter.get("/search", async (c) => {
 
     // Load common data (menus, categories)
     const commonData = await loadCommonTemplateData();
-    const blogUrl = await getBlogBase().then(base => `/${base}`);
+    const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
     return c.html(
       IndexTemplate({
@@ -785,7 +831,7 @@ frontendRouter.get("/search", async (c) => {
         menu: commonData.headerMenu,
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error rendering search:", error);
@@ -819,7 +865,7 @@ frontendRouter.get("/category/:slug", async (c) => {
 
     // Load common data (menus, categories)
     const commonData = await loadCommonTemplateData();
-    const blogUrl = await getBlogBase().then(base => `/${base}`);
+    const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
     return c.html(
       IndexTemplate({
@@ -832,7 +878,7 @@ frontendRouter.get("/category/:slug", async (c) => {
         menu: commonData.headerMenu,
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error rendering category:", error);
@@ -866,7 +912,7 @@ frontendRouter.get("/tag/:slug", async (c) => {
 
     // Load common data (menus, categories)
     const commonData = await loadCommonTemplateData();
-    const blogUrl = await getBlogBase().then(base => `/${base}`);
+    const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
     return c.html(
       IndexTemplate({
@@ -879,7 +925,7 @@ frontendRouter.get("/tag/:slug", async (c) => {
         menu: commonData.headerMenu,
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error rendering tag:", error);
@@ -913,17 +959,28 @@ frontendRouter.get("/:slug", async (c) => {
       where: and(
         eq(content.slug, slug),
         eq(content.contentTypeId, pageType.id),
-        eq(content.status, "published")
+        eq(content.status, "published"),
       ),
       with: {
         author: true,
         featuredImage: true,
-        contentSeo: true,
+        seo: true,
       },
     });
 
     if (!page) {
       return c.notFound();
+    }
+
+    // Verificar si esta página está configurada como la página de posts
+    const postsPageId = await settingsService.getSetting("posts_page_id", null);
+    if (postsPageId && parseInt(postsPageId as string) === page.id) {
+      // Esta página está configurada como la página de posts, mostrar la lista de posts
+      // en lugar del contenido de la página
+      console.log(
+        `📄 Rendering blog posts at page slug: ${slug} (posts page ID: ${page.id})`,
+      );
+      return await renderBlogTemplate(c, 1);
     }
 
     // Cargar theme y helpers
@@ -936,7 +993,7 @@ frontendRouter.get("/:slug", async (c) => {
     const site = await themeHelpers.getSiteData();
     const custom = await themeHelpers.getCustomSettings();
     const commonData = await loadCommonTemplateData();
-    const blogUrl = await getBlogBase().then(base => `/${base}`);
+    const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
     const pageData = {
       id: page.id,
@@ -955,7 +1012,7 @@ frontendRouter.get("/:slug", async (c) => {
 
     // Generar breadcrumbs para página
     const breadcrumbs = [
-      { label: 'Inicio', url: '/' },
+      { label: "Inicio", url: "/" },
       { label: page.title, url: `/${page.slug}` },
     ];
 
@@ -963,12 +1020,14 @@ frontendRouter.get("/:slug", async (c) => {
     const seoMetaTags = await generateSEOMetaTags({
       content: page,
       url: `/${page.slug}`,
-      pageType: 'website',
+      pageType: "website",
       author: pageData.author,
       breadcrumbs,
     });
 
-    console.log(`📄 Rendering page: ${slug} with template: ${page.template || 'default'}`);
+    console.log(
+      `📄 Rendering page: ${slug} with template: ${page.template || "default"}`,
+    );
 
     return c.html(
       PageTemplate({
@@ -981,7 +1040,7 @@ frontendRouter.get("/:slug", async (c) => {
         footerMenu: commonData.footerMenu,
         categories: commonData.categories,
         seoMetaTags,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error rendering page:", error);
@@ -991,10 +1050,63 @@ frontendRouter.get("/:slug", async (c) => {
 
 // ============= RUTAS DINÁMICAS (deben ir al final) =============
 
+/**
+ * GET /:slug/page/:page - Paginación para páginas de posts configuradas
+ * Si una página está configurada como página de posts, permitir paginación en esa página
+ */
+frontendRouter.get("/:slug/page/:page", async (c) => {
+  try {
+    const slug = c.req.param("slug");
+    const page = parseInt(c.req.param("page")) || 1;
+    const blogBase = await getBlogBase();
+
+    // Evitar conflicto con la ruta del blog
+    if (slug === blogBase) {
+      return c.notFound();
+    }
+
+    // Obtener el tipo de contenido "page"
+    const pageType = await contentTypeService.getContentTypeBySlug("page");
+    if (!pageType) {
+      console.error("❌ Content type 'page' no encontrado");
+      return c.notFound();
+    }
+
+    // Buscar la página por slug
+    const pageRecord = await db.query.content.findFirst({
+      where: and(
+        eq(content.slug, slug),
+        eq(content.contentTypeId, pageType.id),
+        eq(content.status, "published"),
+      ),
+    });
+
+    if (!pageRecord) {
+      return c.notFound();
+    }
+
+    // Verificar si esta página está configurada como la página de posts
+    const postsPageId = await settingsService.getSetting("posts_page_id", null);
+    if (postsPageId && parseInt(postsPageId as string) === pageRecord.id) {
+      // Esta página está configurada como la página de posts, mostrar la lista de posts paginada
+      console.log(
+        `📄 Rendering blog posts page ${page} at /${slug}/page/${page} (posts page ID: ${pageRecord.id})`,
+      );
+      return await renderBlogTemplate(c, page);
+    }
+
+    // Si no es la página de posts, devolver not found
+    return c.notFound();
+  } catch (error: any) {
+    console.error("Error rendering paged posts:", error);
+    return c.text("Error al cargar la página", 500);
+  }
+});
 
 /**
  * GET /:blogBase - Página de blog (página 1)
  * Usa blog.tsx
+ * Si hay una página de posts configurada, redirige a esa página
  * Redirige a / si los posts están configurados para mostrarse en la homepage
  */
 frontendRouter.get("/:blogBase", async (c) => {
@@ -1007,7 +1119,11 @@ frontendRouter.get("/:blogBase", async (c) => {
   }
 
   try {
-    const frontPageType = await settingsService.getSetting("front_page_type", "posts");
+    const frontPageType = await settingsService.getSetting(
+      "front_page_type",
+      "posts",
+    );
+    const postsPageId = await settingsService.getSetting("posts_page_id", null);
 
     // Si los posts están en la homepage, redirigir
     if (frontPageType === "posts") {
@@ -1015,10 +1131,25 @@ frontendRouter.get("/:blogBase", async (c) => {
       return c.redirect("/", 301);
     }
 
+    // Si hay una página específica configurada para los posts, redirigir a esa página
+    if (postsPageId) {
+      const postsPage = await db.query.content.findFirst({
+        where: and(
+          eq(content.id, parseInt(postsPageId as string)),
+          eq(content.status, "published"),
+        ),
+      });
+      if (postsPage) {
+        console.log(
+          `🔄 Redirecting /${blogBase} to /${postsPage.slug} (configured posts page)`,
+        );
+        return c.redirect(`/${postsPage.slug}`, 301);
+      }
+    }
+
     // Renderizar blog normalmente
     console.log(`📄 Rendering blog at /${blogBase}`);
     return await renderBlogTemplate(c, 1);
-
   } catch (error: any) {
     console.error("Error rendering blog:", error);
     return c.text("Error al cargar el blog", 500);
@@ -1028,6 +1159,7 @@ frontendRouter.get("/:blogBase", async (c) => {
 /**
  * GET /:blogBase/page/:page - Paginación del blog
  * Redirige a /page/:page si los posts están en la homepage
+ * Si hay una página de posts configurada, redirige a la página de posts con paginación
  */
 frontendRouter.get("/:blogBase/page/:page", async (c) => {
   try {
@@ -1040,7 +1172,11 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
     }
 
     const page = parseInt(c.req.param("page")) || 1;
-    const frontPageType = await settingsService.getSetting("front_page_type", "posts");
+    const frontPageType = await settingsService.getSetting(
+      "front_page_type",
+      "posts",
+    );
+    const postsPageId = await settingsService.getSetting("posts_page_id", null);
 
     // Si los posts están en la homepage
     if (frontPageType === "posts") {
@@ -1052,6 +1188,29 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
       return c.redirect(`/page/${page}`, 301);
     }
 
+    // Si hay una página específica configurada para los posts, redirigir a esa página
+    if (postsPageId) {
+      const postsPage = await db.query.content.findFirst({
+        where: and(
+          eq(content.id, parseInt(postsPageId as string)),
+          eq(content.status, "published"),
+        ),
+      });
+      if (postsPage) {
+        if (page === 1) {
+          console.log(
+            `🔄 Redirecting /${blogBase}/page/1 to /${postsPage.slug} (configured posts page)`,
+          );
+          return c.redirect(`/${postsPage.slug}`, 301);
+        } else {
+          console.log(
+            `🔄 Redirecting /${blogBase}/page/${page} to /${postsPage.slug}/page/${page} (configured posts page)`,
+          );
+          return c.redirect(`/${postsPage.slug}/page/${page}`, 301);
+        }
+      }
+    }
+
     // Redirigir a /:blogBase si es página 1
     if (page === 1) {
       return c.redirect(`/${blogBase}`, 301);
@@ -1060,7 +1219,6 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
     // Renderizar blog con paginación
     console.log(`📄 Rendering blog page ${page} at /${blogBase}/page/${page}`);
     return await renderBlogTemplate(c, page);
-
   } catch (error: any) {
     console.error("Error rendering page:", error);
     return c.text("Error al cargar la página", 500);
@@ -1071,6 +1229,9 @@ frontendRouter.get("/:blogBase/page/:page", async (c) => {
  * GET /:blogBase/:slug - Post individual
  * Usa post.tsx
  * La ruta es dinámica basada en la configuración blog_base
+ * NOTA: Esta ruta mantiene el patrón de URL original (ej. /blog/post-slug)
+ * incluso cuando se configura una página de posts específica, ya que
+ * las URLs de posts individuales no cambian en WordPress-style CMS
  */
 frontendRouter.get("/:blogBase/:slug", async (c) => {
   try {
@@ -1085,7 +1246,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
     const { slug } = c.req.param();
 
     // Si slug está vacío o es "page", redirigir al blog principal
-    if (!slug || slug === '' || slug === 'page') {
+    if (!slug || slug === "" || slug === "page") {
       return c.redirect(`/${blogBase}`, 301);
     }
 
@@ -1105,7 +1266,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
           },
         },
         featuredImage: true,
-        contentSeo: true,
+        seo: true,
       },
     });
 
@@ -1154,7 +1315,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
     // Obtener posts relacionados (por ahora, posts recientes)
     const relatedPosts = await themeHelpers.getRecentPosts(3);
 
-    const blogUrl = await getBlogBase().then(base => `/${base}`);
+    const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
     // Load comments for this post
     const postComments = await db.query.comments.findMany({
@@ -1162,7 +1323,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         eq(comments.contentId, post.id),
         eq(comments.status, "approved"),
         isNull(comments.deletedAt),
-        isNull(comments.parentId) // Only top-level comments
+        isNull(comments.parentId), // Only top-level comments
       ),
       orderBy: [desc(comments.createdAt)],
       limit: 50,
@@ -1186,8 +1347,8 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         and(
           eq(comments.contentId, post.id),
           eq(comments.status, "approved"),
-          isNull(comments.deletedAt)
-        )
+          isNull(comments.deletedAt),
+        ),
       );
 
     const [pendingCount] = await db
@@ -1197,8 +1358,8 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         and(
           eq(comments.contentId, post.id),
           eq(comments.status, "pending"),
-          isNull(comments.deletedAt)
-        )
+          isNull(comments.deletedAt),
+        ),
       );
 
     const commentsStats = {
@@ -1226,8 +1387,8 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
 
     // Generar breadcrumbs
     const breadcrumbs = [
-      { label: 'Inicio', url: '/' },
-      { label: 'Blog', url: blogUrl },
+      { label: "Inicio", url: "/" },
+      { label: "Blog", url: blogUrl },
     ];
     if (postData.categories.length > 0) {
       breadcrumbs.push({
@@ -1241,7 +1402,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
     const seoMetaTags = await generateSEOMetaTags({
       content: post,
       url: `${blogUrl}/${post.slug}`,
-      pageType: 'article',
+      pageType: "article",
       author: postData.author,
       categories: postData.categories,
       tags: postData.tags,
@@ -1263,7 +1424,7 @@ frontendRouter.get("/:blogBase/:slug", async (c) => {
         categories: commonData.categories,
         comments: formattedComments,
         commentsStats,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error rendering post:", error);

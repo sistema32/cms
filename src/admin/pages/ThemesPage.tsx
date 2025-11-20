@@ -1,6 +1,7 @@
 import { html } from "hono/html";
 import { AdminLayout } from "../components/AdminLayout.tsx";
 import { env } from "../../config/env.ts";
+import { withAdminPageLogging } from "../helpers/withAdminPageLogging.tsx";
 
 export interface ThemeSummary {
   name: string;
@@ -64,7 +65,7 @@ const renderScreenshot = (screenshots?: ThemeSummary["screenshots"]) => {
   `;
 };
 
-export const ThemesPage = (props: ThemesPageProps) => {
+const PageComponent = (props: ThemesPageProps) => {
   const {
     user,
     themes,
@@ -734,4 +735,6 @@ export const ThemesPage = (props: ThemesPageProps) => {
   });
 };
 
+// Envuelve el componente con el logger antes de exportarlo
+export const ThemesPage = withAdminPageLogging(PageComponent, import.meta.url);
 export default ThemesPage;

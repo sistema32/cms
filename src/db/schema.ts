@@ -1,5 +1,10 @@
-import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
-import { sql, relations } from "drizzle-orm";
+import {
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
+import { relations, sql } from "drizzle-orm";
 
 // ============= TABLES =============
 
@@ -27,8 +32,13 @@ export const permissions = sqliteTable("permissions", {
 
 // ============= ROLE_PERMISSIONS (Many-to-Many) =============
 export const rolePermissions = sqliteTable("role_permissions", {
-  roleId: integer("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
-  permissionId: integer("permission_id").notNull().references(() => permissions.id, { onDelete: "cascade" }),
+  roleId: integer("role_id").notNull().references(() => roles.id, {
+    onDelete: "cascade",
+  }),
+  permissionId: integer("permission_id").notNull().references(
+    () => permissions.id,
+    { onDelete: "cascade" },
+  ),
 }, (table) => ({
   pk: primaryKey({ columns: [table.roleId, table.permissionId] }),
 }));
@@ -42,7 +52,8 @@ export const users = sqliteTable("users", {
   avatar: text("avatar"), // URL del avatar
   status: text("status").notNull().default("active"), // active, inactive, suspended
   roleId: integer("role_id").references(() => roles.id),
-  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
+  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull()
+    .default(false),
   twoFactorSecret: text("two_factor_secret"),
   lastLoginAt: integer("last_login_at", { mode: "timestamp" }), // Último login
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -56,10 +67,14 @@ export const users = sqliteTable("users", {
 // ============= USER 2FA =============
 export const user2FA = sqliteTable("user_2fa", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().unique().references(() => users.id, {
+    onDelete: "cascade",
+  }),
   secret: text("secret").notNull(), // Secret TOTP (encriptado)
   backupCodes: text("backup_codes").notNull(), // JSON array de códigos hasheados
-  isEnabled: integer("is_enabled", { mode: "boolean" }).notNull().default(false),
+  isEnabled: integer("is_enabled", { mode: "boolean" }).notNull().default(
+    false,
+  ),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -76,9 +91,12 @@ export const contentTypes = sqliteTable("content_types", {
   description: text("description"),
   icon: text("icon"), // emoji o nombre de icono
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(true),
-  hasCategories: integer("has_categories", { mode: "boolean" }).notNull().default(true),
+  hasCategories: integer("has_categories", { mode: "boolean" }).notNull()
+    .default(true),
   hasTags: integer("has_tags", { mode: "boolean" }).notNull().default(true),
-  hasComments: integer("has_comments", { mode: "boolean" }).notNull().default(false),
+  hasComments: integer("has_comments", { mode: "boolean" }).notNull().default(
+    false,
+  ),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -94,7 +112,9 @@ export const categories = sqliteTable("categories", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   parentId: integer("parent_id"), // auto-referencia para jerarquía
-  contentTypeId: integer("content_type_id").references(() => contentTypes.id, { onDelete: "cascade" }),
+  contentTypeId: integer("content_type_id").references(() => contentTypes.id, {
+    onDelete: "cascade",
+  }),
   color: text("color"), // hex color
   icon: text("icon"),
   order: integer("order").default(0),
@@ -122,7 +142,10 @@ export const tags = sqliteTable("tags", {
 // ============= CONTENT =============
 export const content = sqliteTable("content", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentTypeId: integer("content_type_id").notNull().references(() => contentTypes.id, { onDelete: "cascade" }),
+  contentTypeId: integer("content_type_id").notNull().references(
+    () => contentTypes.id,
+    { onDelete: "cascade" },
+  ),
   parentId: integer("parent_id"), // Para páginas hijas (child pages)
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
@@ -131,7 +154,9 @@ export const content = sqliteTable("content", {
   featuredImageId: integer("featured_image_id").references(() => media.id, {
     onDelete: "set null",
   }),
-  authorId: integer("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }),
   status: text("status").notNull().default("draft"), // draft, published, scheduled, archived
   visibility: text("visibility").notNull().default("public"), // public, private, password
   password: text("password"),
@@ -140,7 +165,8 @@ export const content = sqliteTable("content", {
   viewCount: integer("view_count").notNull().default(0),
   likeCount: integer("like_count").notNull().default(0),
   commentCount: integer("comment_count").notNull().default(0),
-  commentsEnabled: integer("comments_enabled", { mode: "boolean" }).notNull().default(false), // Control de comentarios a nivel de contenido individual
+  commentsEnabled: integer("comments_enabled", { mode: "boolean" }).notNull()
+    .default(false), // Control de comentarios a nivel de contenido individual
   template: text("template"), // Template personalizado para páginas (ej: "page-inicio", "page-contacto")
   featured: integer("featured", { mode: "boolean" }).notNull().default(false), // Post destacado para homepage y destacados
   sticky: integer("sticky", { mode: "boolean" }).notNull().default(false), // Post fijo en la parte superior de listados
@@ -154,16 +180,24 @@ export const content = sqliteTable("content", {
 
 // ============= CONTENT_CATEGORIES (Many-to-Many) =============
 export const contentCategories = sqliteTable("content_categories", {
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
-  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }),
+  categoryId: integer("category_id").notNull().references(() => categories.id, {
+    onDelete: "cascade",
+  }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.contentId, table.categoryId] }),
 }));
 
 // ============= CONTENT_TAGS (Many-to-Many) =============
 export const contentTags = sqliteTable("content_tags", {
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
-  tagId: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }),
+  tagId: integer("tag_id").notNull().references(() => tags.id, {
+    onDelete: "cascade",
+  }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.contentId, table.tagId] }),
 }));
@@ -171,7 +205,9 @@ export const contentTags = sqliteTable("content_tags", {
 // ============= CONTENT_SEO =============
 export const contentSeo = sqliteTable("content_seo", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }).unique(),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }).unique(),
   metaTitle: text("meta_title"),
   metaDescription: text("meta_description"),
   canonicalUrl: text("canonical_url"),
@@ -198,7 +234,9 @@ export const contentSeo = sqliteTable("content_seo", {
 // ============= CONTENT_META =============
 export const contentMeta = sqliteTable("content_meta", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }),
   key: text("key").notNull(),
   value: text("value"),
   type: text("type").default("string"), // string, number, boolean, json
@@ -210,9 +248,13 @@ export const contentMeta = sqliteTable("content_meta", {
 // ============= COMMENTS =============
 export const comments = sqliteTable("comments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }),
   parentId: integer("parent_id"), // self-reference para threading (1 nivel)
-  authorId: integer("author_id").references(() => users.id, { onDelete: "set null" }), // nullable para guests
+  authorId: integer("author_id").references(() => users.id, {
+    onDelete: "set null",
+  }), // nullable para guests
   authorName: text("author_name"), // para guests
   authorEmail: text("author_email"), // para guests
   authorWebsite: text("author_website"), // opcional
@@ -241,7 +283,9 @@ export const contentFilters = sqliteTable("content_filters", {
   replacement: text("replacement").notNull(), // texto que reemplaza (ej: "[link removido]")
   description: text("description"), // opcional, para documentar el filtro
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true), // si está activo
-  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: "cascade" }), // admin que lo creó
+  createdBy: integer("created_by").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }), // admin que lo creó
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -265,7 +309,9 @@ export const media = sqliteTable("media", {
   width: integer("width"), // para imágenes y videos
   height: integer("height"), // para imágenes y videos
   duration: integer("duration"), // para videos y audios (en segundos)
-  uploadedBy: integer("uploaded_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  uploadedBy: integer("uploaded_by").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -277,7 +323,9 @@ export const media = sqliteTable("media", {
 // ============= MEDIA_SIZES =============
 export const mediaSizes = sqliteTable("media_sizes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  mediaId: integer("media_id").notNull().references(() => media.id, { onDelete: "cascade" }),
+  mediaId: integer("media_id").notNull().references(() => media.id, {
+    onDelete: "cascade",
+  }),
   size: text("size").notNull(), // thumbnail, small, medium, large, original
   width: integer("width").notNull(),
   height: integer("height").notNull(),
@@ -292,7 +340,9 @@ export const mediaSizes = sqliteTable("media_sizes", {
 // ============= MEDIA_SEO =============
 export const mediaSeo = sqliteTable("media_seo", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  mediaId: integer("media_id").notNull().references(() => media.id, { onDelete: "cascade" }).unique(),
+  mediaId: integer("media_id").notNull().references(() => media.id, {
+    onDelete: "cascade",
+  }).unique(),
   alt: text("alt"), // texto alternativo (crítico para imágenes)
   title: text("title"), // título del medio
   caption: text("caption"), // descripción/caption
@@ -311,7 +361,9 @@ export const mediaSeo = sqliteTable("media_seo", {
 // ============= CATEGORY_SEO =============
 export const categorySeo = sqliteTable("category_seo", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }).unique(),
+  categoryId: integer("category_id").notNull().references(() => categories.id, {
+    onDelete: "cascade",
+  }).unique(),
   metaTitle: text("meta_title"),
   metaDescription: text("meta_description"),
   canonicalUrl: text("canonical_url"),
@@ -353,7 +405,9 @@ export const menus = sqliteTable("menus", {
 // ============= MENU_ITEMS =============
 export const menuItems = sqliteTable("menu_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  menuId: integer("menu_id").notNull().references(() => menus.id, { onDelete: "cascade" }),
+  menuId: integer("menu_id").notNull().references(() => menus.id, {
+    onDelete: "cascade",
+  }),
   parentId: integer("parent_id"), // auto-referencia para jerarquía ilimitada
 
   // Contenido del item
@@ -362,8 +416,12 @@ export const menuItems = sqliteTable("menu_items", {
 
   // Tipos de enlaces (solo uno debe estar presente)
   url: text("url"),
-  contentId: integer("content_id").references(() => content.id, { onDelete: "set null" }),
-  categoryId: integer("category_id").references(() => categories.id, { onDelete: "set null" }),
+  contentId: integer("content_id").references(() => content.id, {
+    onDelete: "set null",
+  }),
+  categoryId: integer("category_id").references(() => categories.id, {
+    onDelete: "set null",
+  }),
   tagId: integer("tag_id").references(() => tags.id, { onDelete: "set null" }),
 
   // Configuración visual
@@ -405,7 +463,9 @@ export const widgetAreas = sqliteTable("widget_areas", {
 // ============= WIDGETS =============
 export const widgets = sqliteTable("widgets", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  areaId: integer("area_id").references(() => widgetAreas.id, { onDelete: "cascade" }),
+  areaId: integer("area_id").references(() => widgetAreas.id, {
+    onDelete: "cascade",
+  }),
   type: text("type").notNull(), // 'search', 'recent-posts', 'custom-html', etc.
   title: text("title"),
   settings: text("settings"), // JSON
@@ -424,7 +484,7 @@ export const settings = sqliteTable("settings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   key: text("key").notNull().unique(),
   value: text("value"), // JSON stringified para valores complejos
-  category: text("category").notNull().default('general'), // Agrupar settings por categoría
+  category: text("category").notNull().default("general"), // Agrupar settings por categoría
   autoload: integer("autoload", { mode: "boolean" }).notNull().default(true), // WordPress-style: cargar en cache automáticamente
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -437,7 +497,9 @@ export const settings = sqliteTable("settings", {
 // ============= CONTENT REVISIONS (Historial de Versiones) =============
 export const contentRevisions = sqliteTable("content_revisions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentId: integer("content_id").notNull().references(() => content.id, { onDelete: "cascade" }),
+  contentId: integer("content_id").notNull().references(() => content.id, {
+    onDelete: "cascade",
+  }),
   title: text("title").notNull(),
   slug: text("slug").notNull(),
   excerpt: text("excerpt"),
@@ -450,7 +512,9 @@ export const contentRevisions = sqliteTable("content_revisions", {
   scheduledAt: integer("scheduled_at", { mode: "timestamp" }),
   // Metadatos de la revisión
   revisionNumber: integer("revision_number").notNull(), // Número secuencial de versión
-  authorId: integer("author_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Autor de esta versión
+  authorId: integer("author_id").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }), // Autor de esta versión
   changesSummary: text("changes_summary"), // Resumen opcional de los cambios
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -474,7 +538,9 @@ export const plugins = sqliteTable("plugins", {
 
 export const pluginHooks = sqliteTable("plugin_hooks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  pluginId: integer("plugin_id").notNull().references(() => plugins.id, { onDelete: "cascade" }),
+  pluginId: integer("plugin_id").notNull().references(() => plugins.id, {
+    onDelete: "cascade",
+  }),
   hookName: text("hook_name").notNull(),
   priority: integer("priority").notNull().default(10),
 });
@@ -483,7 +549,9 @@ export const pluginHooks = sqliteTable("plugin_hooks", {
 export const auditLogs = sqliteTable("audit_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   // Who performed the action
-  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  userId: integer("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   userEmail: text("user_email"), // Store email in case user is deleted
 
   // What action was performed
@@ -553,7 +621,9 @@ export const webhookDeliveries = sqliteTable("webhook_deliveries", {
   id: integer("id").primaryKey({ autoIncrement: true }),
 
   // Reference
-  webhookId: integer("webhook_id").notNull().references(() => webhooks.id, { onDelete: "cascade" }),
+  webhookId: integer("webhook_id").notNull().references(() => webhooks.id, {
+    onDelete: "cascade",
+  }),
 
   // Event data
   event: text("event").notNull(), // Event name (e.g., "content.created")
@@ -594,16 +664,19 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
   rolePermissions: many(rolePermissions),
 }));
 
-export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
-  role: one(roles, {
-    fields: [rolePermissions.roleId],
-    references: [roles.id],
+export const rolePermissionsRelations = relations(
+  rolePermissions,
+  ({ one }) => ({
+    role: one(roles, {
+      fields: [rolePermissions.roleId],
+      references: [roles.id],
+    }),
+    permission: one(permissions, {
+      fields: [rolePermissions.permissionId],
+      references: [permissions.id],
+    }),
   }),
-  permission: one(permissions, {
-    fields: [rolePermissions.permissionId],
-    references: [permissions.id],
-  }),
-}));
+);
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   role: one(roles, {
@@ -644,8 +717,8 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   }),
   contentCategories: many(contentCategories),
   seo: one(categorySeo, {
-    fields: [categories.id],
-    references: [categorySeo.categoryId],
+    fields: [categorySeo.categoryId],
+    references: [categories.id],
   }),
 }));
 
@@ -676,25 +749,25 @@ export const contentRelations = relations(content, ({ one, many }) => ({
   }),
   contentCategories: many(contentCategories),
   contentTags: many(contentTags),
-  seo: one(contentSeo, {
-    fields: [content.id],
-    references: [contentSeo.contentId],
-  }),
+  seo: one(contentSeo),
   meta: many(contentMeta),
   comments: many(comments),
   revisions: many(contentRevisions),
 }));
 
-export const contentCategoriesRelations = relations(contentCategories, ({ one }) => ({
-  content: one(content, {
-    fields: [contentCategories.contentId],
-    references: [content.id],
+export const contentCategoriesRelations = relations(
+  contentCategories,
+  ({ one }) => ({
+    content: one(content, {
+      fields: [contentCategories.contentId],
+      references: [content.id],
+    }),
+    category: one(categories, {
+      fields: [contentCategories.categoryId],
+      references: [categories.id],
+    }),
   }),
-  category: one(categories, {
-    fields: [contentCategories.categoryId],
-    references: [categories.id],
-  }),
-}));
+);
 
 export const contentTagsRelations = relations(contentTags, ({ one }) => ({
   content: one(content, {
@@ -728,8 +801,8 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
   }),
   sizes: many(mediaSizes),
   seo: one(mediaSeo, {
-    fields: [media.id],
-    references: [mediaSeo.mediaId],
+    fields: [mediaSeo.mediaId],
+    references: [media.id],
   }),
 }));
 
@@ -766,8 +839,11 @@ export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
   parent: one(menuItems, {
     fields: [menuItems.parentId],
     references: [menuItems.id],
+    relationName: "menuItemParent",
   }),
-  children: many(menuItems),
+  children: many(menuItems, {
+    relationName: "menuItemParent",
+  }),
   content: one(content, {
     fields: [menuItems.contentId],
     references: [content.id],
@@ -819,16 +895,19 @@ export const contentFiltersRelations = relations(contentFilters, ({ one }) => ({
   }),
 }));
 
-export const contentRevisionsRelations = relations(contentRevisions, ({ one }) => ({
-  content: one(content, {
-    fields: [contentRevisions.contentId],
-    references: [content.id],
+export const contentRevisionsRelations = relations(
+  contentRevisions,
+  ({ one }) => ({
+    content: one(content, {
+      fields: [contentRevisions.contentId],
+      references: [content.id],
+    }),
+    author: one(users, {
+      fields: [contentRevisions.authorId],
+      references: [users.id],
+    }),
   }),
-  author: one(users, {
-    fields: [contentRevisions.authorId],
-    references: [users.id],
-  }),
-}));
+);
 
 export const pluginsRelations = relations(plugins, ({ many }) => ({
   hooks: many(pluginHooks),
@@ -852,12 +931,15 @@ export const webhooksRelations = relations(webhooks, ({ many }) => ({
   deliveries: many(webhookDeliveries),
 }));
 
-export const webhookDeliveriesRelations = relations(webhookDeliveries, ({ one }) => ({
-  webhook: one(webhooks, {
-    fields: [webhookDeliveries.webhookId],
-    references: [webhooks.id],
+export const webhookDeliveriesRelations = relations(
+  webhookDeliveries,
+  ({ one }) => ({
+    webhook: one(webhooks, {
+      fields: [webhookDeliveries.webhookId],
+      references: [webhooks.id],
+    }),
   }),
-}));
+);
 
 // ============= EMAIL QUEUE =============
 export const emailQueue = sqliteTable("email_queue", {
@@ -880,8 +962,12 @@ export const emailQueue = sqliteTable("email_queue", {
   provider: text("provider"), // smtp, sendgrid, mailgun, etc.
   providerMessageId: text("provider_message_id"),
   metadata: text("metadata"), // JSON object
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 // ============= EMAIL TEMPLATES =============
@@ -895,14 +981,20 @@ export const emailTemplates = sqliteTable("email_templates", {
   description: text("description"),
   category: text("category"), // auth, notification, system, etc.
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 // ============= NOTIFICATIONS =============
 export const notifications = sqliteTable("notifications", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }),
   type: text("type").notNull(), // comment.new, mention, content.published, etc.
   title: text("title").notNull(),
   message: text("message").notNull(),
@@ -913,26 +1005,43 @@ export const notifications = sqliteTable("notifications", {
   data: text("data"), // JSON additional data
   isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
   readAt: integer("read_at", { mode: "timestamp" }),
-  emailSent: integer("email_sent", { mode: "boolean" }).notNull().default(false),
+  emailSent: integer("email_sent", { mode: "boolean" }).notNull().default(
+    false,
+  ),
   emailSentAt: integer("email_sent_at", { mode: "timestamp" }),
   priority: text("priority").notNull().default("normal"), // low, normal, high
   expiresAt: integer("expires_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 // ============= NOTIFICATION PREFERENCES =============
 export const notificationPreferences = sqliteTable("notification_preferences", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
-  emailNotifications: integer("email_notifications", { mode: "boolean" }).notNull().default(true),
+  userId: integer("user_id").notNull().unique().references(() => users.id, {
+    onDelete: "cascade",
+  }),
+  emailNotifications: integer("email_notifications", { mode: "boolean" })
+    .notNull().default(true),
   emailDigest: text("email_digest").notNull().default("daily"), // never, daily, weekly
-  notifyComments: integer("notify_comments", { mode: "boolean" }).notNull().default(true),
-  notifyReplies: integer("notify_replies", { mode: "boolean" }).notNull().default(true),
-  notifyMentions: integer("notify_mentions", { mode: "boolean" }).notNull().default(true),
-  notifyContentPublished: integer("notify_content_published", { mode: "boolean" }).notNull().default(true),
-  notifySystemAlerts: integer("notify_system_alerts", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  notifyComments: integer("notify_comments", { mode: "boolean" }).notNull()
+    .default(true),
+  notifyReplies: integer("notify_replies", { mode: "boolean" }).notNull()
+    .default(true),
+  notifyMentions: integer("notify_mentions", { mode: "boolean" }).notNull()
+    .default(true),
+  notifyContentPublished: integer("notify_content_published", {
+    mode: "boolean",
+  }).notNull().default(true),
+  notifySystemAlerts: integer("notify_system_alerts", { mode: "boolean" })
+    .notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 // ============= EMAIL & NOTIFICATION RELATIONS =============
@@ -948,12 +1057,15 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
-export const notificationPreferencesRelations = relations(notificationPreferences, ({ one }) => ({
-  user: one(users, {
-    fields: [notificationPreferences.userId],
-    references: [users.id],
+export const notificationPreferencesRelations = relations(
+  notificationPreferences,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [notificationPreferences.userId],
+      references: [users.id],
+    }),
   }),
-}));
+);
 
 // ============= BACKUPS =============
 export const backups = sqliteTable("backups", {
@@ -964,16 +1076,25 @@ export const backups = sqliteTable("backups", {
   status: text("status").notNull().default("pending"), // pending, in_progress, completed, failed
   storageProvider: text("storage_provider").notNull().default("local"), // local, s3
   storagePath: text("storage_path").notNull(),
-  compressed: integer("compressed", { mode: "boolean" }).notNull().default(true),
-  includesMedia: integer("includes_media", { mode: "boolean" }).notNull().default(false),
-  includesDatabase: integer("includes_database", { mode: "boolean" }).notNull().default(false),
-  includesConfig: integer("includes_config", { mode: "boolean" }).notNull().default(false),
+  compressed: integer("compressed", { mode: "boolean" }).notNull().default(
+    true,
+  ),
+  includesMedia: integer("includes_media", { mode: "boolean" }).notNull()
+    .default(false),
+  includesDatabase: integer("includes_database", { mode: "boolean" }).notNull()
+    .default(false),
+  includesConfig: integer("includes_config", { mode: "boolean" }).notNull()
+    .default(false),
   checksum: text("checksum").notNull(), // SHA-256
   error: text("error"),
   startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
   completedAt: integer("completed_at", { mode: "timestamp" }),
-  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdBy: integer("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 export const backupsRelations = relations(backups, ({ one }) => ({
@@ -992,8 +1113,12 @@ export const ipBlockRules = sqliteTable("ip_block_rules", {
   type: text("type").notNull(), // block, whitelist
   reason: text("reason"),
   expiresAt: integer("expires_at", { mode: "timestamp" }),
-  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdBy: integer("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 // Security Events
@@ -1004,10 +1129,75 @@ export const securityEvents = sqliteTable("security_events", {
   userAgent: text("user_agent"),
   path: text("path"),
   method: text("method"),
-  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  userId: integer("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   details: text("details"), // JSON
   severity: text("severity").notNull().default("low"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  ruleId: integer("rule_id"), // Reference to security rule that triggered this event
+  blocked: integer("blocked", { mode: "boolean" }).notNull().default(false), // Whether request was blocked
+  referer: text("referer"), // HTTP Referer header
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+});
+
+// Rate Limit Rules (Custom rate limiting per endpoint)
+export const rateLimitRules = sqliteTable("rate_limit_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  path: text("path").notNull(), // /api/auth/login, /api/content, etc.
+  method: text("method"), // GET, POST, PUT, DELETE, null = all methods
+  maxRequests: integer("max_requests").notNull(), // Max requests allowed
+  windowSeconds: integer("window_seconds").notNull(), // Time window in seconds
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  createdBy: integer("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+});
+
+// Security Rules (Custom security patterns)
+export const securityRules = sqliteTable("security_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // sql_injection, xss, path_traversal, custom
+  pattern: text("pattern").notNull(), // Regex pattern to match
+  action: text("action").notNull(), // block, log, alert
+  severity: text("severity").notNull(), // critical, high, medium, low
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  triggerCount: integer("trigger_count").notNull().default(0), // How many times this rule was triggered
+  description: text("description"), // Optional description
+  createdBy: integer("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+});
+
+// Security Settings (Configuration for security features)
+export const securitySettings = sqliteTable("security_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  type: text("type").notNull().default("string"), // string, number, boolean, json
+  category: text("category").notNull(), // rate_limit, headers, notifications, cleanup
+  description: text("description"),
+  updatedBy: integer("updated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 export const ipBlockRulesRelations = relations(ipBlockRules, ({ one }) => ({
@@ -1022,6 +1212,32 @@ export const securityEventsRelations = relations(securityEvents, ({ one }) => ({
     fields: [securityEvents.userId],
     references: [users.id],
   }),
+  rule: one(securityRules, {
+    fields: [securityEvents.ruleId],
+    references: [securityRules.id],
+  }),
+}));
+
+export const rateLimitRulesRelations = relations(rateLimitRules, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [rateLimitRules.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const securityRulesRelations = relations(securityRules, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [securityRules.createdBy],
+    references: [users.id],
+  }),
+  events: many(securityEvents),
+}));
+
+export const securitySettingsRelations = relations(securitySettings, ({ one }) => ({
+  updatedByUser: one(users, {
+    fields: [securitySettings.updatedBy],
+    references: [users.id],
+  }),
 }));
 
 // ============= API KEYS =============
@@ -1031,14 +1247,20 @@ export const apiKeys = sqliteTable("api_keys", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   key: text("key").notNull().unique(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, {
+    onDelete: "cascade",
+  }),
   permissions: text("permissions").notNull(), // JSON array of permission strings
   rateLimit: integer("rate_limit"), // Requests per hour
   expiresAt: integer("expires_at", { mode: "timestamp" }),
   lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
 });
 
 export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
@@ -1066,7 +1288,9 @@ export const jobs = sqliteTable("jobs", {
   completedAt: integer("completed_at", { mode: "timestamp" }),
   failedAt: integer("failed_at", { mode: "timestamp" }),
   scheduledFor: integer("scheduled_for", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
   updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
 
@@ -1080,7 +1304,9 @@ export const scheduledJobs = sqliteTable("scheduled_jobs", {
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
   lastRunAt: integer("last_run_at", { mode: "timestamp" }),
   nextRunAt: integer("next_run_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
+    sql`(unixepoch())`,
+  ),
   updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
 
@@ -1185,8 +1411,10 @@ export type NewEmailTemplate = typeof emailTemplates.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 
-export type NotificationPreference = typeof notificationPreferences.$inferSelect;
-export type NewNotificationPreference = typeof notificationPreferences.$inferInsert;
+export type NotificationPreference =
+  typeof notificationPreferences.$inferSelect;
+export type NewNotificationPreference =
+  typeof notificationPreferences.$inferInsert;
 
 export type Backup = typeof backups.$inferSelect;
 export type NewBackup = typeof backups.$inferInsert;
@@ -1205,3 +1433,12 @@ export type NewJob = typeof jobs.$inferInsert;
 
 export type ScheduledJob = typeof scheduledJobs.$inferSelect;
 export type NewScheduledJob = typeof scheduledJobs.$inferInsert;
+
+export type RateLimitRule = typeof rateLimitRules.$inferSelect;
+export type NewRateLimitRule = typeof rateLimitRules.$inferInsert;
+
+export type SecurityRule = typeof securityRules.$inferSelect;
+export type NewSecurityRule = typeof securityRules.$inferInsert;
+
+export type SecuritySetting = typeof securitySettings.$inferSelect;
+export type NewSecuritySetting = typeof securitySettings.$inferInsert;

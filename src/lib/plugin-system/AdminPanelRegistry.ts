@@ -4,6 +4,7 @@
  */
 
 import type { AdminPanelConfig } from './types.ts';
+import { env } from '../../config/env.ts';
 
 interface RegisteredPanel extends AdminPanelConfig {
   pluginName: string;
@@ -17,7 +18,7 @@ class AdminPanelRegistryClass {
    * Register a new admin panel for a plugin
    */
   registerPanel(pluginName: string, config: AdminPanelConfig): void {
-    const fullPath = `/admin/plugins/${pluginName}/${config.path}`;
+    const fullPath = `${env.ADMIN_PATH}/plugins/${pluginName}/${config.path}`;
 
     const panel: RegisteredPanel = {
       ...config,

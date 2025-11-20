@@ -3,17 +3,14 @@
  * Loads, validates, and instantiates plugins
  */
 
-import type {
-  Plugin,
-  PluginClass,
-  PluginManifest,
-  ValidationResult,
-  PluginAPIContext,
-} from './types.ts';
+import { join, resolve, basename } from '@std/path';
+import { ensureDir } from '@std/fs';
+import type { Plugin, PluginManifest, ValidationResult, PluginAPIContext } from './types.ts';
+import { PluginWorker } from './PluginWorker.ts';
 import { PluginAPI } from './PluginAPI.ts';
+import { pluginManager } from './PluginManager.ts';
 import { hookManager } from './HookManager.ts';
 import { existsSync } from '@std/fs';
-import { join } from '@std/path';
 
 export class PluginLoader {
   private pluginsDir: string;
@@ -118,21 +115,12 @@ export class PluginLoader {
     // Load manifest
     const manifest = await this.loadManifest(pluginName);
 
-    // Load plugin module
-    const pluginPath = join(this.pluginsDir, pluginName, 'index.ts');
+    // Load plugin module path
+    const entryFile = (manifest as any).entry || 'index.ts';
+    const pluginPath = join(this.pluginsDir, pluginName, entryFile);
 
     if (!existsSync(pluginPath)) {
       throw new Error(`Plugin entry point not found: ${pluginPath}`);
-    }
-
-    // Dynamic import - pluginPath is already absolute
-    const module = await import(`file://${pluginPath}`);
-
-    // Get plugin class (default export)
-    const PluginClass = module.default;
-
-    if (!PluginClass) {
-      throw new Error(`Plugin ${pluginName} must export a default class`);
     }
 
     // Create plugin API context
@@ -145,16 +133,15 @@ export class PluginLoader {
     // Create plugin API
     const api = new PluginAPI(context);
 
-    // Instantiate plugin
-    const instance: PluginClass = new PluginClass(api);
+    // Create Plugin Worker
+    const worker = new PluginWorker(manifest, api);
 
-    // Verify plugin implements required methods
-    if (typeof instance.onActivate !== 'function') {
-      throw new Error(`Plugin ${pluginName} must implement onActivate() method`);
-    }
-
-    if (typeof instance.onDeactivate !== 'function') {
-      throw new Error(`Plugin ${pluginName} must implement onDeactivate() method`);
+    try {
+      // Load plugin in worker
+      await worker.load(pluginPath);
+    } catch (error) {
+      worker.terminate();
+      throw new Error(`Failed to load plugin ${pluginName} in worker: ${(error as Error).message}`);
     }
 
     // Create plugin object
@@ -166,7 +153,7 @@ export class PluginLoader {
       manifest,
       settings,
       installedAt: new Date(),
-      instance,
+      worker, // Store worker instance
     };
 
     this.loadedPlugins.set(pluginName, plugin);
@@ -190,8 +177,10 @@ export class PluginLoader {
     }
 
     try {
-      // Call plugin's onActivate hook
-      await plugin.instance!.onActivate();
+      // Call plugin's activate via worker
+      if (plugin.worker) {
+        await plugin.worker.activate();
+      }
 
       plugin.status = 'active';
 
@@ -219,8 +208,10 @@ export class PluginLoader {
     }
 
     try {
-      // Call plugin's onDeactivate hook
-      await plugin.instance!.onDeactivate();
+      // Call plugin's deactivate via worker
+      if (plugin.worker) {
+        await plugin.worker.deactivate();
+      }
 
       // Remove all hooks registered by this plugin
       hookManager.removePluginHooks(pluginName);
@@ -251,6 +242,9 @@ export class PluginLoader {
       );
     }
 
+    if (plugin.worker) {
+      plugin.worker.terminate();
+    }
     this.loadedPlugins.delete(pluginName);
   }
 
@@ -308,6 +302,27 @@ export class PluginLoader {
   private isValidVersion(version: string): boolean {
     // Basic semver validation
     return /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(version);
+  }
+
+  /**
+   * Get absolute path to a plugin asset
+   * Returns null if asset does not exist or is outside plugin directory
+   */
+  getAssetPath(pluginName: string, assetPath: string): string | null {
+    // Sanitize asset path to prevent directory traversal
+    const sanitizedPath = assetPath.replace(/\.\./g, '');
+    const fullPath = join(this.pluginsDir, pluginName, 'assets', sanitizedPath);
+
+    // Ensure path is within plugin directory
+    if (!fullPath.startsWith(join(this.pluginsDir, pluginName))) {
+      return null;
+    }
+
+    if (existsSync(fullPath)) {
+      return fullPath;
+    }
+
+    return null;
   }
 }
 

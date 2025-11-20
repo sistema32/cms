@@ -69,6 +69,16 @@ export const ROUTES = {
   SETTINGS_SEO: 'settings?category=seo',
   SETTINGS_ADVANCED: 'settings?category=advanced',
 
+  // Security
+  SECURITY: 'security',
+  SECURITY_DASHBOARD: 'security/dashboard',
+  SECURITY_LOGS: 'security/logs',
+  SECURITY_IP_BLACKLIST: 'security/ips/blacklist',
+  SECURITY_IP_WHITELIST: 'security/ips/whitelist',
+  SECURITY_RATE_LIMIT: 'security/rate-limit',
+  SECURITY_RULES: 'security/rules',
+  SECURITY_SETTINGS: 'security/settings',
+
   // Notifications
   NOTIFICATIONS: 'notifications',
 } as const;
@@ -108,6 +118,9 @@ export const ADMIN_PATHS = {
   PAGES: buildAdminRoute(ROUTES.PAGES),
   USERS: buildAdminRoute(ROUTES.USERS),
   SETTINGS: buildAdminRoute(ROUTES.SETTINGS),
+  SECURITY_DASHBOARD: buildAdminRoute(ROUTES.SECURITY_DASHBOARD),
+  SECURITY_LOGS: buildAdminRoute(ROUTES.SECURITY_LOGS),
+  SECURITY_IP_BLACKLIST: buildAdminRoute(ROUTES.SECURITY_IP_BLACKLIST),
   PLUGINS_INSTALLED: buildAdminRoute(ROUTES.PLUGINS_INSTALLED),
   PLUGINS_MARKETPLACE: buildAdminRoute(ROUTES.PLUGINS_MARKETPLACE),
 } as const;

@@ -12,6 +12,7 @@ import {
   checkRateLimit,
 } from "../utils/pluginValidation.ts";
 import { logger } from "../lib/logger/index.ts";
+import { marketplaceService } from "../services/marketplaceService.ts";
 
 // Validation schemas
 const installPluginSchema = z.object({
@@ -48,17 +49,29 @@ export class PluginController {
     }
   }
 
+
+
+  // ...
+
   /**
    * GET /api/plugins/available
    * List available plugins (not installed)
    */
   async listAvailablePlugins(c: Context) {
     try {
-      const available = await pluginService.getAvailablePlugins();
+      // Get local available plugins
+      const localAvailable = await pluginService.getAvailablePlugins();
 
-      // Get manifests for available plugins
-      const pluginsWithInfo = await Promise.all(
-        available.map(async (name) => {
+      // Get marketplace plugins
+      const marketplacePlugins = await marketplaceService.getPlugins();
+
+      // Get installed plugins to exclude them from marketplace list
+      const installedPlugins = await pluginService.getAllPlugins();
+      const installedNames = new Set(installedPlugins.map(p => p.name));
+
+      // Map local plugins
+      const localPluginsWithInfo = await Promise.all(
+        localAvailable.map(async (name) => {
           try {
             const manifest = await pluginService.getPluginManifest(name);
             return {
@@ -69,19 +82,33 @@ export class PluginController {
               author: manifest.author,
               category: manifest.category,
               tags: manifest.tags,
+              source: 'local',
+              isInstalled: false,
             };
           } catch (error) {
             return {
               name,
               error: "Failed to load manifest",
+              source: 'local',
             };
           }
         })
       );
 
+      // Filter out marketplace plugins that are already local or installed
+      const localNames = new Set(localAvailable);
+
+      const remotePlugins = marketplacePlugins
+        .filter(p => !localNames.has(p.name) && !installedNames.has(p.name))
+        .map(p => ({
+          ...p,
+          source: 'marketplace',
+          isInstalled: false,
+        }));
+
       return c.json({
         success: true,
-        data: pluginsWithInfo,
+        data: [...localPluginsWithInfo, ...remotePlugins],
       });
     } catch (error) {
       logger.error("Error listing available plugins", error as Error);
@@ -582,6 +609,69 @@ export class PluginController {
         },
         500
       );
+    }
+  }
+  /**
+   * GET /api/plugins/:name/assets/*
+   * Serve plugin assets
+   */
+  async serveAsset(c: Context) {
+    try {
+      const name = c.req.param('name');
+      // Extract asset path from the wildcard param
+      // Hono stores wildcard capture in route param if named, or we can parse URL
+      // Assuming route is /:name/assets/*
+      const url = new URL(c.req.url);
+      const match = url.pathname.match(new RegExp(`/api/plugins/${name}/assets/(.+)`));
+
+      if (!match) {
+        return c.notFound();
+      }
+
+      const assetPath = match[1];
+      const fullPath = pluginService.getPluginAssetPath(name, assetPath);
+
+      if (!fullPath) {
+        return c.notFound();
+      }
+
+      try {
+        const content = await Deno.readFile(fullPath);
+
+        // Simple mime type detection
+        const ext = fullPath.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+        const mimeTypes: Record<string, string> = {
+          'js': 'application/javascript',
+          'css': 'text/css',
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'svg': 'image/svg+xml',
+          'json': 'application/json',
+          'html': 'text/html',
+          'txt': 'text/plain',
+          'woff': 'font/woff',
+          'woff2': 'font/woff2',
+          'ttf': 'font/ttf',
+        };
+
+        if (ext && mimeTypes[ext]) {
+          mimeType = mimeTypes[ext];
+        }
+
+        c.header('Content-Type', mimeType);
+        // Cache control
+        c.header('Cache-Control', 'public, max-age=3600');
+
+        return c.body(content);
+      } catch (error) {
+        return c.notFound();
+      }
+    } catch (error) {
+      logger.error("Error serving plugin asset", error as Error);
+      return c.notFound();
     }
   }
 }

@@ -1,6 +1,7 @@
 import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
 import { NexusCard, NexusButton, NexusBadge } from "../components/nexus/NexusComponents.tsx";
+import { CKEditorField } from "../components/CKEditorField.tsx";
 import { env } from "../../config/env.ts";
 
 interface PostFormNexusProps {
@@ -386,12 +387,14 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
               <!-- Body -->
               <div class="form-field">
                 <label class="form-label">Contenido de la Entrada *</label>
-                <textarea
-                  name="body"
-                  placeholder="Escribe la entrada aquí..."
-                  class="form-textarea"
-                  required
-                >${post?.body || ""}</textarea>
+                ${CKEditorField({
+                  name: "body",
+                  value: post?.body || "",
+                  placeholder: "Escribe la entrada aquí...",
+                  required: true,
+                  mediaListEndpoint: `${env.ADMIN_PATH}/media/data`,
+                  mediaUploadEndpoint: `${env.ADMIN_PATH}/media`
+                })}
                 ${errors.body ? html`<p class="form-error">${errors.body}</p>` : ""}
               </div>
             `
@@ -540,64 +543,134 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
           ${NexusCard({
             header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Imagen Destacada</h3>`,
             children: html`
-              ${featuredImage ? html`
-                <img
-                  src="${featuredImage.url}"
-                  alt="Imagen destacada"
-                  class="featured-image-preview"
-                />
-                <input type="hidden" name="featuredImageId" value="${featuredImage.id}" />
-              ` : ""}
-              ${NexusButton({
-                label: "Seleccionar Imagen",
-                type: "outline",
-                onclick: "alert('Media picker functionality would be here')",
-                fullWidth: true
-              })}
+              <div id="featuredImagePreview" style="margin-bottom: 1rem;">
+                ${featuredImage ? html`
+                  <img
+                    id="featuredImageImg"
+                    src="${featuredImage.url}"
+                    alt="Imagen destacada"
+                    class="featured-image-preview"
+                    style="width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem;"
+                  />
+                  <button
+                    type="button"
+                    onclick="removeFeaturedImage()"
+                    style="width: 100%; padding: 0.5rem; background: #f31260; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;"
+                  >
+                    Eliminar imagen
+                  </button>
+                ` : html`
+                  <div style="text-align: center; padding: 2rem; border: 2px dashed #dcdee0; border-radius: 0.5rem; color: #888;">
+                    No hay imagen seleccionada
+                  </div>
+                `}
+              </div>
+              <input type="hidden" id="featuredImageId" name="featuredImageId" value="${featuredImage?.id || ''}" />
+              <button
+                type="button"
+                onclick="openFeaturedImagePicker()"
+                style="width: 100%; padding: 0.75rem 1rem; background: transparent; color: #167bff; border: 2px solid #167bff; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+                onmouseover="this.style.background='#167bff'; this.style.color='white';"
+                onmouseout="this.style.background='transparent'; this.style.color='#167bff';"
+              >
+                Seleccionar Imagen
+              </button>
             `
           })}
 
           <!-- Categories -->
-          ${categories.length > 0 ? NexusCard({
+          ${NexusCard({
             header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Categorías</h3>`,
             children: html`
-              <div class="checkbox-list">
-                ${categories.map(cat => html`
-                  <div class="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="category-${cat.id}"
-                      name="categories[]"
-                      value="${cat.id}"
-                      ${selectedCategories.includes(cat.id) ? "checked" : ""}
-                    />
-                    <label for="category-${cat.id}">${cat.name}</label>
-                  </div>
-                `)}
+              ${categories.length > 0 ? html`
+                <div class="checkbox-list" style="margin-bottom: 1rem;">
+                  ${categories.map(cat => html`
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="category-${cat.id}"
+                        name="categories[]"
+                        value="${cat.id}"
+                        ${selectedCategories.includes(cat.id) ? "checked" : ""}
+                      />
+                      <label for="category-${cat.id}">${cat.name}</label>
+                    </div>
+                  `)}
+                </div>
+              ` : html`
+                <p style="font-size: 0.875rem; color: #888; margin-bottom: 1rem;">No hay categorías disponibles</p>
+              `}
+
+              <!-- Add new category -->
+              <div style="border-top: 1px solid var(--nexus-base-200, #eef0f2); padding-top: 1rem;">
+                <label class="form-label" style="margin-bottom: 0.5rem;">Crear nueva categoría</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input
+                    type="text"
+                    id="newCategoryInput"
+                    placeholder="Nombre de la categoría"
+                    class="form-input"
+                    style="flex: 1;"
+                  />
+                  <button
+                    type="button"
+                    onclick="addNewCategory()"
+                    style="padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; white-space: nowrap;"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <input type="hidden" id="newCategoriesData" name="newCategories" value="" />
               </div>
             `
-          }) : ""}
+          })}
 
           <!-- Tags -->
-          ${tags.length > 0 ? NexusCard({
+          ${NexusCard({
             header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Etiquetas</h3>`,
             children: html`
-              <div class="checkbox-list">
-                ${tags.map(tag => html`
-                  <div class="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="tag-${tag.id}"
-                      name="tags[]"
-                      value="${tag.id}"
-                      ${selectedTags.includes(tag.id) ? "checked" : ""}
-                    />
-                    <label for="tag-${tag.id}">${tag.name}</label>
-                  </div>
-                `)}
+              ${tags.length > 0 ? html`
+                <div class="checkbox-list" style="margin-bottom: 1rem;">
+                  ${tags.map(tag => html`
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="tag-${tag.id}"
+                        name="tags[]"
+                        value="${tag.id}"
+                        ${selectedTags.includes(tag.id) ? "checked" : ""}
+                      />
+                      <label for="tag-${tag.id}">${tag.name}</label>
+                    </div>
+                  `)}
+                </div>
+              ` : html`
+                <p style="font-size: 0.875rem; color: #888; margin-bottom: 1rem;">No hay etiquetas disponibles</p>
+              `}
+
+              <!-- Add new tag -->
+              <div style="border-top: 1px solid var(--nexus-base-200, #eef0f2); padding-top: 1rem;">
+                <label class="form-label" style="margin-bottom: 0.5rem;">Crear nueva etiqueta</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input
+                    type="text"
+                    id="newTagInput"
+                    placeholder="Nombre de la etiqueta"
+                    class="form-input"
+                    style="flex: 1;"
+                  />
+                  <button
+                    type="button"
+                    onclick="addNewTag()"
+                    style="padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; white-space: nowrap;"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <input type="hidden" id="newTagsData" name="newTags" value="" />
               </div>
             `
-          }) : ""}
+          })}
         </div>
       </div>
 
@@ -626,6 +699,43 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
         `
       })}
     </form>
+
+    <!-- Featured Image Picker Modal -->
+    <div id="featuredImageModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; padding: 2rem; overflow-y: auto;">
+      <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 0.75rem; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0;">Seleccionar Imagen Destacada</h3>
+          <button
+            type="button"
+            onclick="closeFeaturedImagePicker()"
+            style="width: 32px; height: 32px; border: none; background: transparent; cursor: pointer; font-size: 1.5rem; color: #666;"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Upload Section -->
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 0.5rem;">
+          <input type="file" id="featuredImageUploadInput" accept="image/*" style="display: none;" />
+          <button
+            type="button"
+            onclick="document.getElementById('featuredImageUploadInput').click()"
+            style="width: 100%; padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+            onmouseover="this.style.background='#1266dd';"
+            onmouseout="this.style.background='#167bff';"
+          >
+            📤 Subir Nueva Imagen
+          </button>
+          <div id="uploadProgress" style="display: none; margin-top: 0.5rem; text-align: center; color: #167bff; font-size: 0.875rem;"></div>
+        </div>
+
+        <div id="featuredImageModalContent">
+          <div style="text-align: center; padding: 2rem; color: #666;">
+            Cargando...
+          </div>
+        </div>
+      </div>
+    </div>
 
     ${raw(`<script>
       // Auto-generate slug from title (XSS safe)
@@ -671,6 +781,282 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
             passwordField.style.display = this.value === 'password' ? 'block' : 'none';
           });
         }
+      });
+
+      // Featured Image Picker Functions
+      let mediaItems = [];
+
+      async function openFeaturedImagePicker() {
+        const modal = document.getElementById('featuredImageModal');
+        const modalContent = document.getElementById('featuredImageModalContent');
+
+        modal.style.display = 'block';
+        modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Cargando biblioteca de medios...</div>';
+
+        try {
+          const response = await fetch('${env.ADMIN_PATH}/media/data?limit=100', { credentials: 'include' });
+          if (!response.ok) throw new Error('Error al cargar medios');
+
+          const data = await response.json();
+          mediaItems = Array.isArray(data.media) ? data.media : [];
+          renderFeaturedImageGrid(mediaItems);
+        } catch (error) {
+          console.error('Error loading media:', error);
+          modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #f31260;">Error al cargar la biblioteca de medios</div>';
+        }
+      }
+
+      // Handle image upload
+      document.addEventListener('DOMContentLoaded', function() {
+        const uploadInput = document.getElementById('featuredImageUploadInput');
+        if (uploadInput) {
+          uploadInput.addEventListener('change', async function(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const uploadProgress = document.getElementById('uploadProgress');
+            uploadProgress.style.display = 'block';
+            uploadProgress.textContent = 'Subiendo imagen...';
+
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+
+              const response = await fetch('${env.ADMIN_PATH}/media', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+
+              if (!response.ok) throw new Error('Error al subir imagen');
+
+              const result = await response.json();
+              uploadProgress.textContent = '✓ Imagen subida exitosamente';
+
+              // Reload media grid
+              setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgress.textContent = '';
+                uploadInput.value = '';
+                openFeaturedImagePicker();
+              }, 1000);
+
+            } catch (error) {
+              console.error('Upload error:', error);
+              uploadProgress.textContent = '✗ Error al subir imagen';
+              uploadProgress.style.color = '#f31260';
+              setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgress.textContent = '';
+                uploadProgress.style.color = '#167bff';
+              }, 3000);
+            }
+          });
+        }
+      });
+
+      function closeFeaturedImagePicker() {
+        document.getElementById('featuredImageModal').style.display = 'none';
+      }
+
+      function renderFeaturedImageGrid(items) {
+        const modalContent = document.getElementById('featuredImageModalContent');
+        const images = items.filter(item => item.type === 'image');
+
+        if (!images.length) {
+          modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No hay imágenes disponibles</div>';
+          return;
+        }
+
+        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">';
+        images.forEach(media => {
+          html += \`
+            <div
+              onclick="selectFeaturedImage(\${media.id}, '\${media.url}')"
+              style="position: relative; cursor: pointer; border-radius: 0.5rem; overflow: hidden; border: 2px solid transparent; transition: border-color 0.2s;"
+              onmouseover="this.style.borderColor='#167bff'"
+              onmouseout="this.style.borderColor='transparent'"
+            >
+              <div style="aspect-ratio: 1; background: #f3f4f6;">
+                <img
+                  src="\${media.url}"
+                  alt="\${media.originalFilename || ''}"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          \`;
+        });
+        html += '</div>';
+        modalContent.innerHTML = html;
+      }
+
+      function selectFeaturedImage(id, url) {
+        const previewDiv = document.getElementById('featuredImagePreview');
+        const hiddenInput = document.getElementById('featuredImageId');
+
+        hiddenInput.value = id;
+
+        previewDiv.innerHTML = \`
+          <img
+            id="featuredImageImg"
+            src="\${url}"
+            alt="Imagen destacada"
+            style="width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem;"
+          />
+          <button
+            type="button"
+            onclick="removeFeaturedImage()"
+            style="width: 100%; padding: 0.5rem; background: #f31260; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;"
+          >
+            Eliminar imagen
+          </button>
+        \`;
+
+        closeFeaturedImagePicker();
+      }
+
+      function removeFeaturedImage() {
+        const previewDiv = document.getElementById('featuredImagePreview');
+        const hiddenInput = document.getElementById('featuredImageId');
+
+        hiddenInput.value = '';
+        previewDiv.innerHTML = \`
+          <div style="text-align: center; padding: 2rem; border: 2px dashed #dcdee0; border-radius: 0.5rem; color: #888;">
+            No hay imagen seleccionada
+          </div>
+        \`;
+      }
+
+      // Close modal when clicking outside
+      document.getElementById('featuredImageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeFeaturedImagePicker();
+        }
+      });
+
+      // Add new category
+      const newCategories = [];
+      function addNewCategory() {
+        const input = document.getElementById('newCategoryInput');
+        const categoryName = input.value.trim();
+
+        if (!categoryName) {
+          alert('Por favor ingresa un nombre para la categoría');
+          return;
+        }
+
+        // Add to temporary array
+        newCategories.push(categoryName);
+
+        // Update hidden input
+        document.getElementById('newCategoriesData').value = JSON.stringify(newCategories);
+
+        // Add visual feedback
+        const checkboxList = input.closest('.nexus-card').querySelector('.checkbox-list');
+        if (!checkboxList) {
+          // Create checkbox list if it doesn't exist
+          const paragraph = input.closest('.nexus-card').querySelector('p');
+          if (paragraph) {
+            const newList = document.createElement('div');
+            newList.className = 'checkbox-list';
+            newList.style.marginBottom = '1rem';
+            paragraph.replaceWith(newList);
+            checkboxList = newList;
+          }
+        }
+
+        if (checkboxList) {
+          const newItem = document.createElement('div');
+          newItem.className = 'checkbox-item';
+          newItem.style.background = '#e8f4ff';
+          newItem.innerHTML = \`
+            <input type="checkbox" checked disabled style="width: 18px; height: 18px;">
+            <label style="font-size: 0.875rem; color: #1e2328;">\${categoryName} <em style="color: #167bff;">(nueva)</em></label>
+          \`;
+          checkboxList.appendChild(newItem);
+        }
+
+        // Clear input
+        input.value = '';
+
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = '✓ Categoría agregada';
+        successMsg.style.cssText = 'margin-top: 0.5rem; color: #00a651; font-size: 0.875rem;';
+        input.parentElement.appendChild(successMsg);
+        setTimeout(() => successMsg.remove(), 2000);
+      }
+
+      // Add new tag
+      const newTags = [];
+      function addNewTag() {
+        const input = document.getElementById('newTagInput');
+        const tagName = input.value.trim();
+
+        if (!tagName) {
+          alert('Por favor ingresa un nombre para la etiqueta');
+          return;
+        }
+
+        // Add to temporary array
+        newTags.push(tagName);
+
+        // Update hidden input
+        document.getElementById('newTagsData').value = JSON.stringify(newTags);
+
+        // Add visual feedback
+        const checkboxList = input.closest('.nexus-card').querySelector('.checkbox-list');
+        if (!checkboxList) {
+          // Create checkbox list if it doesn't exist
+          const paragraph = input.closest('.nexus-card').querySelector('p');
+          if (paragraph) {
+            const newList = document.createElement('div');
+            newList.className = 'checkbox-list';
+            newList.style.marginBottom = '1rem';
+            paragraph.replaceWith(newList);
+            checkboxList = newList;
+          }
+        }
+
+        if (checkboxList) {
+          const newItem = document.createElement('div');
+          newItem.className = 'checkbox-item';
+          newItem.style.background = '#e8f4ff';
+          newItem.innerHTML = \`
+            <input type="checkbox" checked disabled style="width: 18px; height: 18px;">
+            <label style="font-size: 0.875rem; color: #1e2328;">\${tagName} <em style="color: #167bff;">(nueva)</em></label>
+          \`;
+          checkboxList.appendChild(newItem);
+        }
+
+        // Clear input
+        input.value = '';
+
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = '✓ Etiqueta agregada';
+        successMsg.style.cssText = 'margin-top: 0.5rem; color: #00a651; font-size: 0.875rem;';
+        input.parentElement.appendChild(successMsg);
+        setTimeout(() => successMsg.remove(), 2000);
+      }
+
+      // Allow Enter key to add categories/tags
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('newCategoryInput')?.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewCategory();
+          }
+        });
+
+        document.getElementById('newTagInput')?.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewTag();
+          }
+        });
       });
     </script>`)}
   `;

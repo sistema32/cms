@@ -34,6 +34,7 @@ import jobsRoutes from "./jobs.ts";
 import importExportRoutes from "./import-export.ts";
 import seoOptimizationRoutes from "./seo-optimization.ts";
 import systemUpdatesRoutes from "./system-updates.ts";
+import { securityRoutes as securityAdminRoutes } from "./admin/security.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
@@ -148,6 +149,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Security
   app.route("/api/security", securityRoutes);
+
+  // Registrar rutas de Security Admin Panel
+  app.route("/api/admin/security", securityAdminRoutes);
 
   // Registrar rutas de API Keys
   app.route("/api/api-keys", apiKeysRoutes);

@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 
 /**
  * Nexus Design System - Reusable Components
@@ -418,15 +418,15 @@ export const NexusTable = (props: NexusTableProps) => {
       <table class="nexus-table">
         <thead>
           <tr>
-            ${columns.map(col => html`
+            ${raw(columns.map(col => html`
               <th ${col.width ? `style="width: ${col.width}"` : ''}>
                 ${col.label}
               </th>
-            `).join('')}
+            `).join(''))}
           </tr>
         </thead>
         <tbody>
-          ${rows || html`
+          ${rows ? raw(rows) : html`
             <tr>
               <td colspan="${columns.length}" class="nexus-table-empty">
                 ${emptyMessage}

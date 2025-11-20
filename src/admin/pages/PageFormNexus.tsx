@@ -1,6 +1,11 @@
 import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
-import { NexusCard, NexusButton, NexusBadge } from "../components/nexus/NexusComponents.tsx";
+import {
+  NexusBadge,
+  NexusButton,
+  NexusCard,
+} from "../components/nexus/NexusComponents.tsx";
+import { CKEditorField } from "../components/CKEditorField.tsx";
 import { env } from "../../config/env.ts";
 
 interface PageFormNexusProps {
@@ -24,7 +29,9 @@ interface PageFormNexusProps {
     publishedAt?: string | null;
   };
   availableParents?: Array<{ id: number; name: string; slug?: string }>;
-  categories?: Array<{ id: number; name: string; slug?: string; parentId?: number | null }>;
+  categories?: Array<
+    { id: number; name: string; slug?: string; parentId?: number | null }
+  >;
   tags?: Array<{ id: number; name: string; slug?: string }>;
   selectedCategories?: number[];
   selectedTags?: number[];
@@ -70,227 +77,229 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
 
   const content_html = html`
     <style>
-      /* ========== PAGE HEADER ========== */
-      .page-header-nexus {
-        margin-bottom: 2rem;
-      }
+    /* ========== PAGE HEADER ========== */
+    .page-header-nexus {
+      margin-bottom: 2rem;
+    }
 
-      .page-title-nexus {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--nexus-base-content, #1e2328);
-        letter-spacing: -0.025em;
-        margin: 0 0 0.5rem 0;
-      }
+    .page-title-nexus {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--nexus-base-content, #1e2328);
+      letter-spacing: -0.025em;
+      margin: 0 0 0.5rem 0;
+    }
 
-      .page-subtitle-nexus {
-        font-size: 0.9375rem;
-        color: var(--nexus-base-content, #1e2328);
-        opacity: 0.65;
-        margin: 0;
-      }
+    .page-subtitle-nexus {
+      font-size: 0.9375rem;
+      color: var(--nexus-base-content, #1e2328);
+      opacity: 0.65;
+      margin: 0;
+    }
 
-      /* ========== FORM LAYOUT ========== */
+    /* ========== FORM LAYOUT ========== */
+    .page-form-layout {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 1280px) {
       .page-form-layout {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ========== FORM FIELDS ========== */
+    .form-field {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--nexus-base-content, #1e2328);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      color: var(--nexus-base-content, #1e2328);
+      background: var(--nexus-base-100, #fff);
+      border: 1px solid var(--nexus-base-300, #dcdee0);
+      border-radius: var(--nexus-radius-md, 0.5rem);
+      transition: all 0.2s;
+    }
+
+    .form-textarea {
+      min-height: 400px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--nexus-primary, #167bff);
+      box-shadow: 0 0 0 3px rgba(22, 123, 255, 0.1);
+    }
+
+    .form-error {
+      color: var(--nexus-error, #f31260);
+      font-size: 0.8125rem;
+      margin-top: 0.5rem;
+    }
+
+    .form-hint {
+      font-size: 0.8125rem;
+      color: var(--nexus-base-content, #1e2328);
+      opacity: 0.6;
+      margin-top: 0.5rem;
+    }
+
+    /* ========== CHECKBOX LISTS ========== */
+    .checkbox-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--nexus-base-200, #eef0f2);
+      border-radius: var(--nexus-radius-md, 0.5rem);
+      padding: 0.75rem;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: var(--nexus-radius-sm, 0.25rem);
+      transition: background 0.2s;
+    }
+
+    .checkbox-item:hover {
+      background: var(--nexus-base-200, #eef0f2);
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--nexus-base-300, #dcdee0);
+      border-radius: var(--nexus-radius-sm, 0.25rem);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .checkbox-item input[type="checkbox"]:checked {
+      background: var(--nexus-primary, #167bff);
+      border-color: var(--nexus-primary, #167bff);
+    }
+
+    .checkbox-item label {
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--nexus-base-content, #1e2328);
+    }
+
+    /* ========== FEATURED IMAGE ========== */
+    .featured-image-preview {
+      width: 100%;
+      border-radius: var(--nexus-radius-md, 0.5rem);
+      margin-bottom: 1rem;
+    }
+
+    /* ========== STATUS RADIO BUTTONS ========== */
+    .status-radio-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .status-radio-option {
+      position: relative;
+    }
+
+    .status-radio-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .status-radio-option label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem;
+      border: 2px solid var(--nexus-base-300, #dcdee0);
+      border-radius: var(--nexus-radius-md, 0.5rem);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-radio-option input[type="radio"]:checked + label {
+      border-color: var(--nexus-primary, #167bff);
+      background: rgba(22, 123, 255, 0.08);
+      color: var(--nexus-primary, #167bff);
+    }
+
+    /* ========== PAGE HIERARCHY INFO ========== */
+    .hierarchy-info {
+      background: rgba(22, 123, 255, 0.08);
+      border: 1px solid rgba(22, 123, 255, 0.2);
+      border-radius: var(--nexus-radius-md, 0.5rem);
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: var(--nexus-base-content, #1e2328);
+    }
+
+    .hierarchy-info svg {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+
+    /* ========== FORM ACTIONS ========== */
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--nexus-base-200, #eef0f2);
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      .page-title-nexus {
+        font-size: 1.5rem;
       }
 
-      @media (max-width: 1280px) {
-        .page-form-layout {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ========== FORM FIELDS ========== */
-      .form-field {
-        margin-bottom: 1.5rem;
-      }
-
-      .form-label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--nexus-base-content, #1e2328);
-        margin-bottom: 0.5rem;
-      }
-
-      .form-input,
-      .form-textarea,
-      .form-select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        color: var(--nexus-base-content, #1e2328);
-        background: var(--nexus-base-100, #fff);
-        border: 1px solid var(--nexus-base-300, #dcdee0);
-        border-radius: var(--nexus-radius-md, 0.5rem);
-        transition: all 0.2s;
-      }
-
-      .form-textarea {
-        min-height: 400px;
-        font-family: inherit;
-        resize: vertical;
-      }
-
-      .form-input:focus,
-      .form-textarea:focus,
-      .form-select:focus {
-        outline: none;
-        border-color: var(--nexus-primary, #167bff);
-        box-shadow: 0 0 0 3px rgba(22, 123, 255, 0.1);
-      }
-
-      .form-error {
-        color: var(--nexus-error, #f31260);
-        font-size: 0.8125rem;
-        margin-top: 0.5rem;
-      }
-
-      .form-hint {
-        font-size: 0.8125rem;
-        color: var(--nexus-base-content, #1e2328);
-        opacity: 0.6;
-        margin-top: 0.5rem;
-      }
-
-      /* ========== CHECKBOX LISTS ========== */
-      .checkbox-list {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid var(--nexus-base-200, #eef0f2);
-        border-radius: var(--nexus-radius-md, 0.5rem);
-        padding: 0.75rem;
-      }
-
-      .checkbox-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        cursor: pointer;
-        border-radius: var(--nexus-radius-sm, 0.25rem);
-        transition: background 0.2s;
-      }
-
-      .checkbox-item:hover {
-        background: var(--nexus-base-200, #eef0f2);
-      }
-
-      .checkbox-item input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        border: 2px solid var(--nexus-base-300, #dcdee0);
-        border-radius: var(--nexus-radius-sm, 0.25rem);
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .checkbox-item input[type="checkbox"]:checked {
-        background: var(--nexus-primary, #167bff);
-        border-color: var(--nexus-primary, #167bff);
-      }
-
-      .checkbox-item label {
-        cursor: pointer;
-        font-size: 0.875rem;
-        color: var(--nexus-base-content, #1e2328);
-      }
-
-      /* ========== FEATURED IMAGE ========== */
-      .featured-image-preview {
-        width: 100%;
-        border-radius: var(--nexus-radius-md, 0.5rem);
-        margin-bottom: 1rem;
-      }
-
-      /* ========== STATUS RADIO BUTTONS ========== */
       .status-radio-group {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: 1fr;
       }
 
-      .status-radio-option {
-        position: relative;
-      }
-
-      .status-radio-option input[type="radio"] {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .status-radio-option label {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.75rem;
-        border: 2px solid var(--nexus-base-300, #dcdee0);
-        border-radius: var(--nexus-radius-md, 0.5rem);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .status-radio-option input[type="radio"]:checked + label {
-        border-color: var(--nexus-primary, #167bff);
-        background: rgba(22, 123, 255, 0.08);
-        color: var(--nexus-primary, #167bff);
-      }
-
-      /* ========== PAGE HIERARCHY INFO ========== */
-      .hierarchy-info {
-        background: rgba(22, 123, 255, 0.08);
-        border: 1px solid rgba(22, 123, 255, 0.2);
-        border-radius: var(--nexus-radius-md, 0.5rem);
-        padding: 1rem;
-        font-size: 0.875rem;
-        color: var(--nexus-base-content, #1e2328);
-      }
-
-      .hierarchy-info svg {
-        width: 16px;
-        height: 16px;
-        display: inline-block;
-        vertical-align: middle;
-        margin-right: 0.5rem;
-      }
-
-      /* ========== FORM ACTIONS ========== */
       .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 1rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--nexus-base-200, #eef0f2);
+        flex-direction: column;
       }
-
-      /* ========== RESPONSIVE ========== */
-      @media (max-width: 768px) {
-        .page-title-nexus {
-          font-size: 1.5rem;
-        }
-
-        .status-radio-group {
-          grid-template-columns: 1fr;
-        }
-
-        .form-actions {
-          flex-direction: column;
-        }
-      }
+    }
     </style>
 
     <!-- Page Header -->
     <div class="page-header-nexus">
       <h1 class="page-title-nexus">${pageTitle}</h1>
       <p class="page-subtitle-nexus">
-        ${isEdit ? "Actualiza la página de tu sitio" : "Crea una nueva página estática"}
+        ${isEdit
+          ? "Actualiza la página de tu sitio"
+          : "Crea una nueva página estática"}
       </p>
     </div>
 
@@ -312,7 +321,11 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
                   class="form-input"
                   required
                 />
-                ${errors.title ? html`<p class="form-error">${errors.title}</p>` : ""}
+                ${errors.title
+                  ? html`
+                    <p class="form-error">${errors.title}</p>
+                  `
+                  : ""}
               </div>
 
               <!-- Slug -->
@@ -326,7 +339,11 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
                   class="form-input"
                 />
                 <p class="form-hint">Se generará automáticamente desde el título</p>
-                ${errors.slug ? html`<p class="form-error">${errors.slug}</p>` : ""}
+                ${errors.slug
+                  ? html`
+                    <p class="form-error">${errors.slug}</p>
+                  `
+                  : ""}
               </div>
 
               <!-- Excerpt -->
@@ -345,20 +362,27 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
               <!-- Body -->
               <div class="form-field">
                 <label class="form-label">Contenido de la Página *</label>
-                <textarea
-                  name="body"
-                  placeholder="Escribe la página aquí..."
-                  class="form-textarea"
-                  required
-                >${page?.body || ""}</textarea>
-                ${errors.body ? html`<p class="form-error">${errors.body}</p>` : ""}
+                ${CKEditorField({
+                  name: "body",
+                  value: page?.body || "",
+                  placeholder: "Escribe la página aquí...",
+                  required: true,
+                  mediaListEndpoint: `${env.ADMIN_PATH}/media/data`,
+                  mediaUploadEndpoint: `${env.ADMIN_PATH}/media`,
+                })} ${errors.body
+                  ? html`
+                    <p class="form-error">${errors.body}</p>
+                  `
+                  : ""}
               </div>
-            `
+            `,
           })}
 
           <!-- SEO Settings -->
           ${NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Configuración SEO</h3>`,
+            header: html`
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Configuración SEO</h3>
+            `,
             children: html`
               <div class="form-field">
                 <label class="form-label">Meta Título</label>
@@ -397,7 +421,7 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
                 />
                 <p class="form-hint">Separadas por comas</p>
               </div>
-            `
+            `,
           })}
         </div>
 
@@ -405,7 +429,9 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
         <div>
           <!-- Publish Settings -->
           ${NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Publicación</h3>`,
+            header: html`
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Publicación</h3>
+            `,
             children: html`
               <!-- Status -->
               <div class="form-field">
@@ -445,7 +471,10 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
               </div>
 
               <!-- Scheduled Date -->
-              <div class="form-field" id="scheduledAtField" style="display: ${page?.status === 'scheduled' ? 'block' : 'none'};">
+              <div class="form-field" id="scheduledAtField" style="display: ${page
+                  ?.status === "scheduled"
+                ? "block"
+                : "none"};">
                 <label class="form-label">Fecha de Publicación</label>
                 <input
                   type="datetime-local"
@@ -459,14 +488,26 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
               <div class="form-field">
                 <label class="form-label">Visibilidad</label>
                 <select name="visibility" class="form-select">
-                  <option value="public" ${!page || page.visibility === "public" ? "selected" : ""}>Público</option>
-                  <option value="private" ${page?.visibility === "private" ? "selected" : ""}>Privado</option>
-                  <option value="password" ${page?.visibility === "password" ? "selected" : ""}>Protegido por contraseña</option>
+                  <option value="public" ${!page || page.visibility === "public"
+                    ? "selected"
+                    : ""}>Público</option>
+                  <option value="private" ${page?.visibility === "private"
+                    ? "selected"
+                    : ""}>Privado</option>
+                  <option value="password" ${page?.visibility === "password"
+                    ? "selected"
+                    : ""}>Protegido por contraseña</option>
                 </select>
               </div>
 
               <!-- Password -->
-              <div class="form-field" id="passwordField" style="display: ${page?.visibility === 'password' ? 'block' : 'none'}; margin-bottom: 0;">
+              <div
+                class="form-field"
+                id="passwordField"
+                style="display: ${page?.visibility === "password"
+                  ? "block"
+                  : "none"}; margin-bottom: 0;"
+              >
                 <label class="form-label">Contraseña</label>
                 <input
                   type="password"
@@ -476,104 +517,226 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
                   class="form-input"
                 />
               </div>
-            `
+            `,
           })}
 
           <!-- Page Hierarchy -->
-          ${availableParents.length > 0 ? NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Jerarquía de Páginas</h3>`,
-            children: html`
-              <div class="form-field">
-                <label class="form-label">Página Padre</label>
-                <select name="parentId" class="form-select">
-                  <option value="">Sin página padre (raíz)</option>
-                  ${availableParents.map(parent => html`
-                    <option
-                      value="${parent.id}"
-                      ${page?.parentId === parent.id ? "selected" : ""}
-                    >
-                      ${parent.name}
-                    </option>
-                  `)}
-                </select>
-                <p class="form-hint">Organiza tus páginas jerárquicamente</p>
-              </div>
-
-              ${page?.parentId ? html`
-                <div class="hierarchy-info">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
-                  </svg>
-                  Esta página aparecerá como subpágina en la navegación
+          ${availableParents.length > 0
+            ? NexusCard({
+              header: html`
+                <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">
+                  Jerarquía de Páginas
+                </h3>
+              `,
+              children: html`
+                <div class="form-field">
+                  <label class="form-label">Página Padre</label>
+                  <select name="parentId" class="form-select">
+                    <option value="">Sin página padre (raíz)</option>
+                    ${availableParents.map((parent) =>
+                      html`
+                        <option
+                          value="${parent.id}"
+                          ${page?.parentId === parent.id ? "selected" : ""}
+                        >
+                          ${parent.name}
+                        </option>
+                      `
+                    )}
+                  </select>
+                  <p class="form-hint">Organiza tus páginas jerárquicamente</p>
                 </div>
-              ` : ""}
-            `
-          }) : ""}
+
+                ${page?.parentId
+                  ? html`
+                    <div class="hierarchy-info">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                      Esta página aparecerá como subpágina en la navegación
+                    </div>
+                  `
+                  : ""}
+              `,
+            })
+            : ""}
 
           <!-- Featured Image -->
           ${NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Imagen Destacada</h3>`,
+            header: html`
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Imagen Destacada</h3>
+            `,
             children: html`
-              ${featuredImage ? html`
-                <img
-                  src="${featuredImage.url}"
-                  alt="Imagen destacada"
-                  class="featured-image-preview"
-                />
-                <input type="hidden" name="featuredImageId" value="${featuredImage.id}" />
-              ` : ""}
-              ${NexusButton({
-                label: "Seleccionar Imagen",
-                type: "outline",
-                onclick: "alert('Media picker functionality would be here')",
-                fullWidth: true
-              })}
-            `
+              <div id="featuredImagePreview" style="margin-bottom: 1rem;">
+                ${featuredImage
+                  ? html`
+                    <img
+                      id="featuredImageImg"
+                      src="${featuredImage.url}"
+                      alt="Imagen destacada"
+                      class="featured-image-preview"
+                      style="width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem;"
+                    />
+                    <button
+                      type="button"
+                      onclick="removeFeaturedImage()"
+                      style="width: 100%; padding: 0.5rem; background: #f31260; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;"
+                    >
+                      Eliminar imagen
+                    </button>
+                  `
+                  : html`
+                    <div
+                      style="text-align: center; padding: 2rem; border: 2px dashed #dcdee0; border-radius: 0.5rem; color: #888;"
+                    >
+                      No hay imagen seleccionada
+                    </div>
+                  `}
+              </div>
+              <input
+                type="hidden"
+                id="featuredImageId"
+                name="featuredImageId"
+                value="${featuredImage?.id || ""}"
+              />
+              <button
+                type="button"
+                onclick="openFeaturedImagePicker()"
+                style="width: 100%; padding: 0.75rem 1rem; background: transparent; color: #167bff; border: 2px solid #167bff; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+                onmouseover="this.style.background='#167bff'; this.style.color='white';"
+                onmouseout="this.style.background='transparent'; this.style.color='#167bff';"
+              >
+                Seleccionar Imagen
+              </button>
+            `,
           })}
 
           <!-- Categories (optional for pages) -->
-          ${categories.length > 0 ? NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Categorías</h3>`,
+          ${NexusCard({
+            header: html`
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Categorías</h3>
+            `,
             children: html`
-              <div class="checkbox-list">
-                ${categories.map(cat => html`
-                  <div class="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="category-${cat.id}"
-                      name="categories[]"
-                      value="${cat.id}"
-                      ${selectedCategories.includes(cat.id) ? "checked" : ""}
-                    />
-                    <label for="category-${cat.id}">${cat.name}</label>
+              ${categories.length > 0
+                ? html`
+                  <div class="checkbox-list" style="margin-bottom: 1rem;">
+                    ${categories.map((cat) =>
+                      html`
+                        <div class="checkbox-item">
+                          <input
+                            type="checkbox"
+                            id="category-${cat.id}"
+                            name="categories[]"
+                            value="${cat.id}"
+                            ${selectedCategories.includes(cat.id)
+                              ? "checked"
+                              : ""}
+                          />
+                          <label for="category-${cat.id}">${cat.name}</label>
+                        </div>
+                      `
+                    )}
                   </div>
-                `)}
+                `
+                : html`
+                  <p style="font-size: 0.875rem; color: #888; margin-bottom: 1rem;">
+                    No hay categorías disponibles
+                  </p>
+                `}
+
+              <!-- Add new category -->
+              <div
+                style="border-top: 1px solid var(--nexus-base-200, #eef0f2); padding-top: 1rem;"
+              >
+                <label class="form-label" style="margin-bottom: 0.5rem;"
+                >Crear nueva categoría</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input
+                    type="text"
+                    id="newCategoryInput"
+                    placeholder="Nombre de la categoría"
+                    class="form-input"
+                    style="flex: 1;"
+                  />
+                  <button
+                    type="button"
+                    onclick="addNewCategory()"
+                    style="padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; white-space: nowrap;"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <input type="hidden" id="newCategoriesData" name="newCategories" value="" />
               </div>
-            `
-          }) : ""}
+            `,
+          })}
 
           <!-- Tags (optional for pages) -->
-          ${tags.length > 0 ? NexusCard({
-            header: html`<h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Etiquetas</h3>`,
+          ${NexusCard({
+            header: html`
+              <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">Etiquetas</h3>
+            `,
             children: html`
-              <div class="checkbox-list">
-                ${tags.map(tag => html`
-                  <div class="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="tag-${tag.id}"
-                      name="tags[]"
-                      value="${tag.id}"
-                      ${selectedTags.includes(tag.id) ? "checked" : ""}
-                    />
-                    <label for="tag-${tag.id}">${tag.name}</label>
+              ${tags.length > 0
+                ? html`
+                  <div class="checkbox-list" style="margin-bottom: 1rem;">
+                    ${tags.map((tag) =>
+                      html`
+                        <div class="checkbox-item">
+                          <input
+                            type="checkbox"
+                            id="tag-${tag.id}"
+                            name="tags[]"
+                            value="${tag.id}"
+                            ${selectedTags.includes(tag.id) ? "checked" : ""}
+                          />
+                          <label for="tag-${tag.id}">${tag.name}</label>
+                        </div>
+                      `
+                    )}
                   </div>
-                `)}
+                `
+                : html`
+                  <p style="font-size: 0.875rem; color: #888; margin-bottom: 1rem;">
+                    No hay etiquetas disponibles
+                  </p>
+                `}
+
+              <!-- Add new tag -->
+              <div
+                style="border-top: 1px solid var(--nexus-base-200, #eef0f2); padding-top: 1rem;"
+              >
+                <label class="form-label" style="margin-bottom: 0.5rem;"
+                >Crear nueva etiqueta</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input
+                    type="text"
+                    id="newTagInput"
+                    placeholder="Nombre de la etiqueta"
+                    class="form-input"
+                    style="flex: 1;"
+                  />
+                  <button
+                    type="button"
+                    onclick="addNewTag()"
+                    style="padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; white-space: nowrap;"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <input type="hidden" id="newTagsData" name="newTags" value="" />
               </div>
-            `
-          }) : ""}
+            `,
+          })}
         </div>
       </div>
 
@@ -584,24 +747,89 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
             ${NexusButton({
               label: "Cancelar",
               type: "outline",
-              href: `${env.ADMIN_PATH}/pages`
-            })}
-            ${NexusButton({
+              href: `${env.ADMIN_PATH}/pages`,
+            })} ${NexusButton({
               label: isEdit ? "Actualizar Página" : "Publicar Página",
               type: "primary",
               isSubmit: true,
               icon: html`
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
                 </svg>
-              `
+              `,
             })}
           </div>
-        `
+        `,
       })}
     </form>
+
+    <!-- Featured Image Picker Modal -->
+    <div
+      id="featuredImageModal"
+      style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; padding: 2rem; overflow-y: auto;"
+    >
+      <div
+        style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 0.75rem; padding: 1.5rem;"
+      >
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;"
+        >
+          <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            Seleccionar Imagen Destacada
+          </h3>
+          <button
+            type="button"
+            onclick="closeFeaturedImagePicker()"
+            style="width: 32px; height: 32px; border: none; background: transparent; cursor: pointer; font-size: 1.5rem; color: #666;"
+          >
+            ×
+          </button>
+        </div>
+
+        <!-- Upload Section -->
+        <div
+          style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 0.5rem;"
+        >
+          <input
+            type="file"
+            id="featuredImageUploadInput"
+            accept="image/*"
+            style="display: none;"
+          />
+          <button
+            type="button"
+            onclick="document.getElementById('featuredImageUploadInput').click()"
+            style="width: 100%; padding: 0.75rem 1rem; background: #167bff; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;"
+            onmouseover="this.style.background='#1266dd';"
+            onmouseout="this.style.background='#167bff';"
+          >
+            📤 Subir Nueva Imagen
+          </button>
+          <div
+            id="uploadProgress"
+            style="display: none; margin-top: 0.5rem; text-align: center; color: #167bff; font-size: 0.875rem;"
+          >
+          </div>
+        </div>
+
+        <div id="featuredImageModalContent">
+          <div style="text-align: center; padding: 2rem; color: #666;">
+            Cargando...
+          </div>
+        </div>
+      </div>
+    </div>
 
     ${raw(`<script>
       // Auto-generate slug from title (XSS safe)
@@ -647,6 +875,276 @@ export const PageFormNexusPage = (props: PageFormNexusProps) => {
             passwordField.style.display = this.value === 'password' ? 'block' : 'none';
           });
         }
+      });
+
+      // Featured Image Picker Functions
+      let mediaItems = [];
+
+      async function openFeaturedImagePicker() {
+        const modal = document.getElementById('featuredImageModal');
+        const modalContent = document.getElementById('featuredImageModalContent');
+
+        modal.style.display = 'block';
+        modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Cargando biblioteca de medios...</div>';
+
+        try {
+          const response = await fetch('${env.ADMIN_PATH}/media/data?limit=100', { credentials: 'include' });
+          if (!response.ok) throw new Error('Error al cargar medios');
+
+          const data = await response.json();
+          mediaItems = Array.isArray(data.media) ? data.media : [];
+          renderFeaturedImageGrid(mediaItems);
+        } catch (error) {
+          console.error('Error loading media:', error);
+          modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #f31260;">Error al cargar la biblioteca de medios</div>';
+        }
+      }
+
+      // Handle image upload
+      document.addEventListener('DOMContentLoaded', function() {
+        const uploadInput = document.getElementById('featuredImageUploadInput');
+        if (uploadInput) {
+          uploadInput.addEventListener('change', async function(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const uploadProgress = document.getElementById('uploadProgress');
+            uploadProgress.style.display = 'block';
+            uploadProgress.textContent = 'Subiendo imagen...';
+
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+
+              const response = await fetch('${env.ADMIN_PATH}/media', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+              });
+
+              if (!response.ok) throw new Error('Error al subir imagen');
+
+              const result = await response.json();
+              uploadProgress.textContent = '✓ Imagen subida exitosamente';
+
+              // Reload media grid
+              setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgress.textContent = '';
+                uploadInput.value = '';
+                openFeaturedImagePicker();
+              }, 1000);
+
+            } catch (error) {
+              console.error('Upload error:', error);
+              uploadProgress.textContent = '✗ Error al subir imagen';
+              uploadProgress.style.color = '#f31260';
+              setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgress.textContent = '';
+                uploadProgress.style.color = '#167bff';
+              }, 3000);
+            }
+          });
+        }
+      });
+
+      function closeFeaturedImagePicker() {
+        document.getElementById('featuredImageModal').style.display = 'none';
+      }
+
+      function renderFeaturedImageGrid(media) {
+        const modalContent = document.getElementById('featuredImageModalContent');
+
+        if (!media || media.length === 0) {
+          modalContent.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No hay imágenes disponibles</div>';
+          return;
+        }
+
+        modalContent.innerHTML = \`
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+            \${media.map(item => \`
+              <div
+                style="cursor: pointer; border: 2px solid transparent; border-radius: 0.5rem; overflow: hidden; transition: all 0.2s;"
+                onclick="selectFeaturedImage(\${item.id}, '\${item.url}')"
+                onmouseover="this.style.borderColor='#167bff'; this.style.transform='scale(1.05)';"
+                onmouseout="this.style.borderColor='transparent'; this.style.transform='scale(1)';"
+              >
+                <img src="\${item.url}" alt="\${item.filename}" style="width: 100%; height: 150px; object-fit: cover;" />
+                <div style="padding: 0.5rem; background: #f8f9fa; font-size: 0.75rem; text-align: center; color: #666;">
+                  \${item.filename}
+                </div>
+              </div>
+            \`).join('')}
+          </div>
+        \`;
+      }
+
+      function selectFeaturedImage(id, url) {
+        // Update hidden input
+        document.getElementById('featuredImageId').value = id;
+
+        // Update preview
+        const preview = document.getElementById('featuredImagePreview');
+        preview.innerHTML = \`
+          <img
+            id="featuredImageImg"
+            src="\${url}"
+            alt="Imagen destacada"
+            class="featured-image-preview"
+            style="width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem;"
+          />
+          <button
+            type="button"
+            onclick="removeFeaturedImage()"
+            style="width: 100%; padding: 0.5rem; background: #f31260; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;"
+          >
+            Eliminar imagen
+          </button>
+        \`;
+
+        // Close modal
+        closeFeaturedImagePicker();
+      }
+
+      function removeFeaturedImage() {
+        document.getElementById('featuredImageId').value = '';
+        const preview = document.getElementById('featuredImagePreview');
+        preview.innerHTML = \`
+          <div style="text-align: center; padding: 2rem; border: 2px dashed #dcdee0; border-radius: 0.5rem; color: #888;">
+            No hay imagen seleccionada
+          </div>
+        \`;
+      }
+
+      // Close modal when clicking outside
+      document.getElementById('featuredImageModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeFeaturedImagePicker();
+        }
+      });
+
+      // Add new category
+      const newCategories = [];
+      function addNewCategory() {
+        const input = document.getElementById('newCategoryInput');
+        const categoryName = input.value.trim();
+
+        if (!categoryName) {
+          alert('Por favor ingresa un nombre para la categoría');
+          return;
+        }
+
+        // Add to temporary array
+        newCategories.push(categoryName);
+
+        // Update hidden input
+        document.getElementById('newCategoriesData').value = JSON.stringify(newCategories);
+
+        // Add visual feedback
+        let checkboxList = input.closest('.nexus-card').querySelector('.checkbox-list');
+        if (!checkboxList) {
+          // Create checkbox list if it doesn't exist
+          const paragraph = input.closest('.nexus-card').querySelector('p');
+          if (paragraph) {
+            const newList = document.createElement('div');
+            newList.className = 'checkbox-list';
+            newList.style.marginBottom = '1rem';
+            paragraph.replaceWith(newList);
+            checkboxList = newList;
+          }
+        }
+
+        if (checkboxList) {
+          const newItem = document.createElement('div');
+          newItem.className = 'checkbox-item';
+          newItem.style.background = '#e8f4ff';
+          newItem.innerHTML = \`
+            <input type="checkbox" checked disabled style="width: 18px; height: 18px;">
+            <label style="font-size: 0.875rem; color: #1e2328;">\${categoryName} <em style="color: #167bff;">(nueva)</em></label>
+          \`;
+          checkboxList.appendChild(newItem);
+        }
+
+        // Clear input
+        input.value = '';
+
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = '✓ Categoría agregada';
+        successMsg.style.cssText = 'margin-top: 0.5rem; color: #00a651; font-size: 0.875rem;';
+        input.parentElement.appendChild(successMsg);
+        setTimeout(() => successMsg.remove(), 2000);
+      }
+
+      // Add new tag
+      const newTags = [];
+      function addNewTag() {
+        const input = document.getElementById('newTagInput');
+        const tagName = input.value.trim();
+
+        if (!tagName) {
+          alert('Por favor ingresa un nombre para la etiqueta');
+          return;
+        }
+
+        // Add to temporary array
+        newTags.push(tagName);
+
+        // Update hidden input
+        document.getElementById('newTagsData').value = JSON.stringify(newTags);
+
+        // Add visual feedback
+        let checkboxList = input.closest('.nexus-card').querySelector('.checkbox-list');
+        if (!checkboxList) {
+          // Create checkbox list if it doesn't exist
+          const paragraph = input.closest('.nexus-card').querySelector('p');
+          if (paragraph) {
+            const newList = document.createElement('div');
+            newList.className = 'checkbox-list';
+            newList.style.marginBottom = '1rem';
+            paragraph.replaceWith(newList);
+            checkboxList = newList;
+          }
+        }
+
+        if (checkboxList) {
+          const newItem = document.createElement('div');
+          newItem.className = 'checkbox-item';
+          newItem.style.background = '#e8f4ff';
+          newItem.innerHTML = \`
+            <input type="checkbox" checked disabled style="width: 18px; height: 18px;">
+            <label style="font-size: 0.875rem; color: #1e2328;">\${tagName} <em style="color: #167bff;">(nueva)</em></label>
+          \`;
+          checkboxList.appendChild(newItem);
+        }
+
+        // Clear input
+        input.value = '';
+
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.textContent = '✓ Etiqueta agregada';
+        successMsg.style.cssText = 'margin-top: 0.5rem; color: #00a651; font-size: 0.875rem;';
+        input.parentElement.appendChild(successMsg);
+        setTimeout(() => successMsg.remove(), 2000);
+      }
+
+      // Allow Enter key to add categories/tags
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('newCategoryInput')?.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewCategory();
+          }
+        });
+
+        document.getElementById('newTagInput')?.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewTag();
+          }
+        });
       });
     </script>`)}
   `;

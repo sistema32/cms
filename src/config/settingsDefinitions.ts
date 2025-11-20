@@ -131,19 +131,21 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
     fields: [
       {
         key: "front_page_type",
-        label: "Página de inicio",
-        description: "Selecciona el tipo de portada predeterminado.",
+        label: "Tu página de inicio muestra",
+        description:
+          "Elige qué mostrar en la página principal de tu sitio web.",
         type: "select",
         defaultValue: "posts",
         options: [
-          { value: "posts", label: "Entradas recientes" },
+          { value: "posts", label: "Tus últimas entradas" },
           { value: "page", label: "Una página estática" },
         ],
       },
       {
         key: "front_page_id",
-        label: "Página estática",
-        description: "Selecciona la página que se mostrará como portada (si aplica).",
+        label: "Página de inicio",
+        description:
+          "Selecciona la página que deseas usar como página de inicio. Solo se usa cuando seleccionas 'Una página estática' arriba.",
         type: "select",
         options: [], // Will be populated dynamically
         defaultValue: null,
@@ -151,7 +153,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "posts_page_id",
         label: "Página de entradas",
-        description: "Selecciona la página que listará las entradas (si aplica).",
+        description:
+          "Selecciona la página donde se mostrarán tus entradas del blog (ej: /blog, /noticias). Solo se usa cuando seleccionas 'Una página estática' como página de inicio.",
         type: "select",
         options: [], // Will be populated dynamically
         defaultValue: null,
@@ -173,7 +176,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "rss_content_type",
         label: "Contenido RSS",
-        description: "Determina si el feed muestra el contenido completo o un extracto.",
+        description:
+          "Determina si el feed muestra el contenido completo o un extracto.",
         type: "select",
         defaultValue: "full",
         options: [
@@ -184,7 +188,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "search_engine_visibility",
         label: "Visibilidad para buscadores",
-        description: "Indica si se permite que motores de búsqueda indexen el sitio.",
+        description:
+          "Indica si se permite que motores de búsqueda indexen el sitio.",
         type: "boolean",
         defaultValue: false,
       },
@@ -231,7 +236,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "comment_moderation",
         label: "Moderar comentarios manualmente",
-        description: "Requiere aprobación manual antes de publicar los comentarios.",
+        description:
+          "Requiere aprobación manual antes de publicar los comentarios.",
         type: "boolean",
         defaultValue: false,
       },
@@ -245,7 +251,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "close_comments_days",
         label: "Cerrar comentarios tras (días)",
-        description: "Cierra automáticamente comentarios después de cierto tiempo (0 = nunca).",
+        description:
+          "Cierra automáticamente comentarios después de cierto tiempo (0 = nunca).",
         type: "number",
         defaultValue: 0,
       },
@@ -280,7 +287,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "default_comments_page",
         label: "Orden de comentarios",
-        description: "Determina si se muestran primero los más antiguos o recientes.",
+        description:
+          "Determina si se muestran primero los más antiguos o recientes.",
         type: "select",
         defaultValue: "oldest",
         options: [
@@ -354,7 +362,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "blog_base",
         label: "Base del blog",
-        description: "Ruta base para el listado de posts del blog (sin barras al inicio/final).",
+        description:
+          "Ruta base para el listado de posts del blog (sin barras al inicio/final).",
         type: "text",
         defaultValue: "blog",
         placeholder: "blog",
@@ -393,14 +402,16 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "default_meta_title",
         label: "Meta título por defecto",
-        description: "Título usado cuando un contenido no define su propio meta título.",
+        description:
+          "Título usado cuando un contenido no define su propio meta título.",
         type: "text",
         defaultValue: "LexCMS - Un CMS moderno y flexible",
       },
       {
         key: "default_meta_description",
         label: "Meta descripción por defecto",
-        description: "Descripción utilizada cuando no hay una descripción específica.",
+        description:
+          "Descripción utilizada cuando no hay una descripción específica.",
         type: "textarea",
         defaultValue:
           "Sistema de gestión de contenidos moderno, flexible y potente",
@@ -442,7 +453,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "captcha_enabled",
         label: "Habilitar Captcha",
-        description: "Activa un proveedor de captcha para formularios públicos.",
+        description:
+          "Activa un proveedor de captcha para formularios públicos.",
         type: "boolean",
         defaultValue: boolEnv(Deno.env.get("ENABLE_CAPTCHA"), false),
       },
@@ -452,7 +464,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
         description: "Selecciona el servicio de captcha a utilizar.",
         type: "select",
         defaultValue: () =>
-          stringEnv(Deno.env.get("CAPTCHA_PROVIDER"), "recaptcha") || "recaptcha",
+          stringEnv(Deno.env.get("CAPTCHA_PROVIDER"), "recaptcha") ||
+          "recaptcha",
         options: [
           { value: "recaptcha", label: "Google reCAPTCHA" },
           { value: "hcaptcha", label: "hCaptcha" },
@@ -470,7 +483,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
         key: "captcha_hcaptcha_secret",
         label: "hCaptcha Secret",
         type: "password",
-        defaultValue: () => stringEnv(Deno.env.get("HCAPTCHA_SECRET_KEY"), null),
+        defaultValue: () =>
+          stringEnv(Deno.env.get("HCAPTCHA_SECRET_KEY"), null),
       },
       {
         key: "captcha_turnstile_secret",
@@ -478,196 +492,6 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
         type: "password",
         defaultValue: () =>
           stringEnv(Deno.env.get("TURNSTILE_SECRET_KEY"), null),
-      },
-    ],
-  },
-  {
-    id: "theme",
-    label: "Theme",
-    fields: [
-      {
-        key: "active_theme",
-        label: "Theme activo",
-        description: "Nombre del theme que se usa en el frontend.",
-        type: "text",
-        defaultValue: "default",
-      },
-    ],
-  },
-  {
-    id: "homepage",
-    label: "Homepage",
-    fields: [
-      {
-        key: "homepage_hero_title",
-        label: "Título del hero",
-        description: "Título principal del hero de la homepage.",
-        type: "text",
-        defaultValue: "Bienvenido a LexCMS",
-      },
-      {
-        key: "homepage_hero_subtitle",
-        label: "Subtítulo del hero",
-        description: "Subtítulo o descripción del hero.",
-        type: "textarea",
-        defaultValue: "Descubre contenido increíble",
-      },
-      {
-        key: "homepage_hero_cta_text",
-        label: "Texto del botón CTA",
-        description: "Texto del botón de llamada a la acción en el hero.",
-        type: "text",
-        defaultValue: "Ver Blog",
-      },
-      {
-        key: "homepage_hero_cta_url",
-        label: "URL del botón CTA",
-        description: "Enlace del botón de llamada a la acción.",
-        type: "url",
-        defaultValue: "/blog",
-      },
-      {
-        key: "homepage_hero_background",
-        label: "Imagen de fondo del hero",
-        description: "URL de la imagen de fondo del hero (opcional).",
-        type: "url",
-        defaultValue: null,
-      },
-      {
-        key: "homepage_hero_style",
-        label: "Estilo del hero",
-        description: "Estilo visual del hero de la homepage.",
-        type: "select",
-        defaultValue: "default",
-        options: [
-          { value: "default", label: "Por defecto" },
-          { value: "minimal", label: "Minimalista" },
-          { value: "centered", label: "Centrado" },
-          { value: "split", label: "Dividido" },
-        ],
-      },
-      {
-        key: "homepage_show_featured",
-        label: "Mostrar posts destacados",
-        description: "Muestra la sección de posts destacados en la homepage.",
-        type: "boolean",
-        defaultValue: true,
-      },
-      {
-        key: "homepage_featured_count",
-        label: "Cantidad de posts destacados",
-        description: "Número de posts destacados a mostrar en la homepage.",
-        type: "number",
-        defaultValue: 6,
-      },
-      {
-        key: "homepage_featured_title",
-        label: "Título de posts destacados",
-        description: "Título de la sección de posts destacados.",
-        type: "text",
-        defaultValue: "Últimos Artículos",
-      },
-      {
-        key: "homepage_featured_subtitle",
-        label: "Subtítulo de posts destacados",
-        description: "Descripción de la sección de posts destacados.",
-        type: "text",
-        defaultValue: "Descubre nuestro contenido más reciente",
-      },
-      {
-        key: "homepage_show_categories",
-        label: "Mostrar categorías",
-        description: "Muestra la sección de categorías en la homepage.",
-        type: "boolean",
-        defaultValue: true,
-      },
-      {
-        key: "homepage_categories_title",
-        label: "Título de categorías",
-        description: "Título de la sección de categorías.",
-        type: "text",
-        defaultValue: "Explora por Categoría",
-      },
-      {
-        key: "homepage_show_newsletter",
-        label: "Mostrar newsletter",
-        description: "Muestra la sección de suscripción al newsletter.",
-        type: "boolean",
-        defaultValue: true,
-      },
-      {
-        key: "homepage_cta_title",
-        label: "Título del CTA de newsletter",
-        description: "Título de la sección de suscripción.",
-        type: "text",
-        defaultValue: "¡No te pierdas nada!",
-      },
-      {
-        key: "homepage_cta_text",
-        label: "Texto del CTA de newsletter",
-        description: "Descripción de la sección de suscripción.",
-        type: "textarea",
-        defaultValue: "Suscríbete a nuestro newsletter para recibir las últimas actualizaciones.",
-      },
-      {
-        key: "homepage_about_title",
-        label: "Título de la sección 'Acerca de'",
-        description: "Título de la sección acerca de (opcional).",
-        type: "text",
-        defaultValue: "¿Quiénes Somos?",
-      },
-      {
-        key: "homepage_about_text",
-        label: "Texto de la sección 'Acerca de'",
-        description: "Contenido de la sección acerca de (dejar vacío para no mostrar).",
-        type: "textarea",
-        defaultValue: null,
-      },
-    ],
-  },
-  {
-    id: "blog",
-    label: "Blog",
-    fields: [
-      {
-        key: "blog_title",
-        label: "Título del blog",
-        description: "Título de la página de listado del blog.",
-        type: "text",
-        defaultValue: "Blog",
-      },
-      {
-        key: "blog_description",
-        label: "Descripción del blog",
-        description: "Descripción que aparece en la parte superior del blog.",
-        type: "textarea",
-        defaultValue: "Todos nuestros artículos",
-      },
-      {
-        key: "blog_layout",
-        label: "Diseño del blog",
-        description: "Estilo de visualización de los posts en el blog.",
-        type: "select",
-        defaultValue: "grid",
-        options: [
-          { value: "grid", label: "Cuadrícula" },
-          { value: "list", label: "Lista" },
-          { value: "masonry", label: "Masonry" },
-        ],
-      },
-      {
-        key: "blog_sidebar_enabled",
-        label: "Habilitar sidebar",
-        description: "Muestra el sidebar en las páginas del blog.",
-        type: "boolean",
-        defaultValue: true,
-      },
-      {
-        key: "blog_show_breadcrumbs",
-        label: "Mostrar breadcrumbs",
-        description: "Muestra el breadcrumb de navegación en las páginas del blog.",
-        type: "boolean",
-        defaultValue: true,
       },
     ],
   },
@@ -685,14 +509,16 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
       {
         key: "enable_2fa",
         label: "Habilitar 2FA",
-        description: "Obliga a los usuarios a configurar autenticación de dos factores.",
+        description:
+          "Obliga a los usuarios a configurar autenticación de dos factores.",
         type: "boolean",
         defaultValue: boolEnv(Deno.env.get("ENABLE_2FA"), false),
       },
       {
         key: "enable_registration",
         label: "Permitir registro de usuarios",
-        description: "Permite a usuarios nuevos crear cuentas desde el frontend.",
+        description:
+          "Permite a usuarios nuevos crear cuentas desde el frontend.",
         type: "boolean",
         defaultValue: true,
       },
@@ -700,7 +526,8 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
   },
 ];
 
-export const SETTINGS_DEFINITIONS: SettingCategoryDefinition[] = settingsDefinitions;
+export const SETTINGS_DEFINITIONS: SettingCategoryDefinition[] =
+  settingsDefinitions;
 
 export function resolveFieldDefault(field: SettingFieldDefinition): unknown {
   if (typeof field.defaultValue === "function") {

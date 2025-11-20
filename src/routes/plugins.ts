@@ -47,6 +47,9 @@ plugins.patch('/:name/settings', (c) => pluginController.updateSettings(c));
 // Reload a plugin
 plugins.post('/:name/reload', (c) => pluginController.reloadPlugin(c));
 
+// Serve plugin assets
+plugins.get('/:name/assets/*', (c) => pluginController.serveAsset(c));
+
 // Validate plugin manifest
 plugins.get('/:name/validate', (c) => pluginController.validatePlugin(c));
 

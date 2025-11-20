@@ -70,13 +70,14 @@ try {
               fullErrorText = String(error);
             }
 
-            // Verificar si es un error de "tabla ya existe" o "índice ya existe"
+            // Verificar si es un error de "tabla ya existe" o "índice ya existe" o "columna duplicada"
             const isTableExists = /table\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
             const isIndexExists = /index\s+[`'"]?\w+[`'"]?\s+already\s+exists/i.test(fullErrorText);
+            const isDuplicateColumn = /duplicate\s+column\s+name/i.test(fullErrorText);
             const isSqliteTableError = fullErrorText.includes("SQLITE_ERROR") &&
-                                        fullErrorText.includes("already exists");
+              fullErrorText.includes("already exists");
 
-            if (isTableExists || isIndexExists || isSqliteTableError) {
+            if (isTableExists || isIndexExists || isSqliteTableError || isDuplicateColumn) {
               // Tratar como advertencia y continuar
               hasWarnings = true;
               skipCount++;

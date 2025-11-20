@@ -2,8 +2,8 @@ import * as settingsService from "../../../services/settingsService.ts";
 import * as menuService from "../../../services/menuService.ts";
 import * as menuItemService from "../../../services/menuItemService.ts";
 import { db } from "../../../config/db.ts";
-import { content, users, categories, tags } from "../../../db/schema.ts";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { categories, content, tags, users } from "../../../db/schema.ts";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 /**
  * Theme Helpers - Funciones auxiliares para templates
@@ -40,8 +40,11 @@ export async function getSiteData(): Promise<SiteData> {
 /**
  * Obtiene custom settings del theme activo
  */
-export async function getCustomSettings(themeName?: string): Promise<Record<string, any>> {
-  const activeTheme = themeName || await settingsService.getSetting("active_theme", "default");
+export async function getCustomSettings(
+  themeName?: string,
+): Promise<Record<string, any>> {
+  const activeTheme = themeName ||
+    await settingsService.getSetting("active_theme", "default");
   return await settingsService.getThemeCustomSettings(activeTheme);
 }
 
@@ -90,7 +93,7 @@ function buildMenuItemUrl(item: any): string {
  * Convierte items de menú del servicio al formato esperado por los templates
  */
 function convertMenuItems(items: any[]): MenuItem[] {
-  return items.map(item => ({
+  return items.map((item) => ({
     id: item.id,
     label: item.label,
     url: buildMenuItemUrl(item),
@@ -165,7 +168,7 @@ export async function getRecentPosts(limit = 5): Promise<PostData[]> {
         },
       },
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
@@ -202,9 +205,10 @@ export async function getRecentPosts(limit = 5): Promise<PostData[]> {
  */
 export async function getPaginatedPosts(
   page: number = 1,
-  perPage?: number
+  perPage?: number,
 ): Promise<{ posts: PostData[]; total: number; totalPages: number }> {
-  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  const postsPerPage = perPage ||
+    await settingsService.getSetting("posts_per_page", 10);
   const offset = (page - 1) * postsPerPage;
 
   // Obtener total de posts publicados
@@ -218,7 +222,7 @@ export async function getPaginatedPosts(
     const stickyPosts = await db.query.content.findMany({
       where: and(
         eq(content.status, "published"),
-        eq(content.sticky, true)
+        eq(content.sticky, true),
       ),
       orderBy: [desc(content.publishedAt)],
       with: {
@@ -234,7 +238,7 @@ export async function getPaginatedPosts(
           },
         },
         featuredImage: true,
-        contentSeo: true,
+        seo: true,
       },
     });
 
@@ -275,7 +279,7 @@ export async function getPaginatedPosts(
       const normalPosts = await db.query.content.findMany({
         where: and(
           eq(content.status, "published"),
-          eq(content.sticky, false)
+          eq(content.sticky, false),
         ),
         orderBy: [desc(content.publishedAt)],
         limit: remainingSlots,
@@ -292,7 +296,7 @@ export async function getPaginatedPosts(
             },
           },
           featuredImage: true,
-          contentSeo: true,
+          seo: true,
         },
       });
 
@@ -329,7 +333,7 @@ export async function getPaginatedPosts(
     const posts = await db.query.content.findMany({
       where: and(
         eq(content.status, "published"),
-        eq(content.sticky, false)
+        eq(content.sticky, false),
       ),
       orderBy: [desc(content.publishedAt)],
       limit: postsPerPage,
@@ -347,7 +351,7 @@ export async function getPaginatedPosts(
           },
         },
         featuredImage: true,
-        contentSeo: true,
+        seo: true,
       },
     });
 
@@ -400,7 +404,7 @@ export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
   const posts = await db.query.content.findMany({
     where: and(
       eq(content.status, "published"),
-      eq(content.featured, true)
+      eq(content.featured, true),
     ),
     orderBy: [desc(content.publishedAt)],
     limit,
@@ -417,7 +421,7 @@ export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
         },
       },
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
@@ -459,7 +463,8 @@ export async function getFeaturedPosts(limit = 3): Promise<PostData[]> {
  * Formatea una fecha según el formato configurado
  */
 export async function formatDate(date: Date, format?: string): Promise<string> {
-  const dateFormat = format || await settingsService.getSetting("date_format", "DD/MM/YYYY");
+  const dateFormat = format ||
+    await settingsService.getSetting("date_format", "DD/MM/YYYY");
 
   // Implementación simple de formateo
   // TODO: Usar librería de formateo de fechas más robusta
@@ -477,7 +482,8 @@ export async function formatDate(date: Date, format?: string): Promise<string> {
  * Formatea hora según el formato configurado
  */
 export async function formatTime(date: Date, format?: string): Promise<string> {
-  const timeFormat = format || await settingsService.getSetting("time_format", "HH:mm");
+  const timeFormat = format ||
+    await settingsService.getSetting("time_format", "HH:mm");
 
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
@@ -532,7 +538,10 @@ export function imgUrl(url: string, size?: string): string {
  */
 export async function postUrl(slug: string): Promise<string> {
   const siteUrl = await settingsService.getSetting("site_url", "");
-  const permalinkStructure = await settingsService.getSetting("permalink_structure", "/:slug/");
+  const permalinkStructure = await settingsService.getSetting(
+    "permalink_structure",
+    "/:slug/",
+  );
 
   return `${siteUrl}${permalinkStructure.replace(":slug", slug)}`;
 }
@@ -550,7 +559,10 @@ export async function blogUrl(): Promise<string> {
  */
 export async function categoryUrl(slug: string): Promise<string> {
   const siteUrl = await settingsService.getSetting("site_url", "");
-  const categoryBase = await settingsService.getSetting("category_base", "category");
+  const categoryBase = await settingsService.getSetting(
+    "category_base",
+    "category",
+  );
 
   return `${siteUrl}/${categoryBase}/${slug}`;
 }
@@ -582,9 +594,10 @@ export interface PaginationData {
 export async function getPagination(
   currentPage: number,
   totalItems: number,
-  itemsPerPage?: number
+  itemsPerPage?: number,
 ): Promise<PaginationData> {
-  const perPage = itemsPerPage || await settingsService.getSetting("posts_per_page", 10);
+  const perPage = itemsPerPage ||
+    await settingsService.getSetting("posts_per_page", 10);
   const totalPages = Math.ceil(totalItems / perPage);
 
   return {
@@ -604,7 +617,7 @@ export async function getPagination(
 export function getPaginationNumbers(
   currentPage: number,
   totalPages: number,
-  delta: number = 2
+  delta: number = 2,
 ): (number | string)[] {
   if (totalPages <= 1) return [1];
 
@@ -722,7 +735,8 @@ export async function getCategories(limit?: number): Promise<CategoryData[]> {
         where: eq(content.status, "published"),
         with: {
           contentCategories: {
-            where: (contentCategories, { eq }) => eq(contentCategories.categoryId, cat.id),
+            where: (contentCategories, { eq }) =>
+              eq(contentCategories.categoryId, cat.id),
           },
         },
       });
@@ -732,14 +746,14 @@ export async function getCategories(limit?: number): Promise<CategoryData[]> {
         name: cat.name,
         slug: cat.slug,
         description: cat.description || undefined,
-        count: posts.filter(p => p.contentCategories.length > 0).length,
+        count: posts.filter((p) => p.contentCategories.length > 0).length,
       };
-    })
+    }),
   );
 
   // Filtrar categorías con posts y ordenar por cantidad de posts
   const categoriesWithPosts = categoriesWithCount
-    .filter(cat => cat.count && cat.count > 0)
+    .filter((cat) => cat.count && cat.count > 0)
     .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   if (limit) {
@@ -780,14 +794,14 @@ export async function getPopularTags(limit = 10): Promise<TagData[]> {
         id: tag.id,
         name: tag.name,
         slug: tag.slug,
-        count: posts.filter(p => p.contentTags.length > 0).length,
+        count: posts.filter((p) => p.contentTags.length > 0).length,
       };
-    })
+    }),
   );
 
   // Filtrar tags con posts y ordenar por cantidad
   const tagsWithPosts = tagsWithCount
-    .filter(tag => tag.count && tag.count > 0)
+    .filter((tag) => tag.count && tag.count > 0)
     .sort((a, b) => (b.count || 0) - (a.count || 0));
 
   return tagsWithPosts.slice(0, limit);
@@ -796,7 +810,9 @@ export async function getPopularTags(limit = 10): Promise<TagData[]> {
 /**
  * Obtiene una categoría por slug
  */
-export async function getCategoryBySlug(slug: string): Promise<CategoryData | null> {
+export async function getCategoryBySlug(
+  slug: string,
+): Promise<CategoryData | null> {
   const category = await db.query.categories.findFirst({
     where: eq(categories.slug, slug),
   });
@@ -810,7 +826,8 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryData | nu
     where: eq(content.status, "published"),
     with: {
       contentCategories: {
-        where: (contentCategories, { eq }) => eq(contentCategories.categoryId, category.id),
+        where: (contentCategories, { eq }) =>
+          eq(contentCategories.categoryId, category.id),
       },
     },
   });
@@ -820,7 +837,7 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryData | nu
     name: category.name,
     slug: category.slug,
     description: category.description || undefined,
-    count: posts.filter(p => p.contentCategories.length > 0).length,
+    count: posts.filter((p) => p.contentCategories.length > 0).length,
   };
 }
 
@@ -850,7 +867,7 @@ export async function getTagBySlug(slug: string): Promise<TagData | null> {
     id: tag.id,
     name: tag.name,
     slug: tag.slug,
-    count: posts.filter(p => p.contentTags.length > 0).length,
+    count: posts.filter((p) => p.contentTags.length > 0).length,
   };
 }
 
@@ -860,9 +877,17 @@ export async function getTagBySlug(slug: string): Promise<TagData | null> {
 export async function getPostsByCategory(
   categorySlug: string,
   page: number = 1,
-  perPage?: number
-): Promise<{ posts: PostData[]; total: number; totalPages: number; category: CategoryData | null }> {
-  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  perPage?: number,
+): Promise<
+  {
+    posts: PostData[];
+    total: number;
+    totalPages: number;
+    category: CategoryData | null;
+  }
+> {
+  const postsPerPage = perPage ||
+    await settingsService.getSetting("posts_per_page", 10);
   const offset = (page - 1) * postsPerPage;
 
   // Obtener categoría
@@ -889,13 +914,13 @@ export async function getPostsByCategory(
         },
       },
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
   // Filtrar solo posts de esta categoría
-  const categoryPosts = allPosts.filter(post =>
-    post.contentCategories.some(cc => cc.categoryId === category.id)
+  const categoryPosts = allPosts.filter((post) =>
+    post.contentCategories.some((cc) => cc.categoryId === category.id)
   );
 
   const total = categoryPosts.length;
@@ -905,7 +930,7 @@ export async function getPostsByCategory(
   const paginatedPosts = categoryPosts.slice(offset, offset + postsPerPage);
 
   // Formatear posts
-  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+  const formattedPosts: PostData[] = paginatedPosts.map((post) => ({
     id: post.id,
     title: post.title,
     slug: post.slug,
@@ -922,12 +947,12 @@ export async function getPostsByCategory(
       name: post.author.name,
       email: post.author.email,
     },
-    categories: post.contentCategories.map(cc => ({
+    categories: post.contentCategories.map((cc) => ({
       id: cc.category.id,
       name: cc.category.name,
       slug: cc.category.slug,
     })),
-    tags: post.contentTags.map(ct => ({
+    tags: post.contentTags.map((ct) => ({
       id: ct.tag.id,
       name: ct.tag.name,
       slug: ct.tag.slug,
@@ -943,9 +968,12 @@ export async function getPostsByCategory(
 export async function getPostsByTag(
   tagSlug: string,
   page: number = 1,
-  perPage?: number
-): Promise<{ posts: PostData[]; total: number; totalPages: number; tag: TagData | null }> {
-  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  perPage?: number,
+): Promise<
+  { posts: PostData[]; total: number; totalPages: number; tag: TagData | null }
+> {
+  const postsPerPage = perPage ||
+    await settingsService.getSetting("posts_per_page", 10);
   const offset = (page - 1) * postsPerPage;
 
   // Obtener tag
@@ -972,13 +1000,13 @@ export async function getPostsByTag(
         },
       },
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
   // Filtrar solo posts con este tag
-  const tagPosts = allPosts.filter(post =>
-    post.contentTags.some(ct => ct.tagId === tag.id)
+  const tagPosts = allPosts.filter((post) =>
+    post.contentTags.some((ct) => ct.tagId === tag.id)
   );
 
   const total = tagPosts.length;
@@ -988,7 +1016,7 @@ export async function getPostsByTag(
   const paginatedPosts = tagPosts.slice(offset, offset + postsPerPage);
 
   // Formatear posts
-  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+  const formattedPosts: PostData[] = paginatedPosts.map((post) => ({
     id: post.id,
     title: post.title,
     slug: post.slug,
@@ -1005,12 +1033,12 @@ export async function getPostsByTag(
       name: post.author.name,
       email: post.author.email,
     },
-    categories: post.contentCategories.map(cc => ({
+    categories: post.contentCategories.map((cc) => ({
       id: cc.category.id,
       name: cc.category.name,
       slug: cc.category.slug,
     })),
-    tags: post.contentTags.map(ct => ({
+    tags: post.contentTags.map((ct) => ({
       id: ct.tag.id,
       name: ct.tag.name,
       slug: ct.tag.slug,
@@ -1026,9 +1054,12 @@ export async function getPostsByTag(
 export async function searchPosts(
   query: string,
   page: number = 1,
-  perPage?: number
-): Promise<{ posts: PostData[]; total: number; totalPages: number; query: string }> {
-  const postsPerPage = perPage || await settingsService.getSetting("posts_per_page", 10);
+  perPage?: number,
+): Promise<
+  { posts: PostData[]; total: number; totalPages: number; query: string }
+> {
+  const postsPerPage = perPage ||
+    await settingsService.getSetting("posts_per_page", 10);
   const offset = (page - 1) * postsPerPage;
 
   if (!query || query.trim() === "") {
@@ -1054,15 +1085,16 @@ export async function searchPosts(
         },
       },
       featuredImage: true,
-      contentSeo: true,
+      seo: true,
     },
   });
 
   // Filtrar posts que coincidan con la búsqueda
-  const searchResults = allPosts.filter(post => {
+  const searchResults = allPosts.filter((post) => {
     const titleMatch = post.title.toLowerCase().includes(searchQuery);
     const bodyMatch = post.body.toLowerCase().includes(searchQuery);
-    const excerptMatch = post.excerpt?.toLowerCase().includes(searchQuery) || false;
+    const excerptMatch = post.excerpt?.toLowerCase().includes(searchQuery) ||
+      false;
 
     return titleMatch || bodyMatch || excerptMatch;
   });
@@ -1074,7 +1106,7 @@ export async function searchPosts(
   const paginatedPosts = searchResults.slice(offset, offset + postsPerPage);
 
   // Formatear posts
-  const formattedPosts: PostData[] = paginatedPosts.map(post => ({
+  const formattedPosts: PostData[] = paginatedPosts.map((post) => ({
     id: post.id,
     title: post.title,
     slug: post.slug,
@@ -1091,12 +1123,12 @@ export async function searchPosts(
       name: post.author.name,
       email: post.author.email,
     },
-    categories: post.contentCategories.map(cc => ({
+    categories: post.contentCategories.map((cc) => ({
       id: cc.category.id,
       name: cc.category.name,
       slug: cc.category.slug,
     })),
-    tags: post.contentTags.map(ct => ({
+    tags: post.contentTags.map((ct) => ({
       id: ct.tag.id,
       name: ct.tag.name,
       slug: ct.tag.slug,

@@ -33,6 +33,16 @@ import BackupsNexusPage from "../admin/pages/BackupsNexus.tsx";
 import SystemUpdatesNexusPage from "../admin/pages/SystemUpdatesNexus.tsx";
 import CommentsNexusPage from "../admin/pages/CommentsNexus.tsx";
 import AutoModerationNexusPage from "../admin/pages/AutoModerationNexus.tsx";
+import SecurityDashboard from "../admin/pages/security/SecurityDashboard.tsx";
+import IPBlacklist from "../admin/pages/security/IPBlacklist.tsx";
+import IPWhitelist from "../admin/pages/security/IPWhitelist.tsx";
+import SecurityLogs from "../admin/pages/security/SecurityLogs.tsx";
+import RateLimitConfig from "../admin/pages/security/RateLimitConfig.tsx";
+import {
+  SecurityRules,
+  SecuritySettings,
+  SecurityReportsPage,
+} from "../admin/pages/security/index.ts";
 import { db } from "../config/db.ts";
 import {
   categories,
@@ -71,7 +81,11 @@ import * as userService from "../services/userService.ts";
 import { pluginService } from "../services/pluginService.ts";
 import type { MenuItemWithChildren } from "../services/menuItemService.ts";
 import { backupManager } from "../lib/backup/index.ts";
-import { systemUpdatesService, SYSTEM_VERSION, getUpdateConfig } from "../lib/system-updates/index.ts";
+import {
+  getUpdateConfig,
+  SYSTEM_VERSION,
+  systemUpdatesService,
+} from "../lib/system-updates/index.ts";
 
 function parseSettingValueForAdmin(value: string | null): unknown {
   if (value === null || value === undefined) {
@@ -209,13 +223,15 @@ const adminRouter = new Hono();
  */
 async function getPluginPanels() {
   try {
-    const { AdminPanelRegistry } = await import("../lib/plugin-system/index.ts");
+    const { AdminPanelRegistry } = await import(
+      "../lib/plugin-system/index.ts"
+    );
     const allPanels = AdminPanelRegistry.getAllPanels();
 
     // Filter only panels that should show in menu
     return allPanels
-      .filter(panel => panel.showInMenu !== false)
-      .map(panel => ({
+      .filter((panel) => panel.showInMenu !== false)
+      .map((panel) => ({
         id: panel.id,
         title: panel.title,
         pluginName: panel.pluginName,
@@ -547,7 +563,9 @@ adminRouter.get("/", async (c) => {
         limit: 5,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -586,7 +604,9 @@ adminRouter.get("/notifications", async (c) => {
         limit: 100,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -645,7 +665,7 @@ adminRouter.get("/content", async (c) => {
         user: {
           id: user.userId,
           name: user.name as string | null,
-          email: user.email
+          email: user.email,
         },
         contents: contents.map((item) => ({
           id: item.id,
@@ -676,9 +696,15 @@ adminRouter.get("/content/new", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -689,9 +715,13 @@ adminRouter.get("/content/new", async (c) => {
       db.query.tags.findMany(),
     ]);
 
-return c.html(
+    return c.html(
       ContentFormNexusPage({
-        user: { id: user.userId, name: user.name as string | null, email: user.email },
+        user: {
+          id: user.userId,
+          name: user.name as string | null,
+          email: user.email,
+        },
         contentTypes: contentTypesData,
         categories: categoriesData,
         tags: tagsData,
@@ -727,8 +757,8 @@ adminRouter.post("/content/new", async (c) => {
     const categoryIds = Array.isArray(body.categories)
       ? body.categories.map((id: any) => parseInt(id as string))
       : body.categories
-      ? [parseInt(body.categories as string)]
-      : [];
+        ? [parseInt(body.categories as string)]
+        : [];
 
     if (categoryIds.length > 0) {
       await db.insert(contentCategories).values(
@@ -743,8 +773,8 @@ adminRouter.post("/content/new", async (c) => {
     const tagIds = Array.isArray(body.tags)
       ? body.tags.map((id: any) => parseInt(id as string))
       : body.tags
-      ? [parseInt(body.tags as string)]
-      : [];
+        ? [parseInt(body.tags as string)]
+        : [];
 
     if (tagIds.length > 0) {
       await db.insert(contentTags).values(
@@ -798,9 +828,15 @@ adminRouter.get("/content/edit/:id", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -857,8 +893,8 @@ adminRouter.post("/content/edit/:id", async (c) => {
     const categoryIds = Array.isArray(body.categories)
       ? body.categories.map((id: any) => parseInt(id as string))
       : body.categories
-      ? [parseInt(body.categories as string)]
-      : [];
+        ? [parseInt(body.categories as string)]
+        : [];
 
     if (categoryIds.length > 0) {
       await db.insert(contentCategories).values(
@@ -875,8 +911,8 @@ adminRouter.post("/content/edit/:id", async (c) => {
     const tagIds = Array.isArray(body.tags)
       ? body.tags.map((id: any) => parseInt(id as string))
       : body.tags
-      ? [parseInt(body.tags as string)]
-      : [];
+        ? [parseInt(body.tags as string)]
+        : [];
 
     if (tagIds.length > 0) {
       await db.insert(contentTags).values(
@@ -987,9 +1023,15 @@ adminRouter.get("/posts/new", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1099,9 +1141,15 @@ adminRouter.get("/posts/edit/:id", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1321,9 +1369,15 @@ adminRouter.get("/pages/new", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1408,9 +1462,15 @@ adminRouter.get("/pages/edit/:id", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1545,9 +1605,15 @@ adminRouter.get("/media", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1555,7 +1621,11 @@ adminRouter.get("/media", async (c) => {
     const mediaList = await mediaService.listMedia(limit, offset, type);
 
     return c.html(MediaLibraryNexusPage({
-      user: { id: user.userId, name: user.name || user.email, email: user.email },
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
       media: mediaList as any[],
       limit,
       offset,
@@ -1695,9 +1765,15 @@ adminRouter.get("/appearance/themes/browser", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1750,9 +1826,15 @@ adminRouter.get("/appearance/themes/settings", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1950,9 +2032,15 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -1971,7 +2059,7 @@ adminRouter.get("/appearance/themes/preview", async (c) => {
     // Crear sesión de preview
     const session = await themePreviewService.createPreviewSession(
       themeName,
-      user.id
+      user.id,
     );
 
     return c.html(ThemePreviewNexusPage({
@@ -2003,14 +2091,21 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
 
-    const themeName = c.req.query("theme") || await themeService.getActiveTheme();
+    const themeName = c.req.query("theme") ||
+      await themeService.getActiveTheme();
 
     const config = await themeService.loadThemeConfig(themeName);
     if (!config) {
@@ -2020,7 +2115,7 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
     // Crear sesión de customizer
     const session = await themeCustomizerService.createSession(
       user.id,
-      themeName
+      themeName,
     );
 
     // Preparar custom settings
@@ -2036,12 +2131,14 @@ adminRouter.get("/appearance/themes/customize", async (c) => {
           options: typed.options,
           group: typed.group || "general",
           defaultValue: typed.default,
-          value: savedSettings[key] !== undefined ? savedSettings[key] : typed.default,
+          value: savedSettings[key] !== undefined
+            ? savedSettings[key]
+            : typed.default,
           min: typed.min,
           max: typed.max,
           step: typed.step,
         };
-      }
+      },
     );
 
     return c.html(ThemeCustomizerNexusPage({
@@ -2073,26 +2170,38 @@ adminRouter.get("/appearance/themes/editor", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
 
-    const themeName = c.req.query("theme") || await themeService.getActiveTheme();
+    const themeName = c.req.query("theme") ||
+      await themeService.getActiveTheme();
     const filePath = c.req.query("file");
 
     // Build file tree
     const themeDir = join(Deno.cwd(), "src", "themes", themeName);
 
-    async function buildFileTree(dirPath: string, relativePath = ""): Promise<any[]> {
+    async function buildFileTree(
+      dirPath: string,
+      relativePath = "",
+    ): Promise<any[]> {
       const files: any[] = [];
 
       try {
         for await (const entry of Deno.readDir(dirPath)) {
           const entryPath = join(dirPath, entry.name);
-          const relPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+          const relPath = relativePath
+            ? `${relativePath}/${entry.name}`
+            : entry.name;
 
           if (entry.isDirectory) {
             const children = await buildFileTree(entryPath, relPath);
@@ -2190,7 +2299,10 @@ adminRouter.post("/api/admin/themes/editor/save", async (c) => {
     // Invalidate theme cache
     themeService.invalidateThemeCache(themeName);
 
-    return c.redirect(`${env.ADMIN_PATH}/appearance/themes/editor?theme=${themeName}&file=${encodeURIComponent(filePath)}&saved=1`);
+    return c.redirect(
+      `${env.ADMIN_PATH}/appearance/themes/editor?theme=${themeName}&file=${encodeURIComponent(filePath)
+      }&saved=1`,
+    );
   } catch (error: any) {
     console.error("Error saving theme file:", error);
     return c.text("Error al guardar el archivo", 500);
@@ -2207,9 +2319,15 @@ adminRouter.get("/appearance/widgets", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -2262,7 +2380,10 @@ adminRouter.post("/api/admin/themes/cache/clear", async (c) => {
 
     if (themeName) {
       themeService.invalidateThemeCache(themeName);
-      return c.json({ success: true, message: `Cache cleared for theme: ${themeName}` });
+      return c.json({
+        success: true,
+        message: `Cache cleared for theme: ${themeName}`,
+      });
     } else {
       themeService.invalidateAllCache();
       return c.json({ success: true, message: "All cache cleared" });
@@ -2297,9 +2418,10 @@ adminRouter.get("/api/admin/themes/config/export", async (c) => {
     const themeName = c.req.query("theme");
     const includeMenus = c.req.query("includeMenus") === "true";
 
-    const { exportThemeConfig, formatExport, generateExportFilename } = await import(
-      "../services/themeConfigService.ts"
-    );
+    const { exportThemeConfig, formatExport, generateExportFilename } =
+      await import(
+        "../services/themeConfigService.ts"
+      );
 
     const activeTheme = themeName || await themeService.getActiveTheme();
     const exportData = await exportThemeConfig(activeTheme, {
@@ -2369,7 +2491,9 @@ adminRouter.post("/api/admin/themes/config/validate", async (c) => {
       return c.json({ error: "Configuration data is required" }, 400);
     }
 
-    const { validateThemeConfigExport } = await import("../services/themeConfigService.ts");
+    const { validateThemeConfigExport } = await import(
+      "../services/themeConfigService.ts"
+    );
 
     const validation = await validateThemeConfigExport(config);
 
@@ -2402,12 +2526,18 @@ adminRouter.post("/api/admin/themes/preview/create", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const { themePreviewService } = await import("../services/themePreviewService.ts");
-    const session = await themePreviewService.createPreviewSession(theme, user.id);
+    const { themePreviewService } = await import(
+      "../services/themePreviewService.ts"
+    );
+    const session = await themePreviewService.createPreviewSession(
+      theme,
+      user.id,
+    );
 
     // Generate preview URL
     const baseUrl = env.BASE_URL || `http://localhost:${env.PORT}`;
-    const previewUrl = `${baseUrl}/?theme_preview=1&preview_token=${session.token}`;
+    const previewUrl =
+      `${baseUrl}/?theme_preview=1&preview_token=${session.token}`;
 
     return c.json({
       success: true,
@@ -2436,7 +2566,9 @@ adminRouter.post("/api/admin/themes/preview/activate", async (c) => {
       return c.json({ error: "Preview token is required" }, 400);
     }
 
-    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const { themePreviewService } = await import(
+      "../services/themePreviewService.ts"
+    );
     const session = await themePreviewService.verifyPreviewToken(token);
 
     if (!session) {
@@ -2467,7 +2599,9 @@ adminRouter.delete("/api/admin/themes/preview/:token", async (c) => {
   try {
     const token = c.req.param("token");
 
-    const { themePreviewService } = await import("../services/themePreviewService.ts");
+    const { themePreviewService } = await import(
+      "../services/themePreviewService.ts"
+    );
     await themePreviewService.endPreviewSession(token);
 
     return c.json({ success: true });
@@ -2498,7 +2632,9 @@ adminRouter.post("/api/admin/themes/customizer/session", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const session = await themeCustomizerService.createSession(user.id, theme);
 
     // Check for existing draft
@@ -2523,7 +2659,9 @@ adminRouter.get("/api/admin/themes/customizer/state/:sessionId", async (c) => {
   try {
     const sessionId = c.req.param("sessionId");
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const state = await themeCustomizerService.getState(sessionId);
 
     return c.json(state);
@@ -2545,12 +2683,14 @@ adminRouter.post("/api/admin/themes/customizer/change", async (c) => {
       return c.json({ error: "sessionId and settingKey are required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const state = await themeCustomizerService.applyChange(
       sessionId,
       settingKey,
       value,
-      description
+      description,
     );
 
     return c.json({ success: true, state });
@@ -2572,7 +2712,9 @@ adminRouter.post("/api/admin/themes/customizer/undo", async (c) => {
       return c.json({ error: "sessionId is required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const state = await themeCustomizerService.undo(sessionId);
 
     return c.json({ success: true, state });
@@ -2594,7 +2736,9 @@ adminRouter.post("/api/admin/themes/customizer/redo", async (c) => {
       return c.json({ error: "sessionId is required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const state = await themeCustomizerService.redo(sessionId);
 
     return c.json({ success: true, state });
@@ -2616,7 +2760,9 @@ adminRouter.post("/api/admin/themes/customizer/reset", async (c) => {
       return c.json({ error: "sessionId is required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     const state = await themeCustomizerService.reset(sessionId);
 
     return c.json({ success: true, state });
@@ -2638,7 +2784,9 @@ adminRouter.post("/api/admin/themes/customizer/save-draft", async (c) => {
       return c.json({ error: "sessionId is required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     await themeCustomizerService.saveDraft(sessionId);
 
     return c.json({ success: true, message: "Draft saved successfully" });
@@ -2660,7 +2808,9 @@ adminRouter.post("/api/admin/themes/customizer/publish", async (c) => {
       return c.json({ error: "sessionId is required" }, 400);
     }
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
+    const { themeCustomizerService } = await import(
+      "../services/themeCustomizerService.ts"
+    );
     await themeCustomizerService.publish(sessionId);
 
     return c.json({ success: true, message: "Changes published successfully" });
@@ -2673,36 +2823,46 @@ adminRouter.post("/api/admin/themes/customizer/publish", async (c) => {
 /**
  * GET /api/admin/themes/customizer/history/:sessionId - Get change history
  */
-adminRouter.get("/api/admin/themes/customizer/history/:sessionId", async (c) => {
-  try {
-    const sessionId = c.req.param("sessionId");
+adminRouter.get(
+  "/api/admin/themes/customizer/history/:sessionId",
+  async (c) => {
+    try {
+      const sessionId = c.req.param("sessionId");
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
-    const history = themeCustomizerService.getHistory(sessionId);
+      const { themeCustomizerService } = await import(
+        "../services/themeCustomizerService.ts"
+      );
+      const history = themeCustomizerService.getHistory(sessionId);
 
-    return c.json({ history });
-  } catch (error: any) {
-    console.error("Error getting history:", error);
-    return c.json({ error: error.message }, 500);
-  }
-});
+      return c.json({ history });
+    } catch (error: any) {
+      console.error("Error getting history:", error);
+      return c.json({ error: error.message }, 500);
+    }
+  },
+);
 
 /**
  * DELETE /api/admin/themes/customizer/session/:sessionId - End session
  */
-adminRouter.delete("/api/admin/themes/customizer/session/:sessionId", async (c) => {
-  try {
-    const sessionId = c.req.param("sessionId");
+adminRouter.delete(
+  "/api/admin/themes/customizer/session/:sessionId",
+  async (c) => {
+    try {
+      const sessionId = c.req.param("sessionId");
 
-    const { themeCustomizerService } = await import("../services/themeCustomizerService.ts");
-    await themeCustomizerService.endSession(sessionId);
+      const { themeCustomizerService } = await import(
+        "../services/themeCustomizerService.ts"
+      );
+      await themeCustomizerService.endSession(sessionId);
 
-    return c.json({ success: true });
-  } catch (error: any) {
-    console.error("Error ending session:", error);
-    return c.json({ error: error.message }, 500);
-  }
-});
+      return c.json({ success: true });
+    } catch (error: any) {
+      console.error("Error ending session:", error);
+      return c.json({ error: error.message }, 500);
+    }
+  },
+);
 
 /**
  * Widget API Endpoints
@@ -2713,7 +2873,9 @@ adminRouter.delete("/api/admin/themes/customizer/session/:sessionId", async (c) 
  */
 adminRouter.get("/api/admin/widgets/types", async (c) => {
   try {
-    const { getAvailableWidgetTypes } = await import("../services/widgetService.ts");
+    const { getAvailableWidgetTypes } = await import(
+      "../services/widgetService.ts"
+    );
     const types = getAvailableWidgetTypes();
     return c.json(types);
   } catch (error: any) {
@@ -2752,7 +2914,9 @@ adminRouter.get("/api/admin/widgets/areas", async (c) => {
 adminRouter.get("/api/admin/widgets/areas/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
-    const { getWidgetAreaBySlug } = await import("../services/widgetService.ts");
+    const { getWidgetAreaBySlug } = await import(
+      "../services/widgetService.ts"
+    );
 
     const area = await getWidgetAreaBySlug(slug);
 
@@ -2927,7 +3091,9 @@ adminRouter.post("/api/admin/widgets/validate", async (c) => {
       return c.json({ error: "Widget type is required" }, 400);
     }
 
-    const { validateWidgetSettings } = await import("../services/widgetService.ts");
+    const { validateWidgetSettings } = await import(
+      "../services/widgetService.ts"
+    );
 
     const validation = await validateWidgetSettings(type, settings);
 
@@ -2948,9 +3114,15 @@ adminRouter.get("/appearance/menus", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -3275,9 +3447,15 @@ adminRouter.get("/categories", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -3295,7 +3473,11 @@ adminRouter.get("/categories", async (c) => {
     }));
 
     return c.html(CategoriesNexusPage({
-      user: { id: user.userId, name: user.name || user.email, email: user.email },
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
       categories: categoriesWithCount,
       notifications,
       unreadNotificationCount,
@@ -3355,9 +3537,15 @@ adminRouter.get("/tags", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -3375,7 +3563,11 @@ adminRouter.get("/tags", async (c) => {
     }));
 
     return c.html(TagsNexusPage({
-      user: { id: user.userId, name: user.name || user.email, email: user.email },
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
       tags: tagsWithCount,
       notifications,
       unreadNotificationCount,
@@ -3430,9 +3622,16 @@ adminRouter.get("/users", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para ver usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "read");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "read",
+    );
     if (!hasPermission) {
-      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver usuarios</p>`, 403);
+      return c.html(
+        `<h1>Acceso Denegado</h1><p>No tienes permiso para ver usuarios</p>`,
+        403,
+      );
     }
 
     const query = c.req.query();
@@ -3462,7 +3661,9 @@ adminRouter.get("/users", async (c) => {
         limit: 5,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -3471,7 +3672,7 @@ adminRouter.get("/users", async (c) => {
       user: {
         id: user.userId,
         name: user.name || user.email,
-        email: user.email
+        email: user.email,
       },
       users: usersResult.users,
       roles: rolesData,
@@ -3483,7 +3684,7 @@ adminRouter.get("/users", async (c) => {
         offset: filters.offset || 0,
         limit: filters.limit || 20,
       },
-      userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+      userPermissions: userPermissions.map((p) => `${p.module}:${p.action}`),
       notifications,
       unreadNotificationCount,
     }));
@@ -3498,7 +3699,11 @@ adminRouter.post("/users/create", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para crear usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "create");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "create",
+    );
     if (!hasPermission) {
       return c.text("No tienes permiso para crear usuarios", 403);
     }
@@ -3529,7 +3734,11 @@ adminRouter.post("/users/edit/:id", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para actualizar usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "update",
+    );
     if (!hasPermission) {
       return c.text("No tienes permiso para actualizar usuarios", 403);
     }
@@ -3564,9 +3773,16 @@ adminRouter.post("/users/delete/:id", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para eliminar usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "delete",
+    );
     if (!hasPermission) {
-      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+      return c.json({
+        success: false,
+        error: "No tienes permiso para eliminar usuarios",
+      }, 403);
     }
 
     const id = parseInt(c.req.param("id"));
@@ -3585,16 +3801,26 @@ adminRouter.post("/users/bulk-status", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para actualizar usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "update");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "update",
+    );
     if (!hasPermission) {
-      return c.json({ success: false, error: "No tienes permiso para actualizar usuarios" }, 403);
+      return c.json({
+        success: false,
+        error: "No tienes permiso para actualizar usuarios",
+      }, 403);
     }
 
     const body = await c.req.json();
     const { userIds, status } = body;
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      return c.json({ success: false, error: "No se especificaron usuarios" }, 400);
+      return c.json(
+        { success: false, error: "No se especificaron usuarios" },
+        400,
+      );
     }
 
     if (!["active", "inactive", "suspended"].includes(status)) {
@@ -3617,16 +3843,26 @@ adminRouter.post("/users/bulk-delete", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para eliminar usuarios
-    const hasPermission = await permissionService.userHasPermission(user.userId, "users", "delete");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "users",
+      "delete",
+    );
     if (!hasPermission) {
-      return c.json({ success: false, error: "No tienes permiso para eliminar usuarios" }, 403);
+      return c.json({
+        success: false,
+        error: "No tienes permiso para eliminar usuarios",
+      }, 403);
     }
 
     const body = await c.req.json();
     const { userIds } = body;
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      return c.json({ success: false, error: "No se especificaron usuarios" }, 400);
+      return c.json(
+        { success: false, error: "No se especificaron usuarios" },
+        400,
+      );
     }
 
     const deleted = await userService.deleteUsers(userIds);
@@ -3645,17 +3881,25 @@ adminRouter.get("/roles", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para ver roles
-    const hasPermission = await permissionService.userHasPermission(user.userId, "roles", "read");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "roles",
+      "read",
+    );
     if (!hasPermission) {
-      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver roles</p>`, 403);
+      return c.html(
+        `<h1>Acceso Denegado</h1><p>No tienes permiso para ver roles</p>`,
+        403,
+      );
     }
 
-    const [rolesData, permissionsData, stats, userPermissions] = await Promise.all([
-      roleService.getAllRolesWithStats(),
-      permissionService.getAllPermissions(),
-      roleService.getRoleStats(),
-      permissionService.getUserPermissions(user.userId),
-    ]);
+    const [rolesData, permissionsData, stats, userPermissions] = await Promise
+      .all([
+        roleService.getAllRolesWithStats(),
+        permissionService.getAllPermissions(),
+        roleService.getRoleStats(),
+        permissionService.getUserPermissions(user.userId),
+      ]);
 
     const formattedRoles = rolesData
       .map((role) => ({
@@ -3691,7 +3935,9 @@ adminRouter.get("/roles", async (c) => {
         limit: 5,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -3701,15 +3947,15 @@ adminRouter.get("/roles", async (c) => {
         user: {
           id: user.userId,
           name: user.name || user.email,
-          email: user.email
+          email: user.email,
         },
         roles: formattedRoles,
         permissions: sortedPermissions,
         stats,
-        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+        userPermissions: userPermissions.map((p) => `${p.module}:${p.action}`),
         notifications,
         unreadNotificationCount,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error loading roles:", error);
@@ -3792,7 +4038,10 @@ adminRouter.post("/roles/delete/:id", async (c) => {
     const isSuperAdmin = user.userId === 1 ||
       await permissionService.userHasPermission(user.userId, "roles", "delete");
     if (!isSuperAdmin) {
-      return c.json({ success: false, error: "Solo superadmin puede eliminar roles" }, 403);
+      return c.json({
+        success: false,
+        error: "Solo superadmin puede eliminar roles",
+      }, 403);
     }
 
     const id = Number(c.req.param("id"));
@@ -3808,9 +4057,7 @@ adminRouter.post("/roles/delete/:id", async (c) => {
     return c.json(
       {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "Error al eliminar rol",
+        error: error instanceof Error ? error.message : "Error al eliminar rol",
       },
       400,
     );
@@ -3849,7 +4096,9 @@ adminRouter.post("/roles/clone/:id", async (c) => {
     return c.redirect(`${env.ADMIN_PATH}/roles`);
   } catch (error: any) {
     console.error("Error cloning role:", error);
-    const message = error instanceof Error ? error.message : "Error al clonar rol";
+    const message = error instanceof Error
+      ? error.message
+      : "Error al clonar rol";
     return c.text(message, 400);
   }
 });
@@ -3860,7 +4109,11 @@ adminRouter.post("/roles/:id/permissions", async (c) => {
 
     // Verificar si es superadmin
     const isSuperAdmin = user.userId === 1 ||
-      await permissionService.userHasPermission(user.userId, "role_permissions", "update");
+      await permissionService.userHasPermission(
+        user.userId,
+        "role_permissions",
+        "update",
+      );
     if (!isSuperAdmin) {
       return c.text("Solo superadmin puede asignar permisos a roles", 403);
     }
@@ -3892,22 +4145,41 @@ adminRouter.get("/permissions", async (c) => {
     const user = c.get("user");
 
     // Verificar permiso para ver permisos
-    const hasPermission = await permissionService.userHasPermission(user.userId, "permissions", "read");
+    const hasPermission = await permissionService.userHasPermission(
+      user.userId,
+      "permissions",
+      "read",
+    );
     if (!hasPermission) {
-      return c.html(`<h1>Acceso Denegado</h1><p>No tienes permiso para ver permisos</p>`, 403);
+      return c.html(
+        `<h1>Acceso Denegado</h1><p>No tienes permiso para ver permisos</p>`,
+        403,
+      );
     }
 
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
 
-    const [permissionsData, permissionsByModule, modules, stats, userPermissions] = await Promise.all([
+    const [
+      permissionsData,
+      permissionsByModule,
+      modules,
+      stats,
+      userPermissions,
+    ] = await Promise.all([
       permissionService.getAllPermissions(),
       permissionService.getPermissionsGroupedByModule(),
       permissionService.getModules(),
@@ -3923,15 +4195,19 @@ adminRouter.get("/permissions", async (c) => {
 
     return c.html(
       PermissionsNexusPage({
-        user: { id: user.userId, name: user.name || user.email, email: user.email },
+        user: {
+          id: user.userId,
+          name: user.name || user.email,
+          email: user.email,
+        },
         permissions: sortedPermissions,
         permissionsByModule,
         modules,
         stats,
-        userPermissions: userPermissions.map(p => `${p.module}:${p.action}`),
+        userPermissions: userPermissions.map((p) => `${p.module}:${p.action}`),
         notifications,
         unreadNotificationCount,
-      })
+      }),
     );
   } catch (error: any) {
     console.error("Error loading permissions:", error);
@@ -3945,7 +4221,11 @@ adminRouter.post("/permissions/create", async (c) => {
 
     // Verificar si es superadmin
     const isSuperAdmin = user.userId === 1 ||
-      await permissionService.userHasPermission(user.userId, "permissions", "create");
+      await permissionService.userHasPermission(
+        user.userId,
+        "permissions",
+        "create",
+      );
     if (!isSuperAdmin) {
       return c.text("Solo superadmin puede crear permisos", 403);
     }
@@ -3981,7 +4261,11 @@ adminRouter.post("/permissions/edit/:id", async (c) => {
 
     // Verificar si es superadmin
     const isSuperAdmin = user.userId === 1 ||
-      await permissionService.userHasPermission(user.userId, "permissions", "update");
+      await permissionService.userHasPermission(
+        user.userId,
+        "permissions",
+        "update",
+      );
     if (!isSuperAdmin) {
       return c.text("Solo superadmin puede actualizar permisos", 403);
     }
@@ -4022,9 +4306,16 @@ adminRouter.post("/permissions/delete/:id", async (c) => {
 
     // Verificar si es superadmin
     const isSuperAdmin = user.userId === 1 ||
-      await permissionService.userHasPermission(user.userId, "permissions", "delete");
+      await permissionService.userHasPermission(
+        user.userId,
+        "permissions",
+        "delete",
+      );
     if (!isSuperAdmin) {
-      return c.json({ success: false, message: "Solo superadmin puede eliminar permisos" }, 403);
+      return c.json({
+        success: false,
+        message: "Solo superadmin puede eliminar permisos",
+      }, 403);
     }
 
     const id = Number(c.req.param("id"));
@@ -4101,7 +4392,10 @@ adminRouter.get("/settings", async (c) => {
 
         // Inject dynamic page options for front_page_id and posts_page_id
         let fieldOptions = field.options;
-        if ((field.key === "front_page_id" || field.key === "posts_page_id") && pageOptions.length > 0) {
+        if (
+          (field.key === "front_page_id" || field.key === "posts_page_id") &&
+          pageOptions.length > 0
+        ) {
           fieldOptions = pageOptions;
         }
 
@@ -4157,7 +4451,9 @@ adminRouter.get("/settings", async (c) => {
         limit: 5,
         offset: 0,
       });
-      unreadNotificationCount = await notificationService.getUnreadCount(user.userId);
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -4166,7 +4462,7 @@ adminRouter.get("/settings", async (c) => {
       user: {
         id: user.userId,
         name: user.name || user.email,
-        email: user.email
+        email: user.email,
       },
       settings: resolvedSettings,
       categories,
@@ -4344,9 +4640,15 @@ adminRouter.get("/plugins/installed", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -4419,9 +4721,15 @@ adminRouter.get("/plugins/available", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -4489,9 +4797,15 @@ adminRouter.get("/plugins/marketplace", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -4545,8 +4859,12 @@ adminRouter.get("/plugins/:pluginName/*", async (c) => {
     const fullPath = c.req.path;
 
     // Import AdminPanelRegistry
-    const { AdminPanelRegistry } = await import("../lib/plugin-system/index.ts");
-    const { pluginLoader } = await import("../lib/plugin-system/PluginLoader.ts");
+    const { AdminPanelRegistry } = await import(
+      "../lib/plugin-system/index.ts"
+    );
+    const { pluginLoader } = await import(
+      "../lib/plugin-system/PluginLoader.ts"
+    );
 
     // Find the panel by matching the full path
     const panel = AdminPanelRegistry.getPanelByPath(fullPath);
@@ -4557,7 +4875,7 @@ adminRouter.get("/plugins/:pluginName/*", async (c) => {
 
     // Check if plugin is active
     const plugin = pluginLoader.getPlugin(pluginName);
-    if (!plugin || plugin.status !== 'active') {
+    if (!plugin || plugin.status !== "active") {
       return c.text(`El plugin "${pluginName}" no está activo`, 403);
     }
 
@@ -4573,12 +4891,13 @@ adminRouter.get("/plugins/:pluginName/*", async (c) => {
         id: user.id,
         name: user.name || user.email,
         email: user.email,
-        role: user.role || 'admin',
+        role: user.role || "admin",
       },
       query: c.req.query(),
       pluginAPI: plugin.instance,
       settings: plugin.settings || {},
       request: c.req,
+      pluginPanels: AdminPanelRegistry.getAllPanels(),
     };
 
     // Render the panel component
@@ -4605,9 +4924,15 @@ adminRouter.get("/comments", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -4754,14 +5079,22 @@ adminRouter.get("/auto-moderation", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
 
-    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const { getAutoModeration } = await import(
+      "../../plugins/auto-moderation/index.ts"
+    );
     const plugin = getAutoModeration();
 
     if (!plugin) {
@@ -4777,7 +5110,7 @@ adminRouter.get("/auto-moderation", async (c) => {
       try {
         akismetVerified = await plugin.verifyAkismetKey();
       } catch (error) {
-        console.error('Error verifying Akismet:', error);
+        console.error("Error verifying Akismet:", error);
         akismetVerified = false;
       }
     }
@@ -4817,7 +5150,9 @@ adminRouter.get("/auto-moderation", async (c) => {
 adminRouter.post("/auto-moderation/update", async (c) => {
   try {
     const formData = await c.req.formData();
-    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const { getAutoModeration } = await import(
+      "../../plugins/auto-moderation/index.ts"
+    );
     const plugin = getAutoModeration();
 
     if (!plugin) {
@@ -4839,9 +5174,13 @@ adminRouter.post("/auto-moderation/update", async (c) => {
 
     newConfig.actions = {
       autoApprove: formData.get("autoApprove") === "on",
-      autoApproveThreshold: parseInt(formData.get("autoApproveThreshold") as string || "20"),
+      autoApproveThreshold: parseInt(
+        formData.get("autoApproveThreshold") as string || "20",
+      ),
       autoMarkSpam: formData.get("autoMarkSpam") === "on",
-      autoMarkSpamThreshold: parseInt(formData.get("autoMarkSpamThreshold") as string || "80"),
+      autoMarkSpamThreshold: parseInt(
+        formData.get("autoMarkSpamThreshold") as string || "80",
+      ),
       sendToModeration: true,
     };
 
@@ -4865,7 +5204,9 @@ adminRouter.post("/auto-moderation/update", async (c) => {
 // Verify Akismet API key
 adminRouter.post("/auto-moderation/verify-akismet", async (c) => {
   try {
-    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const { getAutoModeration } = await import(
+      "../../plugins/auto-moderation/index.ts"
+    );
     const plugin = getAutoModeration();
 
     if (!plugin) {
@@ -4883,7 +5224,9 @@ adminRouter.post("/auto-moderation/verify-akismet", async (c) => {
 // Reset statistics
 adminRouter.post("/auto-moderation/reset-stats", async (c) => {
   try {
-    const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
+    const { getAutoModeration } = await import(
+      "../../plugins/auto-moderation/index.ts"
+    );
     const plugin = getAutoModeration();
 
     if (!plugin) {
@@ -4914,9 +5257,15 @@ adminRouter.get("/backups", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -5011,7 +5360,10 @@ adminRouter.get("/api/backups/:id/download", async (c) => {
     const file = await Deno.readFile(backup.storagePath);
 
     c.header("Content-Type", "application/gzip");
-    c.header("Content-Disposition", `attachment; filename="${backup.filename}"`);
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="${backup.filename}"`,
+    );
     c.header("Content-Length", file.length.toString());
 
     return c.body(file);
@@ -5034,9 +5386,15 @@ adminRouter.get("/system-updates", async (c) => {
     let notifications: any[] = [];
     let unreadNotificationCount = 0;
     try {
-      const notifs = await notificationService.getUserNotifications(user.userId);
-      notifications = notifs;
-      unreadNotificationCount = notifs.filter((n: any) => !n.read).length;
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
     } catch (error) {
       console.error("Error loading notifications:", error);
     }
@@ -5067,6 +5425,301 @@ adminRouter.get("/system-updates", async (c) => {
   } catch (error: any) {
     console.error("Error loading system updates page:", error);
     return c.text("Error al cargar página de actualizaciones", 500);
+  }
+});
+
+/**
+ * Security Management
+ * GET /security/dashboard - Security dashboard
+ * GET /security/logs - Security logs
+ * GET /security/ips/blacklist - IP blacklist management
+ */
+
+// Security Dashboard
+adminRouter.get("/security/dashboard", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SecurityDashboard({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading security dashboard:", error);
+    return c.text("Error al cargar dashboard de seguridad", 500);
+  }
+});
+
+// Security Logs
+adminRouter.get("/security/logs", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SecurityLogs({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading security logs:", error);
+    return c.text("Error al cargar logs de seguridad", 500);
+  }
+});
+
+// IP Blacklist
+adminRouter.get("/security/ips/blacklist", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(IPBlacklist({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading IP blacklist:", error);
+    return c.text("Error al cargar blacklist de IPs", 500);
+  }
+});
+
+// IP Whitelist
+adminRouter.get("/security/ips/whitelist", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(IPWhitelist({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading IP whitelist:", error);
+    return c.text("Error al cargar whitelist de IPs", 500);
+  }
+});
+
+// Rate Limit Configuration
+adminRouter.get("/security/rate-limit", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(RateLimitConfig({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading rate limit config:", error);
+    return c.text("Error al cargar configuración de rate limit", 500);
+  }
+});
+
+// Security Rules
+adminRouter.get("/security/rules", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SecurityRules({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading security rules:", error);
+    return c.text("Error al cargar reglas de seguridad", 500);
+  }
+});
+
+// Security Settings
+adminRouter.get("/security/settings", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SecuritySettings({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading security settings:", error);
+    return c.text("Error al cargar configuración de seguridad", 500);
+  }
+});
+
+// Security Reports
+adminRouter.get("/security/reports", async (c) => {
+  try {
+    const user = c.get("user");
+
+    let notifications: any[] = [];
+    let unreadNotificationCount = 0;
+    try {
+      notifications = await notificationService.getForUser({
+        userId: user.userId,
+        isRead: false,
+        limit: 5,
+        offset: 0,
+      });
+      unreadNotificationCount = await notificationService.getUnreadCount(
+        user.userId,
+      );
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+    }
+
+    return c.html(SecurityReportsPage({
+      user: {
+        id: user.userId,
+        name: user.name || user.email,
+        email: user.email,
+      },
+      notifications,
+      unreadNotificationCount,
+    }));
+  } catch (error: any) {
+    console.error("Error loading security reports:", error);
+    return c.text("Error al cargar reportes de seguridad", 500);
   }
 });
 

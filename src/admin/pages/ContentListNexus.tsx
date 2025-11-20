@@ -35,6 +35,10 @@ interface ContentListNexusProps {
     createdAt: Date;
   }>;
   unreadNotificationCount?: number;
+  // Props para la barra de depuración
+  request?: Request;
+  response?: Response;
+  startTime?: number;
 }
 
 export const ContentListNexusPage = (props: ContentListNexusProps) => {
@@ -52,6 +56,9 @@ export const ContentListNexusPage = (props: ContentListNexusProps) => {
     activePage = "content",
     notifications = [],
     unreadNotificationCount = 0,
+    request,
+    response,
+    startTime,
   } = props;
 
   // Helper function for status badge type
@@ -382,6 +389,9 @@ export const ContentListNexusPage = (props: ContentListNexusProps) => {
     user,
     notifications,
     unreadNotificationCount,
+    request,
+    response,
+    startTime,
   });
 };
 

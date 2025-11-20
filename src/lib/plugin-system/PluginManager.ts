@@ -9,6 +9,9 @@ import { pluginLoader } from './PluginLoader.ts';
 import type { Plugin, InstallOptions } from './types.ts';
 import { eq } from 'drizzle-orm';
 import { AdminPanelRegistry } from './AdminPanelRegistry.ts';
+import { join } from '@std/path';
+
+import { pluginMigrationRunner } from './PluginMigration.ts';
 
 export class PluginManager {
   /**
@@ -56,6 +59,15 @@ export class PluginManager {
 
     console.log(`✓ Plugin installed: ${pluginName} v${plugin.version}`);
 
+    // Run migrations on install/update
+    try {
+      const pluginPath = join(Deno.cwd(), 'plugins', pluginName);
+      await pluginMigrationRunner.runMigrations(pluginName, pluginPath);
+    } catch (error) {
+      console.error(`Failed to run migrations for ${pluginName}:`, error);
+      // We don't fail installation, but warn
+    }
+
     // Activate if requested
     if (activate) {
       await this.activate(pluginName);
@@ -63,6 +75,7 @@ export class PluginManager {
 
     return plugin;
   }
+
 
   /**
    * Uninstall a plugin
@@ -77,6 +90,16 @@ export class PluginManager {
     // Deactivate first if active
     if (pluginDB.isActive) {
       await this.deactivate(pluginName);
+    }
+
+    // Revert migrations
+    try {
+      const pluginPath = join(Deno.cwd(), 'plugins', pluginName);
+      await pluginMigrationRunner.revertMigrations(pluginName, pluginPath);
+    } catch (error) {
+      console.error(`Failed to revert migrations for ${pluginName}:`, error);
+      // We continue uninstalling even if revert fails?
+      // Yes, otherwise plugin is stuck
     }
 
     // Delete from database (cascade will delete hooks)
@@ -109,6 +132,33 @@ export class PluginManager {
       const settings = pluginDB.settings ? JSON.parse(pluginDB.settings) : {};
       plugin = await pluginLoader.loadPlugin(pluginName, settings);
       plugin.id = pluginDB.id;
+    }
+
+    // Check dependencies
+    if (plugin.manifest.dependencies) {
+      const missingDeps: string[] = [];
+      const inactiveDeps: string[] = [];
+
+      for (const [depName, versionRange] of Object.entries(plugin.manifest.dependencies)) {
+        const isInstalled = await this.isInstalled(depName);
+        if (!isInstalled) {
+          missingDeps.push(depName);
+          continue;
+        }
+
+        const isActive = await this.isActive(depName);
+        if (!isActive) {
+          inactiveDeps.push(depName);
+        }
+      }
+
+      if (missingDeps.length > 0) {
+        throw new Error(`Cannot activate ${pluginName}: Missing dependencies: ${missingDeps.join(', ')}`);
+      }
+
+      if (inactiveDeps.length > 0) {
+        throw new Error(`Cannot activate ${pluginName}: Inactive dependencies: ${inactiveDeps.join(', ')}`);
+      }
     }
 
     // Activate

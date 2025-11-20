@@ -200,6 +200,13 @@ export class PluginService {
   async getPluginManifest(pluginName: string) {
     return await pluginLoader.loadManifest(pluginName);
   }
+
+  /**
+   * Get plugin asset path
+   */
+  getPluginAssetPath(pluginName: string, assetPath: string): string | null {
+    return pluginLoader.getAssetPath(pluginName, assetPath);
+  }
 }
 
 export const pluginService = new PluginService();
