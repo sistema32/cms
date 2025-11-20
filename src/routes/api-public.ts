@@ -9,6 +9,8 @@ import { API_PERMISSIONS } from "../lib/api/types.ts";
 import { db } from "../config/db.ts";
 import { content, categories, tags, contentCategories, contentTags } from "../db/schema.ts";
 import { eq, and, like, or, desc } from "drizzle-orm";
+import { successResponse, ErrorResponses, createPaginationMeta } from "../utils/api-response.ts";
+import { parsePagination } from "../utils/query-parser.ts";
 
 const publicAPI = new Hono();
 
@@ -21,13 +23,18 @@ publicAPI.use("*", apiAuthMiddleware());
  */
 publicAPI.get("/content", async (c) => {
   try {
-    const page = parseInt(c.req.query("page") || "1");
-    const limit = Math.min(parseInt(c.req.query("limit") || "20"), 100);
-    const offset = (page - 1) * limit;
-    const status = c.req.query("status") || "published";
-    const categorySlug = c.req.query("category");
-    const tagSlug = c.req.query("tag");
-    const search = c.req.query("search");
+    // Parse query options
+    const queryParams = Object.fromEntries(
+      new URL(c.req.url).searchParams.entries()
+    );
+    const { page, limit, offset } = parsePagination(
+      queryParams.page,
+      queryParams.limit
+    );
+    const status = queryParams.status || "published";
+    const categorySlug = queryParams.category;
+    const tagSlug = queryParams.tag;
+    const search = queryParams.search;
 
     let query = db.select().from(content).where(eq(content.status, status));
 
@@ -92,27 +99,19 @@ publicAPI.get("/content", async (c) => {
     const totalQuery = db.select().from(content).where(eq(content.status, status));
     const total = (await totalQuery).length;
 
-    return c.json({
-      success: true,
-      data: {
+    // Use standardized response
+    return successResponse(
+      c,
+      {
         content: filteredResults,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
       },
-    });
+      {
+        pagination: createPaginationMeta(page, limit, total),
+      }
+    );
   } catch (error) {
     console.error("Failed to list content:", error);
-    return c.json(
-      {
-        success: false,
-        error: "Failed to list content",
-      },
-      500
-    );
+    return ErrorResponses.internalError(c, "Failed to list content");
   }
 });
 

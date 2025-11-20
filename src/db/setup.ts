@@ -1,57 +1,92 @@
+#!/usr/bin/env -S deno run -A
+
 /**
  * Database Setup Script
- * Runs migrations and then seeds the database
+ * 
+ * Usage:
+ *   deno task db:setup              # Setup with essential data only
+ *   deno task db:setup --demo       # Setup with demo data included
+ *   deno task db:setup --help       # Show help
  */
 
-console.log("🚀 Setting up database...\n");
+import { parseArgs } from "https://deno.land/std@0.224.0/cli/parse_args.ts";
 
-// Step 1: Run migrations
-console.log("Step 1: Running migrations...");
-const migrateProcess = new Deno.Command("deno", {
-  args: ["run", "--allow-all", "src/db/migrate.ts"],
+const args = parseArgs(Deno.args, {
+  boolean: ["demo", "help"],
+  alias: {
+    d: "demo",
+    h: "help",
+  },
+});
+
+if (args.help) {
+  console.log(`
+🗄️  Database Setup Script
+
+Usage:
+  deno task db:setup              Setup with essential data only (production-ready)
+  deno task db:setup --demo       Setup with demo/test data included (development)
+  deno task db:setup --help       Show this help message
+
+Options:
+  --demo, -d    Include optional demo data (test posts, comments)
+  --help, -h    Show this help message
+
+Examples:
+  # Production setup (minimal data)
+  deno task db:setup
+
+  # Development setup (with demo content)
+  deno task db:setup --demo
+
+What gets installed:
+  ✅ Essential (always):
+     - Database schema (46 tables)
+     - Roles and permissions
+     - Content types, categories, tags
+     - Default settings
+     - Default menus
+     - Admin user (admin@lexcms.local / admin123)
+
+  📝 Demo data (with --demo):
+     - 3 sample blog posts
+     - 4 test comments
+`);
+  Deno.exit(0);
+}
+
+console.log("🚀 Starting database setup...\n");
+
+// Set environment variable for optional migrations
+if (args.demo) {
+  console.log("📝 Demo mode enabled - will include test content and comments\n");
+  Deno.env.set("LOAD_OPTIONAL_MIGRATIONS", "true");
+} else {
+  console.log("⚙️  Production mode - essential data only\n");
+  Deno.env.set("LOAD_OPTIONAL_MIGRATIONS", "false");
+}
+
+// Run migrations
+const migrateCommand = new Deno.Command("deno", {
+  args: ["run", "-A", "src/db/migrate.ts"],
   stdout: "inherit",
   stderr: "inherit",
 });
 
-const migrateResult = await migrateProcess.output();
+const { code } = await migrateCommand.output();
 
-if (!migrateResult.success) {
-  console.error("\n❌ Migration failed!");
-  Deno.exit(1);
+if (code === 0) {
+  console.log("\n✅ Database setup completed successfully!\n");
+
+  if (!args.demo) {
+    console.log("💡 Tip: Run with --demo flag to include sample content for development:");
+    console.log("   deno task db:setup --demo\n");
+  }
+
+  console.log("🔐 Admin credentials:");
+  console.log("   Email: admin@lexcms.local");
+  console.log("   Password: admin123\n");
+} else {
+  console.error("\n❌ Database setup failed with exit code:", code);
+  Deno.exit(code);
 }
-
-// Step 2: Run seed
-console.log("\nStep 2: Seeding database...");
-const seedProcess = new Deno.Command("deno", {
-  args: ["run", "--allow-all", "src/db/seed.ts"],
-  stdout: "inherit",
-  stderr: "inherit",
-});
-
-const seedResult = await seedProcess.output();
-
-if (!seedResult.success) {
-  console.error("\n❌ Seeding failed!");
-  Deno.exit(1);
-}
-
-// Step 3: Run security permissions seed
-console.log("\nStep 3: Seeding security permissions...");
-const securitySeedProcess = new Deno.Command("deno", {
-  args: ["run", "--allow-all", "src/db/seeds/security-permissions.ts"],
-  stdout: "inherit",
-  stderr: "inherit",
-});
-
-const securitySeedResult = await securitySeedProcess.output();
-
-if (!securitySeedResult.success) {
-  console.error("\n❌ Security permissions seeding failed!");
-  Deno.exit(1);
-}
-
-console.log("\n✅ Database setup complete!");
-console.log("\nYou can now:");
-console.log("  - Run 'deno task dev' to start the development server");
-console.log("  - Login with admin@example.com / admin123");
-console.log("  - Access security panel at /admincp/security/dashboard");

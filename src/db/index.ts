@@ -6,106 +6,39 @@ import {
   drizzle as drizzlePostgres,
   type PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
+import {
+  drizzle as drizzleMySQL,
+  type MySql2Database,
+} from "drizzle-orm/mysql2";
 import postgres from "postgres";
+import mysql from "mysql2/promise";
+import { createClient } from "npm:@libsql/client@^0.14/node";
 import * as schema from "./schema.ts";
-import { env, isProduction } from "../config/env.ts";
-import { existsSync } from "node:fs";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { env } from "../config/env.ts";
+import { getDbType } from "./config/database-type.ts";
 
-const processRef = globalThis.process as
-  | (NodeJS.Process & { report?: { getReport?: () => unknown } })
-  | undefined;
+// Detectar tipo de base de datos
+const dbType = getDbType();
 
-if (processRef) {
-  const existingReport = processRef.report;
+// Definir tipo unificado para la DB
+export type Database = LibSQLDatabase<typeof schema> | PostgresJsDatabase<typeof schema> | MySql2Database<typeof schema>;
 
-  if (existingReport && typeof existingReport === "object") {
-    const originalGetReport = existingReport.getReport?.bind(existingReport);
-    existingReport.getReport = () => {
-      if (originalGetReport) {
-        try {
-          return originalGetReport();
-        } catch {
-          // noop
-        }
-      }
-      return { header: {} };
-    };
-  } else {
-    Object.defineProperty(processRef, "report", {
-      configurable: true,
-      enumerable: false,
-      get() {
-        return {
-          getReport: () => ({ header: {} }),
-        };
-      },
-    });
-  }
+let dbInstance: Database;
+
+if (dbType === "postgresql") {
+  const client = postgres(env.DATABASE_URL);
+  dbInstance = drizzlePostgres(client, { schema });
+} else if (dbType === "mysql") {
+  // Note: MySQL connection is async, but top-level await is supported in Deno
+  const connection = await mysql.createConnection(env.DATABASE_URL);
+  dbInstance = drizzleMySQL(connection, { schema, mode: "default" });
+} else {
+  // SQLite / Turso
+  const client = createClient({
+    url: env.DATABASE_URL || "file:local.db",
+    authToken: env.DATABASE_AUTH_TOKEN,
+  });
+  dbInstance = drizzleSQLite(client, { schema });
 }
 
-let createClient: any;
-let clientSource = "node";
-
-try {
-  ({ createClient } = await import("npm:@libsql/client@^0.14/node"));
-} catch (error) {
-  console.warn(
-    "Falling back to @libsql/client web runtime due to error loading native module:",
-    error instanceof Error ? error.message : error,
-  );
-  clientSource = "web";
-  ({ createClient } = await import("npm:@libsql/client@^0.14/web"));
-}
-
-if (!createClient) {
-  throw new Error("Unable to load @libsql/client for the current runtime.");
-}
-
-// Crear directorios necesarios para la base de datos SQLite en desarrollo
-if (!isProduction && env.DATABASE_URL) {
-  const dbUrl = env.DATABASE_URL;
-  // Solo crear directorios si es una ruta de archivo local (no empieza con http/libsql/file:)
-  if (!dbUrl.startsWith('http') && !dbUrl.startsWith('libsql:') && !dbUrl.startsWith('file:')) {
-    const dbPath = dbUrl.startsWith('./') || dbUrl.startsWith('../') || dbUrl.startsWith('/')
-      ? dbUrl
-      : `./${dbUrl}`;
-    const dbDir = dirname(dbPath);
-
-    // Crear directorio si no existe
-    if (dbDir && dbDir !== '.' && !existsSync(dbDir)) {
-      mkdirSync(dbDir, { recursive: true });
-    }
-  }
-}
-
-// Configuración de la conexión según el entorno
-const sqliteClient = !isProduction
-  ? createClient({
-      url: env.DATABASE_URL,
-      authToken: env.DATABASE_AUTH_TOKEN,
-    })
-  : null;
-
-const sqliteDb = sqliteClient
-  ? drizzleSQLite(sqliteClient, {
-      schema,
-    })
-  : null;
-
-const postgresDb = drizzlePostgres(postgres(env.DATABASE_URL), {
-  schema,
-});
-
-type SqliteDatabase = LibSQLDatabase<typeof schema>;
-type PostgresDatabase = PostgresJsDatabase<typeof schema>;
-
-// Unificar el tipo para evitar uniones incompatibles durante el type checking.
-// En producción usamos Postgres, en desarrollo SQLite, pero exponemos una interfase
-// común basada en la firma de LibSQL para mantener compatibilidad en la capa de servicios.
-export const db: SqliteDatabase = isProduction
-  ? (postgresDb as unknown as SqliteDatabase)
-  : (sqliteDb as SqliteDatabase);
-
-export type Database = SqliteDatabase | PostgresDatabase;
+export const db = dbInstance;

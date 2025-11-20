@@ -33,6 +33,7 @@ const envSchema = z.object({
     32,
     "JWT_SECRET debe tener al menos 32 caracteres",
   ),
+  DATABASE_TYPE: z.enum(["sqlite", "postgresql", "mysql"]).default("sqlite"),
   DATABASE_URL: z.string(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
   PORT: z.string().transform(Number).default("8000"),
@@ -111,6 +112,7 @@ const envSchema = z.object({
 export const env = envSchema.parse({
   DENO_ENV: Deno.env.get("DENO_ENV"),
   JWT_SECRET: Deno.env.get("JWT_SECRET"),
+  DATABASE_TYPE: Deno.env.get("DATABASE_TYPE"),
   DATABASE_URL: Deno.env.get("DATABASE_URL"),
   DATABASE_AUTH_TOKEN: Deno.env.get("DATABASE_AUTH_TOKEN"),
   PORT: Deno.env.get("PORT"),

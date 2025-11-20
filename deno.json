@@ -11,12 +11,12 @@
     "css:watch:admin": "deno run -A scripts/build-admin-css.ts --watch",
     "css:build:all": "deno task css:build && deno task css:build:admin",
     "bundle:ckeditor": "sh -c \"cp node_modules/ckeditor5/dist/ckeditor5.css src/admin/assets/css/ckeditor.css && ./node_modules/.bin/esbuild src/admin/assets/js/ckeditor-entry.ts --bundle --format=esm --platform=browser --target=es2018 --outfile=src/admin/assets/js/ckeditor-bundle.js --loader:.svg=text --loader:.ttf=dataurl --loader:.woff=dataurl --loader:.woff2=dataurl && rm -f src/admin/assets/js/ckeditor-bundle.css\"",
-    "db:generate": "deno run -A npm:drizzle-kit generate",
-    "db:migrate": "deno run --allow-all src/db/migrate.ts",
-    "db:push": "deno run -A npm:drizzle-kit push",
-    "db:studio": "deno run -A npm:drizzle-kit studio",
-    "db:seed": "deno run --allow-all src/db/seed.ts",
-    "db:setup": "deno run --allow-all src/db/setup.ts",
+    "db:generate": "deno run -A src/db/generate-migrations.ts",
+    "db:migrate": "deno run -A src/db/migrate.ts",
+    "db:push": "deno run -A npm:drizzle-kit push --config=drizzle.config.ts",
+    "db:studio": "deno run -A npm:drizzle-kit studio --config=drizzle.config.ts",
+    "db:translate-schema": "deno run -A scripts/translate-schema.ts",
+    "db:setup": "deno run -A src/db/setup.ts",
     "test": "deno test --allow-all tests/",
     "test:unit": "deno test --allow-all tests/unit/",
     "test:security": "deno test --allow-all tests/security/",
@@ -61,7 +61,10 @@
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
-    "lib": ["deno.window", "deno.unstable"],
+    "lib": [
+      "deno.window",
+      "deno.unstable"
+    ],
     "strict": true
   }
 }
