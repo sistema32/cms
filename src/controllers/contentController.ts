@@ -3,6 +3,10 @@ import * as contentService from "../services/contentService.ts";
 import { z } from "zod";
 import { sanitizeHTML, escapeHTML } from "../utils/sanitization.ts";
 import { getErrorMessage } from "../utils/errors.ts";
+import { notificationService } from "../lib/email/index.ts";
+import { db } from "../config/db.ts";
+import { users } from "../db/schema.ts";
+import { eq } from "drizzle-orm";
 
 const seoSchema = z.object({
   metaTitle: z.string().optional(),
@@ -100,6 +104,31 @@ export async function createContent(c: Context) {
       { incrementViews: false },
     );
 
+    // Notify admins when content is published
+    if (data.status === "published") {
+      try {
+        const admins = await db.query.users.findMany({
+          where: eq(users.roleId, 1), // Assuming role 1 is admin
+        });
+
+        for (const admin of admins) {
+          if (admin.id !== user.userId) {
+            await notificationService.create({
+              userId: admin.id,
+              type: "content.published",
+              title: "Nuevo contenido publicado",
+              message: `${user.name || "Un usuario"} publicó "${data.title}"`,
+              actionLabel: "Ver contenido",
+              actionUrl: `/content/${data.slug}`,
+              priority: "low",
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error("Error sending content notification:", notifError);
+      }
+    }
+
     return c.json({ content: content ?? createdContent }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -188,6 +217,32 @@ export async function updateContent(c: Context) {
     };
 
     const content = await contentService.updateContent(id, sanitizedData);
+
+    // Notify admins when content is updated/published
+    if (data.status === "published" || data.status) {
+      try {
+        const user = c.get("user");
+        const admins = await db.query.users.findMany({
+          where: eq(users.roleId, 1),
+        });
+
+        for (const admin of admins) {
+          if (admin.id !== user.userId) {
+            await notificationService.create({
+              userId: admin.id,
+              type: "content.updated",
+              title: "Contenido modificado",
+              message: `${user.name || "Un usuario"} modificó "${data.title || content.title}"`,
+              actionLabel: "Ver contenido",
+              actionUrl: `/content/${content.slug}`,
+              priority: "low",
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error("Error sending content update notification:", notifError);
+      }
+    }
 
     return c.json({ content });
   } catch (error) {

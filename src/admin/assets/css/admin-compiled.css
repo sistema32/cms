@@ -14267,39 +14267,6 @@ video {
     opacity: 0%;
   }
 
-  .\!label {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: calc(0.25rem * 1.5) !important;
-    white-space: nowrap !important;
-    color: color-mix(in oklab, currentcolor 60%, transparent) !important;
-  }
-
-  .\!label:has(input) {
-    cursor: pointer !important;
-  }
-
-  .\!label:is(.input > *, .select > *) {
-    display: flex !important;
-    height: calc(100% - 0.5rem) !important;
-    align-items: center !important;
-    padding-inline: calc(0.25rem * 3) !important;
-    white-space: nowrap !important;
-    font-size: inherit !important;
-  }
-
-  .\!label:is(.input > *, .select > *):first-child {
-    margin-inline-start: calc(0.25rem * -3) !important;
-    margin-inline-end: calc(0.25rem * 3) !important;
-    border-inline-end: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label:is(.input > *, .select > *):last-child {
-    margin-inline-start: calc(0.25rem * 3) !important;
-    margin-inline-end: calc(0.25rem * -3) !important;
-    border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
   .label {
     display: inline-flex;
     align-items: center;
@@ -14331,138 +14298,6 @@ video {
     margin-inline-start: calc(0.25rem * 3);
     margin-inline-end: calc(0.25rem * -3);
     border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000);
-  }
-
-  .\!label {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: calc(0.25rem * 1.5) !important;
-    white-space: nowrap !important;
-    color: color-mix(in oklab, currentcolor 60%, transparent) !important;
-  }
-
-  .\!label:has(input) {
-    cursor: pointer !important;
-  }
-
-  .\!label:is(.input > *, .select > *) {
-    display: flex !important;
-    height: calc(100% - 0.5rem) !important;
-    align-items: center !important;
-    padding-inline: calc(0.25rem * 3) !important;
-    white-space: nowrap !important;
-    font-size: inherit !important;
-  }
-
-  .\!label:is(.input > *, .select > *):first-child {
-    margin-inline-start: calc(0.25rem * -3) !important;
-    margin-inline-end: calc(0.25rem * 3) !important;
-    border-inline-end: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label:is(.input > *, .select > *):last-child {
-    margin-inline-start: calc(0.25rem * 3) !important;
-    margin-inline-end: calc(0.25rem * -3) !important;
-    border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: calc(0.25rem * 1.5) !important;
-    white-space: nowrap !important;
-    color: color-mix(in oklab, currentcolor 60%, transparent) !important;
-  }
-
-  .\!label:has(input) {
-    cursor: pointer !important;
-  }
-
-  .\!label:is(.input > *, .select > *) {
-    display: flex !important;
-    height: calc(100% - 0.5rem) !important;
-    align-items: center !important;
-    padding-inline: calc(0.25rem * 3) !important;
-    white-space: nowrap !important;
-    font-size: inherit !important;
-  }
-
-  .\!label:is(.input > *, .select > *):first-child {
-    margin-inline-start: calc(0.25rem * -3) !important;
-    margin-inline-end: calc(0.25rem * 3) !important;
-    border-inline-end: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label:is(.input > *, .select > *):last-child {
-    margin-inline-start: calc(0.25rem * 3) !important;
-    margin-inline-end: calc(0.25rem * -3) !important;
-    border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: calc(0.25rem * 1.5) !important;
-    white-space: nowrap !important;
-    color: color-mix(in oklab, currentcolor 60%, transparent) !important;
-  }
-
-  .\!label:has(input) {
-    cursor: pointer !important;
-  }
-
-  .\!label:is(.input > *, .select > *) {
-    display: flex !important;
-    height: calc(100% - 0.5rem) !important;
-    align-items: center !important;
-    padding-inline: calc(0.25rem * 3) !important;
-    white-space: nowrap !important;
-    font-size: inherit !important;
-  }
-
-  .\!label:is(.input > *, .select > *):first-child {
-    margin-inline-start: calc(0.25rem * -3) !important;
-    margin-inline-end: calc(0.25rem * 3) !important;
-    border-inline-end: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label:is(.input > *, .select > *):last-child {
-    margin-inline-start: calc(0.25rem * 3) !important;
-    margin-inline-end: calc(0.25rem * -3) !important;
-    border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: calc(0.25rem * 1.5) !important;
-    white-space: nowrap !important;
-    color: color-mix(in oklab, currentcolor 60%, transparent) !important;
-  }
-
-  .\!label:has(input) {
-    cursor: pointer !important;
-  }
-
-  .\!label:is(.input > *, .select > *) {
-    display: flex !important;
-    height: calc(100% - 0.5rem) !important;
-    align-items: center !important;
-    padding-inline: calc(0.25rem * 3) !important;
-    white-space: nowrap !important;
-    font-size: inherit !important;
-  }
-
-  .\!label:is(.input > *, .select > *):first-child {
-    margin-inline-start: calc(0.25rem * -3) !important;
-    margin-inline-end: calc(0.25rem * 3) !important;
-    border-inline-end: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
-  }
-
-  .\!label:is(.input > *, .select > *):last-child {
-    margin-inline-start: calc(0.25rem * 3) !important;
-    margin-inline-end: calc(0.25rem * -3) !important;
-    border-inline-start: var(--border) solid color-mix(in oklab, currentColor 10%, #0000) !important;
   }
 
   .status {
@@ -15766,10 +15601,6 @@ video {
 
 .items-center {
   align-items: center;
-}
-
-.justify-start {
-  justify-content: flex-start;
 }
 
 .justify-end {
@@ -18130,11 +17961,6 @@ video {
 .dark\:text-gray-500:is(.dark *) {
   --tw-text-opacity: 1;
   color: rgb(107 114 128 / var(--tw-text-opacity, 1));
-}
-
-.dark\:text-gray-600:is(.dark *) {
-  --tw-text-opacity: 1;
-  color: rgb(75 85 99 / var(--tw-text-opacity, 1));
 }
 
 .dark\:text-green-100:is(.dark *) {

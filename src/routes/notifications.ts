@@ -4,6 +4,7 @@
  */
 
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import { notificationService } from "../lib/email/index.ts";
 import { authMiddleware } from "../middleware/auth.ts";
 
@@ -49,6 +50,60 @@ notifications.get("/", async (c) => {
     }, 500);
   }
 });
+
+/**
+ * GET /api/notifications/stream
+ * Server-Sent Events stream for real-time notifications
+ */
+notifications.get("/stream", async (c) => {
+  const user = c.get("user");
+  const userId = user.userId;
+
+  return streamSSE(c, async (stream) => {
+    // Send initial connection message
+    await stream.writeSSE({
+      data: JSON.stringify({ type: "connected" }),
+    });
+
+    // Create listener for this user's notifications
+    const listener = async (notification: any) => {
+      try {
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: "notification",
+            notification: {
+              ...notification,
+              data: notification.data ? JSON.parse(notification.data) : undefined,
+            },
+          }),
+        });
+      } catch (error) {
+        console.error("Error sending notification via SSE:", error);
+      }
+    };
+
+    // Subscribe to notifications for this user
+    notificationService.on(`notification:${userId}`, listener);
+
+    // Send keepalive every 30 seconds
+    const keepaliveInterval = setInterval(async () => {
+      try {
+        await stream.writeSSE({
+          data: "keepalive",
+        });
+      } catch (error) {
+        clearInterval(keepaliveInterval);
+      }
+    }, 30000);
+
+    // Cleanup on disconnect
+    stream.onAbort(() => {
+      notificationService.off(`notification:${userId}`, listener);
+      clearInterval(keepaliveInterval);
+    });
+  });
+});
+
 
 /**
  * GET /api/notifications/unread-count

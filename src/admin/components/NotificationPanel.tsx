@@ -63,8 +63,8 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
           </svg>
           ${unreadCount > 0
-            ? html`<span class="badge badge-sm badge-primary indicator-item">${unreadCount}</span>`
-            : ''}
+      ? html`<span class="badge badge-sm badge-primary indicator-item">${unreadCount}</span>`
+      : ''}
         </div>
       </div>
 
@@ -77,15 +77,15 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
             <div class="flex items-center justify-between">
               <h3 class="font-semibold text-sm">Notificaciones</h3>
               ${unreadCount > 0
-                ? html`<span class="badge badge-sm bg-base-100/20 border-0">${unreadCount} nuevas</span>`
-                : ''}
+      ? html`<span class="badge badge-sm bg-base-100/20 border-0">${unreadCount} nuevas</span>`
+      : ''}
             </div>
           </div>
 
           <!-- Notifications List -->
           <div class="max-h-96 overflow-y-auto" style="scrollbar-width: thin;">
             ${notifications.length > 0
-              ? notifications.map(notification => html`
+      ? notifications.map(notification => html`
                   <a
                     href="${notification.actionUrl || '#'}"
                     class="flex items-start gap-3 px-4 py-3 border-b border-base-300 hover:bg-base-200 transition-colors ${!notification.isRead ? 'bg-primary/5' : ''}"
@@ -103,8 +103,8 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
                       <div class="flex items-start justify-between gap-2">
                         <p class="font-medium text-sm">${notification.title}</p>
                         ${!notification.isRead
-                          ? html`<span class="badge badge-primary badge-xs shrink-0"></span>`
-                          : ''}
+          ? html`<span class="badge badge-primary badge-xs shrink-0"></span>`
+          : ''}
                       </div>
                       <p class="text-sm opacity-70 mt-1">${notification.message}</p>
                       <p class="text-xs opacity-50 mt-1" data-timestamp="${notification.createdAt}">
@@ -113,7 +113,7 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
                     </div>
                   </a>
                 `).join('')
-              : html`
+      : html`
                   <!-- Empty State -->
                   <div class="flex flex-col items-center justify-center py-12 px-4">
                     <svg class="w-12 h-12 opacity-20 mb-3" fill="currentColor" viewBox="0 0 20 20">
@@ -128,13 +128,13 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
           <div class="bg-base-200 px-4 py-2 rounded-b-2xl border-t border-base-300">
             <div class="flex items-center justify-between text-xs">
               ${unreadCount > 0
-                ? html`<button
+      ? html`<button
                     onclick="markAllNotificationsAsRead()"
                     class="btn btn-ghost btn-xs text-primary"
                   >
                     Marcar todas como leídas
                   </button>`
-                : html`<span></span>`}
+      : html`<span></span>`}
               <a href="${adminPath}/notifications" class="btn btn-ghost btn-xs">
                 Ver todas →
               </a>
@@ -245,10 +245,55 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
       // Update timestamps every minute
       setInterval(updateTimestamps, 60000);
 
-      // Poll for new notifications every 30 seconds
-      setInterval(() => {
-        updateNotificationBadge();
-      }, 30000);
+      // Connect to SSE stream for real-time notifications
+      let eventSource = null;
+      let reconnectTimeout = null;
+
+      function connectSSE() {
+        try {
+          eventSource = new EventSource('/api/notifications/stream');
+
+          eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              
+              if (data.type === 'notification') {
+                // New notification received - reload the page to show it
+                location.reload();
+              }
+            } catch (err) {
+              console.error('Error parsing SSE message:', err);
+            }
+          };
+
+          eventSource.onerror = (error) => {
+            console.error('SSE connection error:', error);
+            eventSource.close();
+            
+            // Reconnect after 5 seconds
+            reconnectTimeout = setTimeout(connectSSE, 5000);
+          };
+        } catch (err) {
+          console.error('Error creating EventSource:', err);
+          // Fallback to polling if SSE fails
+          setInterval(() => {
+            updateNotificationBadge();
+          }, 300000); // Poll every 5 minutes as fallback
+        }
+      }
+
+      // Start SSE connection
+      connectSSE();
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+        }
+      });
     </script>
   `;
 };

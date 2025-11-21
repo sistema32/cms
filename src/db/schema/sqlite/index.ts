@@ -3,6 +3,7 @@ import {
     primaryKey,
     sqliteTable,
     text,
+    index,
 } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -1017,7 +1018,11 @@ export const notifications = sqliteTable("notifications", {
     createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(
         sql`(unixepoch())`,
     ),
-});
+}, (table) => ({
+    userIdIdx: index("notifications_user_id_idx").on(table.userId),
+    isReadIdx: index("notifications_is_read_idx").on(table.isRead),
+    createdAtIdx: index("notifications_created_at_idx").on(table.createdAt),
+}));
 
 // ============= NOTIFICATION PREFERENCES =============
 export const notificationPreferences = sqliteTable("notification_preferences", {

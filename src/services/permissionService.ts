@@ -493,3 +493,27 @@ export async function getPermissionStats(): Promise<PermissionStats> {
     permissionsByModule,
   };
 }
+
+export const permissionService = {
+  getAllPermissions,
+  getPermissionsGroupedByModule,
+  getPermissionById,
+  getPermissionsByModule,
+  getModules,
+  createPermission,
+  createModulePermissions,
+  getPermissionByModuleAndAction,
+  updatePermission,
+  deletePermission,
+  deleteModulePermissions,
+  userHasPermission,
+  userHasAnyPermission,
+  userHasAllPermissions,
+  getUserPermissions,
+  getUserPermissionsGrouped,
+  searchPermissions,
+  getAllModules,
+  syncPermissions,
+  createCRUDPermissionsForModule,
+  getPermissionStats,
+};

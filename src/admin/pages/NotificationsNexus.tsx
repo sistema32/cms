@@ -256,28 +256,28 @@ const PageComponent = (props: NotificationsNexusPageProps) => {
         ${unreadNotificationCount > 0 ? html`
           <div style="margin-top: 0.5rem;">
             ${NexusBadge({
-              label: `${unreadNotificationCount} sin leer`,
-              type: "primary",
-              soft: true
-            })}
+    label: `${unreadNotificationCount} sin leer`,
+    type: "primary",
+    soft: true
+  })}
           </div>
         ` : html`
           <div style="margin-top: 0.5rem;">
             ${NexusBadge({
-              label: "Todo al día",
-              type: "success",
-              soft: true
-            })}
+    label: "Todo al día",
+    type: "success",
+    soft: true
+  })}
           </div>
         `}
       </div>
       ${notifications.length > 0 ? html`
         ${NexusButton({
-          label: "Marcar todas como leídas",
-          type: "outline",
-          size: "sm", // El onClick se manejará con un event listener
-          attributes: { "data-action": "mark-all-read" }
-        })}
+    label: "Marcar todas como leídas",
+    type: "outline",
+    size: "sm", // El onClick se manejará con un event listener
+    attributes: { "data-action": "mark-all-read" }
+  })}
       ` : ''}
     </div>
 
@@ -302,11 +302,11 @@ const PageComponent = (props: NotificationsNexusPageProps) => {
               <div class="notification-header">
                 <h3 class="notification-title">${notification.title}</h3>
                 ${NexusBadge({
-                  label: notification.type,
-                  type: getNotificationBadgeType(notification.type),
-                  soft: true,
-                  size: "sm"
-                })}
+    label: notification.type,
+    type: getNotificationBadgeType(notification.type),
+    soft: true,
+    size: "sm"
+  })}
               </div>
               <p class="notification-message">${notification.message}</p>
               <div class="notification-footer">
@@ -358,9 +358,9 @@ const PageComponent = (props: NotificationsNexusPageProps) => {
 
           let newBadgeHTML;
           if (newCount > 0) {
-            newBadgeHTML = \`${NexusBadge({ label: `${newCount} sin leer`, type: "primary", soft: true })}\`;
+            newBadgeHTML = \`<span class="nexus-badge nexus-badge-primary nexus-badge-soft">\${newCount} sin leer</span>\`;
           } else {
-            newBadgeHTML = \`${NexusBadge({ label: "Todo al día", type: "success", soft: true })}\`;
+            newBadgeHTML = \`<span class="nexus-badge nexus-badge-success nexus-badge-soft">Todo al día</span>\`;
           }
           badgeContainer.innerHTML = newBadgeHTML;
         }

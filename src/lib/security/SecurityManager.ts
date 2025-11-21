@@ -4,10 +4,11 @@
  */
 
 import { db } from "../../config/db.ts";
-import { ipBlockRules, securityEvents } from "../../db/schema.ts";
+import { ipBlockRules, securityEvents, users } from "../../db/schema.ts";
 import type { NewIPBlockRule, NewSecurityEvent } from "../../db/schema.ts";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import type { IPBlockRule, SecurityEvent, SecurityStats } from "./types.ts";
+import { notificationService } from "../email/index.ts";
 
 export class SecurityManager {
   private static instance: SecurityManager;
@@ -230,6 +231,27 @@ export class SecurityManager {
       // Block if more than 5 critical events in 5 minutes
       if (recentEvents.filter((e) => e.severity === "critical").length >= 5) {
         await this.blockIP(ip, `Auto-blocked: ${recentEvents.length} critical events`, undefined, undefined);
+      }
+
+      // Notify admins about critical security event
+      try {
+        const admins = await db.query.users.findMany({
+          where: eq(users.roleId, 1),
+        });
+
+        for (const admin of admins) {
+          await notificationService.create({
+            userId: admin.id,
+            type: "system.error",
+            title: "⚠️ Alerta de Seguridad Crítica",
+            message: `Evento de seguridad crítico detectado: ${type} desde IP ${ip}`,
+            actionLabel: "Ver detalles",
+            actionUrl: "/admincp/security",
+            priority: "high",
+          });
+        }
+      } catch (notifError) {
+        console.error("Error sending security notification:", notifError);
       }
     }
   }

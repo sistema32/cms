@@ -1,6 +1,10 @@
 import { Context } from "hono";
 import { z } from "zod";
 import * as commentService from "../services/commentService.ts";
+import { notificationService } from "../lib/email/index.ts";
+import { db } from "../config/db.ts";
+import { content } from "../db/schema.ts";
+import { eq } from "drizzle-orm";
 
 /**
  * Esquemas de validación Zod
@@ -78,6 +82,34 @@ export async function create(c: Context) {
       ipAddress,
       userAgent,
     });
+
+    // Notify content author about new comment
+    try {
+      const contentData = await db.query.content.findFirst({
+        where: eq(content.id, data.contentId),
+        columns: {
+          authorId: true,
+          title: true,
+          slug: true,
+        },
+      });
+
+      if (contentData && contentData.authorId !== user?.userId) {
+        const authorName = user ? user.name : data.authorName || "Un visitante";
+        await notificationService.create({
+          userId: contentData.authorId,
+          type: "comment.new",
+          title: "Nuevo comentario en tu contenido",
+          message: `${authorName} comentó en "${contentData.title}"`,
+          actionLabel: "Ver comentario",
+          actionUrl: `/content/${contentData.slug}#comment-${comment.id}`,
+          priority: "normal",
+        });
+      }
+    } catch (notifError) {
+      console.error("Error sending comment notification:", notifError);
+      // Don't fail the comment creation if notification fails
+    }
 
     // No retornar el body original, solo el censurado
     return c.json(

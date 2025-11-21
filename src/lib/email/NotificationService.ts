@@ -8,6 +8,7 @@ import { notifications, notificationPreferences, users } from "../../db/schema.t
 import type { NewNotification, NewNotificationPreference } from "../../db/schema.ts";
 import { eq, and, desc, lte, gte, sql } from "drizzle-orm";
 import { emailManager } from "./EmailManager.ts";
+import { EventEmitter } from "node:events";
 import type {
   CreateNotificationInput,
   NotificationFilter,
@@ -17,13 +18,29 @@ import type {
 export class NotificationService {
   private static instance: NotificationService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
     }
     return NotificationService.instance;
+  }
+
+  private eventEmitter = new EventEmitter();
+
+  /**
+   * Subscribe to notification events
+   */
+  on(event: string, listener: (...args: any[]) => void) {
+    this.eventEmitter.on(event, listener);
+  }
+
+  /**
+   * Remove subscription
+   */
+  off(event: string, listener: (...args: any[]) => void) {
+    this.eventEmitter.off(event, listener);
   }
 
   /**
@@ -50,6 +67,9 @@ export class NotificationService {
         isRead: false,
         emailSent: false,
       }).returning();
+
+      // Emit event for real-time updates
+      this.eventEmitter.emit(`notification:${input.userId}`, notification);
 
       // Send email notification if enabled and requested
       if (input.sendEmail !== false && prefs.emailNotifications && this.shouldSendEmail(input.type, prefs)) {
@@ -381,23 +401,50 @@ export class NotificationService {
    * Get notification statistics for user
    */
   async getStats(userId: number) {
-    const allNotifications = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId));
+    // Optimized query using aggregation
+    const [totalResult, unreadResult, typeResult, priorityResult] = await Promise.all([
+      // Total count
+      db.select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId)),
+
+      // Unread count
+      db.select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false))),
+
+      // Group by type
+      db.select({ type: notifications.type, count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .groupBy(notifications.type),
+
+      // Group by priority
+      db.select({ priority: notifications.priority, count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .groupBy(notifications.priority),
+    ]);
+
+    const byType = typeResult.reduce((acc, curr) => {
+      acc[curr.type] = curr.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const byPriority = priorityResult.reduce((acc, curr) => {
+      acc[curr.priority] = curr.count;
+      return acc;
+    }, {} as Record<string, number>);
 
     return {
-      total: allNotifications.length,
-      unread: allNotifications.filter((n) => !n.isRead).length,
-      read: allNotifications.filter((n) => n.isRead).length,
-      byType: allNotifications.reduce((acc, n) => {
-        acc[n.type] = (acc[n.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      total: totalResult[0]?.count || 0,
+      unread: unreadResult[0]?.count || 0,
+      read: (totalResult[0]?.count || 0) - (unreadResult[0]?.count || 0),
+      byType,
       byPriority: {
-        high: allNotifications.filter((n) => n.priority === "high").length,
-        normal: allNotifications.filter((n) => n.priority === "normal").length,
-        low: allNotifications.filter((n) => n.priority === "low").length,
+        high: byPriority["high"] || 0,
+        normal: byPriority["normal"] || 0,
+        low: byPriority["low"] || 0,
       },
     };
   }

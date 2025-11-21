@@ -323,3 +323,17 @@ export async function getUserStats() {
 
   return stats;
 }
+
+export const userService = {
+  getUserById,
+  getUserByEmail,
+  getAllUsers,
+  getUsersWithFilters,
+  updateUser,
+  updateUserStatus,
+  updateLastLogin,
+  deleteUser,
+  deleteUsers,
+  bulkUpdateUserStatus,
+  getUserStats,
+};

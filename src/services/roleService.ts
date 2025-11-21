@@ -438,3 +438,21 @@ export async function removePermissionFromRole(roleId: number, permissionId: num
 
   return await getRoleById(roleId);
 }
+
+export const roleService = {
+  getAllRoles,
+  getAllRolesWithStats,
+  getRoleById,
+  getRoleByIdWithStats,
+  getRoleByName,
+  createRole,
+  updateRole,
+  deleteRole,
+  cloneRole,
+  assignPermissionsToRole,
+  getRolePermissions,
+  getRoleStats,
+  canDeleteRole,
+  addPermissionToRole,
+  removePermissionFromRole,
+};
