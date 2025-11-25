@@ -49,7 +49,9 @@ export class PluginService {
       version: found.version,
       status: found.isActive ? 'active' : 'inactive',
       manifest: await pluginLoader.loadManifest(pluginName),
-      settings: found.settings ? JSON.parse(found.settings) : {},
+      settings: found.settings
+        ? (typeof found.settings === 'string' ? JSON.parse(found.settings) : found.settings)
+        : {},
       installedAt: new Date(found.installedAt),
       updatedAt: found.updatedAt ? new Date(found.updatedAt) : undefined,
     };
