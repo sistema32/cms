@@ -1,6 +1,7 @@
 import { RPCServer } from './rpc/RPCServer.ts';
-import { PluginManifest } from './types.ts';
+import { PluginInfo, PluginManifest } from './types.ts';
 import { HostAPI } from './HostAPI.ts';
+import { join } from 'node:path';
 
 export class PluginWorker {
     private worker: Worker;
@@ -8,9 +9,32 @@ export class PluginWorker {
     private manifest: PluginManifest;
     private api: HostAPI;
 
-    constructor(manifest: PluginManifest) {
+    constructor(manifest: PluginInfo) {
         this.manifest = manifest;
         this.api = new HostAPI(manifest.name);
+
+        // Build permissions
+        const permissions: Deno.PermissionOptions = {
+            read: true, // Always allow read (code loading)
+            hrtime: false,
+            prompt: false,
+        };
+
+        if (manifest.permissions) {
+            if (manifest.permissions.includes('network:external')) {
+                permissions.net = true; // TODO: Can be more specific if manifest allows
+            }
+            if (manifest.permissions.includes('system:files')) {
+                permissions.write = true; // TODO: Restrict to plugin dir?
+            }
+            if (manifest.permissions.includes('system:shell')) {
+                permissions.run = true;
+            }
+            // system:env not directly mapped to boolean in strict types sometimes, but 'env' is valid
+            if (manifest.permissions.includes('system:env')) {
+                permissions.env = true;
+            }
+        }
 
         // Initialize Worker
         this.worker = new Worker(
@@ -18,16 +42,9 @@ export class PluginWorker {
             {
                 type: 'module',
                 deno: {
-                    permissions: {
-                        net: true, // Should be granular based on manifest
-                        read: true,
-                        write: true,
-                        env: true,
-                        ffi: true,
-                        run: true
-                    }
+                    permissions
                 }
-            }
+            } as any
         );
 
         this.rpc = new RPCServer(this.worker);

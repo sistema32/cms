@@ -28,7 +28,7 @@ export type PluginPermission =
     | 'settings:read' | 'settings:write'
     | 'network:external'
     | 'database:read' | 'database:write'
-    | 'system:shell' | 'system:files'
+    | 'system:shell' | 'system:files' | 'system:env'
     | 'admin:menu'; // Added admin:menu
 
 export interface Plugin {
@@ -60,4 +60,8 @@ export interface PluginRoute {
     path: string;
     handler: string; // Handler ID
     pluginName: string;
+}
+
+export interface PluginInfo extends PluginManifest {
+    entryPoint: string;
 }

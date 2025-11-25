@@ -9,8 +9,9 @@ async function test() {
 
     try {
         // 1. Install
-        console.log(`\n1. Installing ${pluginName}...`);
-        await pluginManager.install(pluginName, { activate: false });
+        console.log('1. Installing lexslider...');
+        console.log('[PluginManager] Installing lexslider...');
+        const installResult = await pluginManager.install('lexslider');
         console.log('✅ Installed');
 
         // 2. Activate

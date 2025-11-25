@@ -35,6 +35,15 @@ export class PluginLoader {
         }
     }
 
+    async loadPlugin(pluginName: string): Promise<PluginManifest & { entryPoint: string }> {
+        const manifest = await this.loadManifest(pluginName);
+        const entryPoint = this.getPluginPath(pluginName);
+        return {
+            ...manifest,
+            entryPoint
+        };
+    }
+
     async listAvailablePlugins(): Promise<string[]> {
         const plugins: string[] = [];
         try {
@@ -66,9 +75,9 @@ export class PluginLoader {
 
         try {
             Deno.statSync(modPath);
-            return `file://${join(Deno.cwd(), modPath)}`;
+            return `file://${modPath}`;
         } catch {
-            return `file://${join(Deno.cwd(), indexPath)}`;
+            return `file://${indexPath}`;
         }
     }
 
