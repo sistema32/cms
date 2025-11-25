@@ -16,6 +16,7 @@ import { SEOHelper } from "../lib/seo/SEOHelper.ts";
 import { StructuredDataGenerator } from "../lib/seo/StructuredDataGenerator.ts";
 import { URLOptimizer } from "../lib/seo-optimization/URLOptimizer.ts";
 import { env } from "../config/env.ts";
+import { hookManager } from "../lib/plugin-system/HookManager.ts";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
@@ -64,10 +65,10 @@ async function loadThemeModule(modulePath: string) {
 }
 
 async function getThemeHelpers() {
-  // Always use default theme helpers for core functions like getPaginatedPosts
-  // Theme-specific helpers can be added per theme but core functions should be consistent
-  const defaultHelpersPath = `src/themes/default/helpers/index.ts`;
-  return await loadThemeModule(defaultHelpersPath);
+  // Use helper loader service (loads once on theme activation, then cached)
+  const { loadThemeHelpers } = await import("../services/themeHelperLoader.ts");
+  const activeTheme = await themeService.getActiveTheme();
+  return await loadThemeHelpers(activeTheme);
 }
 
 /**
@@ -210,13 +211,22 @@ async function getThemeTemplate(templateName: string) {
   const activeTheme = await themeService.getActiveTheme();
 
   // Try 1: Active theme
-  const templatePath =
+  let templatePath =
     `src/themes/${activeTheme}/templates/${templateName}.tsx`;
-  const fullPath = join(Deno.cwd(), templatePath);
+  let fullPath = join(Deno.cwd(), templatePath);
 
   try {
     await Deno.stat(fullPath);
     const module = await loadThemeModule(templatePath);
+
+    // Apply theme:template filter (allows plugins to override template)
+    const filteredPath = await hookManager.applyFilters("theme:template", templatePath, templateName, activeTheme);
+    if (filteredPath !== templatePath) {
+      console.log(`🔄 Template overridden by filter: ${filteredPath}`);
+      const overrideModule = await loadThemeModule(filteredPath);
+      return overrideModule.default;
+    }
+
     return module.default;
   } catch (error) {
     console.warn(
@@ -230,6 +240,14 @@ async function getThemeTemplate(templateName: string) {
       `src/themes/default/templates/${templateName}.tsx`;
     const module = await loadThemeModule(defaultTemplatePath);
     console.log(`✅ Using fallback template from default theme`);
+
+    // Apply filter even for fallback
+    const filteredPath = await hookManager.applyFilters("theme:template", defaultTemplatePath, templateName, "default");
+    if (filteredPath !== defaultTemplatePath) {
+      const overrideModule = await loadThemeModule(filteredPath);
+      return overrideModule.default;
+    }
+
     return module.default;
   } catch (error) {
     console.error(
@@ -255,12 +273,16 @@ async function loadPageTemplate(
   // Nivel 1: Template personalizado en tema activo
   // Ejemplo: themes/modern/templates/pages/page-inicio.tsx
   if (templateName) {
-    const customPath =
+    let customPath =
       `src/themes/${activeTheme}/templates/pages/${templateName}.tsx`;
-    const fullPath = join(Deno.cwd(), customPath);
+    let fullPath = join(Deno.cwd(), customPath);
 
     try {
       await Deno.stat(fullPath);
+
+      // Apply theme:pageTemplate filter
+      customPath = await hookManager.applyFilters("theme:pageTemplate", customPath, templateName, activeTheme);
+
       const module = await loadThemeModule(customPath);
       console.log(
         `✅ Cargando template personalizado: ${templateName} (${activeTheme})`,
@@ -275,11 +297,15 @@ async function loadPageTemplate(
 
   // Nivel 2: Template default del tema activo
   // Ejemplo: themes/modern/templates/page.tsx
-  const themeDefaultPath = `src/themes/${activeTheme}/templates/page.tsx`;
-  const themeDefaultFullPath = join(Deno.cwd(), themeDefaultPath);
+  let themeDefaultPath = `src/themes/${activeTheme}/templates/page.tsx`;
+  let themeDefaultFullPath = join(Deno.cwd(), themeDefaultPath);
 
   try {
     await Deno.stat(themeDefaultFullPath);
+
+    // Apply theme:pageTemplate filter
+    themeDefaultPath = await hookManager.applyFilters("theme:pageTemplate", themeDefaultPath, null, activeTheme);
+
     const module = await loadThemeModule(themeDefaultPath);
     console.log(`✅ Usando template default del tema: ${activeTheme}`);
     return module.default;
@@ -512,9 +538,8 @@ async function generateSEOMetaTags(options: {
   // Agregar breadcrumbs si existen
   if (breadcrumbs && breadcrumbs.length > 0) {
     const breadcrumbSchema = urlOptimizer.generateBreadcrumbSchema(breadcrumbs);
-    metaTags += `\n<script type="application/ld+json">\n${
-      JSON.stringify(breadcrumbSchema, null, 2)
-    }\n</script>`;
+    metaTags += `\n<script type="application/ld+json">\n${JSON.stringify(breadcrumbSchema, null, 2)
+      }\n</script>`;
   }
 
   // Agregar pagination links
@@ -653,7 +678,7 @@ async function renderPageById(c: any, pageId: number) {
     id: page.id,
     title: page.title,
     slug: page.slug,
-    body: page.body || "",
+    body: await hookManager.applyFilters("content:render", page.body || ""),
     featureImage: page.featuredImage?.url || undefined,
     createdAt: page.createdAt,
     updatedAt: page.updatedAt,
@@ -731,33 +756,35 @@ async function renderHomeTemplate(c: any) {
 /**
  * GET / - Homepage dinámica
  * Comportamiento basado en configuración (estilo WordPress):
- * - front_page_type = "posts" → Lista de posts
- * - front_page_type = "page" → Página estática por ID
- * - Fallback → Template home.tsx tradicional
+ * - homepage_type = "posts_list" → Lista de posts
+ * - homepage_type = "static_page" → Página estática por ID
+ * - homepage_type = "theme_home" → Template home.tsx del tema
  */
 frontendRouter.get("/", async (c) => {
   try {
-    const frontPageType = await settingsService.getSetting(
-      "front_page_type",
-      "posts",
-    );
-    const frontPageId = await settingsService.getSetting("front_page_id", null);
+    const homepageConfig = await settingsService.getHomepageConfig();
 
-    // Opción 1: Mostrar lista de posts en la homepage
-    if (frontPageType === "posts") {
+    // Modo 1: Mostrar lista de posts en la homepage
+    if (homepageConfig.type === "posts_list") {
       console.log("📄 Rendering homepage as blog (posts list)");
       return await renderBlogTemplate(c, 1);
     }
 
-    // Opción 2: Mostrar página estática específica
-    if (frontPageType === "page" && frontPageId) {
-      console.log(`📄 Rendering homepage as static page (ID: ${frontPageId})`);
-      return await renderPageById(c, parseInt(frontPageId as string));
+    // Modo 2: Mostrar página estática específica
+    if (homepageConfig.type === "static_page" && homepageConfig.pageId) {
+      console.log(`📄 Rendering homepage as static page (ID: ${homepageConfig.pageId})`);
+      return await renderPageById(c, homepageConfig.pageId);
     }
 
-    // Opción 3: Fallback al template home.tsx tradicional
-    console.log("📄 Rendering homepage with home.tsx template");
-    return await renderHomeTemplate(c);
+    // Modo 3: Template home.tsx del tema
+    if (homepageConfig.type === "theme_home") {
+      console.log("📄 Rendering homepage with theme home.tsx template");
+      return await renderHomeTemplate(c);
+    }
+
+    // Fallback: posts list
+    console.log("📄 Fallback: Rendering homepage as posts list");
+    return await renderBlogTemplate(c, 1);
   } catch (error: any) {
     console.error("Error rendering home:", error);
     return c.text("Error al cargar la página", 500);
@@ -934,12 +961,21 @@ frontendRouter.get("/tag/:slug", async (c) => {
 });
 
 /**
- * GET /:slug - Página estática
+ * GET /:slug - Página estática o Posts Page
  * Renderiza páginas con templates personalizados o default
+ * También maneja la posts page configurable
  */
 frontendRouter.get("/:slug", async (c) => {
   try {
     const slug = c.req.param("slug");
+    const homepageConfig = await settingsService.getHomepageConfig();
+
+    // Check if this slug is the configured posts page
+    if (homepageConfig.postsPage && slug === homepageConfig.postsPage) {
+      console.log(`📄 Rendering posts page: /${slug}`);
+      return await renderBlogTemplate(c, 1);
+    }
+
     const blogBase = await getBlogBase();
 
     // Evitar conflicto con la ruta del blog
@@ -972,17 +1008,6 @@ frontendRouter.get("/:slug", async (c) => {
       return c.notFound();
     }
 
-    // Verificar si esta página está configurada como la página de posts
-    const postsPageId = await settingsService.getSetting("posts_page_id", null);
-    if (postsPageId && parseInt(postsPageId as string) === page.id) {
-      // Esta página está configurada como la página de posts, mostrar la lista de posts
-      // en lugar del contenido de la página
-      console.log(
-        `📄 Rendering blog posts at page slug: ${slug} (posts page ID: ${page.id})`,
-      );
-      return await renderBlogTemplate(c, 1);
-    }
-
     // Cargar theme y helpers
     const activeTheme = await themeService.getActiveTheme();
     const themeHelpers = await getThemeHelpers();
@@ -995,35 +1020,34 @@ frontendRouter.get("/:slug", async (c) => {
     const commonData = await loadCommonTemplateData();
     const blogUrl = await getBlogBase().then((base) => `/${base}`);
 
+    // Transform page data
     const pageData = {
       id: page.id,
       title: page.title,
       slug: page.slug,
       body: page.body || "",
-      featureImage: page.featuredImage?.url || undefined,
-      createdAt: page.createdAt,
-      updatedAt: page.updatedAt,
+      featureImage: page.featuredImage?.url || null,
       author: {
         id: page.author.id,
         name: page.author.name || page.author.email,
         email: page.author.email,
+        avatar: page.author.avatar || null,
       },
+      createdAt: page.createdAt,
+      updatedAt: page.updatedAt,
     };
 
-    // Generar breadcrumbs para página
-    const breadcrumbs = [
-      { label: "Inicio", url: "/" },
-      { label: page.title, url: `/${page.slug}` },
-    ];
-
-    // Generar meta tags SEO completos
-    const seoMetaTags = await generateSEOMetaTags({
-      content: page,
-      url: `/${page.slug}`,
-      pageType: "website",
-      author: pageData.author,
-      breadcrumbs,
-    });
+    // SEO Meta Tags
+    const seoMetaTags = page.seo
+      ? {
+        title: page.seo.metaTitle || page.title,
+        description: page.seo.metaDescription || "",
+        canonical: page.seo.canonicalUrl || "",
+        ogTitle: page.seo.ogTitle || page.title,
+        ogDescription: page.seo.ogDescription || "",
+        ogImage: page.seo.ogImage || "",
+      }
+      : null;
 
     console.log(
       `📄 Rendering page: ${slug} with template: ${page.template || "default"}`,

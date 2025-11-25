@@ -1,4 +1,5 @@
-import { html } from "hono/html";
+import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { Layout } from "./Layout.tsx";
 import { Header } from "../partials/Header.tsx";
 import { Footer } from "../partials/Footer.tsx";
@@ -23,48 +24,53 @@ interface PageProps {
   page: PageData;
 }
 
-export const PageTemplate = (props: PageProps) => {
+export const PageTemplate: FC<PageProps> = (props) => {
   const { site, custom, activeTheme, page } = props;
 
-  const content = html`
-    ${Header({ site, custom, blogUrl: "/blog" })}
+  const content = (
+    <>
+      <Header site={site} custom={custom} blogUrl="/blog" />
 
-    <main class="site-main">
-      <div class="container max-w-4xl mx-auto px-4 py-12">
-        <article class="page-single">
-          ${page.featureImage ? html`
-            <figure class="page-featured-image mb-8 rounded-lg overflow-hidden">
-              <img
-                src="${page.featureImage}"
-                alt="${page.title}"
-                class="w-full h-auto"
-              />
-            </figure>
-          ` : ""}
+      <main class="site-main">
+        <div class="container max-w-4xl mx-auto px-4 py-12">
+          <article class="page-single">
+            {page.featureImage && (
+              <figure class="page-featured-image mb-8 rounded-lg overflow-hidden">
+                <img
+                  src={page.featureImage}
+                  alt={page.title}
+                  class="w-full h-auto"
+                />
+              </figure>
+            )}
 
-          <header class="page-header mb-8">
-            <h1 class="text-4xl font-bold mb-4">${page.title}</h1>
-          </header>
+            <header class="page-header mb-8">
+              <h1 class="text-4xl font-bold mb-4">{page.title}</h1>
+            </header>
 
-          <div class="page-content prose prose-lg max-w-none">
-            ${html([page.body] as any)}
-          </div>
-        </article>
-      </div>
-    </main>
+            <div class="page-content prose prose-lg max-w-none">
+              {raw(page.body)}
+            </div>
+          </article>
+        </div>
+      </main>
 
-    ${Footer({ site, custom, blogUrl: "/blog" })}
-  `;
+      <Footer site={site} custom={custom} blogUrl="/blog" />
+    </>
+  );
 
-  return Layout({
-    site,
-    custom,
-    activeTheme,
-    title: page.title,
-    description: "",
-    bodyClass: "page-template",
-    children: content,
-  });
+  return (
+    <Layout
+      site={site}
+      custom={custom}
+      activeTheme={activeTheme}
+      title={page.title}
+      description=""
+      bodyClass="page-template"
+    >
+      {content}
+    </Layout>
+  );
 };
 
 export default PageTemplate;

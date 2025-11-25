@@ -250,42 +250,76 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
       let reconnectTimeout = null;
 
       function connectSSE() {
-        try {
-          eventSource = new EventSource('/api/notifications/stream');
+        // DIAGNÓSTICO: Primero probar con fetch para ver si las cookies funcionan
+        fetch('/api/notifications/stream', {
+          method: 'HEAD',
+          credentials: 'same-origin'
+        })
+        .then(response => {
+          console.log('Diagnóstico fetch a SSE:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+          
+          if (response.status !== 200) {
+            console.error('SSE endpoint no disponible. Status:', response.status);
+            console.error('Posible problema de autenticación o servidor');
+            return;
+          }
+          
+          // Si fetch funciona, intentar EventSource
+          try {
+            const url = '/api/notifications/stream';
+            console.log('Conectando a SSE:', url);
+            
+            eventSource = new EventSource(url);
 
           eventSource.onmessage = (event) => {
             try {
               const data = JSON.parse(event.data);
+              console.log('Mensaje SSE recibido:', data);
               
               if (data.type === 'notification') {
-                // New notification received - reload the page to show it
                 location.reload();
               }
             } catch (err) {
-              console.error('Error parsing SSE message:', err);
+              console.error('Error al parsear mensaje SSE:', err);
             }
           };
 
           eventSource.onerror = (error) => {
-            console.error('SSE connection error:', error);
-            eventSource.close();
-            
-            // Reconnect after 5 seconds
+            console.error('Error de conexión SSE:', error);
+            console.error('ReadyState:', eventSource?.readyState);
+            if (eventSource) {
+              eventSource.close();
+            }
             reconnectTimeout = setTimeout(connectSSE, 5000);
           };
+
+          eventSource.onopen = () => {
+            console.log('Conexión SSE establecida correctamente');
+          };
         } catch (err) {
-          console.error('Error creating EventSource:', err);
-          // Fallback to polling if SSE fails
+          console.error('Error al crear EventSource:', err);
           setInterval(() => {
             updateNotificationBadge();
-          }, 300000); // Poll every 5 minutes as fallback
+          }, 300000);
         }
-      }
+      })
+      .catch(err => {
+        console.error('Error en diagnóstico fetch SSE:', err);
+        // Fallback a polling
+        setInterval(() => {
+          updateNotificationBadge();
+        }, 300000);
+      });
+    }
 
-      // Start SSE connection
+      // Iniciar conexión SSE
       connectSSE();
 
-      // Cleanup on page unload
+      // Limpieza al descargar la página
       window.addEventListener('beforeunload', () => {
         if (eventSource) {
           eventSource.close();

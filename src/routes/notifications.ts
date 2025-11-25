@@ -101,6 +101,10 @@ notifications.get("/stream", async (c) => {
       notificationService.off(`notification:${userId}`, listener);
       clearInterval(keepaliveInterval);
     });
+
+    // CRITICAL: Mantener la conexión abierta indefinidamente
+    // La promesa nunca se resuelve, pero onAbort limpiará cuando el cliente se desconecte
+    await new Promise(() => { });
   });
 });
 

@@ -1,115 +1,174 @@
-import { RPCMessageType, RPCRequest, RPCResponse, RPCEvent, RPCHandler, RPCMessage } from './types.ts';
+import { RPCMessage, RPCRequest, RPCResponse, RPCEvent, RPC_ERRORS } from './messages.ts';
+
+type RequestHandler = (...args: any[]) => Promise<any> | any;
+type EventHandler = (data: any) => void;
+
+interface PendingRequest {
+    resolve: (value: any) => void;
+    reject: (reason: any) => void;
+    timeoutId: number;
+}
+
+interface RPCConfig {
+    defaultTimeout?: number;
+}
 
 /**
  * RPC Client
- * Handles communication from the worker side (or client side of the connection)
+ * Handles communication from Worker to Main Thread (and vice versa)
  */
 export class RPCClient {
-    private handlers: Map<string, RPCHandler> = new Map();
-    private pendingRequests: Map<string, { resolve: (value: any) => void; reject: (reason: any) => void }> = new Map();
     private postMessage: (message: any) => void;
+    private handlers: Map<string, RequestHandler> = new Map();
+    private eventListeners: Map<string, Set<EventHandler>> = new Map();
+    private pendingRequests: Map<string, PendingRequest> = new Map();
+    private defaultTimeout: number;
 
-    constructor(postMessage: (message: any) => void) {
+    constructor(postMessage: (message: any) => void, config: RPCConfig = {}) {
         this.postMessage = postMessage;
+        this.defaultTimeout = config.defaultTimeout || 30000;
+    }
+
+    /**
+     * Handle incoming messages
+     */
+    async handleMessage(message: RPCMessage): Promise<void> {
+        if (!message || !message.type) return;
+
+        switch (message.type) {
+            case 'request':
+                await this.handleRequest(message as RPCRequest);
+                break;
+            case 'response':
+                this.handleResponse(message as RPCResponse);
+                break;
+            case 'event':
+                this.handleEvent(message as RPCEvent);
+                break;
+        }
     }
 
     /**
      * Register a method handler
      */
-    registerHandler(method: string, handler: RPCHandler) {
+    registerHandler(method: string, handler: RequestHandler): void {
         this.handlers.set(method, handler);
-    }
-
-    /**
-     * Handle incoming message
-     */
-    async handleMessage(message: RPCMessage) {
-        if (message.type === RPCMessageType.REQUEST) {
-            await this.handleRequest(message as RPCRequest);
-        } else if (message.type === RPCMessageType.RESPONSE) {
-            this.handleResponse(message as RPCResponse);
-        } else if (message.type === RPCMessageType.EVENT) {
-            // Handle events if needed
-        }
     }
 
     /**
      * Call a remote method
      */
-    call(method: string, ...params: any[]): Promise<any> {
+    async call(method: string, ...params: any[]): Promise<any> {
         const id = crypto.randomUUID();
         const request: RPCRequest = {
-            type: RPCMessageType.REQUEST,
             id,
+            type: 'request',
             method,
-            params,
+            params
         };
 
         return new Promise((resolve, reject) => {
-            this.pendingRequests.set(id, { resolve, reject });
-            this.postMessage(request);
+            const timeoutId = setTimeout(() => {
+                if (this.pendingRequests.has(id)) {
+                    this.pendingRequests.delete(id);
+                    reject({
+                        code: RPC_ERRORS.TIMEOUT,
+                        message: `RPC Call '${method}' timed out`
+                    });
+                }
+            }, this.defaultTimeout);
+
+            this.pendingRequests.set(id, { resolve, reject, timeoutId });
+
+            try {
+                this.postMessage(request);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                this.pendingRequests.delete(id);
+                reject({
+                    code: RPC_ERRORS.INTERNAL_ERROR,
+                    message: 'Failed to send message',
+                    data: error
+                });
+            }
         });
     }
 
     /**
      * Handle incoming request
      */
-    private async handleRequest(request: RPCRequest) {
-        const handler = this.handlers.get(request.method);
-
-        if (!handler) {
-            this.sendError(request.id, -32601, `Method not found: ${request.method}`);
-            return;
-        }
+    private async handleRequest(request: RPCRequest): Promise<void> {
+        const { id, method, params } = request;
+        const handler = this.handlers.get(method);
 
         try {
-            const result = await handler(...request.params);
-            this.sendResponse(request.id, result);
-        } catch (error) {
-            this.sendError(request.id, -32000, (error as Error).message);
+            if (!handler) {
+                throw {
+                    code: RPC_ERRORS.METHOD_NOT_FOUND,
+                    message: `Method '${method}' not found`
+                };
+            }
+
+            const result = await handler(...params);
+
+            const response: RPCResponse = {
+                id: crypto.randomUUID(),
+                type: 'response',
+                requestId: id,
+                result
+            };
+
+            this.postMessage(response);
+
+        } catch (error: any) {
+            const response: RPCResponse = {
+                id: crypto.randomUUID(),
+                type: 'response',
+                requestId: id,
+                error: {
+                    code: error.code || RPC_ERRORS.INTERNAL_ERROR,
+                    message: error.message || 'Internal Error',
+                    data: error.data || error
+                }
+            };
+            this.postMessage(response);
         }
     }
 
     /**
      * Handle incoming response
      */
-    private handleResponse(response: RPCResponse) {
-        const pending = this.pendingRequests.get(response.id);
-        if (!pending) return;
+    private handleResponse(response: RPCResponse): void {
+        const { requestId, result, error } = response;
+        const pending = this.pendingRequests.get(requestId);
 
-        this.pendingRequests.delete(response.id);
+        if (pending) {
+            clearTimeout(pending.timeoutId);
+            this.pendingRequests.delete(requestId);
 
-        if (response.error) {
-            pending.reject(new Error(response.error.message));
-        } else {
-            pending.resolve(response.result);
+            if (error) {
+                pending.reject(error);
+            } else {
+                pending.resolve(result);
+            }
         }
     }
 
     /**
-     * Send success response
+     * Handle incoming event
      */
-    private sendResponse(id: string, result: any) {
-        const response: RPCResponse = {
-            type: RPCMessageType.RESPONSE,
-            id,
-            result,
-        };
-        this.postMessage(response);
-    }
+    private handleEvent(event: RPCEvent): void {
+        const { name, data } = event;
+        const listeners = this.eventListeners.get(name);
 
-    /**
-     * Send error response
-     */
-    private sendError(id: string, code: number, message: string) {
-        const response: RPCResponse = {
-            type: RPCMessageType.RESPONSE,
-            id,
-            error: {
-                code,
-                message,
-            },
-        };
-        this.postMessage(response);
+        if (listeners) {
+            listeners.forEach(handler => {
+                try {
+                    handler(data);
+                } catch (e) {
+                    console.error(`Error in event listener for '${name}':`, e);
+                }
+            });
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import type { FC } from "hono/jsx";
 import type { PostData } from "../helpers/index.ts";
 
 /**
@@ -16,7 +16,7 @@ interface PostCardProps {
   showImage?: boolean;
 }
 
-export const PostCard = (props: PostCardProps) => {
+export const PostCard: FC<PostCardProps> = (props) => {
   const {
     post,
     showExcerpt = true,
@@ -27,74 +27,82 @@ export const PostCard = (props: PostCardProps) => {
     showImage = true,
   } = props;
 
-  return html`
+  return (
     <article class="post-card">
-      ${showImage && post.featureImage ? html`
-        <a href="/blog/${post.slug}" class="post-card-image-link">
+      {showImage && post.featureImage && (
+        <a href={`/blog/${post.slug}`} class="post-card-image-link">
           <img
-            src="${post.featureImage}"
-            alt="${post.title}"
+            src={post.featureImage}
+            alt={post.title}
             class="post-card-image"
             loading="lazy"
           />
         </a>
-      ` : ''}
+      )}
 
       <div class="post-card-content">
-        ${showCategories && post.categories.length > 0 ? html`
+        {showCategories && post.categories.length > 0 && (
           <div class="post-card-categories">
-            ${post.categories.map((cat) => html`
-              <a href="/category/${cat.slug}" class="post-card-category">
-                ${cat.name}
+            {post.categories.map((cat) => (
+              <a
+                href={`/category/${cat.slug}`}
+                class="post-card-category"
+                key={cat.id}
+              >
+                {cat.name}
               </a>
-            `)}
+            ))}
           </div>
-        ` : ''}
+        )}
 
         <h2 class="post-card-title">
-          <a href="/blog/${post.slug}">${post.title}</a>
+          <a href={`/blog/${post.slug}`}>{post.title}</a>
         </h2>
 
-        ${showExcerpt && post.excerpt ? html`
-          <p class="post-card-excerpt">${post.excerpt}</p>
-        ` : ''}
+        {showExcerpt && post.excerpt && (
+          <p class="post-card-excerpt">{post.excerpt}</p>
+        )}
 
         <div class="post-card-meta">
-          ${showAuthor ? html`
+          {showAuthor && (
             <span class="post-card-author">
               <svg class="icon icon-user" width="16" height="16" viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
               </svg>
-              ${post.author.name}
+              {post.author.name}
             </span>
-          ` : ''}
+          )}
 
-          ${showDate ? html`
+          {showDate && (
             <span class="post-card-date">
               <svg class="icon icon-calendar" width="16" height="16" viewBox="0 0 24 24">
-                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z" />
               </svg>
-              ${new Date(post.createdAt).toLocaleDateString("es", {
+              {new Date(post.createdAt).toLocaleDateString("es", {
                 year: "numeric",
                 month: "long",
                 day: "numeric"
               })}
             </span>
-          ` : ''}
+          )}
         </div>
 
-        ${showTags && post.tags.length > 0 ? html`
+        {showTags && post.tags.length > 0 && (
           <div class="post-card-tags">
-            ${post.tags.map((tag) => html`
-              <a href="/tag/${tag.slug}" class="post-card-tag">
-                #${tag.name}
+            {post.tags.map((tag) => (
+              <a
+                href={`/tag/${tag.slug}`}
+                class="post-card-tag"
+                key={tag.id}
+              >
+                #{tag.name}
               </a>
-            `)}
+            ))}
           </div>
-        ` : ''}
+        )}
       </div>
     </article>
-  `;
+  );
 };
 
 export default PostCard;

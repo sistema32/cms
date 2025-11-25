@@ -372,3 +372,58 @@ export async function updateThemeCustomSettings(
     await updateSetting(fullKey, value, true);
   }
 }
+
+// ============= HOMEPAGE CONFIGURATION =============
+
+/**
+ * Homepage Configuration Type
+ */
+export interface HomepageConfig {
+  type: "theme_home" | "static_page" | "posts_list";
+  pageId?: number;
+  postsPage?: string;
+}
+
+/**
+ * Get homepage configuration
+ */
+export async function getHomepageConfig(): Promise<HomepageConfig> {
+  const homepageType = await getSetting<string>("homepage_type", "posts_list");
+  const homepagePageId = await getSetting<number | null>("homepage_page_id", null);
+  const postsPage = await getSetting<string | null>("posts_page", null);
+
+  return {
+    type: homepageType as "theme_home" | "static_page" | "posts_list",
+    pageId: homepagePageId || undefined,
+    postsPage: postsPage || undefined,
+  };
+}
+
+/**
+ * Set homepage configuration
+ */
+export async function setHomepageConfig(config: HomepageConfig): Promise<void> {
+  // Validate configuration
+  if (config.type === "static_page" && !config.pageId) {
+    throw new Error("Page ID is required when homepage type is 'static_page'");
+  }
+
+  if (config.type === "theme_home" && !config.postsPage) {
+    throw new Error("Posts page is required when homepage type is 'theme_home'");
+  }
+
+  // Save settings
+  await updateSetting("homepage_type", config.type, true);
+
+  if (config.pageId) {
+    await updateSetting("homepage_page_id", config.pageId, true);
+  } else {
+    await deleteSetting("homepage_page_id");
+  }
+
+  if (config.postsPage) {
+    await updateSetting("posts_page", config.postsPage, true);
+  } else {
+    await deleteSetting("posts_page");
+  }
+}

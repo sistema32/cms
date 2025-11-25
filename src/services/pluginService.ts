@@ -207,6 +207,12 @@ export class PluginService {
   getPluginAssetPath(pluginName: string, assetPath: string): string | null {
     return pluginLoader.getAssetPath(pluginName, assetPath);
   }
+  /**
+   * Get plugin worker
+   */
+  getPluginWorker(pluginName: string) {
+    return pluginManager.getWorker(pluginName);
+  }
 }
 
 export const pluginService = new PluginService();

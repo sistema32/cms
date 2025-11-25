@@ -1,5 +1,7 @@
-import { html } from "hono/html";
+import type { FC } from "hono/jsx";
 import { Layout } from "./Layout.tsx";
+import { PostCard } from "../partials/PostCard.tsx";
+import { Pagination } from "../partials/Pagination.tsx";
 import { Header } from "../partials/Header.tsx";
 import { Footer } from "../partials/Footer.tsx";
 import type { SiteData, PostData, PaginationData, MenuItem, CategoryData } from "../helpers/index.ts";
@@ -21,103 +23,68 @@ interface IndexProps {
   categories?: CategoryData[];
 }
 
-export const IndexTemplate = (props: IndexProps) => {
+export const IndexTemplate: FC<IndexProps> = (props) => {
   const { site, custom, activeTheme, posts, pagination, blogUrl = "/blog", menu = [], footerMenu = [], categories = [] } = props;
-  const postsLayout = custom.posts_layout || "Grid";
 
-  const content = html`
-    <!-- Header -->
-    ${Header({ site, custom, blogUrl, menu })}
+  const content = (
+    <>
+      <Header site={site} custom={custom} blogUrl={blogUrl} menu={menu} />
 
-    <!-- Main Content -->
-    <main class="site-main">
-      <div class="container">
-        ${posts.length > 0 ? html`
-          <div class="posts-grid layout-${postsLayout.toLowerCase()}">
-            ${posts.map((post) => html`
-              <article class="post-card">
-                ${post.featureImage ? html`
-                  <a href="/${post.slug}" class="post-card-image-link">
-                    <img src="${post.featureImage}" alt="${post.title}" class="post-card-image" />
-                  </a>
-                ` : ''}
-
-                <div class="post-card-content">
-                  ${post.categories.length > 0 ? html`
-                    <div class="post-card-categories">
-                      ${post.categories.map((cat) => html`
-                        <a href="/category/${cat.slug}" class="post-card-category">${cat.name}</a>
-                      `)}
-                    </div>
-                  ` : ''}
-
-                  <h2 class="post-card-title">
-                    <a href="/${post.slug}">${post.title}</a>
-                  </h2>
-
-                  ${post.excerpt ? html`<p class="post-card-excerpt">${post.excerpt}</p>` : ''}
-
-                  <div class="post-card-meta">
-                    <span class="post-card-author">Por ${post.author.name}</span>
-                    <span class="post-card-date">${new Date(post.createdAt).toLocaleDateString("es")}</span>
-                  </div>
-
-                  ${post.tags.length > 0 ? html`
-                    <div class="post-card-tags">
-                      ${post.tags.map((tag) => html`
-                        <a href="/tag/${tag.slug}" class="post-card-tag">#${tag.name}</a>
-                      `)}
-                    </div>
-                  ` : ''}
-                </div>
-              </article>
-            `)}
-          </div>
-
-          ${pagination.totalPages > 1 ? html`
-            <nav class="pagination" role="navigation">
-              ${pagination.hasPrev ? html`
-                <a href="/page/${pagination.prevPage}" class="pagination-prev">← Anterior</a>
-              ` : ''}
-
-              <span class="pagination-info">
-                Página ${pagination.currentPage} de ${pagination.totalPages}
-              </span>
-
-              ${pagination.hasNext ? html`
-                <a href="/page/${pagination.nextPage}" class="pagination-next">Siguiente →</a>
-              ` : ''}
-            </nav>
-          ` : ''}
-        ` : html`
-          <div class="no-posts">
-            <h2>No hay posts publicados</h2>
-            <p>Vuelve pronto para ver contenido nuevo.</p>
-          </div>
-        `}
-      </div>
-    </main>
-
-    ${custom.cta_text ? html`
-      <section class="cta-section">
+      <main class="site-main">
         <div class="container">
-          <h2>${custom.cta_text}</h2>
-          <a href="#subscribe" class="btn btn-primary">Suscribirse</a>
+          {posts.length > 0 ? (
+            <>
+              <div class="posts-grid grid-3">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    showExcerpt={true}
+                    showAuthor={true}
+                    showDate={true}
+                    showCategories={true}
+                    showTags={true}
+                    showImage={true}
+                  />
+                ))}
+              </div>
+
+              {pagination.totalPages > 1 && (
+                <Pagination pagination={pagination} baseUrl="/page" />
+              )}
+            </>
+          ) : (
+            <div class="no-posts">
+              <h2>No hay posts publicados</h2>
+              <p>Vuelve pronto para ver contenido nuevo.</p>
+            </div>
+          )}
         </div>
-      </section>
-    ` : ''}
+      </main>
 
-    <!-- Footer -->
-    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
-  `;
+      {custom.cta_text && (
+        <section class="cta-section">
+          <div class="container">
+            <h2>{custom.cta_text}</h2>
+            <a href="#subscribe" class="btn btn-primary">Suscribirse</a>
+          </div>
+        </section>
+      )}
 
-  return Layout({
-    site,
-    custom,
-    activeTheme,
-    bodyClass: "home blog",
-    children: content
-  });
+      <Footer site={site} custom={custom} blogUrl={blogUrl} footerMenu={footerMenu} categories={categories} />
+    </>
+  );
+
+  return (
+    <Layout
+      site={site}
+      custom={custom}
+      activeTheme={activeTheme}
+      bodyClass="home blog"
+    >
+      {content}
+    </Layout>
+  );
 };
 
 export default IndexTemplate;

@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import type { FC } from "hono/jsx";
 import { Layout } from "./Layout.tsx";
 import { Hero } from "../partials/Hero.tsx";
 import { PostCard } from "../partials/PostCard.tsx";
@@ -24,7 +24,7 @@ interface HomeProps {
   footerMenu?: MenuItem[];
 }
 
-export const HomeTemplate = (props: HomeProps) => {
+export const HomeTemplate: FC<HomeProps> = (props) => {
   const { site, custom, activeTheme, featuredPosts, categories = [], blogUrl = "/blog", menu = [], footerMenu = [] } = props;
 
   // Settings de la homepage
@@ -38,151 +38,159 @@ export const HomeTemplate = (props: HomeProps) => {
   const showCategories = custom.homepage_show_categories !== false;
   const showNewsletter = custom.homepage_show_newsletter !== false;
 
-  const content = html`
-    <!-- Header -->
-    ${Header({ site, custom, blogUrl, menu })}
+  const content = (
+    <>
+      {/* Header */}
+      <Header site={site} custom={custom} blogUrl={blogUrl} menu={menu} />
 
-    <!-- Hero Section -->
-    ${Hero({
-      title: heroTitle,
-      subtitle: heroSubtitle,
-      ctaText: heroCtaText,
-      ctaUrl: heroCtaUrl,
-      backgroundImage: heroBackgroundImage,
-      style: heroStyle,
-    })}
+      {/* Hero Section */}
+      <Hero
+        title={heroTitle}
+        subtitle={heroSubtitle}
+        ctaText={heroCtaText}
+        ctaUrl={heroCtaUrl}
+        backgroundImage={heroBackgroundImage}
+        style={heroStyle}
+      />
 
-    <!-- Main Content -->
-    <main class="site-main homepage">
-      <!-- Featured Posts Section -->
-      ${showFeaturedPosts && featuredPosts.length > 0 ? html`
-        <section class="homepage-section featured-posts-section">
-          <div class="container">
-            <div class="section-header">
-              <h2 class="section-title">
-                ${custom.homepage_featured_title || "Últimos Artículos"}
-              </h2>
-              <p class="section-description">
-                ${custom.homepage_featured_subtitle || "Descubre nuestro contenido más reciente"}
-              </p>
-            </div>
-
-            <div class="posts-grid grid-3">
-              ${featuredPosts.map((post) => PostCard({
-                post,
-                showExcerpt: true,
-                showAuthor: true,
-                showDate: true,
-                showCategories: true,
-                showTags: false,
-                showImage: true,
-              }))}
-            </div>
-
-            <div class="section-footer">
-              <a href="${blogUrl}" class="btn btn-secondary">
-                Ver todos los artículos
-                <svg class="icon" width="16" height="16" viewBox="0 0 24 24">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </section>
-      ` : ''}
-
-      <!-- About/Features Section (opcional) -->
-      ${custom.homepage_about_text ? html`
-        <section class="homepage-section about-section">
-          <div class="container">
-            <div class="about-content">
-              <h2 class="section-title">
-                ${custom.homepage_about_title || "¿Quiénes Somos?"}
-              </h2>
-              <div class="about-text">
-                ${custom.homepage_about_text}
-              </div>
-            </div>
-          </div>
-        </section>
-      ` : ''}
-
-      <!-- Categories Section -->
-      ${showCategories && categories.length > 0 ? html`
-        <section class="homepage-section categories-section">
-          <div class="container">
-            <div class="section-header">
-              <h2 class="section-title">
-                ${custom.homepage_categories_title || "Explora por Categoría"}
-              </h2>
-            </div>
-
-            <div class="categories-grid">
-              ${categories.slice(0, 6).map((cat) => html`
-                <a href="/category/${cat.slug}" class="category-card">
-                  <div class="category-card-inner">
-                    <h3 class="category-card-title">${cat.name}</h3>
-                    ${cat.count ? html`
-                      <span class="category-card-count">${cat.count} artículos</span>
-                    ` : ''}
-                  </div>
-                </a>
-              `)}
-            </div>
-          </div>
-        </section>
-      ` : ''}
-
-      <!-- Newsletter / CTA Section -->
-      ${showNewsletter ? html`
-        <section class="homepage-section cta-section">
-          <div class="container">
-            <div class="cta-content">
-              <div class="cta-text">
-                <h2 class="cta-title">
-                  ${custom.homepage_cta_title || "¡No te pierdas nada!"}
+      {/* Main Content */}
+      <main class="site-main homepage">
+        {/* Featured Posts Section */}
+        {showFeaturedPosts && featuredPosts.length > 0 && (
+          <section class="homepage-section featured-posts-section">
+            <div class="container">
+              <div class="section-header">
+                <h2 class="section-title">
+                  {custom.homepage_featured_title || "Últimos Artículos"}
                 </h2>
-                <p class="cta-description">
-                  ${custom.homepage_cta_text || "Suscríbete a nuestro newsletter para recibir las últimas actualizaciones."}
+                <p class="section-description">
+                  {custom.homepage_featured_subtitle || "Descubre nuestro contenido más reciente"}
                 </p>
               </div>
 
-              <div class="cta-form">
-                <form action="/subscribe" method="POST" class="newsletter-form">
-                  <div class="form-group">
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Tu email"
-                      required
-                      class="form-input"
-                    />
-                    <button type="submit" class="btn btn-primary">
-                      Suscribirse
-                    </button>
-                  </div>
-                  <p class="form-note">
-                    No spam. Solo contenido de calidad en tu inbox.
-                  </p>
-                </form>
+              <div class="posts-grid grid-3">
+                {featuredPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    showExcerpt={true}
+                    showAuthor={true}
+                    showDate={true}
+                    showCategories={true}
+                    showTags={false}
+                    showImage={true}
+                  />
+                ))}
+              </div>
+
+              <div class="section-footer">
+                <a href={blogUrl} class="btn btn-secondary">
+                  Ver todos los artículos
+                  <svg class="icon" width="16" height="16" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </a>
               </div>
             </div>
-          </div>
-        </section>
-      ` : ''}
-    </main>
+          </section>
+        )}
 
-    <!-- Footer -->
-    ${Footer({ site, custom, blogUrl, footerMenu, categories })}
-  `;
+        {/* About/Features Section (opcional) */}
+        {custom.homepage_about_text && (
+          <section class="homepage-section about-section">
+            <div class="container">
+              <div class="about-content">
+                <h2 class="section-title">
+                  {custom.homepage_about_title || "¿Quiénes Somos?"}
+                </h2>
+                <div class="about-text">
+                  {custom.homepage_about_text}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
-  return Layout({
-    site,
-    custom,
-    activeTheme,
-    bodyClass: "home front-page",
-    children: content,
-  });
+        {/* Categories Section */}
+        {showCategories && categories.length > 0 && (
+          <section class="homepage-section categories-section">
+            <div class="container">
+              <div class="section-header">
+                <h2 class="section-title">
+                  {custom.homepage_categories_title || "Explora por Categoría"}
+                </h2>
+              </div>
+
+              <div class="categories-grid">
+                {categories.slice(0, 6).map((cat) => (
+                  <a href={`/category/${cat.slug}`} class="category-card" key={cat.id}>
+                    <div class="category-card-inner">
+                      <h3 class="category-card-title">{cat.name}</h3>
+                      {cat.count && (
+                        <span class="category-card-count">{cat.count} artículos</span>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Newsletter / CTA Section */}
+        {showNewsletter && (
+          <section class="homepage-section cta-section">
+            <div class="container">
+              <div class="cta-content">
+                <div class="cta-text">
+                  <h2 class="cta-title">
+                    {custom.homepage_cta_title || "¡No te pierdas nada!"}
+                  </h2>
+                  <p class="cta-description">
+                    {custom.homepage_cta_text || "Suscríbete a nuestro newsletter para recibir las últimas actualizaciones."}
+                  </p>
+                </div>
+
+                <div class="cta-form">
+                  <form action="/subscribe" method="POST" class="newsletter-form">
+                    <div class="form-group">
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="Tu email"
+                        required
+                        class="form-input"
+                      />
+                      <button type="submit" class="btn btn-primary">
+                        Suscribirse
+                      </button>
+                    </div>
+                    <p class="form-note">
+                      No spam. Solo contenido de calidad en tu inbox.
+                    </p>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer site={site} custom={custom} blogUrl={blogUrl} footerMenu={footerMenu} categories={categories} />
+    </>
+  );
+
+  return (
+    <Layout
+      site={site}
+      custom={custom}
+      activeTheme={activeTheme}
+      bodyClass="home front-page"
+    >
+      {content}
+    </Layout>
+  );
 };
 
 export default HomeTemplate;

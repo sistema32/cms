@@ -45,6 +45,14 @@ adminRouter.use("*", async (c, next) => {
     return;
   }
   await adminAuth(c, next);
+
+  // Trigger admin:init hook after authentication
+  try {
+    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
+    await hookManager.doAction("admin:init", c.get("user"));
+  } catch (error) {
+    console.error("Error in admin:init hook:", error);
+  }
 });
 
 // Mount protected routes
@@ -59,5 +67,10 @@ adminRouter.route("/", commentsRouter);
 adminRouter.route("/", formsRouter);
 adminRouter.route("/", toolsRouter);
 adminRouter.route("/", widgetsRouter);
+
+// Plugin admin panels (dynamic routes)
+import { renderPluginPanel } from "./admin/pluginPanels.ts";
+adminRouter.get("/plugins/:pluginName/:panelId", renderPluginPanel);
+adminRouter.get("/plugins/:pluginName", renderPluginPanel);
 
 export default adminRouter;

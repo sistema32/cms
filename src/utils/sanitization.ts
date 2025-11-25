@@ -81,7 +81,7 @@ export function sanitizeHTML(dirty: string | null | undefined): string {
           if (allowedAttrs.includes(attrName.toLowerCase())) {
             // Validar que no contenga javascript:
             if (!attrValue.toLowerCase().includes('javascript:') &&
-                !attrValue.toLowerCase().includes('data:text/html')) {
+              !attrValue.toLowerCase().includes('data:text/html')) {
               cleanMatch += ` ${attrName}="${attrValue}"`;
             }
           }
@@ -168,6 +168,16 @@ export function sanitizeObject<T extends Record<string, any>>(
 
 /**
  * Validar que un string no contenga XSS
+ * 
+ * @deprecated Usar `noXSSSchema` de `utils/validation.ts` para validación con Zod
+ * @example
+ * ```typescript
+ * import { noXSSSchema } from "../utils/validation.ts";
+ * const result = noXSSSchema.safeParse(input);
+ * if (!result.success) {
+ *   // Contiene XSS
+ * }
+ * ```
  */
 export function containsXSS(input: string): boolean {
   const xssPatterns = [
@@ -231,9 +241,22 @@ export function sanitizeLikeQueryArray(
  * Valida y sanitiza una consulta de búsqueda
  * Elimina caracteres potencialmente peligrosos y limita la longitud
  *
+ * @deprecated Usar `validateSearchQuery` de `utils/validation.ts` para validación con Zod
+ * Esta función se mantiene para compatibilidad pero se recomienda migrar.
+ * 
  * @param query - La consulta de búsqueda a validar
  * @param maxLength - Longitud máxima permitida (predeterminado: 100)
  * @returns Consulta validada y sanitizada
+ * 
+ * @example
+ * ```typescript
+ * // Nueva forma (recomendada):
+ * import { validateSearchQuery } from "../utils/validation.ts";
+ * const result = validateSearchQuery(query);
+ * if (result.success) {
+ *   const safeQuery = result.data;
+ * }
+ * ```
  */
 export function validateSearchQuery(
   query: string | null | undefined,
@@ -292,6 +315,16 @@ export function sanitizeSearchQuery(
  * Verifica si una cadena contiene patrones de inyección SQL
  * Útil para validación adicional
  *
+ * @deprecated Usar `noSQLInjectionSchema` de `utils/validation.ts` para validación con Zod
+ * @example
+ * ```typescript
+ * import { noSQLInjectionSchema } from "../utils/validation.ts";
+ * const result = noSQLInjectionSchema.safeParse(input);
+ * if (!result.success) {
+ *   // Contiene patrones de SQL injection
+ * }
+ * ```
+ * 
  * @param input - Cadena a verificar
  * @returns true si se encuentran patrones sospechosos
  */

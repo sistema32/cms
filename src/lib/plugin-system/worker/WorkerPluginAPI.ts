@@ -1,101 +1,146 @@
 import { RPCClient } from '../rpc/RPCClient.ts';
-import type { PluginAPIContext } from '../types.ts';
 
 /**
  * Worker Plugin API
- * Proxies API calls from the worker to the main thread via RPC
+ * Exposed to plugins running in the worker.
+ * Proxies calls to the main thread via RPC.
  */
 export class WorkerPluginAPI {
     private client: RPCClient;
+    private pluginName: string = '';
 
     constructor(client: RPCClient) {
         this.client = client;
     }
 
-    /**
-     * Database Query
-     */
-    async query(sql: string, params?: any[]): Promise<any> {
-        return this.client.call('api:database:query', sql, params);
+    setPluginName(name: string) {
+        this.pluginName = name;
     }
 
     /**
-     * Logger
+     * Database Access
      */
-    log(message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
-        this.client.call(`api:logger:${level}`, message, []);
+    get db() {
+        return {
+            collection: (name: string) => ({
+                find: async (query?: any) => {
+                    return await this.client.call('api:database:operation', 'find', name, query || {});
+                },
+                findOne: async (query?: any) => {
+                    return await this.client.call('api:database:operation', 'findOne', name, query || {});
+                },
+                create: async (data: any) => {
+                    return await this.client.call('api:database:operation', 'create', name, data);
+                },
+                update: async (query: any, data: any) => {
+                    return await this.client.call('api:database:operation', 'update', name, query, data);
+                },
+                delete: async (query: any) => {
+                    return await this.client.call('api:database:operation', 'delete', name, query);
+                }
+            })
+        };
     }
 
     /**
-     * Register an action hook
+     * Raw Query
      */
-    addAction(hook: string, callback: (...args: any[]) => void, priority?: number): void {
+    async query(sql: string, params?: any[]) {
+        return await this.client.call('api:database:query', sql, params);
+    }
+
+    /**
+     * Network
+     */
+    async fetch(url: string, options?: RequestInit) {
+        // We can't pass RequestInit directly if it contains complex objects like AbortSignal
+        // So we sanitize it.
+        const sanitizedOptions = options ? {
+            method: options.method,
+            headers: options.headers,
+            body: options.body,
+        } : undefined;
+
+        const response = await this.client.call('api:network:fetch', url, sanitizedOptions);
+
+        // Reconstruct Response object
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers
+        });
+    }
+
+    /**
+     * Hooks
+     */
+    addAction(hook: string, callback: (...args: any[]) => void, priority: number = 10) {
+        // Register locally
+        (self as any).registerHookCallback(hook, callback);
+        // Register on host
         this.client.call('api:hooks:register', hook, priority);
+    }
+
+    addFilter(hook: string, callback: (...args: any[]) => any, priority: number = 10) {
         (self as any).registerHookCallback(hook, callback);
-    }
-
-    /**
-     * Get plugin info
-     * Note: This requires the manifest to be available in the worker.
-     * We should pass it during initialization.
-     */
-    getPluginInfo(): any {
-        // This is a synchronous method in PluginAPI.
-        // We need to have this data available locally.
-        // For now, return a placeholder or throw if not initialized.
-        return (self as any).PLUGIN_MANIFEST || {};
-    }
-
-    /**
-     * Add a filter hook
-     */
-    addFilter(hook: string, callback: (...args: any[]) => any, priority?: number): void {
         this.client.call('api:hooks:registerFilter', hook, priority);
-        (self as any).registerHookCallback(hook, callback);
     }
 
     /**
-     * Get a setting
+     * Routes
      */
-    getSetting(key: string, defaultValue?: any): any {
-        const settings = (self as any).PLUGIN_SETTINGS || {};
-        return settings[key] !== undefined ? settings[key] : defaultValue;
+    get routes() {
+        return {
+            register: (method: string, path: string, handler: Function) => {
+                const handlerId = `route:${method}:${path}`;
+                (self as any).registerRouteCallback(handlerId, handler);
+                this.client.call('api:routes:register', method, path, handlerId);
+            }
+        };
     }
 
     /**
-     * Set a setting
+     * Admin Panels
      */
-    setSetting(key: string, value: any): void {
-        const settings = (self as any).PLUGIN_SETTINGS || {};
-        settings[key] = value;
-        (self as any).PLUGIN_SETTINGS = settings;
-        this.client.call('api:settings:update', key, value);
-    }
-
-    /**
-     * Get all settings
-     */
-    getAllSettings(): Record<string, any> {
-        return { ...((self as any).PLUGIN_SETTINGS || {}) };
-    }
-
-    /**
-     * Register an admin panel
-     */
-    registerAdminPanel(config: any): void {
-        // We need to register the component callback locally
+    registerAdminPanel(config: any) {
         (self as any).registerAdminPanelCallback(config.id, config.component);
-
-        // Send config to main thread (without the component function)
+        // Send config without component function
         const { component, ...safeConfig } = config;
         this.client.call('api:admin:registerPanel', safeConfig);
     }
 
-    removeAction(hook: string, callback: any): void {
-        // TODO: Implement removeAction
+    get admin() {
+        return {
+            registerPanel: (config: any) => this.registerAdminPanel(config)
+        };
     }
 
-    removeFilter(hook: string, callback: any): void {
-        // TODO: Implement removeFilter
+    /**
+     * Settings
+     */
+    getSetting(key: string, defaultValue?: any) {
+        // Settings are synced to the worker on load
+        const settings = (self as any).PLUGIN_SETTINGS || {};
+        return settings[key] ?? defaultValue;
+    }
+
+    getAllSettings() {
+        return (self as any).PLUGIN_SETTINGS || {};
+    }
+
+    /**
+     * Logging
+     */
+    log(message: string, level: 'info' | 'warn' | 'error' = 'info') {
+        this.client.call(`api:logger:${level}`, message);
+    }
+
+    get logger() {
+        return {
+            info: (msg: string) => this.log(msg, 'info'),
+            warn: (msg: string) => this.log(msg, 'warn'),
+            error: (msg: string) => this.log(msg, 'error'),
+            debug: (msg: string) => this.log(msg, 'info'),
+        };
     }
 }

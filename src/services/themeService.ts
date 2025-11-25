@@ -239,6 +239,10 @@ export async function activateTheme(themeName: string): Promise<boolean> {
       }
     }
 
+    // 🆕 Load and cache helpers for this theme
+    const { loadThemeHelpers } = await import("./themeHelperLoader.ts");
+    await loadThemeHelpers(themeName);
+
     // Invalidar caché al activar theme
     themeCacheService.invalidateAll();
 
@@ -251,6 +255,11 @@ export async function activateTheme(themeName: string): Promise<boolean> {
 
     try {
       await settingsService.updateSetting("active_theme", previousTheme);
+
+      // 🆕 Reload helpers for previous theme
+      const { loadThemeHelpers } = await import("./themeHelperLoader.ts");
+      await loadThemeHelpers(previousTheme);
+
       themeCacheService.invalidateAll();
     } catch (rollbackError) {
       console.error(`❌ CRITICAL: Rollback failed:`, rollbackError);

@@ -130,19 +130,20 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
     label: "Lectura",
     fields: [
       {
-        key: "front_page_type",
+        key: "homepage_type",
         label: "Tu página de inicio muestra",
         description:
           "Elige qué mostrar en la página principal de tu sitio web.",
         type: "select",
-        defaultValue: "posts",
+        defaultValue: "posts_list",
         options: [
-          { value: "posts", label: "Tus últimas entradas" },
-          { value: "page", label: "Una página estática" },
+          { value: "posts_list", label: "Tus últimas entradas" },
+          { value: "static_page", label: "Una página estática" },
+          { value: "theme_home", label: "Template home del tema" },
         ],
       },
       {
-        key: "front_page_id",
+        key: "homepage_page_id",
         label: "Página de inicio",
         description:
           "Selecciona la página que deseas usar como página de inicio. Solo se usa cuando seleccionas 'Una página estática' arriba.",
@@ -151,13 +152,13 @@ const settingsDefinitions: SettingCategoryDefinition[] = [
         defaultValue: null,
       },
       {
-        key: "posts_page_id",
-        label: "Página de entradas",
+        key: "posts_page",
+        label: "Slug de la página de entradas",
         description:
-          "Selecciona la página donde se mostrarán tus entradas del blog (ej: /blog, /noticias). Solo se usa cuando seleccionas 'Una página estática' como página de inicio.",
-        type: "select",
-        options: [], // Will be populated dynamically
-        defaultValue: null,
+          "Slug de la página donde se mostrarán tus entradas del blog (ej: 'blog', 'noticias'). Se usa cuando seleccionas 'Una página estática' o 'Template home del tema' como página de inicio.",
+        type: "text",
+        defaultValue: "blog",
+        placeholder: "blog",
       },
       {
         key: "posts_per_page",

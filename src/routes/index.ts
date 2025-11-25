@@ -41,6 +41,7 @@ import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
 
+
 export function registerRoutes(app: Hono) {
   // Servir archivos estáticos de themes (DEBE ser lo primero)
   app.get(
@@ -194,3 +195,4 @@ export function registerRoutes(app: Hono) {
   // Registrar rutas del Frontend (ÚLTIMO para que no interfiera con API)
   app.route("/", frontendRouter);
 }
+

@@ -17,7 +17,7 @@ export async function authMiddleware(c: Context, next: Next) {
   if (authHeader?.startsWith("Bearer ")) {
     token = authHeader.substring(7);
   } else {
-    token = getCookie(c, "auth_token") ?? undefined;
+    token = getCookie(c, "auth_token") ?? c.req.query("token") ?? undefined;
   }
 
   if (!token) {

@@ -31,7 +31,7 @@ export async function securityHeaders(c: Context, next: Next) {
     if (path.startsWith(adminBasePath)) {
       c.header(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.quilljs.com; img-src 'self' data: blob: https://ui-avatars.com https://cdn.quilljs.com; font-src 'self' https://cdn.quilljs.com; connect-src 'self'; frame-ancestors 'none';",
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com https://unpkg.com https://esm.sh https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.quilljs.com https://cdn.tailwindcss.com; img-src 'self' data: blob: https://ui-avatars.com https://cdn.quilljs.com; font-src 'self' https://cdn.quilljs.com; connect-src 'self'; frame-ancestors 'none';",
       );
     } else {
       // CSP para el sitio público con soporte para temas
@@ -180,9 +180,8 @@ export function rateLimit(maxRequests: number = 100, windowMs: number = 60000) {
 
       return c.json({
         error: "Demasiadas solicitudes",
-        message: `Límite de ${maxRequests} solicitudes por ${
-          windowMs / 1000
-        } segundos excedido`,
+        message: `Límite de ${maxRequests} solicitudes por ${windowMs / 1000
+          } segundos excedido`,
       }, 429);
     }
 

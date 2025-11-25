@@ -106,6 +106,19 @@ const envSchema = z.object({
   LOG_ENABLED: z.string()
     .transform((val) => val !== "false")
     .default("true"),
+  // Plugin System
+  PLUGIN_RATE_LIMIT_DB_QUERIES: z.string().default("10"),
+  PLUGIN_RATE_LIMIT_HTTP_REQUESTS: z.string().default("30"),
+  PLUGIN_RATE_LIMIT_FILE_OPS: z.string().default("20"),
+  PLUGIN_SKIP_INTEGRITY_CHECK: z.string().transform((val) => val === "true").default("false"),
+  PLUGIN_REQUIRE_CHECKSUMS: z.string().transform((val) => val === "true").default("false"),
+  PLUGIN_MAX_MEMORY_MB: z.string().default("256"),
+  PLUGIN_MAX_EXECUTION_TIME: z.string().default("30000"), // Deprecated, use specific timeouts below
+  PLUGIN_TIMEOUT_LOAD: z.string().default("30000"),
+  PLUGIN_TIMEOUT_ACTIVATE: z.string().default("10000"),
+  PLUGIN_TIMEOUT_RPC: z.string().default("10000"),
+  PLUGIN_AUDIT_RETENTION_DAYS: z.string().default("90"),
+  PLUGIN_STRICT_MODE: z.string().transform((val) => val === "true").default("true"),
 });
 
 // Validar y exportar
@@ -163,6 +176,19 @@ export const env = envSchema.parse({
   LOG_LEVEL: Deno.env.get("LOG_LEVEL"),
   LOG_PRETTY: Deno.env.get("LOG_PRETTY"),
   LOG_ENABLED: Deno.env.get("LOG_ENABLED"),
+  // Plugin System
+  PLUGIN_RATE_LIMIT_DB_QUERIES: Deno.env.get("PLUGIN_RATE_LIMIT_DB_QUERIES"),
+  PLUGIN_RATE_LIMIT_HTTP_REQUESTS: Deno.env.get("PLUGIN_RATE_LIMIT_HTTP_REQUESTS"),
+  PLUGIN_RATE_LIMIT_FILE_OPS: Deno.env.get("PLUGIN_RATE_LIMIT_FILE_OPS"),
+  PLUGIN_SKIP_INTEGRITY_CHECK: Deno.env.get("PLUGIN_SKIP_INTEGRITY_CHECK"),
+  PLUGIN_REQUIRE_CHECKSUMS: Deno.env.get("PLUGIN_REQUIRE_CHECKSUMS"),
+  PLUGIN_MAX_MEMORY_MB: Deno.env.get("PLUGIN_MAX_MEMORY_MB"),
+  PLUGIN_MAX_EXECUTION_TIME: Deno.env.get("PLUGIN_MAX_EXECUTION_TIME"),
+  PLUGIN_TIMEOUT_LOAD: Deno.env.get("PLUGIN_TIMEOUT_LOAD"),
+  PLUGIN_TIMEOUT_ACTIVATE: Deno.env.get("PLUGIN_TIMEOUT_ACTIVATE"),
+  PLUGIN_TIMEOUT_RPC: Deno.env.get("PLUGIN_TIMEOUT_RPC"),
+  PLUGIN_AUDIT_RETENTION_DAYS: Deno.env.get("PLUGIN_AUDIT_RETENTION_DAYS"),
+  PLUGIN_STRICT_MODE: Deno.env.get("PLUGIN_STRICT_MODE"),
 });
 
 export const isDevelopment = env.DENO_ENV === "development";

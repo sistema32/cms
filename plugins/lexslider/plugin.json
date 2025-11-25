@@ -1,0 +1,33 @@
+{
+    "name": "lexslider",
+    "displayName": "LexSlider",
+    "version": "1.0.0",
+    "title": "LexSlider",
+    "description": "Professional responsive slider plugin for LexCMS. Create beautiful, touch-friendly sliders with a visual drag-and-drop editor.",
+    "author": "LexCMS Team",
+    "license": "MIT",
+    "entry": "index.ts",
+    "compatibility": {
+        "lexcms": ">=1.0.0"
+    },
+    "permissions": [
+        "database:read",
+        "database:write",
+        "api:register",
+        "hooks:register",
+        "admin:menu",
+        "network:external"
+    ],
+    "hooks": {
+        "system:init": "Initialize LexSlider",
+        "content:render": "Process [lexslider] shortcodes"
+    },
+    "dependencies": {},
+    "config": {
+        "defaultWidth": 1200,
+        "defaultHeight": 600,
+        "maxSlides": 50,
+        "enableAnimations": true,
+        "enableTouch": true
+    }
+}

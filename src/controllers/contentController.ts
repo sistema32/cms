@@ -129,6 +129,10 @@ export async function createContent(c: Context) {
       }
     }
 
+    // Trigger content:created hook
+    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
+    await hookManager.doAction("content:created", content ?? createdContent);
+
     return c.json({ content: content ?? createdContent }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -257,6 +261,19 @@ export async function deleteContent(c: Context) {
   try {
     const id = Number(c.req.param("id"));
     if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+
+    // Get content before deletion for hook
+    const existingContent = await db.query.content.findFirst({
+      where: eq(content.id, id)
+    });
+
+    if (!existingContent) {
+      return c.json({ error: "Contenido no encontrado" }, 404);
+    }
+
+    // Trigger content:beforeDelete hook
+    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
+    await hookManager.doAction("content:beforeDelete", existingContent);
 
     await contentService.deleteContent(id);
 

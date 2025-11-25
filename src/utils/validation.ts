@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// ============================================
+// USER AUTHENTICATION SCHEMAS
+// ============================================
+
 // Esquema para registro de usuario
 export const registerSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -24,6 +28,122 @@ export const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
 });
+
+// ============================================
+// COMMON VALIDATION SCHEMAS
+// ============================================
+
+// Esquema para URLs
+export const urlSchema = z.string().url("URL inválida").refine(
+  (url) => {
+    try {
+      const parsed = new URL(url);
+      const allowedProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
+      return allowedProtocols.includes(parsed.protocol);
+    } catch {
+      return false;
+    }
+  },
+  { message: "Protocolo de URL no permitido. Solo se permiten: http, https, mailto, tel" }
+);
+
+// Esquema para búsquedas (search queries)
+export const searchQuerySchema = z.string()
+  .max(100, "La búsqueda no puede exceder 100 caracteres")
+  .transform((val) => val.trim())
+  .refine(
+    (val) => !val.includes('\0'),
+    { message: "La búsqueda contiene caracteres no permitidos" }
+  )
+  .refine(
+    (val) => !/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(val),
+    { message: "La búsqueda contiene caracteres de control no permitidos" }
+  );
+
+// Esquema para slugs
+export const slugSchema = z.string()
+  .min(1, "El slug no puede estar vacío")
+  .max(200, "El slug no puede exceder 200 caracteres")
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "El slug solo puede contener letras minúsculas, números y guiones");
+
+// Esquema para validar que no contenga XSS
+export const noXSSSchema = z.string().refine(
+  (val) => {
+    const xssPatterns = [
+      /<script/i,
+      /javascript:/i,
+      /on\w+\s*=/i,
+      /<iframe/i,
+      /<object/i,
+      /<embed/i,
+    ];
+    return !xssPatterns.some(pattern => pattern.test(val));
+  },
+  { message: "El contenido contiene patrones potencialmente peligrosos (XSS)" }
+);
+
+// Esquema para validar que no contenga SQL injection
+export const noSQLInjectionSchema = z.string().refine(
+  (val) => {
+    const suspiciousPatterns = [
+      /(\bor\b|\band\b)\s+\d+\s*=\s*\d+/i,
+      /union\s+select/i,
+      /;\s*drop\s+table/i,
+      /;\s*delete\s+from/i,
+      /;\s*insert\s+into/i,
+      /;\s*update\s+.+\s+set/i,
+      /exec\s*\(/i,
+      /execute\s*\(/i,
+    ];
+    return !suspiciousPatterns.some(pattern => pattern.test(val));
+  },
+  { message: "El contenido contiene patrones sospechosos de SQL injection" }
+);
+
+// Esquema combinado para búsquedas seguras (sin XSS ni SQL injection)
+export const safeSearchSchema = searchQuerySchema
+  .pipe(noXSSSchema)
+  .pipe(noSQLInjectionSchema);
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Valida un email usando Zod
+ */
+export function validateEmail(email: string): boolean {
+  return z.string().email().safeParse(email).success;
+}
+
+/**
+ * Valida una URL usando Zod
+ */
+export function validateURL(url: string): boolean {
+  return urlSchema.safeParse(url).success;
+}
+
+/**
+ * Valida una búsqueda de forma segura
+ */
+export function validateSearchQuery(query: string): { success: boolean; data?: string; error?: string } {
+  const result = safeSearchSchema.safeParse(query);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error.errors[0]?.message };
+}
+
+/**
+ * Valida un slug
+ */
+export function validateSlug(slug: string): boolean {
+  return slugSchema.safeParse(slug).success;
+}
+
+// ============================================
+// TYPE EXPORTS
+// ============================================
 
 // Tipos inferidos
 export type RegisterInput = z.infer<typeof registerSchema>;

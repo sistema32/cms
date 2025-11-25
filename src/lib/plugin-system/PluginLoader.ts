@@ -1,330 +1,116 @@
-/**
- * Plugin Loader
- * Loads, validates, and instantiates plugins
- */
+import { PluginManifest } from './types.ts';
+import { join } from 'https://deno.land/std@0.224.0/path/mod.ts';
 
-import { join, resolve, basename } from '@std/path';
-import { ensureDir } from '@std/fs';
-import type { Plugin, PluginManifest, ValidationResult, PluginAPIContext } from './types.ts';
-import { PluginWorker } from './PluginWorker.ts';
-import { PluginAPI } from './PluginAPI.ts';
-import { pluginManager } from './PluginManager.ts';
-import { hookManager } from './HookManager.ts';
-import { existsSync } from '@std/fs';
-
-export class PluginLoader {
-  private pluginsDir: string;
-  private loadedPlugins: Map<string, Plugin> = new Map();
-
-  constructor(pluginsDir: string = './plugins') {
-    // Convert relative path to absolute path
-    if (!pluginsDir.startsWith('/')) {
-      this.pluginsDir = join(Deno.cwd(), pluginsDir);
-    } else {
-      this.pluginsDir = pluginsDir;
-    }
-    console.log(`📁 Plugin directory: ${this.pluginsDir}`);
-  }
-
-  /**
-   * Load plugin manifest from plugin.json
-   */
-  async loadManifest(pluginName: string): Promise<PluginManifest> {
-    const manifestPath = join(this.pluginsDir, pluginName, 'plugin.json');
-
-    if (!existsSync(manifestPath)) {
-      throw new Error(`Plugin manifest not found: ${manifestPath}`);
-    }
-
-    const content = await Deno.readTextFile(manifestPath);
-    const manifest = JSON.parse(content) as PluginManifest;
-
-    // Validate manifest
-    const validation = this.validateManifest(manifest);
-    if (!validation.valid) {
-      throw new Error(
-        `Invalid plugin manifest:\n${validation.errors.join('\n')}`
-      );
-    }
-
-    return manifest;
-  }
-
-  /**
-   * Validate plugin manifest
-   */
-  validateManifest(manifest: Partial<PluginManifest>): ValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Required fields
-    if (!manifest.name) errors.push('Missing required field: name');
-    if (!manifest.version) errors.push('Missing required field: version');
-    if (!manifest.displayName) errors.push('Missing required field: displayName');
-    if (!manifest.description) errors.push('Missing required field: description');
-    if (!manifest.author) errors.push('Missing required field: author');
-    if (!manifest.license) errors.push('Missing required field: license');
-
-    // Version format validation
-    if (manifest.version && !this.isValidVersion(manifest.version)) {
-      errors.push(`Invalid version format: ${manifest.version}`);
-    }
-
-    // Compatibility check
-    if (!manifest.compatibility?.lexcms) {
-      errors.push('Missing compatibility.lexcms field');
-    }
-
-    // Permissions
-    if (!manifest.permissions || !Array.isArray(manifest.permissions)) {
-      errors.push('Missing or invalid permissions field');
-    }
-
-    // Name validation (must be lowercase, alphanumeric with dashes)
-    if (manifest.name && !/^[a-z0-9-]+$/.test(manifest.name)) {
-      errors.push(
-        'Invalid plugin name. Must be lowercase alphanumeric with dashes only.'
-      );
-    }
-
-    // Warnings for optional but recommended fields
-    if (!manifest.homepage) {
-      warnings.push('No homepage URL provided');
-    }
-
-    if (!manifest.category) {
-      warnings.push('No category specified');
-    }
-
-    return {
-      valid: errors.length === 0,
-      errors,
-      warnings,
-    };
-  }
-
-  /**
-   * Load and instantiate a plugin
-   */
-  async loadPlugin(pluginName: string, settings: Record<string, any> = {}): Promise<Plugin> {
-    // Check if already loaded
-    if (this.loadedPlugins.has(pluginName)) {
-      return this.loadedPlugins.get(pluginName)!;
-    }
-
-    // Load manifest
-    const manifest = await this.loadManifest(pluginName);
-
-    // Load plugin module path
-    const entryFile = (manifest as any).entry || 'index.ts';
-    const pluginPath = join(this.pluginsDir, pluginName, entryFile);
-
-    if (!existsSync(pluginPath)) {
-      throw new Error(`Plugin entry point not found: ${pluginPath}`);
-    }
-
-    // Create plugin API context
-    const context: PluginAPIContext = {
-      pluginName,
-      manifest,
-      settings,
-    };
-
-    // Create plugin API
-    const api = new PluginAPI(context);
-
-    // Create Plugin Worker
-    const worker = new PluginWorker(manifest, api);
-
-    try {
-      // Load plugin in worker
-      await worker.load(pluginPath);
-    } catch (error) {
-      worker.terminate();
-      throw new Error(`Failed to load plugin ${pluginName} in worker: ${(error as Error).message}`);
-    }
-
-    // Create plugin object
-    const plugin: Plugin = {
-      id: 0, // Will be set from database
-      name: pluginName,
-      version: manifest.version,
-      status: 'inactive',
-      manifest,
-      settings,
-      installedAt: new Date(),
-      worker, // Store worker instance
-    };
-
-    this.loadedPlugins.set(pluginName, plugin);
-
-    return plugin;
-  }
-
-  /**
-   * Activate a plugin
-   */
-  async activatePlugin(pluginName: string): Promise<void> {
-    const plugin = this.loadedPlugins.get(pluginName);
-
-    if (!plugin) {
-      throw new Error(`Plugin ${pluginName} not loaded`);
-    }
-
-    if (plugin.status === 'active') {
-      console.warn(`Plugin ${pluginName} is already active`);
-      return;
-    }
-
-    try {
-      // Call plugin's activate via worker
-      if (plugin.worker) {
-        await plugin.worker.activate();
-      }
-
-      plugin.status = 'active';
-
-      console.log(`✓ Plugin activated: ${pluginName}`);
-    } catch (error) {
-      plugin.status = 'error';
-      console.error(`✗ Failed to activate plugin ${pluginName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Deactivate a plugin
-   */
-  async deactivatePlugin(pluginName: string): Promise<void> {
-    const plugin = this.loadedPlugins.get(pluginName);
-
-    if (!plugin) {
-      throw new Error(`Plugin ${pluginName} not loaded`);
-    }
-
-    if (plugin.status === 'inactive') {
-      console.warn(`Plugin ${pluginName} is already inactive`);
-      return;
-    }
-
-    try {
-      // Call plugin's deactivate via worker
-      if (plugin.worker) {
-        await plugin.worker.deactivate();
-      }
-
-      // Remove all hooks registered by this plugin
-      hookManager.removePluginHooks(pluginName);
-
-      plugin.status = 'inactive';
-
-      console.log(`✓ Plugin deactivated: ${pluginName}`);
-    } catch (error) {
-      plugin.status = 'error';
-      console.error(`✗ Failed to deactivate plugin ${pluginName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Unload a plugin from memory
-   */
-  unloadPlugin(pluginName: string): void {
-    const plugin = this.loadedPlugins.get(pluginName);
-
-    if (!plugin) {
-      return;
-    }
-
-    if (plugin.status === 'active') {
-      throw new Error(
-        `Cannot unload active plugin ${pluginName}. Deactivate it first.`
-      );
-    }
-
-    if (plugin.worker) {
-      plugin.worker.terminate();
-    }
-    this.loadedPlugins.delete(pluginName);
-  }
-
-  /**
-   * Get a loaded plugin
-   */
-  getPlugin(pluginName: string): Plugin | undefined {
-    return this.loadedPlugins.get(pluginName);
-  }
-
-  /**
-   * Get all loaded plugins
-   */
-  getAllPlugins(): Plugin[] {
-    return Array.from(this.loadedPlugins.values());
-  }
-
-  /**
-   * Get active plugins
-   */
-  getActivePlugins(): Plugin[] {
-    return this.getAllPlugins().filter(p => p.status === 'active');
-  }
-
-  /**
-   * Discover available plugins in plugins directory
-   */
-  async discoverPlugins(): Promise<string[]> {
-    const plugins: string[] = [];
-
-    try {
-      if (!existsSync(this.pluginsDir)) {
-        await Deno.mkdir(this.pluginsDir, { recursive: true });
-        return plugins;
-      }
-
-      for await (const entry of Deno.readDir(this.pluginsDir)) {
-        if (entry.isDirectory) {
-          const manifestPath = join(this.pluginsDir, entry.name, 'plugin.json');
-          if (existsSync(manifestPath)) {
-            plugins.push(entry.name);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error discovering plugins:', error);
-    }
-
-    return plugins;
-  }
-
-  /**
-   * Check version compatibility
-   */
-  private isValidVersion(version: string): boolean {
-    // Basic semver validation
-    return /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(version);
-  }
-
-  /**
-   * Get absolute path to a plugin asset
-   * Returns null if asset does not exist or is outside plugin directory
-   */
-  getAssetPath(pluginName: string, assetPath: string): string | null {
-    // Sanitize asset path to prevent directory traversal
-    const sanitizedPath = assetPath.replace(/\.\./g, '');
-    const fullPath = join(this.pluginsDir, pluginName, 'assets', sanitizedPath);
-
-    // Ensure path is within plugin directory
-    if (!fullPath.startsWith(join(this.pluginsDir, pluginName))) {
-      return null;
-    }
-
-    if (existsSync(fullPath)) {
-      return fullPath;
-    }
-
-    return null;
-  }
+export interface ValidationResult {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
 }
 
-// Singleton instance
-export const pluginLoader = new PluginLoader();
+export class PluginLoader {
+    private pluginsDir: string;
+
+    constructor(pluginsDir: string) {
+        this.pluginsDir = pluginsDir;
+    }
+
+    async loadManifest(pluginName: string): Promise<PluginManifest> {
+        const manifestPath = join(this.pluginsDir, pluginName, 'plugin.json');
+        try {
+            const content = await Deno.readTextFile(manifestPath);
+            const manifest = JSON.parse(content);
+
+            // Basic validation
+            if (!manifest.name || !manifest.version) {
+                throw new Error('Invalid manifest: missing name or version');
+            }
+
+            if (manifest.name !== pluginName) {
+                throw new Error(`Manifest name mismatch: expected ${pluginName}, got ${manifest.name}`);
+            }
+
+            return manifest as PluginManifest;
+        } catch (error) {
+            throw new Error(`Failed to load manifest for ${pluginName}: ${(error as Error).message}`);
+        }
+    }
+
+    async listAvailablePlugins(): Promise<string[]> {
+        const plugins: string[] = [];
+        try {
+            for await (const entry of Deno.readDir(this.pluginsDir)) {
+                if (entry.isDirectory) {
+                    // Check if plugin.json exists
+                    try {
+                        await Deno.stat(join(this.pluginsDir, entry.name, 'plugin.json'));
+                        plugins.push(entry.name);
+                    } catch {
+                        // Not a plugin
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error listing plugins:', error);
+        }
+        return plugins;
+    }
+
+    // Alias for compatibility
+    async discoverPlugins(): Promise<string[]> {
+        return this.listAvailablePlugins();
+    }
+
+    getPluginPath(pluginName: string): string {
+        const modPath = join(this.pluginsDir, pluginName, 'mod.ts');
+        const indexPath = join(this.pluginsDir, pluginName, 'index.ts');
+
+        try {
+            Deno.statSync(modPath);
+            return `file://${join(Deno.cwd(), modPath)}`;
+        } catch {
+            return `file://${join(Deno.cwd(), indexPath)}`;
+        }
+    }
+
+    getAssetPath(pluginName: string, assetPath: string): string | null {
+        // Prevent path traversal
+        if (assetPath.includes('..')) {
+            return null;
+        }
+        const fullPath = join(this.pluginsDir, pluginName, 'assets', assetPath);
+        // Verify existence
+        try {
+            Deno.statSync(fullPath);
+            return fullPath;
+        } catch {
+            return null;
+        }
+    }
+
+    validateManifest(manifest: any): ValidationResult {
+        const errors: string[] = [];
+        const warnings: string[] = [];
+
+        if (!manifest.name) errors.push('Missing name');
+        if (!manifest.version) errors.push('Missing version');
+        if (!manifest.displayName) errors.push('Missing displayName');
+        if (!manifest.permissions) warnings.push('Missing permissions (defaulting to none)');
+
+        return {
+            valid: errors.length === 0,
+            errors,
+            warnings
+        };
+    }
+
+    unloadPlugin(pluginName: string) {
+        // Since we use workers, we don't really "unload" from memory in the host
+        // But we could clear any caches here if we had them.
+    }
+
+    // Placeholder for getPlugin if needed by service (service expects instance?)
+    // The service seems to expect an object with manifest etc.
+    getPlugin(pluginName: string) {
+        return null; // We don't hold instances in loader anymore
+    }
+}

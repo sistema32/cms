@@ -50,6 +50,13 @@ app.use(
   }),
 );
 
+// Plugin middlewares (must be before registerRoutes)
+import { pluginAssetMiddleware } from "./middleware/pluginAssetMiddleware.ts";
+import { pluginRouteMiddleware } from "./middleware/pluginRouteMiddleware.ts";
+
+app.use("*", pluginAssetMiddleware);
+app.use("*", pluginRouteMiddleware);
+
 registerRoutes(app);
 
 // Apply hot reload middleware in development (must be after routes)

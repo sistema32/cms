@@ -271,7 +271,9 @@ pluginsRouter.get("/plugins/:pluginName/*", async (c) => {
         }
 
         // Prepare context for the panel component
-        const context = {
+        // Prepare context for the panel component
+        // We must ensure this object is serializable (cloneable) because it might be sent to a worker
+        const safeContext = {
             user: {
                 id: user.id,
                 name: user.name || user.email,
@@ -279,14 +281,30 @@ pluginsRouter.get("/plugins/:pluginName/*", async (c) => {
                 role: user.role || "admin",
             },
             query: c.req.query(),
-            pluginAPI: plugin.instance,
+            // pluginAPI cannot be passed to worker as it contains methods. 
+            // The worker component should use its own API instance.
             settings: plugin.settings || {},
-            request: c.req,
-            pluginPanels: AdminPanelRegistry.getAllPanels(),
+            // Request object is not serializable, extract needed info
+            request: {
+                url: c.req.url,
+                method: c.req.method,
+                path: c.req.path,
+                header: c.req.header(),
+            },
+            // Sanitize pluginPanels to remove functions
+            pluginPanels: AdminPanelRegistry.getAllPanels().map(p => ({
+                id: p.id,
+                title: p.title,
+                path: p.path,
+                icon: p.icon,
+                pluginName: p.pluginName,
+                // Exclude component function
+            })),
         };
 
         // Render the panel component
-        const content = await panel.component(context);
+        // Render the panel component
+        const content = await panel.component(safeContext);
 
         return c.html(content);
     } catch (error: any) {

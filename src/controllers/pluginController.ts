@@ -674,6 +674,110 @@ export class PluginController {
       return c.notFound();
     }
   }
+
+
+  /**
+   * Handle dynamic plugin API requests
+   * GET/POST/PUT/DELETE /api/plugins/:name/*
+   */
+  async handlePluginRequest(c: Context) {
+    try {
+      const name = c.req.param('name');
+      const url = new URL(c.req.url);
+      const path = url.pathname.replace(`/api/plugins/${name}`, '');
+      const method = c.req.method;
+
+      console.log(`[PluginController] Handling ${method} ${path} for plugin ${name}`);
+
+      // Import registry
+      const { pluginRouteRegistry } = await import("../lib/plugin-system/PluginRouteRegistry.ts");
+
+      // Find matching route
+      const route = pluginRouteRegistry.matchRoute(name, method, path);
+
+      if (!route) {
+        console.log(`[PluginController] No route found for ${method} ${path}`);
+        return c.json({
+          success: false,
+          error: "Ruta no encontrada",
+          path: `/api/plugins/${name}${path}`
+        }, 404);
+      }
+
+      console.log(`[PluginController] Found route: ${route.handlerId}`);
+
+      // Get plugin worker
+      const worker = pluginService.getPluginWorker(name);
+      if (!worker) {
+        console.log(`[PluginController] Plugin ${name} not active`);
+        return c.json({ error: "Plugin not active" }, 503);
+      }
+
+      // Extract path parameters
+      const pattern = route.path.replace(/:([^/]+)/g, '([^/]+)');
+      const regex = new RegExp(`^${pattern}$`);
+      const match = path.match(regex);
+      const params: Record<string, string> = {};
+
+      if (match) {
+        const paramNames = (route.path.match(/:([^/]+)/g) || []).map(p => p.substring(1));
+        paramNames.forEach((name, index) => {
+          params[name] = match[index + 1];
+        });
+      }
+
+      console.log(`[PluginController] Path params:`, params);
+
+      // Prepare request object
+      const requestData = {
+        method,
+        path,
+        query: c.req.query(),
+        params,
+        body: method !== 'GET' ? await c.req.json().catch(() => ({})) : {},
+        headers: c.req.header(),
+      };
+
+      console.log(`[PluginController] Executing route ${route.handlerId}`);
+
+      // Execute route in worker
+      const response = await worker.executeRoute(route.handlerId, requestData);
+
+      console.log(`[PluginController] Response:`, response);
+
+      // Handle serialized Response objects from worker
+      if (response && typeof response === 'object' && response._isResponse) {
+        const contentType = response.headers['content-type'];
+        if (contentType?.includes('application/json')) {
+          return c.json(JSON.parse(response.body), response.status);
+        }
+        return c.text(response.body, response.status);
+      }
+
+      // Handle Response objects
+      if (response instanceof Response) {
+        const body = await response.text();
+        const contentType = response.headers.get('content-type');
+
+        if (contentType?.includes('application/json')) {
+          return c.json(JSON.parse(body), response.status);
+        }
+        return c.text(body, response.status);
+      }
+
+      // Handle plain objects
+      if (response && typeof response === 'object' && 'body' in response) {
+        return c.json(response.body, response.status || 200, response.headers);
+      }
+
+      return c.json(response);
+
+    } catch (error) {
+      logger.error("Error handling plugin request", error as Error);
+      console.error(`[PluginController] Error:`, error);
+      return c.json({ error: (error as Error).message }, 500);
+    }
+  }
 }
 
 export const pluginController = new PluginController();

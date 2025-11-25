@@ -257,9 +257,9 @@ settingsRouter.post("/settings/save", async (c) => {
  */
 settingsRouter.post("/settings/clear-cache", async (c) => {
     try {
-        // TODO: Implement actual cache clearing (Redis, memory cache, etc.)
-        // For now, just return success
-        console.log("Cache cleared (placeholder)");
+        const { cacheManager } = await import("../../lib/cache/index.ts");
+        await cacheManager.clear();
+
         return c.json({ success: true, message: "Cache limpiado exitosamente" });
     } catch (error: any) {
         console.error("Error clearing cache:", error);

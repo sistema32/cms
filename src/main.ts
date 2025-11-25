@@ -43,7 +43,7 @@ try {
 // Initialize plugin system
 console.log('\n🔌 Initializing plugin system...');
 try {
-  await pluginManager.initialize();
+  await pluginManager.init();
 } catch (error) {
   console.error('❌ Failed to initialize plugin system:', error);
   // Continue anyway - plugins are optional
@@ -120,6 +120,16 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize job queue:', error);
   // Continue anyway - jobs won't be processed
+}
+
+// Trigger system:init hook
+console.log('\n🔄 Triggering system:init hook...');
+try {
+  const { hookManager } = await import("./lib/plugin-system/HookManager.ts");
+  await hookManager.doAction('system:init');
+  console.log('✅ System init hooks executed');
+} catch (error) {
+  console.error('❌ Error executing system:init hooks:', error);
 }
 
 // Initialize hot reload server in development

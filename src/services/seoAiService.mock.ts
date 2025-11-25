@@ -10,13 +10,11 @@ import { truncateMetaTitle, truncateMetaDescription, cleanFocusKeyword, truncate
 
 /**
  * Templates de meta descriptions por tipo de contenido
+ * Simplificado: 2 templates básicos para mock
  */
 const DESCRIPTION_TEMPLATES = [
   "Descubre {title} en esta guía completa. Aprende todo lo que necesitas saber con ejemplos prácticos y consejos útiles.",
-  "Explora {title}: análisis detallado, mejores prácticas y todo lo que debes conocer para dominar este tema.",
   "Guía completa sobre {title}. Información actualizada, ejemplos prácticos y consejos de expertos para ayudarte.",
-  "{title}: aprende desde cero con esta guía paso a paso. Incluye ejemplos, tips y mejores prácticas.",
-  "Todo sobre {title} en un solo lugar. Tutorial completo con información actualizada y ejemplos reales.",
 ];
 
 /**
@@ -48,11 +46,8 @@ function generateDescription(title: string, excerpt?: string): string {
     return truncateMetaDescription(excerpt);
   }
 
-  // Seleccionar template aleatorio
-  const template =
-    DESCRIPTION_TEMPLATES[
-      Math.floor(Math.random() * DESCRIPTION_TEMPLATES.length)
-    ];
+  // Usar primer template por defecto (más simple que random)
+  const template = DESCRIPTION_TEMPLATES[0];
   const description = template.replace(/{title}/g, title.toLowerCase());
 
   return truncateMetaDescription(description);
@@ -60,62 +55,29 @@ function generateDescription(title: string, excerpt?: string): string {
 
 /**
  * Genera título social (OG/Twitter) más creativo
+ * Simplificado: agrega sufijo solo si hay espacio
  */
 function generateSocialTitle(title: string): string {
-  const prefixes = [
-    "Descubre",
-    "Aprende",
-    "Domina",
-    "Guía:",
-    "Todo sobre",
-    "Conoce",
-  ];
-  const suffixes = [
-    "- Guía Completa",
-    "- Tutorial 2024",
-    "- Lo que Debes Saber",
-    "- Guía Práctica",
-    "",
-  ];
-
-  const usePrefix = Math.random() > 0.5;
-  const useSuffix = Math.random() > 0.5;
-
-  let socialTitle = title;
-
-  if (usePrefix && title.length < 50) {
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    socialTitle = `${prefix} ${title}`;
+  // Agregar sufijo solo si el título es corto
+  if (title.length < 50) {
+    return `${title} - Guía Completa`;
   }
-
-  if (useSuffix && socialTitle.length < 60) {
-    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-    socialTitle = `${socialTitle}${suffix}`;
-  }
-
-  return socialTitle;
+  return title;
 }
 
 /**
  * Genera descripción social más detallada
+ * Simplificado: agrega texto fijo si hay espacio
  */
 function generateSocialDescription(
   title: string,
   description: string,
 ): string {
-  const additions = [
-    " Incluye ejemplos prácticos y consejos de expertos.",
-    " Con información actualizada y casos de uso reales.",
-    " Todo lo que necesitas saber en un solo lugar.",
-    " Guía completa con tips y mejores prácticas.",
-  ];
-
   let social = description;
 
-  // Si hay espacio, agregar texto adicional
+  // Si hay espacio, agregar texto adicional fijo
   if (social.length < 250) {
-    const addition = additions[Math.floor(Math.random() * additions.length)];
-    social += addition;
+    social += " Incluye ejemplos prácticos y consejos de expertos.";
   }
 
   return social.substring(0, 300);
@@ -341,6 +303,7 @@ export async function generateSchemaJsonMock(content: {
 
 /**
  * MOCK: Regenera un campo específico con variación
+ * Simplificado: variaciones básicas sin lógica compleja
  */
 export async function regenerateSingleFieldMock(
   field: string,
@@ -348,35 +311,17 @@ export async function regenerateSingleFieldMock(
   context: string,
 ): Promise<string> {
   // Simular delay
-  await new Promise((resolve) =>
-    setTimeout(resolve, 150 + Math.random() * 200)
-  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
 
-  // Generar variaciones según el campo
-  const variations: Record<string, (val: string) => string> = {
-    metaTitle: (val) => {
-      const variations = [
-        `Guía: ${val}`,
-        `${val} - Tutorial Completo`,
-        `Aprende ${val}`,
-        `Todo sobre ${val}`,
-      ];
-      return variations[Math.floor(Math.random() * variations.length)];
-    },
-    metaDescription: (val) => {
-      return val.replace(/\.$/, "") +
-        ". Incluye ejemplos prácticos y consejos útiles.";
-    },
-    focusKeyword: (val) => {
-      const words = val.split(" ");
-      return words.reverse().join(" ");
-    },
-  };
-
-  const variateFn = variations[field];
-  if (variateFn) {
-    return truncateMetaTitle(variateFn(context));
+  // Generar variaciones simples según el campo
+  switch (field) {
+    case "metaTitle":
+      return truncateMetaTitle(`Guía: ${context}`);
+    case "metaDescription":
+      return originalValue.replace(/\.$/, "") + ". Incluye ejemplos prácticos y consejos útiles.";
+    case "focusKeyword":
+      return context.split(" ").slice(0, 2).join(" ");
+    default:
+      return originalValue;
   }
-
-  return originalValue;
 }

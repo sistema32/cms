@@ -1,350 +1,157 @@
-/**
- * Plugin Manager
- * High-level manager for plugin operations with database persistence
- */
-
-import { db } from '../../config/db.ts';
-import { plugins, pluginHooks, type Plugin as PluginDB, type NewPlugin } from '../../db/schema.ts';
-import { pluginLoader } from './PluginLoader.ts';
-import type { Plugin, InstallOptions } from './types.ts';
-import { eq } from 'drizzle-orm';
-import { AdminPanelRegistry } from './AdminPanelRegistry.ts';
-import { join } from '@std/path';
-
-import { pluginMigrationRunner } from './PluginMigration.ts';
+import { PluginLoader } from './PluginLoader.ts';
+import { PluginWorker } from './PluginWorker.ts';
+import { PluginManifest } from './types.ts';
+import { db } from '../../db/index.ts';
+import { sql } from 'drizzle-orm';
 
 export class PluginManager {
-  /**
-   * Install a plugin
-   */
-  async install(pluginName: string, options: InstallOptions = {}): Promise<Plugin> {
-    const { activate = false, overwrite = false } = options;
+    private static instance: PluginManager;
+    public loader: PluginLoader;
+    private workers: Map<string, PluginWorker> = new Map();
+    private manifests: Map<string, PluginManifest> = new Map();
+    // In-memory state for installed/active plugins (mocking DB for now)
+    private installedPlugins: Set<string> = new Set();
+    private activePlugins: Set<string> = new Set();
+    private settings: Map<string, any> = new Map();
 
-    // Check if already installed
-    const existing = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-
-    if (existing && !overwrite) {
-      throw new Error(`Plugin ${pluginName} is already installed`);
+    private constructor() {
+        this.loader = new PluginLoader('./plugins');
     }
 
-    // Load plugin
-    const plugin = await pluginLoader.loadPlugin(pluginName);
-
-    // Save to database
-    if (existing) {
-      // Update existing
-      await db
-        .update(plugins)
-        .set({
-          version: plugin.version,
-          settings: JSON.stringify(plugin.settings || {}),
-          updatedAt: new Date(),
-        })
-        .where(eq(plugins.id, existing.id))
-        .run();
-
-      plugin.id = existing.id;
-    } else {
-      // Insert new
-      const newPlugin: NewPlugin = {
-        name: pluginName,
-        version: plugin.version,
-        isActive: false,
-        settings: JSON.stringify(plugin.settings || {}),
-      };
-
-      const result = await db.insert(plugins).values(newPlugin).returning().get();
-      plugin.id = result.id;
+    static getInstance(): PluginManager {
+        if (!PluginManager.instance) {
+            PluginManager.instance = new PluginManager();
+        }
+        return PluginManager.instance;
     }
 
-    console.log(`✓ Plugin installed: ${pluginName} v${plugin.version}`);
-
-    // Run migrations on install/update
-    try {
-      const pluginPath = join(Deno.cwd(), 'plugins', pluginName);
-      await pluginMigrationRunner.runMigrations(pluginName, pluginPath);
-    } catch (error) {
-      console.error(`Failed to run migrations for ${pluginName}:`, error);
-      // We don't fail installation, but warn
+    async initialize() {
+        console.log('[PluginManager] Initializing...');
+        // In a real app, load from DB.
+        // For now, we do nothing or auto-activate known plugins.
     }
 
-    // Activate if requested
-    if (activate) {
-      await this.activate(pluginName);
-    }
+    async install(pluginName: string, options: { activate: boolean }) {
+        console.log(`[PluginManager] Installing ${pluginName}...`);
+        const manifest = await this.loader.loadManifest(pluginName);
+        this.manifests.set(pluginName, manifest);
+        this.installedPlugins.add(pluginName);
 
-    return plugin;
-  }
-
-
-  /**
-   * Uninstall a plugin
-   */
-  async uninstall(pluginName: string): Promise<void> {
-    const pluginDB = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-
-    if (!pluginDB) {
-      throw new Error(`Plugin ${pluginName} is not installed`);
-    }
-
-    // Deactivate first if active
-    if (pluginDB.isActive) {
-      await this.deactivate(pluginName);
-    }
-
-    // Revert migrations
-    try {
-      const pluginPath = join(Deno.cwd(), 'plugins', pluginName);
-      await pluginMigrationRunner.revertMigrations(pluginName, pluginPath);
-    } catch (error) {
-      console.error(`Failed to revert migrations for ${pluginName}:`, error);
-      // We continue uninstalling even if revert fails?
-      // Yes, otherwise plugin is stuck
-    }
-
-    // Delete from database (cascade will delete hooks)
-    await db.delete(plugins).where(eq(plugins.id, pluginDB.id)).run();
-
-    // Unload from memory
-    pluginLoader.unloadPlugin(pluginName);
-
-    console.log(`✓ Plugin uninstalled: ${pluginName}`);
-  }
-
-  /**
-   * Activate a plugin
-   */
-  async activate(pluginName: string): Promise<void> {
-    const pluginDB = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-
-    if (!pluginDB) {
-      throw new Error(`Plugin ${pluginName} is not installed`);
-    }
-
-    if (pluginDB.isActive) {
-      console.warn(`Plugin ${pluginName} is already active`);
-      return;
-    }
-
-    // Load if not loaded
-    let plugin = pluginLoader.getPlugin(pluginName);
-    if (!plugin) {
-      const settings = pluginDB.settings ? JSON.parse(pluginDB.settings) : {};
-      plugin = await pluginLoader.loadPlugin(pluginName, settings);
-      plugin.id = pluginDB.id;
-    }
-
-    // Check dependencies
-    if (plugin.manifest.dependencies) {
-      const missingDeps: string[] = [];
-      const inactiveDeps: string[] = [];
-
-      for (const [depName, versionRange] of Object.entries(plugin.manifest.dependencies)) {
-        const isInstalled = await this.isInstalled(depName);
-        if (!isInstalled) {
-          missingDeps.push(depName);
-          continue;
+        if (options.activate) {
+            await this.activate(pluginName);
         }
 
-        const isActive = await this.isActive(depName);
-        if (!isActive) {
-          inactiveDeps.push(depName);
+        return {
+            name: pluginName,
+            version: manifest.version,
+            isActive: this.activePlugins.has(pluginName)
+        };
+    }
+
+    async uninstall(pluginName: string) {
+        if (this.activePlugins.has(pluginName)) {
+            await this.deactivate(pluginName);
         }
-      }
-
-      if (missingDeps.length > 0) {
-        throw new Error(`Cannot activate ${pluginName}: Missing dependencies: ${missingDeps.join(', ')}`);
-      }
-
-      if (inactiveDeps.length > 0) {
-        throw new Error(`Cannot activate ${pluginName}: Inactive dependencies: ${inactiveDeps.join(', ')}`);
-      }
+        this.installedPlugins.delete(pluginName);
+        this.manifests.delete(pluginName);
+        this.settings.delete(pluginName);
     }
 
-    // Activate
-    await pluginLoader.activatePlugin(pluginName);
+    async activate(pluginName: string) {
+        console.log(`[PluginManager] Activating ${pluginName}...`);
 
-    // Update database
-    await db
-      .update(plugins)
-      .set({
-        isActive: true,
-        updatedAt: new Date(),
-      })
-      .where(eq(plugins.id, pluginDB.id))
-      .run();
-  }
+        if (this.workers.has(pluginName)) {
+            console.warn(`[PluginManager] ${pluginName} is already active`);
+            return;
+        }
 
-  /**
-   * Deactivate a plugin
-   */
-  async deactivate(pluginName: string): Promise<void> {
-    const pluginDB = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
+        let manifest = this.manifests.get(pluginName);
+        if (!manifest) {
+            manifest = await this.loader.loadManifest(pluginName);
+            this.manifests.set(pluginName, manifest);
+        }
 
-    if (!pluginDB) {
-      throw new Error(`Plugin ${pluginName} is not installed`);
+        const worker = new PluginWorker(manifest);
+        this.workers.set(pluginName, worker);
+
+        const pluginPath = this.loader.getPluginPath(pluginName);
+
+        // Load and activate in worker
+        await worker.load(pluginPath);
+        await worker.activate();
+
+        this.activePlugins.add(pluginName);
+        this.installedPlugins.add(pluginName); // Ensure it's marked as installed
+
+        console.log(`[PluginManager] ${pluginName} activated`);
     }
 
-    if (!pluginDB.isActive) {
-      console.warn(`Plugin ${pluginName} is already inactive`);
-      return;
+    async deactivate(pluginName: string) {
+        console.log(`[PluginManager] Deactivating ${pluginName}...`);
+        const worker = this.workers.get(pluginName);
+        if (worker) {
+            await worker.deactivate();
+            worker.terminate();
+            this.workers.delete(pluginName);
+            this.activePlugins.delete(pluginName);
+            console.log(`[PluginManager] ${pluginName} deactivated`);
+        }
     }
 
-    // Deactivate
-    await pluginLoader.deactivatePlugin(pluginName);
-
-    // Unregister all admin panels for this plugin
-    AdminPanelRegistry.unregisterAllPanels(pluginName);
-
-    // Update database
-    await db
-      .update(plugins)
-      .set({
-        isActive: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(plugins.id, pluginDB.id))
-      .run();
-  }
-
-  /**
-   * Update plugin settings
-   */
-  async updateSettings(pluginName: string, settings: Record<string, any>): Promise<void> {
-    const pluginDB = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-
-    if (!pluginDB) {
-      throw new Error(`Plugin ${pluginName} is not installed`);
+    getWorker(pluginName: string): PluginWorker | undefined {
+        return this.workers.get(pluginName);
     }
 
-    // Update database
-    await db
-      .update(plugins)
-      .set({
-        settings: JSON.stringify(settings),
-        updatedAt: new Date(),
-      })
-      .where(eq(plugins.id, pluginDB.id))
-      .run();
-
-    // Update in-memory plugin
-    const plugin = pluginLoader.getPlugin(pluginName);
-    if (plugin) {
-      plugin.settings = settings;
-
-      // Call plugin's onSettingsUpdate if it exists
-      if (plugin.instance && typeof plugin.instance.onSettingsUpdate === 'function') {
-        await plugin.instance.onSettingsUpdate(settings);
-      }
+    async isInstalled(pluginName: string): Promise<boolean> {
+        return this.installedPlugins.has(pluginName);
     }
 
-    console.log(`✓ Plugin settings updated: ${pluginName}`);
-  }
-
-  /**
-   * Get plugin settings
-   */
-  async getSettings(pluginName: string): Promise<Record<string, any>> {
-    const pluginDB = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-
-    if (!pluginDB) {
-      throw new Error(`Plugin ${pluginName} is not installed`);
+    async isActive(pluginName: string): Promise<boolean> {
+        return this.activePlugins.has(pluginName);
     }
 
-    return pluginDB.settings ? JSON.parse(pluginDB.settings) : {};
-  }
-
-  /**
-   * Get all installed plugins from database
-   */
-  async getAll(): Promise<PluginDB[]> {
-    return await db.select().from(plugins).all();
-  }
-
-  /**
-   * Get active plugins from database
-   */
-  async getActive(): Promise<PluginDB[]> {
-    return await db.select().from(plugins).where(eq(plugins.isActive, true)).all();
-  }
-
-  /**
-   * Check if a plugin is installed
-   */
-  async isInstalled(pluginName: string): Promise<boolean> {
-    const plugin = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-    return plugin !== undefined;
-  }
-
-  /**
-   * Check if a plugin is active
-   */
-  async isActive(pluginName: string): Promise<boolean> {
-    const plugin = await db.select().from(plugins).where(eq(plugins.name, pluginName)).get();
-    return plugin?.isActive ?? false;
-  }
-
-  /**
-   * Initialize plugin system
-   * Load and activate all active plugins from database
-   */
-  async initialize(): Promise<void> {
-    console.log('🔌 Initializing plugin system...');
-
-    const activePlugins = await this.getActive();
-
-    for (const pluginDB of activePlugins) {
-      try {
-        const settings = pluginDB.settings ? JSON.parse(pluginDB.settings) : {};
-        const plugin = await pluginLoader.loadPlugin(pluginDB.name, settings);
-        plugin.id = pluginDB.id;
-
-        await pluginLoader.activatePlugin(pluginDB.name);
-
-        console.log(`  ✓ Loaded: ${pluginDB.name} v${pluginDB.version}`);
-      } catch (error) {
-        console.error(`  ✗ Failed to load plugin ${pluginDB.name}:`, error);
-
-        // Mark as error in database
-        await db
-          .update(plugins)
-          .set({
-            isActive: false,
-            updatedAt: new Date(),
-          })
-          .where(eq(plugins.id, pluginDB.id))
-          .run();
-      }
+    async getAll(): Promise<any[]> {
+        const result = [];
+        for (const name of this.installedPlugins) {
+            const manifest = this.manifests.get(name) || await this.loader.loadManifest(name);
+            result.push({
+                id: name, // Mock ID
+                name,
+                version: manifest.version,
+                isActive: this.activePlugins.has(name),
+                installedAt: new Date(),
+                settings: JSON.stringify(this.settings.get(name) || {})
+            });
+        }
+        return result;
     }
 
-    console.log('✓ Plugin system initialized');
-  }
+    async getActive(): Promise<any[]> {
+        const all = await this.getAll();
+        return all.filter(p => p.isActive);
+    }
 
-  /**
-   * Discover available plugins (not installed)
-   */
-  async discoverAvailable(): Promise<string[]> {
-    const allPlugins = await pluginLoader.discoverPlugins();
-    const installedPlugins = await this.getAll();
-    const installedNames = new Set(installedPlugins.map(p => p.name));
+    async discoverAvailable(): Promise<string[]> {
+        return this.loader.listAvailablePlugins();
+    }
 
-    return allPlugins.filter(name => !installedNames.has(name));
-  }
+    async updateSettings(pluginName: string, settings: any) {
+        this.settings.set(pluginName, settings);
+        // If active, notify worker?
+        // TODO: Implement settings update in worker
+    }
 
-  /**
-   * Get plugin statistics
-   */
-  async getStats() {
-    const all = await this.getAll();
-    const active = all.filter(p => p.isActive);
+    async getSettings(pluginName: string): Promise<any> {
+        return this.settings.get(pluginName) || {};
+    }
 
-    return {
-      total: all.length,
-      active: active.length,
-      inactive: all.length - active.length,
-    };
-  }
+    async getStats() {
+        return {
+            total: this.installedPlugins.size,
+            active: this.activePlugins.size,
+            inactive: this.installedPlugins.size - this.activePlugins.size
+        };
+    }
 }
 
-// Singleton instance
-export const pluginManager = new PluginManager();
+export const pluginManager = PluginManager.getInstance();

@@ -1,0 +1,9 @@
+{
+  "checksums": {
+    "README.md": "sha256-5198797131eee6be1ba4f8436d38d5c6cb954f4b1070d1f254eece6dc5006f86",
+    "index.ts": "sha256-c6a02894a5d2797a21e72f6b3ab4b4ff8b637d55ffb97f8bc75118f9dbd2afd5",
+    "plugin.json": "sha256-5d86ce0b122e39cb6916d9adbbff4543e86ca9c32c315a895dcb15b769cb8689"
+  },
+  "algorithm": "sha256",
+  "generatedAt": 1764104000224
+}

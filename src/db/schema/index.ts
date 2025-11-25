@@ -9,7 +9,6 @@ if (dbType !== 'sqlite') {
 }
 
 // En el futuro, aquí importaremos y seleccionaremos los otros schemas
-// En el futuro, aquí importaremos y seleccionaremos los otros schemas
 // export const schema = sqliteSchema;
 
 // Re-exportar todo del schema seleccionado

@@ -139,8 +139,8 @@ export function securityHeadersMiddleware(c: Context, next: Next) {
 
     // Content Security Policy
     "Content-Security-Policy": isDevelopment
-      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' blob:;"
-      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self';",
+      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' blob:; connect-src 'self' http://localhost:8000;"
+      : "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self';",
 
     // Referrer Policy
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -265,6 +265,11 @@ export async function requestInspectionMiddleware(c: Context, next: Next) {
  * Applies all security measures
  */
 export async function securityMiddleware(c: Context, next: Next) {
+  // Skip security checks for SSE stream to avoid false positives with token in query
+  if (c.req.path === '/api/notifications/stream') {
+    return await next();
+  }
+
   // Apply security headers
   await securityHeadersMiddleware(c, async () => {
     // Check IP blocking

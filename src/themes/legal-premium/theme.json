@@ -1,0 +1,157 @@
+{
+    "name": "legal-premium",
+    "displayName": "Legal Premium",
+    "version": "1.0.0",
+    "description": "Premium theme for legal firms and professional services with Bootstrap 5",
+    "author": {
+        "name": "LexCMS",
+        "email": "hello@lexcms.com",
+        "url": "https://lexcms.com"
+    },
+    "license": "MIT",
+    "screenshots": {
+        "desktop": "assets/images/screenshot-desktop.jpg",
+        "mobile": "assets/images/screenshot-mobile.jpg"
+    },
+    "config": {
+        "posts_per_page": 10,
+        "image_sizes": {
+            "small": {
+                "width": 400
+            },
+            "medium": {
+                "width": 800
+            },
+            "large": {
+                "width": 1200
+            },
+            "xlarge": {
+                "width": 2000
+            }
+        },
+        "custom": {
+            "color_scheme": {
+                "type": "select",
+                "label": "Color Scheme",
+                "options": [
+                    "Light",
+                    "Dark"
+                ],
+                "default": "Dark",
+                "group": "design",
+                "description": "Choose the color scheme for your site"
+            },
+            "primary_color": {
+                "type": "color",
+                "label": "Primary Color",
+                "default": "#2d6aff",
+                "group": "design",
+                "description": "Main brand color"
+            },
+            "secondary_color": {
+                "type": "color",
+                "label": "Secondary Color",
+                "default": "#40ebd0",
+                "group": "design",
+                "description": "Accent color"
+            },
+            "hero_title": {
+                "type": "text",
+                "label": "Hero Title",
+                "default": "Convertimos la incertidumbre regulatoria en decisiones estratégicas",
+                "group": "homepage",
+                "description": "Main headline on homepage"
+            },
+            "hero_subtitle": {
+                "type": "textarea",
+                "label": "Hero Subtitle",
+                "default": "Partner legal para builders que transforman industrias",
+                "group": "homepage",
+                "description": "Subheadline on homepage"
+            },
+            "company_phone": {
+                "type": "text",
+                "label": "Company Phone",
+                "default": "+52 55 5555 0101",
+                "group": "contact",
+                "description": "Company phone number"
+            },
+            "company_email": {
+                "type": "text",
+                "label": "Company Email",
+                "default": "hola@lexiapartners.com",
+                "group": "contact",
+                "description": "Company email address"
+            },
+            "company_address": {
+                "type": "textarea",
+                "label": "Company Address",
+                "default": "Av. Reforma 412, piso 18\nCiudad de México, MX",
+                "group": "contact",
+                "description": "Company physical address"
+            },
+            "show_hero": {
+                "type": "boolean",
+                "label": "Show Hero Section",
+                "default": true,
+                "group": "homepage",
+                "description": "Display hero section on homepage"
+            },
+            "show_services": {
+                "type": "boolean",
+                "label": "Show Services Section",
+                "default": true,
+                "group": "homepage",
+                "description": "Display services section on homepage"
+            },
+            "show_industries": {
+                "type": "boolean",
+                "label": "Show Industries Section",
+                "default": true,
+                "group": "homepage",
+                "description": "Display industries section on homepage"
+            },
+            "show_case_studies": {
+                "type": "boolean",
+                "label": "Show Case Studies Section",
+                "default": true,
+                "group": "homepage",
+                "description": "Display case studies section on homepage"
+            },
+            "show_insights": {
+                "type": "boolean",
+                "label": "Show Insights Section",
+                "default": true,
+                "group": "homepage",
+                "description": "Display insights section on homepage"
+            }
+        }
+    },
+    "supports": {
+        "comments": true,
+        "customSettings": true,
+        "widgets": false,
+        "menus": [
+            "header",
+            "footer"
+        ],
+        "postFormats": [
+            "standard"
+        ],
+        "customTemplates": true
+    },
+    "templates": {
+        "home": "templates/home.tsx",
+        "post": "templates/post.tsx",
+        "page": "templates/page.tsx",
+        "category": "templates/category.tsx",
+        "tag": "templates/tag.tsx",
+        "search": "templates/search.tsx",
+        "404": "templates/404.tsx"
+    },
+    "partials": {
+        "header": "partials/Header.tsx",
+        "footer": "partials/Footer.tsx",
+        "hero": "partials/Hero.tsx"
+    }
+}

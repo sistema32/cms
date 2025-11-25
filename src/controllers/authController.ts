@@ -46,8 +46,12 @@ export async function register(c: Context) {
         roleId: result.user.role?.id,
         createdAt: result.user.createdAt,
       });
+
+      // Trigger user:register hook
+      const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
+      await hookManager.doAction("user:register", result.user);
     } catch (error) {
-      console.warn("Failed to dispatch user.created webhook:", error);
+      console.warn("Failed to dispatch user.created webhook or hook:", error);
     }
 
     // Send welcome email
@@ -152,8 +156,12 @@ export async function login(c: Context) {
           loginAt: new Date().toISOString(),
           ipAddress: ip,
         });
+
+        // Trigger user:login hook
+        const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
+        await hookManager.doAction("user:login", result.user);
       } catch (error) {
-        console.warn("Failed to dispatch user.login webhook:", error);
+        console.warn("Failed to dispatch user.login webhook or hook:", error);
       }
     }
 

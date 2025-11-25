@@ -164,6 +164,10 @@ export async function generateImageSizes(
   const results = new Map<string, ProcessedImage>();
 
   try {
+    // Apply media:imageSizes filter to allow plugins to register custom sizes
+    const { hookManager } = await import("../../lib/plugin-system/HookManager.ts");
+    const filteredSizes = await hookManager.applyFilters("media:imageSizes", sizes);
+
     // Decodificar imagen original
     const Image = await getImageConstructor();
     const originalImage = await Image.decode(imageData) as ImageLike;
@@ -180,7 +184,7 @@ export async function generateImageSizes(
     });
 
     // Generar cada tamaño
-    for (const sizeConfig of sizes) {
+    for (const sizeConfig of filteredSizes) {
       // Saltar si la imagen original es más pequeña que el tamaño objetivo
       if (originalWidth <= sizeConfig.width) {
         continue;
