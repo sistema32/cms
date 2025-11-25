@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 export class PluginManager {
     private static instance: PluginManager;
-    private loader: PluginLoader;
+    public loader: PluginLoader;
     private plugins: Map<string, PluginInfo> = new Map();
     private activePlugins: Map<string, PluginWorker> = new Map();
 

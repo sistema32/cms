@@ -4,9 +4,8 @@
  */
 
 import { Context, Next } from 'hono';
-import { pluginRouteRegistry } from '../lib/plugins/core/PluginRouteRegistry.ts';
-import { pluginManager } from '../lib/plugins/core/PluginManager.ts';
-import { pluginCircuitBreaker } from '../lib/plugins/core/PluginCircuitBreaker.ts';
+import { pluginRouteRegistry } from '../lib/plugin-system/PluginRouteRegistry.ts';
+import { pluginManager } from '../lib/plugin-system/PluginManager.ts';
 
 export async function pluginRouteMiddleware(c: Context, next: Next) {
     // Match pattern: /api/plugins/:pluginName/*
@@ -20,14 +19,6 @@ export async function pluginRouteMiddleware(c: Context, next: Next) {
     const pluginPath = match[2] || '/';
     const method = c.req.method.toUpperCase();
 
-    // Check circuit breaker
-    if (pluginCircuitBreaker.shouldBlock(pluginName)) {
-        return c.json({
-            error: 'Plugin temporarily unavailable',
-            message: `Plugin ${pluginName} is blocked due to repeated failures. Please try again later.`
-        }, 503);
-    }
-
     // Check if route exists
     const route = pluginRouteRegistry.getRoute(pluginName, method, pluginPath);
 
@@ -36,15 +27,15 @@ export async function pluginRouteMiddleware(c: Context, next: Next) {
     }
 
     try {
-        // Get plugin sandbox
-        const sandbox = pluginManager.getPlugin(pluginName);
+        // Get plugin worker
+        const worker = pluginManager.getWorker(pluginName);
 
-        if (!sandbox) {
+        if (!worker) {
             return c.json({ error: 'Plugin not found or not active' }, 404);
         }
 
         // Execute route handler via RPC
-        const result = await sandbox.executeRoute(route.handlerId, {
+        const result = await worker.executeRoute(route.handlerId, {
             method: c.req.method,
             path: pluginPath,
             query: c.req.query(),
@@ -52,9 +43,6 @@ export async function pluginRouteMiddleware(c: Context, next: Next) {
             headers: Object.fromEntries(c.req.raw.headers.entries()),
             params: c.req.param()
         });
-
-        // Record success for circuit breaker
-        pluginCircuitBreaker.recordSuccess(pluginName);
 
         // Handle response
         if (result && typeof result === 'object') {
@@ -81,9 +69,6 @@ export async function pluginRouteMiddleware(c: Context, next: Next) {
         return c.json(result);
     } catch (error: any) {
         console.error(`[PluginRoute] Error executing ${method} ${pluginPath} for ${pluginName}:`, error);
-
-        // Record failure for circuit breaker
-        pluginCircuitBreaker.recordFailure(pluginName);
 
         return c.json({
             error: 'Plugin route execution failed',
