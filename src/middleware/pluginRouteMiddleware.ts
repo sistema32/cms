@@ -20,7 +20,7 @@ export async function pluginRouteMiddleware(c: Context, next: Next) {
     const method = c.req.method.toUpperCase();
 
     // Check if route exists
-    const route = pluginRouteRegistry.getRoute(pluginName, method, pluginPath);
+    const route = pluginRouteRegistry.matchRoute(pluginName, method, pluginPath);
 
     if (!route) {
         return next(); // Let other handlers try

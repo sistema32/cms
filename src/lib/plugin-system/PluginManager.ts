@@ -146,6 +146,74 @@ export class PluginManager {
     getAllPlugins() {
         return Array.from(this.plugins.values());
     }
+
+    // Alias for backward compatibility
+    getAll() {
+        return this.getAllPlugins();
+    }
+
+    async discoverAvailable() {
+        return await this.loader.discoverPlugins();
+    }
+
+    async getStats() {
+        const total = this.plugins.size;
+        const active = this.activePlugins.size;
+        const inactive = total - active;
+
+        return {
+            total,
+            active,
+            inactive
+        };
+    }
+
+    async isInstalled(name: string) {
+        // Check memory first
+        if (this.plugins.has(name)) {
+            return true;
+        }
+        // Check DB
+        const existing = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        return !!existing;
+    }
+
+    async isActive(name: string) {
+        return this.activePlugins.has(name);
+    }
+
+    async getActive() {
+        const activePlugins: any[] = [];
+        for (const [name, worker] of this.activePlugins.entries()) {
+            const plugin = this.plugins.get(name);
+            if (plugin) {
+                // We need to return PluginDB structure or similar, but PluginService expects PluginDB
+                // Let's fetch from DB to be sure
+                const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+                if (dbPlugin) {
+                    activePlugins.push(dbPlugin);
+                }
+            }
+        }
+        return activePlugins;
+    }
+
+    async getSettings(name: string) {
+        const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        if (!dbPlugin || !dbPlugin.settings) {
+            return {};
+        }
+        return JSON.parse(dbPlugin.settings);
+    }
+
+    async updateSettings(name: string, settings: any) {
+        await db.update(plugins)
+            .set({ settings: JSON.stringify(settings) })
+            .where(eq(plugins.name, name));
+
+        // If active, we might need to notify the worker?
+        // For now, we just update DB.
+    }
 }
 
 export const pluginManager = PluginManager.getInstance();
