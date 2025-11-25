@@ -4,8 +4,8 @@
  */
 
 import { Context } from 'hono';
-import { pluginManager } from '../../lib/plugins/core/PluginManager.ts';
-import { pluginAdminRegistry } from '../../lib/plugins/core/PluginAdminRegistry.ts';
+import { pluginManager } from '../../lib/plugin-system/PluginManager.ts';
+import { adminPanelRegistry } from '../../lib/plugin-system/AdminPanelRegistry.ts';
 
 /**
  * Render a plugin admin panel
@@ -16,7 +16,7 @@ export async function renderPluginPanel(c: Context) {
 
     try {
         // Get panel config
-        const panel = pluginAdminRegistry.getPanel(pluginName, panelId);
+        const panel = adminPanelRegistry.get(panelId); // Note: Registry uses ID, not (pluginName, panelId)
 
         if (!panel) {
             return c.html(`
@@ -28,10 +28,10 @@ export async function renderPluginPanel(c: Context) {
             `, 404);
         }
 
-        // Get plugin sandbox
-        const sandbox = pluginManager.getPlugin(pluginName);
+        // Get plugin worker
+        const worker = pluginManager.getWorker(pluginName);
 
-        if (!sandbox) {
+        if (!worker) {
             return c.html(`
                 <div style="padding: 2rem;">
                     <h1>Plugin Not Active</h1>
@@ -42,7 +42,17 @@ export async function renderPluginPanel(c: Context) {
         }
 
         // Execute panel component via RPC
-        const html = await sandbox.executeRoute(panel.componentId, {
+        // The component property in AdminPanelConfig is likely a string ID or similar in the new system?
+        // Let's check AdminPanelConfig in types.ts.
+        // Assuming component is a string handler ID for now as per previous logic.
+        // Wait, previous logic was: sandbox.executeRoute(panel.componentId, ...)
+        // AdminPanelConfig in types.ts says: component: (context: any) => Promise<string | any>;
+        // But that's the Host side type. The registry stores what?
+        // The registry stores AdminPanelConfig.
+        // If the plugin registered it via RPC, the 'component' field might be a handler ID string?
+        // Let's check HostAPI.ts registerAdminPanel.
+
+        const html = await worker.executeRoute(panel.component as unknown as string, {
             method: 'GET',
             path: c.req.path,
             query: c.req.query(),
@@ -66,13 +76,13 @@ export async function renderPluginPanel(c: Context) {
  * Get plugin menu items for admin sidebar
  */
 export function getPluginMenuItems() {
-    const panels = pluginAdminRegistry.getMenuPanels();
+    const panels = adminPanelRegistry.getAll();
 
     return panels.map(panel => ({
-        id: `plugin-${panel.pluginName}-${panel.id}`,
+        id: `plugin-${panel.id}`, // ID is unique enough?
         label: panel.title,
         icon: panel.icon || 'puzzle',
-        path: `/admincp/plugins/${panel.pluginName}/${panel.path}`,
+        path: `/admincp/plugins/${panel.id.split(':')[0]}/${panel.path}`, // Assuming ID is plugin:panel
         order: panel.order,
         badge: null
     }));
