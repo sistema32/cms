@@ -228,6 +228,13 @@ export class PluginManager {
         // If active, we might need to notify the worker?
         // For now, we just update DB.
     }
+
+    /**
+     * Get active worker for a plugin
+     */
+    getWorker(name: string) {
+        return this.activePlugins.get(name);
+    }
 }
 
 export const pluginManager = PluginManager.getInstance();

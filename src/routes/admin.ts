@@ -73,4 +73,12 @@ import { renderPluginPanel } from "./admin/pluginPanels.ts";
 adminRouter.get("/plugins/:pluginName/:panelId", renderPluginPanel);
 adminRouter.get("/plugins/:pluginName", renderPluginPanel);
 
+// Admin Panel API - Menu endpoint
+import { getAdminMenu, renderPluginAdminPage } from "../controllers/adminPanelController.ts";
+adminRouter.get("/api/menu", getAdminMenu);
+
+// Plugin admin pages (catch-all for plugin-registered pages)
+// This should be near the end to not override other routes
+adminRouter.get("/*", renderPluginAdminPage);
+
 export default adminRouter;
