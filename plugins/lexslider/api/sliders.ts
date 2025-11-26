@@ -40,7 +40,7 @@ export async function createSlider(request: any): Promise<Response> {
         const data: CreateSliderInput = request.body;
 
         const slider = await api.db.collection('sliders').create({
-            name: data.name,
+            title: data.title,
             alias: data.alias || null,
             type: data.type || 'simple',
             width: data.width || 1200,
@@ -116,9 +116,9 @@ export async function updateSlider(request: any): Promise<Response> {
         const updates: string[] = [];
         const values: any[] = [];
 
-        if (data.name !== undefined) {
-            updates.push("name = ?");
-            values.push(data.name);
+        if (data.title !== undefined) {
+            updates.push("title = ?");
+            values.push(data.title);
         }
         if (data.alias !== undefined) {
             updates.push("alias = ?");

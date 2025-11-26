@@ -4,7 +4,7 @@
 
 export interface Slider {
     id: number;
-    name: string;
+    title: string;
     alias?: string;
     type: 'simple' | 'carousel' | 'showcase';
     width: number;
@@ -108,7 +108,7 @@ export interface LayerAnimation {
 }
 
 export interface CreateSliderInput {
-    name: string;
+    title: string;
     alias?: string;
     type?: Slider['type'];
     width?: number;
