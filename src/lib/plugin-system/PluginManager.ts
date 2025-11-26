@@ -96,10 +96,14 @@ export class PluginManager {
             return; // Already active
         }
 
-        const plugin = this.plugins.get(name);
-        if (!plugin) {
-            throw new Error(`Plugin ${name} not found`);
+        // Load plugin info from database
+        const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        if (!dbPlugin) {
+            throw new Error(`Plugin ${name} not found in database`);
         }
+
+        // Load plugin manifest from disk
+        const plugin = await this.loader.loadPlugin(name);
 
         console.log(`[PluginManager] Activating ${name}...`);
 
@@ -123,9 +127,14 @@ export class PluginManager {
     async deactivate(name: string) {
         const worker = this.activePlugins.get(name);
         if (!worker) {
-            return;
+            return; // Not active
         }
 
+        // Verify plugin exists in database
+        const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        if (!dbPlugin) {
+            throw new Error(`Plugin ${name} not found in database`);
+        }
         console.log(`[PluginManager] Deactivating ${name}...`);
         worker.terminate();
         this.activePlugins.delete(name);
@@ -174,14 +183,9 @@ export class PluginManager {
         };
     }
 
-    async isInstalled(name: string) {
-        // Check memory first
-        if (this.plugins.has(name)) {
-            return true;
-        }
-        // Check DB
-        const existing = await db.select().from(plugins).where(eq(plugins.name, name)).get();
-        return !!existing;
+    async isInstalled(name: string): Promise<boolean> {
+        const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        return !!dbPlugin;
     }
 
     async isActive(name: string) {
