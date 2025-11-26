@@ -126,27 +126,30 @@ export class PluginManager {
 
     async deactivate(name: string) {
         const worker = this.activePlugins.get(name);
-        if (!worker) {
-            return; // Not active
-        }
 
         // Verify plugin exists in database
         const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
         if (!dbPlugin) {
             throw new Error(`Plugin ${name} not found in database`);
         }
-        console.log(`[PluginManager] Deactivating ${name}...`);
-        worker.terminate();
-        this.activePlugins.delete(name);
 
-        // Remove all hooks registered by this plugin
-        hookManager.removePluginHooks(name);
+        // If worker exists, terminate it and clean up
+        if (worker) {
+            console.log(`[PluginManager] Deactivating ${name}...`);
+            worker.terminate();
+            this.activePlugins.delete(name);
 
-        // Remove all admin panel registrations
-        const { adminPanelRegistry } = await import('./AdminPanelRegistry.ts');
-        adminPanelRegistry.removePlugin(name);
+            // Remove all hooks registered by this plugin
+            hookManager.removePluginHooks(name);
 
-        // Update DB
+            // Remove all admin panel registrations
+            const { adminPanelRegistry } = await import('./AdminPanelRegistry.ts');
+            adminPanelRegistry.removePlugin(name);
+        } else {
+            console.log(`[PluginManager] Plugin ${name} has no active worker, updating DB only`);
+        }
+
+        // ALWAYS update DB to ensure consistency
         await db.update(plugins)
             .set({ isActive: false })
             .where(eq(plugins.name, name));
