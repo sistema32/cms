@@ -116,9 +116,10 @@ export class PluginService {
       throw new Error(`Plugin "${pluginName}" is not installed`);
     }
 
-    // Check if already inactive
+    // Check if already inactive - just return instead of throwing error
     if (!await pluginManager.isActive(pluginName)) {
-      throw new Error(`Plugin "${pluginName}" is already inactive`);
+      console.log(`[PluginService] Plugin "${pluginName}" is already inactive, skipping deactivation`);
+      return;
     }
 
     await pluginManager.deactivate(pluginName);
