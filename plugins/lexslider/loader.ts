@@ -55,69 +55,9 @@ export async function loadLexSlider(api: WorkerPluginAPI) {
         api.routes.register("GET", "/sliders/:id/export", exportAPI.exportSlider);
         api.routes.register("POST", "/import", exportAPI.importSlider);
 
-        // Register admin panel
-        api.admin.registerPanel({
-            id: 'lexslider',
-            title: 'LexSlider',
-            description: 'Manage responsive sliders',
-            icon: 'slider',
-            path: 'sliders',
-            showInMenu: true,
-            order: 50,
-            component: async (context: any) => {
-                const ts = Date.now();
-                const containerId = `lexslider-root-${ts}`;
-
-                return `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexSlider - Panel de Administración</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "preact": "/api/plugins/lexslider/assets/vendor/preact.js",
-            "preact/hooks": "/api/plugins/lexslider/assets/vendor/hooks.js",
-            "htm": "/api/plugins/lexslider/assets/vendor/htm-core.js",
-            "htm/preact": "/api/plugins/lexslider/assets/vendor/htm.js"
-        }
-    }
-    </script>
-    <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    </style>
-</head>
-<body>
-    <div id="${containerId}"></div>
-    
-    <script type="module">
-        import { render } from "preact";
-        import { html } from "htm/preact";
-        
-        const ts = Date.now();
-        const { Dashboard } = await import(\`/api/plugins/lexslider/assets/admin/components/Dashboard.js?v=\${ts}\`);
-        const { SlideEditor } = await import(\`/api/plugins/lexslider/assets/admin/components/SlideEditor.js?v=\${ts}\`);
-        
-        const params = new URLSearchParams(window.location.search);
-        const view = params.get('view') || 'list';
-        const id = params.get('id');
-        
-        const container = document.getElementById("${containerId}");
-        
-        if (view === 'list') {
-            render(html\`<\${Dashboard} />\`, container);
-        } else if (view === 'edit' && id) {
-            render(html\`<\${SlideEditor} sliderId=\${id} />\`, container);
-        } else {
-            render(html\`<div class="p-8">Invalid route</div>\`, container);
-        }
-    </script>
-</body>
-</html>`;
-            }
-        });
+        // Register admin routes using new Admin Panel API
+        const { registerAdminRoutes } = await import(`./admin/routes.ts?v=${ts}`);
+        registerAdminRoutes(api);
 
         // Register shortcode
         const { wp } = await import("../../src/lib/plugin-system/compat/WPCompat.ts");
