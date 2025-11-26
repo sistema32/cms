@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { adminPanelRegistry } from "../lib/plugin-system/AdminPanelRegistry.ts";
-import { pluginManager } from "../lib/plugin-system/index.ts";
+import { pluginManager } from "../lib/plugin-system/PluginManager.ts";
 
 /**
  * Admin Menu API
@@ -12,13 +12,14 @@ export async function getAdminMenu(c: Context) {
 
         return c.json({
             success: true,
-            data: menus
+            data: menus || []
         });
     } catch (error) {
         console.error('[Admin] Error fetching menu:', error);
         return c.json({
             success: false,
-            error: 'Failed to fetch admin menu'
+            error: 'Failed to fetch admin menu',
+            message: (error as Error).message
         }, 500);
     }
 }
@@ -55,9 +56,11 @@ export async function renderPluginAdminPage(c: Context) {
         // The result could be HTML string or a component
         if (typeof result === 'string') {
             return c.html(result);
-        } else {
+        } else if (result) {
             // If it's a component or object, serialize it
             return c.json(result);
+        } else {
+            return c.html('<h1>Error</h1><p>Render function returned empty result.</p>', 500);
         }
     } catch (error) {
         console.error('[Admin] Error rendering plugin page:', error);
