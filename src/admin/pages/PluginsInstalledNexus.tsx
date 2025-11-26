@@ -409,10 +409,10 @@ export const PluginsInstalledNexusPage = (
           </div>
           <div style="display: flex; gap: 0.75rem;">
             ${NexusButton({
-              label: "Marketplace",
-              type: "primary",
-              href: `${adminPath}/plugins/marketplace`,
-              icon: html`
+    label: "Marketplace",
+    type: "primary",
+    href: `${adminPath}/plugins/marketplace`,
+    icon: html`
                 <svg
                   width="18"
                   height="18"
@@ -428,11 +428,11 @@ export const PluginsInstalledNexusPage = (
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                 </svg>
               `,
-            })} ${NexusButton({
-              label: "Actualizar",
-              type: "outline",
-              onClick: "window.location.reload()",
-            })}
+  })} ${NexusButton({
+    label: "Actualizar",
+    type: "outline",
+    onClick: "window.location.reload()",
+  })}
           </div>
         </div>
       </div>
@@ -452,9 +452,9 @@ export const PluginsInstalledNexusPage = (
 
       <!-- Plugins Grid -->
       ${plugins.length === 0
-        ? html`
+      ? html`
           ${NexusCard({
-            children: html`
+        children: html`
               <div class="empty-state">
                 <svg
                   class="empty-state-icon"
@@ -473,56 +473,59 @@ export const PluginsInstalledNexusPage = (
                 <h3 class="empty-state-title">No hay plugins instalados</h3>
                 <p class="empty-state-text">Explora el marketplace para encontrar plugins</p>
                 ${NexusButton({
-                  label: "Ver Marketplace",
-                  type: "primary",
-                  href: `${adminPath}/plugins/marketplace`,
-                })}
+          label: "Ver Marketplace",
+          type: "primary",
+          href: `${adminPath}/plugins/marketplace`,
+        })}
               </div>
             `,
-          })}
+      })}
         `
-        : html`
+      : html`
           <div class="plugins-grid">
             ${plugins.map((plugin) => {
-              const isActive = plugin.status === "active";
-              return html`
-                <div class="plugin-card">
+        const isActive = plugin.status === "active";
+        // Debug logging
+        console.log(`Plugin ${plugin.name}: status="${plugin.status}", isActive=${isActive}`);
+
+        return html`
+                <div class="plugin-card" data-plugin-name="${plugin.name}" data-plugin-status="${plugin.status}">
                   <div class="plugin-header">
                     <div style="flex: 1;">
                       <h3 class="plugin-title">${plugin.displayName}</h3>
                       <p class="plugin-meta">
                         v${plugin.version}${plugin.author
-                          ? ` • ${plugin.author}`
-                          : ""}
+            ? ` • ${plugin.author}`
+            : ""}
                       </p>
                       ${plugin.category
-                        ? html`
+            ? html`
                           <div style="margin-top: 0.5rem;">
                             ${NexusBadge({
-                              label: plugin.category,
-                              type: "info",
-                              soft: true,
-                            })}
+              label: plugin.category,
+              type: "info",
+              soft: true,
+            })}
                           </div>
                         `
-                        : ""}
+            : ""}
                     </div>
                     ${NexusBadge({
-                      label: isActive ? "Activo" : "Inactivo",
-                      type: isActive ? "success" : "default",
-                      soft: true,
-                    })}
+              label: isActive ? "Activo" : "Inactivo",
+              type: isActive ? "success" : "default",
+              soft: true,
+            })}
                   </div>
 
                   ${plugin.description
-                    ? html`
+            ? html`
                       <p class="plugin-description">${plugin.description}</p>
                     `
-                    : ""}
+            : ""}
 
                   <div class="plugin-actions">
                     ${isActive
-                      ? html`
+            ? html`
                         <button
                           onclick="deactivatePlugin('${plugin.name}')"
                           class="nexus-btn nexus-btn-outline nexus-btn-sm"
@@ -530,7 +533,7 @@ export const PluginsInstalledNexusPage = (
                           Desactivar
                         </button>
                       `
-                      : html`
+            : html`
                         <button
                           onclick="activatePlugin('${plugin.name}')"
                           class="nexus-btn nexus-btn-primary nexus-btn-sm"
@@ -584,7 +587,7 @@ export const PluginsInstalledNexusPage = (
                   </div>
                 </div>
               `;
-            })}
+      })}
           </div>
         `}
 
@@ -823,14 +826,14 @@ export const PluginsInstalledNexusPage = (
       </script>
     `;
 
-    return AdminLayoutNexus({
-      title: "Plugins Instalados",
-      children: content,
-      activePage: "plugins",
-      user,
-      notifications,
-      unreadNotificationCount,
-    });
-  };
+  return AdminLayoutNexus({
+    title: "Plugins Instalados",
+    children: content,
+    activePage: "plugins",
+    user,
+    notifications,
+    unreadNotificationCount,
+  });
+};
 
-  export default PluginsInstalledNexusPage;
+export default PluginsInstalledNexusPage;
