@@ -407,15 +407,13 @@ export class PluginController {
         );
       }
 
+      // If plugin is already inactive, return success instead of error
+      // This allows the UI to reload and show the correct state
       if ((error as Error).message.includes("already inactive")) {
-        return c.json(
-          {
-            success: false,
-            error: "Plugin already inactive",
-            message: (error as Error).message,
-          },
-          409
-        );
+        return c.json({
+          success: true,
+          message: `Plugin "${name}" is already inactive`,
+        });
       }
 
       return c.json(
