@@ -142,6 +142,10 @@ export class PluginManager {
         // Remove all hooks registered by this plugin
         hookManager.removePluginHooks(name);
 
+        // Remove all admin panel registrations
+        const { adminPanelRegistry } = await import('./AdminPanelRegistry.ts');
+        adminPanelRegistry.removePlugin(name);
+
         // Update DB
         await db.update(plugins)
             .set({ isActive: false })

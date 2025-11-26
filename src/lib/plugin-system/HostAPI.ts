@@ -198,5 +198,27 @@ export class HostAPI {
         hookManager.registerFilter(hook, callbackId, priority, this.pluginName);
     }
 
+    registerAdminPage(path: string, renderId: string) {
+        adminPanelRegistry.registerPage({
+            pluginName: this.pluginName,
+            path,
+            renderId
+        });
+    }
+
+    registerAdminMenu(config: {
+        id: string;
+        label: string;
+        icon: string;
+        path: string;
+        order?: number;
+    }) {
+        adminPanelRegistry.registerMenu({
+            pluginName: this.pluginName,
+            ...config,
+            order: config.order || 50
+        });
+    }
+
     // Hooks would go here too, interacting with a HookManager
 }

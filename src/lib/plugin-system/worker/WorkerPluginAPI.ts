@@ -109,9 +109,38 @@ export class WorkerPluginAPI {
         this.client.call('api:admin:registerPanel', safeConfig);
     }
 
+    /**
+     * Register an individual admin page
+     */
+    registerAdminPage(path: string, renderFn: Function) {
+        // Generate unique render ID
+        const renderId = `admin-page:${this.pluginName}:${path}`;
+
+        // Store render callback in worker
+        (self as any).registerAdminPageCallback(renderId, renderFn);
+
+        // Register with host
+        this.client.call('api:admin:registerPage', path, renderId);
+    }
+
+    /**
+     * Register an admin menu item
+     */
+    registerAdminMenu(config: {
+        id: string;
+        label: string;
+        icon: string;
+        path: string;
+        order?: number;
+    }) {
+        this.client.call('api:admin:registerMenu', config);
+    }
+
     get admin() {
         return {
-            registerPanel: (config: any) => this.registerAdminPanel(config)
+            registerPanel: (config: any) => this.registerAdminPanel(config),
+            registerPage: (path: string, renderFn: Function) => this.registerAdminPage(path, renderFn),
+            registerMenu: (config: any) => this.registerAdminMenu(config)
         };
     }
 

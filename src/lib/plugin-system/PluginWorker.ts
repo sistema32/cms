@@ -108,6 +108,14 @@ export class PluginWorker {
             this.api.registerAdminPanel(config);
         });
 
+        this.rpc.registerHandler('api:admin:registerPage', (path: string, renderId: string) => {
+            this.api.registerAdminPage(path, renderId);
+        });
+
+        this.rpc.registerHandler('api:admin:registerMenu', (config: any) => {
+            this.api.registerAdminMenu(config);
+        });
+
         // Hooks
         this.rpc.registerHandler('api:hooks:registerAction', (hook: string, callbackId: string, priority: number) => {
             this.api.registerAction(hook, callbackId, priority);

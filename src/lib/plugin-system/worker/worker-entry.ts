@@ -11,6 +11,7 @@ self.onmessage = (e) => client.handleMessage(e.data);
 let pluginInstance: any;
 const hookCallbacks: Map<string, Array<(...args: any[]) => void>> = new Map();
 const adminPanelCallbacks: Map<string, Function> = new Map();
+const adminPageCallbacks: Map<string, Function> = new Map();
 const routeCallbacks: Map<string, Function> = new Map();
 
 // Helper to register hooks (used by WorkerPluginAPI)
@@ -23,6 +24,10 @@ const routeCallbacks: Map<string, Function> = new Map();
 
 (self as any).registerAdminPanelCallback = (id: string, callback: Function) => {
     adminPanelCallbacks.set(id, callback);
+};
+
+(self as any).registerAdminPageCallback = (renderId: string, callback: Function) => {
+    adminPageCallbacks.set(renderId, callback);
 };
 
 (self as any).registerRouteCallback = (id: string, callback: Function) => {
@@ -169,4 +174,24 @@ client.registerHandler('api:routes:execute', async (handlerId: string, request: 
         }
     }
     throw new Error(`Route handler not found: ${handlerId}`);
+});
+
+/**
+ * Render Admin Page
+ */
+client.registerHandler('renderAdminPage', async (renderId: string, params: any) => {
+    console.log('[Worker] Rendering admin page:', renderId);
+
+    const callback = adminPageCallbacks.get(renderId);
+
+    if (callback) {
+        try {
+            const result = await callback(params);
+            return result;
+        } catch (error) {
+            console.error('[Worker] Admin page render error:', error);
+            throw error;
+        }
+    }
+    throw new Error(`Admin page renderer not found: ${renderId}`);
 });

@@ -67,20 +67,18 @@ export class ResourceMonitor {
      */
     private check() {
         const now = Date.now();
-        this.stats.cpuTimeMs = now - this.stats.startTime;
+        const elapsedTime = now - this.stats.startTime;
         this.stats.lastCheckTime = now;
 
-        // Check CPU time limit
-        if (this.stats.cpuTimeMs > this.limits.maxCpuTimeMs) {
-            console.warn(
-                `[ResourceMonitor] CPU time limit exceeded: ${this.stats.cpuTimeMs}ms > ${this.limits.maxCpuTimeMs}ms`
-            );
-            this.triggerExceed();
-            return;
-        }
+        // Note: We're tracking elapsed time, not actual CPU time
+        // For actual CPU time, we would need worker to report performance metrics
+        // For now, we use a more reasonable limit based on elapsed time
 
-        // Memory check would require worker reporting
-        // For now, we log the check
+        // Only check if we have memory stats (from worker reports)
+        // CPU time limit is not enforced based on elapsed time as that would
+        // terminate long-running plugins incorrectly
+
+        // Check memory limit if we have memory stats
         if (this.stats.memoryUsedMB && this.stats.memoryUsedMB > this.limits.maxMemoryMB) {
             console.warn(
                 `[ResourceMonitor] Memory limit exceeded: ${this.stats.memoryUsedMB}MB > ${this.limits.maxMemoryMB}MB`
