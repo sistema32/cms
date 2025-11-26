@@ -1,6 +1,7 @@
 import { RPCServer } from './rpc/RPCServer.ts';
 import { PluginInfo, PluginManifest } from './types.ts';
 import { HostAPI } from './HostAPI.ts';
+import { ResourceMonitor, ResourceLimits } from './ResourceMonitor.ts';
 import { join } from 'node:path';
 
 export class PluginWorker {
@@ -8,6 +9,7 @@ export class PluginWorker {
     private rpc: RPCServer;
     private manifest: PluginManifest;
     private api: HostAPI;
+    private resourceMonitor: ResourceMonitor;
 
     constructor(manifest: PluginInfo) {
         this.manifest = manifest;
@@ -49,6 +51,19 @@ export class PluginWorker {
 
         this.rpc = new RPCServer(this.worker);
         this.registerHandlers();
+
+        // Initialize resource monitoring
+        const limits: ResourceLimits = {
+            maxMemoryMB: 100, // 100MB limit
+            maxCpuTimeMs: 30000, // 30 seconds
+            checkIntervalMs: 1000 // Check every second
+        };
+
+        this.resourceMonitor = new ResourceMonitor(limits);
+        this.resourceMonitor.start(() => {
+            console.error(`[PluginWorker] Resource limit exceeded for ${manifest.name}, terminating...`);
+            this.terminate();
+        });
     }
 
     private registerHandlers() {
@@ -101,6 +116,11 @@ export class PluginWorker {
         this.rpc.registerHandler('api:hooks:registerFilter', (hook: string, callbackId: string, priority: number) => {
             this.api.registerFilter(hook, callbackId, priority);
         });
+
+        // Resource monitoring - receive memory reports from worker
+        this.rpc.registerHandler('resource:memory', (data: { heapUsed: number; heapTotal: number }) => {
+            this.resourceMonitor.updateMemoryUsage(data.heapUsed, data.heapTotal);
+        });
     }
 
     async load(pluginPath: string) {
@@ -120,6 +140,7 @@ export class PluginWorker {
     }
 
     terminate() {
+        this.resourceMonitor.stop();
         this.worker.terminate();
     }
 }
