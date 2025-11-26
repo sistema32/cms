@@ -65,3 +65,20 @@ export interface PluginRoute {
 export interface PluginInfo extends PluginManifest {
     entryPoint: string;
 }
+
+/**
+ * Context passed to hook handlers
+ */
+export interface HookContext {
+    type: 'action' | 'filter';
+    hook: string;
+    value?: any;  // For filters
+    args: any[];
+}
+
+/**
+ * Response expected from filter hooks
+ */
+export interface FilterResponse {
+    value: any;
+}
