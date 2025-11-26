@@ -147,9 +147,9 @@ export class PluginManager {
         return Array.from(this.plugins.values());
     }
 
-    // Alias for backward compatibility
-    getAll() {
-        return this.getAllPlugins();
+    // Alias for backward compatibility - returns DB records
+    async getAll() {
+        return await db.select().from(plugins);
     }
 
     async discoverAvailable() {
