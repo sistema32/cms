@@ -102,9 +102,12 @@ async function testLexsliderPlugin() {
                         method: 'POST',
                         path: '/api/plugins/lexslider/sliders',
                         body: {
-                            name: 'Test Slider',
+                            title: 'Test Slider',
                             alias: 'test-slider-' + Date.now(),
-                            config: JSON.stringify({ width: 800, height: 600 })
+                            type: 'simple',
+                            width: 800,
+                            height: 600,
+                            settings: { autoplay: true, loop: true }
                         },
                         query: {},
                         headers: {}
@@ -148,8 +151,9 @@ async function testLexsliderPlugin() {
                                     method: 'PUT',
                                     path: `/api/plugins/lexslider/sliders/${body.id}`,
                                     body: {
-                                        name: 'Updated Test Slider',
-                                        config: JSON.stringify({ width: 1024, height: 768 })
+                                        title: 'Updated Test Slider',
+                                        width: 1024,
+                                        height: 768
                                     },
                                     query: {},
                                     headers: {},
@@ -209,9 +213,9 @@ async function testLexsliderPlugin() {
                         method: 'POST',
                         path: '/api/plugins/lexslider/sliders',
                         body: {
-                            name: "'; DROP TABLE sliders; --",
+                            title: "'; DROP TABLE sliders; --",
                             alias: 'malicious',
-                            config: '{}'
+                            type: 'simple'
                         },
                         query: {},
                         headers: {}
