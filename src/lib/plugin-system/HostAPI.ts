@@ -109,6 +109,7 @@ export class HostAPI {
 
                 const keys = Object.keys(data);
                 const values = Object.values(data);
+
                 const placeholders = keys.map(() => '?').join(', ');
 
                 const sql = `INSERT INTO ${tableName} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`;

@@ -52,24 +52,42 @@ import { sql, type SQL } from "drizzle-orm";
 export async function executeQuery(query: string | SQL, params: any[] = []): Promise<any> {
   const type = getDbType();
 
-  // Convert string query to SQL object if needed
-  const sqlQuery = typeof query === 'string' ? sql.raw(query) : query;
 
-  // If params are provided with string query, we might need to handle them differently
-  // depending on the driver, but drizzle's sql.raw usually handles binding if passed correctly.
-  // However, for raw strings from plugins, we might need to be careful.
-  // For now, we assume the query string already has placeholders and params are passed separately
-  // OR the caller constructs a proper SQL object.
-
-  // NOTE: For plugins, we receive a raw string and params. 
-  // We should ideally use sql.raw(query, params) but params support depends on implementation.
+  // Convert string query + params to Drizzle SQL object
+  let sqlQuery: SQL;
+  if (typeof query === 'string') {
+    // Build SQL using sql.raw with parameters
+    // For parameterized queries, we need to manually construct the SQL object
+    // Replace ? placeholders with actual values using sql helper
+    const parts = query.split('?');
+    if (parts.length === 1) {
+      // No parameters
+      sqlQuery = sql.raw(query);
+    } else {
+      // Has parameters - build SQL with proper escaping
+      const sqlParts: (string | SQL)[] = [sql.raw(parts[0])];
+      for (let i = 0; i < params.length; i++) {
+        sqlParts.push(sql`${params[i]}`);
+        sqlParts.push(sql.raw(parts[i + 1] || ''));
+      }
+      sqlQuery = sql.join(sqlParts, sql.raw(''));
+    }
+  } else {
+    sqlQuery = query;
+  }
 
   try {
     if (type === "sqlite") {
-      // SQLite uses .all() for reads and .run() for writes, but .all() works for both in many cases
-      // or we can check the query type. For simplicity, we use .all() which returns rows.
-      // For INSERT/UPDATE, it might return empty array or result depending on driver.
-      return await (db as any).all(sqlQuery);
+      // For SQLite, check query type
+      const queryStr = typeof query === 'string' ? query.trim().toUpperCase() : '';
+
+      // Use .all() for SELECT and INSERT...RETURNING
+      if (queryStr.startsWith('SELECT') || queryStr.includes('RETURNING')) {
+        return await (db as any).all(sqlQuery);
+      } else {
+        // Use .run() for INSERT/UPDATE/DELETE without RETURNING
+        return await (db as any).run(sqlQuery);
+      }
     } else {
       // PostgreSQL and MySQL use .execute()
       const result = await (db as any).execute(sqlQuery);
