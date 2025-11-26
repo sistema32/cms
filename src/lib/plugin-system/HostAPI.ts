@@ -2,6 +2,8 @@ import { db, executeQuery } from '../../db/index.ts';
 import { pluginRouteRegistry } from './PluginRouteRegistry.ts';
 import { adminPanelRegistry } from './AdminPanelRegistry.ts';
 import { hookManager } from './HookManager.ts';
+import { Validator } from './validation/validator.ts';
+import { DatabaseQuerySchema, DatabaseInsertSchema, DatabaseUpdateSchema, DatabaseDeleteSchema } from './validation/schemas.ts';
 
 export class HostAPI {
     private pluginName: string;
@@ -41,12 +43,20 @@ export class HostAPI {
         switch (operation) {
             case 'find': {
                 const [query] = args;
-                // Simple WHERE clause generation
-                // This is a basic implementation. For complex queries, we need a proper builder.
+
+                // Validate input
+                Validator.validate(DatabaseQuerySchema, {
+                    table: collection,
+                    conditions: query
+                });
+
                 const conditions: string[] = [];
                 const params: any[] = [];
 
                 if (query) {
+                    // Validate field names
+                    Validator.validateConditions(query);
+
                     for (const [key, value] of Object.entries(query)) {
                         conditions.push(`${key} = ?`);
                         params.push(value);
@@ -60,7 +70,9 @@ export class HostAPI {
                 if (result && !Array.isArray(result) && Array.isArray(result.rows)) {
                     result = result.rows;
                 }
-                return result || [];
+
+                // Sanitize output
+                return Validator.sanitizeOutput(result || []);
             }
             case 'findOne': {
                 const [query] = args;
@@ -85,30 +97,47 @@ export class HostAPI {
             }
             case 'create': {
                 const [data] = args;
+
+                // Validate input
+                Validator.validate(DatabaseInsertSchema, {
+                    table: collection,
+                    data
+                });
+
+                // Validate field names
+                Validator.validateData(data);
+
                 const keys = Object.keys(data);
                 const values = Object.values(data);
                 const placeholders = keys.map(() => '?').join(', ');
 
                 const sql = `INSERT INTO ${tableName} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`;
 
-                // For MySQL/SQLite without RETURNING, we might need separate SELECT.
-                // Assuming Postgres/LibSQL supports RETURNING or we handle it.
-                // If executeQuery returns the inserted row (drizzle behavior depends on driver), great.
-
                 let result = await executeQuery(sql, values);
                 if (result && !Array.isArray(result) && Array.isArray(result.rows)) {
                     result = result.rows;
                 }
 
-                // If result is array, return first item.
-                if (Array.isArray(result) && result.length > 0) return result[0];
+                if (Array.isArray(result) && result.length > 0) {
+                    return Validator.sanitizeOutput(result[0]);
+                }
 
-                // Fallback if no RETURNING support (e.g. MySQL) - fetch by ID if possible or return data
-                // For now, return data merged with ID if available
-                return data;
+                return Validator.sanitizeOutput(data);
             }
             case 'update': {
                 const [query, data] = args;
+
+                // Validate input
+                Validator.validate(DatabaseUpdateSchema, {
+                    table: collection,
+                    conditions: query,
+                    data
+                });
+
+                // Validate field names
+                Validator.validateConditions(query);
+                Validator.validateData(data);
+
                 const setClauses: string[] = [];
                 const params: any[] = [];
 
@@ -127,10 +156,20 @@ export class HostAPI {
                 const sql = `UPDATE ${tableName} SET ${setClauses.join(', ')} ${where}`;
 
                 await executeQuery(sql, params);
-                return { success: true }; // or return count
+                return { success: true };
             }
             case 'delete': {
                 const [query] = args;
+
+                // Validate input
+                Validator.validate(DatabaseDeleteSchema, {
+                    table: collection,
+                    conditions: query
+                });
+
+                // Validate field names
+                Validator.validateConditions(query);
+
                 const conditions: string[] = [];
                 const params: any[] = [];
 
