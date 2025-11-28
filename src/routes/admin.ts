@@ -48,8 +48,8 @@ adminRouter.use("*", async (c, next) => {
 
   // Trigger admin:init hook after authentication
   try {
-    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
-    await hookManager.doAction("admin:init", c.get("user"));
+    const { doAction } = await import("../lib/hooks/index.ts");
+    await doAction("admin:init", c.get("user"));
   } catch (error) {
     console.error("Error in admin:init hook:", error);
   }

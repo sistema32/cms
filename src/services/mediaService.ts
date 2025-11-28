@@ -13,7 +13,7 @@ import type { ProcessedImage } from "../utils/media/imageProcessor.ts";
 import * as videoProcessor from "../utils/media/videoProcessor.ts";
 import * as documentProcessor from "../utils/media/documentProcessor.ts";
 import { env } from "../config/env.ts";
-import { hookManager } from "../lib/plugin-system/index.ts";
+import { doAction, applyFilters } from "../lib/hooks/index.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
 
 export interface UploadFileInput {
@@ -255,7 +255,7 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
 
   // 10. Trigger plugin hook: media:afterUpload
   try {
-    await hookManager.doAction('media:afterUpload', newMedia);
+    await doAction('media:afterUpload', newMedia);
   } catch (error) {
     console.error('Error in media:afterUpload hook:', error);
     // Don't fail upload if plugin fails
@@ -312,7 +312,7 @@ export async function getMediaById(id: number): Promise<MediaWithSizes | null> {
   // Apply plugin filter: media:getUrl to allow URL transformation (e.g., CDN)
   let mediaUrl = mediaData.url;
   try {
-    mediaUrl = await hookManager.applyFilters('media:getUrl', mediaData.url, mediaData);
+    mediaUrl = await applyFilters('media:getUrl', mediaData.url, mediaData);
   } catch (error) {
     console.error('Error in media:getUrl filter:', error);
     // Use original URL if filter fails
@@ -322,7 +322,7 @@ export async function getMediaById(id: number): Promise<MediaWithSizes | null> {
   const sizes = await Promise.all(mediaData.sizes.map(async (s) => {
     let sizeUrl = s.url;
     try {
-      sizeUrl = await hookManager.applyFilters('media:getUrl', s.url, mediaData);
+      sizeUrl = await applyFilters('media:getUrl', s.url, mediaData);
     } catch (error) {
       console.error('Error in media:getUrl filter for size:', error);
     }
@@ -381,7 +381,7 @@ export async function deleteMedia(id: number): Promise<void> {
 
   // Trigger plugin hook: media:beforeDelete
   try {
-    await hookManager.doAction('media:beforeDelete', mediaData.media);
+    await doAction('media:beforeDelete', mediaData.media);
   } catch (error) {
     console.error('Error in media:beforeDelete hook:', error);
     // Don't fail deletion if plugin fails

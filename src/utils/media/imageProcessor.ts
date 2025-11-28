@@ -165,8 +165,8 @@ export async function generateImageSizes(
 
   try {
     // Apply media:imageSizes filter to allow plugins to register custom sizes
-    const { hookManager } = await import("../../lib/plugin-system/HookManager.ts");
-    const filteredSizes = await hookManager.applyFilters("media:imageSizes", sizes);
+    const { applyFilters } = await import("../../lib/hooks/index.ts");
+    const filteredSizes = await applyFilters("media:imageSizes", sizes);
 
     // Decodificar imagen original
     const Image = await getImageConstructor();
