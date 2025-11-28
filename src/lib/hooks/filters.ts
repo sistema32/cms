@@ -1,7 +1,8 @@
 /**
  * Convenience exports for filters (WordPress-like).
  */
-export { registerFilter, applyFilters } from "./index.ts";
+import { registerFilter as coreRegisterFilter, applyFilters as coreApplyFilters } from "./index.ts";
+export { coreRegisterFilter as registerFilter, coreApplyFilters as applyFilters };
 
 /**
  * Lista de filtros de WordPress (nombres originales) para compatibilidad/documentación.
@@ -455,7 +456,7 @@ export function toCmsFilterName(wpFilter: string): string {
  */
 export function registerWpFilter(hook: string, handler: (...args: any[]) => any, priority = 10, name?: string) {
   const cmsName = toCmsFilterName(hook);
-  registerFilter(cmsName, handler, priority, name ?? hook);
+  coreRegisterFilter(cmsName, handler, priority, name ?? hook);
 }
 
 /**
@@ -463,5 +464,5 @@ export function registerWpFilter(hook: string, handler: (...args: any[]) => any,
  */
 export async function applyWpFilters<T = any>(hook: string, value: T, ...args: any[]): Promise<T> {
   const cmsName = toCmsFilterName(hook);
-  return applyFilters(cmsName, value, ...args);
+  return coreApplyFilters(cmsName, value, ...args);
 }
