@@ -75,3 +75,8 @@ Objetivo: reescribir el sistema de plugins para que **la base de datos sea la ú
 - [ ] Compat de hooks estilo WordPress con namespace CMS: exponer equivalentes (`cms_title`, `cms_enqueue_scripts`, etc.) sin colisionar con nombres WP.
 - [ ] Bibliotecar hooks globales (fuera del sistema de plugins): crear `src/lib/hooks` con registro/ejecución independiente del PluginManager; migrar llamadas existentes a usar la nueva librería; los plugins futuros solo se conectan a esta API pública.
 - [ ] Plan de retirada del sistema de plugins actual: aislar llamadas legacy, desregistrar HookManager de plugins y preparar migración hacia el nuevo runtime DB-first; documentar fases de eliminación y compatibilidad temporal.
+- [ ] Permisos declarativos por hook/route: al registrar hooks o rutas desde un plugin, exigir permisos explícitos y mostrar diff/consentimiento en el admin (similar a capabilities).
+- [ ] Cache/invalidación para filtros pesados: permitir marcar hooks cacheables o idempotentes y gestionar invalidación desde el host para reducir costo.
+- [ ] Sandbox de cron/tareas: registro de tareas con límites de frecuencia y cuotas; auditables y desactivables desde el admin (run now / pause).
+- [ ] Linting de hooks previo a activación: validar prefijo `cms_`, permisos declarados y detectar colisiones/conflictos (p.ej. múltiples overrides de `cms_theme:template`).
+- [ ] Firmas y escaneo de seguridad de paquetes: validar checksum/firmas de manifiesto, escanear rutas/permiso solicitados y mostrar scoring en el admin.
