@@ -24,3 +24,9 @@ Notas:
 - Alias tipo WordPress:
   - Acciones: `src/lib/hooks/actions.ts` expone `registerAction` y `doAction`.
   - Filtros: `src/lib/hooks/filters.ts` expone `registerFilter` y `applyFilters`.
+  - Compat nombres WP: usa `registerWpAction`/`doWpAction` y `registerWpFilter`/`applyWpFilters` (mapean a prefijo `cms_`). Ejemplo:
+    ```ts
+    import { registerWpFilter, applyWpFilters } from "../lib/hooks/filters.ts";
+    registerWpFilter("the_title", (t) => `**${t}**`);
+    const title = await applyWpFilters("the_title", "Hola");
+    ```
