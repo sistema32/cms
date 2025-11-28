@@ -521,28 +521,40 @@ export const contentRevisions = pgTable("content_revisions", {
         .defaultNow(),
 });
 
-// ============= PLUGINS =============
+// ============= PLUGINS (DB-first) =============
 export const plugins = pgTable("plugins", {
     id: serial("id").primaryKey(),
-    name: text("name").notNull().unique(), // Plugin unique identifier
-    version: text("version").notNull(),
-    isActive: boolean("is_active").notNull().default(false),
-    settings: text("settings"), // JSON settings
-    installedAt: timestamp("installed_at")
-        .notNull()
-        .defaultNow(),
-    updatedAt: timestamp("updated_at")
-        .notNull()
-        .defaultNow(),
+    name: text("name").notNull().unique(), // slug
+    displayName: text("display_name"),
+    version: text("version"),
+    description: text("description"),
+    author: text("author"),
+    homepage: text("homepage"),
+    sourceUrl: text("source_url"),
+    manifestHash: text("manifest_hash"),
+    status: text("status").notNull().default("inactive"), // inactive|active|error|degraded
+    isSystem: boolean("is_system").notNull().default(false),
+    settings: text("settings"), // JSON string
+    permissions: text("permissions"), // JSON string declarativa
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const pluginHooks = pgTable("plugin_hooks", {
+export const pluginMigrations = pgTable("plugin_migrations", {
     id: serial("id").primaryKey(),
-    pluginId: integer("plugin_id").notNull().references(() => plugins.id, {
-        onDelete: "cascade",
-    }),
-    hookName: text("hook_name").notNull(),
-    priority: integer("priority").notNull().default(10),
+    pluginId: integer("plugin_id").notNull().references(() => plugins.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    appliedAt: timestamp("applied_at").notNull().defaultNow(),
+}, (table) => ({
+    uniq: unique("uniq_plugin_migration").on(table.pluginId, table.name),
+}));
+
+export const pluginHealth = pgTable("plugin_health", {
+    id: serial("id").primaryKey(),
+    pluginId: integer("plugin_id").notNull().references(() => plugins.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("ok"),
+    lastCheckedAt: timestamp("last_checked_at"),
+    lastError: text("last_error"),
 });
 
 // ============= AUDIT LOGS =============
@@ -910,12 +922,20 @@ export const contentRevisionsRelations = relations(
 );
 
 export const pluginsRelations = relations(plugins, ({ many }) => ({
-    hooks: many(pluginHooks),
+    migrations: many(pluginMigrations),
+    health: many(pluginHealth),
 }));
 
-export const pluginHooksRelations = relations(pluginHooks, ({ one }) => ({
+export const pluginMigrationsRelations = relations(pluginMigrations, ({ one }) => ({
     plugin: one(plugins, {
-        fields: [pluginHooks.pluginId],
+        fields: [pluginMigrations.pluginId],
+        references: [plugins.id],
+    }),
+}));
+
+export const pluginHealthRelations = relations(pluginHealth, ({ one }) => ({
+    plugin: one(plugins, {
+        fields: [pluginHealth.pluginId],
         references: [plugins.id],
     }),
 }));
@@ -1390,8 +1410,7 @@ export type NewContentRevision = typeof contentRevisions.$inferInsert;
 export type Plugin = typeof plugins.$inferSelect;
 export type NewPlugin = typeof plugins.$inferInsert;
 
-export type PluginHook = typeof pluginHooks.$inferSelect;
-export type NewPluginHook = typeof pluginHooks.$inferInsert;
+// Legacy plugin hook types removed
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
