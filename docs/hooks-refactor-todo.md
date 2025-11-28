@@ -4,22 +4,22 @@
 Extraer los hooks del sistema de plugins y centralizar en una librería global (`src/lib/hooks/`) con API estable, segura y con namespacing CMS. Mantener shim temporal para compatibilidad mientras migramos llamadas existentes y retiramos `HookManager` de plugins.
 
 ## Tareas
-- [ ] Crear módulo `src/lib/hooks/index.ts` con:
-  - [ ] `registerAction(hook, handler, opts)` y `doAction(hook, ...args)`.
-  - [ ] `registerFilter(hook, handler, opts)` y `applyFilters(hook, value, ...args)`.
-  - [ ] Prioridades, namespacing (prefijo `cms_`), límites de listeners y validación de nombres.
-  - [ ] Timeouts por handler y conteo de errores (circuit breaker liviano).
-  - [ ] Métricas básicas: invocaciones, duración promedio y errores por hook.
+- [x] Crear módulo `src/lib/hooks/index.ts` con:
+  - [x] `registerAction(hook, handler, opts)` y `doAction(hook, ...args)`.
+  - [x] `registerFilter(hook, handler, opts)` y `applyFilters(hook, value, ...args)`.
+  - [x] Prioridades, namespacing (prefijo `cms_`, auto-prefix), límites de listeners y validación de nombres.
+  - [x] Timeouts por handler y conteo de errores (circuit breaker liviano).
+  - [x] Métricas básicas: invocaciones, duración promedio y errores por hook.
 - [x] Implementación inicial en `src/lib/hooks/index.ts` (acciones/filtros, timeouts, metrics, breaker, namespacing).
 - [x] Bloqueo de nombres sin prefijo y listado de hooks core reservados.
-- [ ] Definir hooks reservados/core (p.ej. `cms_title`, `cms_enqueue_scripts`, `cms_render_block`, etc.) y documentarlos.
+- [x] Definir hooks reservados/core y documentarlos (`docs/hooks-core.md`).
 - [ ] Agregar adaptador/shim de compatibilidad:
   - [x] Shim eliminado (HookManager retirado); usar solo API global.
-- [ ] Migrar llamadas existentes:
-  - [ ] Frontend (`themes/default/templates/Layout.tsx`) → nueva API.
-  - [ ] Admin (`src/lib/admin/hooks.ts` y usos) → nueva API.
-  - [ ] Controladores (`auth`, `contentController`, `frontend.ts`) → nueva API.
-  - [ ] Utils (`utils/media/imageProcessor.ts`) → nueva API.
+- [x] Migrar llamadas existentes:
+  - [x] Frontend (`themes/default/templates/Layout.tsx`) → nueva API.
+  - [x] Admin (`src/lib/admin/hooks.ts` y usos) → nueva API.
+  - [x] Controladores (`auth`, `contentController`, `frontend.ts`) → nueva API.
+  - [x] Utils (`utils/media/imageProcessor.ts`) → nueva API.
 - [ ] Testing:
   - [x] Unit tests iniciales para registro, prioridades, filtros encadenados, timeouts y prefix.
   - [x] Test de compatibilidad del shim (HookManager → hooks globales).
