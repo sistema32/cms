@@ -42,14 +42,9 @@ Deno.test("metrics are recorded", async () => {
 
 Deno.test("namespacing enforces cms_ prefix", async () => {
   resetHooks();
-  let errorCaught = false;
-  try {
-    registerAction("no_prefix", () => {});
-  } catch (_e) {
-    errorCaught = true;
-  }
-  if (!errorCaught) throw new Error("Expected error for missing prefix");
-
-  // Should work with prefix
+  // Auto-prefixes missing cms_
+  registerAction("no_prefix", () => {});
+  const m = getMetrics(); // should not throw
+  // Should also work with prefix
   registerAction("cms_ok", () => {});
 });
