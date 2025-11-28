@@ -23,13 +23,33 @@ const MAX_LISTENERS_PER_HOOK = 50;
 const DEFAULT_TIMEOUT_MS = 5_000;
 const DEFAULT_BREAKER_THRESHOLD = 3;
 
+// Hooks core reservados (documentados)
+export const CORE_HOOKS = new Set<string>([
+  "cms_system:init",
+  "cms_admin:init",
+  "cms_admin:head",
+  "cms_admin:footer",
+  "cms_admin:enqueueScripts",
+  "cms_theme:head",
+  "cms_theme:footer",
+  "cms_theme:bodyClass",
+  "cms_theme:template",
+  "cms_theme:pageTemplate",
+  "cms_content:created",
+  "cms_content:beforeDelete",
+  "cms_media:afterUpload",
+  "cms_media:getUrl",
+  "cms_media:beforeDelete",
+]);
+
 const actions = new Map<string, HandlerEntry[]>();
 const filters = new Map<string, HandlerEntry[]>();
 const metrics = new Map<string, HookMetrics>();
 const breaker = new Map<string, number>(); // hook -> consecutive errors
 
 function normalizeHookName(name: string): string {
-  return name.startsWith(DEFAULT_PREFIX) ? name : `${DEFAULT_PREFIX}${name}`;
+  const normalized = name.startsWith(DEFAULT_PREFIX) ? name : `${DEFAULT_PREFIX}${name}`;
+  return normalized.replace(/:+/g, ":"); // evitar separadores repetidos
 }
 
 function recordMetric(hook: string, durationMs: number, error?: boolean) {
@@ -55,6 +75,9 @@ function bumpBreaker(hook: string, reset?: boolean) {
 
 function register(map: Map<string, HandlerEntry[]>, hook: string, handler: HookHandler, priority = 10, name?: string) {
   const key = normalizeHookName(hook);
+  if (!key.startsWith(DEFAULT_PREFIX)) {
+    throw new Error(`Hook name must start with ${DEFAULT_PREFIX}`);
+  }
   const list = map.get(key) || [];
   if (list.length >= MAX_LISTENERS_PER_HOOK) {
     throw new Error(`Too many listeners for hook ${key}`);

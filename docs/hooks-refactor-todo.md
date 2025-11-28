@@ -11,6 +11,7 @@ Extraer los hooks del sistema de plugins y centralizar en una librería global (
   - [ ] Timeouts por handler y conteo de errores (circuit breaker liviano).
   - [ ] Métricas básicas: invocaciones, duración promedio y errores por hook.
 - [x] Implementación inicial en `src/lib/hooks/index.ts` (acciones/filtros, timeouts, metrics, breaker, namespacing).
+- [x] Bloqueo de nombres sin prefijo y listado de hooks core reservados.
 - [ ] Definir hooks reservados/core (p.ej. `cms_title`, `cms_enqueue_scripts`, `cms_render_block`, etc.) y documentarlos.
 - [ ] Agregar adaptador/shim de compatibilidad:
   - [ ] `src/lib/plugin-system/HookManager.ts` delega en la nueva API durante transición (sin worker RPC).

@@ -18,7 +18,11 @@ class HookManagerShim {
             console.warn(`[HookManagerShim] Handler ${callbackId} no encontrado para ${hook}`);
             return;
         }
-        registerAction(hook, handler, priority, callbackId);
+        try {
+            registerAction(hook, handler, priority, callbackId);
+        } catch (err) {
+            console.warn(`[HookManagerShim] Registro rechazado para ${hook}:`, err);
+        }
     }
 
     registerFilter(hook: string, callbackId: string, priority: number, _pluginName: string) {
@@ -27,7 +31,11 @@ class HookManagerShim {
             console.warn(`[HookManagerShim] Handler ${callbackId} no encontrado para ${hook}`);
             return;
         }
-        registerFilter(hook, handler, priority, callbackId);
+        try {
+            registerFilter(hook, handler, priority, callbackId);
+        } catch (err) {
+            console.warn(`[HookManagerShim] Registro rechazado para ${hook}:`, err);
+        }
     }
 
     async doAction(hook: string, ...args: any[]) {
