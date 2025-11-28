@@ -4,7 +4,6 @@ import { eq } from 'drizzle-orm';
 import { PluginLoader } from './PluginLoader.ts';
 import { PluginWorker } from './PluginWorker.ts';
 import { PluginInfo } from './types.ts';
-import { hookManager } from './HookManager.ts';
 import { join } from 'node:path';
 
 export class PluginManager {
@@ -15,8 +14,6 @@ export class PluginManager {
 
     private constructor() {
         this.loader = new PluginLoader(join(Deno.cwd(), 'plugins'));
-        // Set hookManager reference to enable RPC execution
-        hookManager.setPluginManager(this);
     }
 
     static getInstance(): PluginManager {
@@ -138,9 +135,6 @@ export class PluginManager {
             console.log(`[PluginManager] Deactivating ${name}...`);
             worker.terminate();
             this.activePlugins.delete(name);
-
-            // Remove all hooks registered by this plugin
-            hookManager.removePluginHooks(name);
 
             // Remove all admin panel registrations
             const { adminPanelRegistry } = await import('./AdminPanelRegistry.ts');
