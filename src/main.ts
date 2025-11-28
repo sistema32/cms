@@ -5,6 +5,7 @@ import { emailManager } from "./lib/email/index.ts";
 import { backupManager } from "./lib/backup/index.ts";
 import { securityManager } from "./lib/security/index.ts";
 import { initializeSearchIndexes } from "./services/searchService.ts";
+import { reconcilePlugins } from "./services/pluginReconciler.ts";
 import { jobQueue } from "./lib/jobs/index.ts";
 import { registerBuiltInHandlers } from "./lib/jobs/handlers.ts";
 import { HotReloadServer } from "./dev/hotReload.ts";
@@ -39,7 +40,12 @@ try {
   // Continue anyway - cache is optional
 }
 
-// Plugin system removed (pending DB-first refactor)
+// Reconcile plugins (DB-first stub)
+try {
+  await reconcilePlugins();
+} catch (error) {
+  console.error('⚠️ Failed to reconcile plugins:', error);
+}
 
 // Initialize email system
 console.log('\n📧 Initializing email system...');
