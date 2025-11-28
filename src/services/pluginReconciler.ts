@@ -1,17 +1,22 @@
 /**
- * Plugin Reconciler (stub)
- * Aligns DB state (plugins.status) with runtime workers.
- * Currently stubbed: logs intended actions.
+ * Plugin Reconciler (phase 1)
+ * Aligns DB state (plugins.status) with runtime workers (stubbed worker).
  */
 import { listPlugins, setStatus, updateHealth } from "./pluginRegistry.ts";
+import { startWorker, stopWorker, getWorker } from "./pluginWorker.ts";
 
 export async function reconcilePlugins() {
   const plugins = await listPlugins();
   for (const plugin of plugins) {
-    // In future: start/stop worker; here just ensure status not error/degraded without health
     if (plugin.status === "active") {
+      if (!getWorker(plugin.name)) {
+        startWorker(plugin.name);
+      }
       await updateHealth(plugin.name, "active");
     } else {
+      if (getWorker(plugin.name)) {
+        stopWorker(plugin.name);
+      }
       await updateHealth(plugin.name, "inactive");
     }
   }
@@ -19,12 +24,14 @@ export async function reconcilePlugins() {
 
 export async function activate(name: string) {
   await setStatus(name, "active");
+  startWorker(name);
   await updateHealth(name, "active");
-  // TODO: start worker, apply migrations
+  // TODO: apply migrations
 }
 
 export async function deactivate(name: string) {
   await setStatus(name, "inactive");
+  stopWorker(name);
   await updateHealth(name, "inactive");
-  // TODO: stop worker, optional rollback
+  // TODO: optional rollback
 }
