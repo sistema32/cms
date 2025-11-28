@@ -123,14 +123,14 @@ try {
 }
 
 // Trigger system:init hook
-console.log('\n🔄 Triggering system:init hook...');
-try {
-  const { hookManager } = await import("./lib/plugin-system/HookManager.ts");
-  await hookManager.doAction('system:init');
-  console.log('✅ System init hooks executed');
-} catch (error) {
-  console.error('❌ Error executing system:init hooks:', error);
-}
+  console.log('\n🔄 Triggering system:init hook...');
+  try {
+    const { doAction } = await import("./lib/hooks/index.ts");
+    await doAction('system:init');
+    console.log('✅ System init hooks executed');
+  } catch (error) {
+    console.error('❌ Error executing system:init hooks:', error);
+  }
 
 // Initialize hot reload server in development
 if (isDevelopment) {

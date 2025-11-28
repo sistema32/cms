@@ -1,7 +1,7 @@
 import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import type { SiteData } from "../helpers/index.ts";
-import { hookManager } from "../../../lib/plugin-system/HookManager.ts";
+import { applyFilters } from "../../../lib/hooks/index.ts";
 
 /**
  * Layout Base - Template principal que envuelve todas las páginas
@@ -50,9 +50,9 @@ export const Layout = async (props: LayoutProps) => {
   ` : "";
 
   // Apply filters for head and footer injection
-  const injectedHead = await hookManager.applyFilters("theme:head", "");
-  const injectedFooter = await hookManager.applyFilters("theme:footer", "");
-  const finalBodyClass = await hookManager.applyFilters("theme:bodyClass", `${bodyClass} theme-${colorScheme.toLowerCase()}`);
+  const injectedHead = await applyFilters("theme:head", "");
+  const injectedFooter = await applyFilters("theme:footer", "");
+  const finalBodyClass = await applyFilters("theme:bodyClass", `${bodyClass} theme-${colorScheme.toLowerCase()}`);
 
   return (
     <>

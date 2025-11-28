@@ -1,4 +1,4 @@
-import { hookManager } from "../plugin-system/HookManager.ts";
+import { applyFilters, doAction } from "../hooks/index.ts";
 
 /**
  * Admin Hooks Helper
@@ -11,7 +11,7 @@ import { hookManager } from "../plugin-system/HookManager.ts";
  */
 export async function getAdminHeadContent(): Promise<string> {
     try {
-        return await hookManager.applyFilters("admin:head", "");
+        return await applyFilters("admin:head", "");
     } catch (error) {
         console.error("Error in admin:head hook:", error);
         return "";
@@ -24,7 +24,7 @@ export async function getAdminHeadContent(): Promise<string> {
  */
 export async function getAdminFooterContent(): Promise<string> {
     try {
-        return await hookManager.applyFilters("admin:footer", "");
+        return await applyFilters("admin:footer", "");
     } catch (error) {
         console.error("Error in admin:footer hook:", error);
         return "";
@@ -37,7 +37,7 @@ export async function getAdminFooterContent(): Promise<string> {
  */
 export async function triggerAdminEnqueueScripts(): Promise<void> {
     try {
-        await hookManager.doAction("admin:enqueueScripts");
+        await doAction("admin:enqueueScripts");
     } catch (error) {
         console.error("Error in admin:enqueueScripts hook:", error);
     }

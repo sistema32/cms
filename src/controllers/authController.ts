@@ -3,6 +3,7 @@ import * as authService from "../services/authService.ts";
 import { loginSchema, registerSchema } from "../utils/validation.ts";
 import { auditLogger, extractAuditContext } from "../lib/audit/index.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
+import { doAction } from "../lib/hooks/index.ts";
 import { emailManager, notificationService } from "../lib/email/index.ts";
 import { env } from "../config/env.ts";
 
@@ -48,8 +49,7 @@ export async function register(c: Context) {
       });
 
       // Trigger user:register hook
-      const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
-      await hookManager.doAction("user:register", result.user);
+      await doAction("user:register", result.user);
     } catch (error) {
       console.warn("Failed to dispatch user.created webhook or hook:", error);
     }
@@ -158,8 +158,7 @@ export async function login(c: Context) {
         });
 
         // Trigger user:login hook
-        const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
-        await hookManager.doAction("user:login", result.user);
+        await doAction("user:login", result.user);
       } catch (error) {
         console.warn("Failed to dispatch user.login webhook or hook:", error);
       }

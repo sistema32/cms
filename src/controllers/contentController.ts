@@ -130,8 +130,8 @@ export async function createContent(c: Context) {
     }
 
     // Trigger content:created hook
-    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
-    await hookManager.doAction("content:created", content ?? createdContent);
+    const { doAction } = await import("../lib/hooks/index.ts");
+    await doAction("content:created", content ?? createdContent);
 
     return c.json({ content: content ?? createdContent }, 201);
   } catch (error) {
@@ -272,8 +272,8 @@ export async function deleteContent(c: Context) {
     }
 
     // Trigger content:beforeDelete hook
-    const { hookManager } = await import("../lib/plugin-system/HookManager.ts");
-    await hookManager.doAction("content:beforeDelete", existingContent);
+    const { doAction } = await import("../lib/hooks/index.ts");
+    await doAction("content:beforeDelete", existingContent);
 
     await contentService.deleteContent(id);
 

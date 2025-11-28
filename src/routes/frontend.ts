@@ -16,7 +16,7 @@ import { SEOHelper } from "../lib/seo/SEOHelper.ts";
 import { StructuredDataGenerator } from "../lib/seo/StructuredDataGenerator.ts";
 import { URLOptimizer } from "../lib/seo-optimization/URLOptimizer.ts";
 import { env } from "../config/env.ts";
-import { hookManager } from "../lib/plugin-system/HookManager.ts";
+import { applyFilters, doAction } from "../lib/hooks/index.ts";
 
 /**
  * Frontend Routes - Rutas públicas del sitio web
@@ -220,7 +220,7 @@ async function getThemeTemplate(templateName: string) {
     const module = await loadThemeModule(templatePath);
 
     // Apply theme:template filter (allows plugins to override template)
-    const filteredPath = await hookManager.applyFilters("theme:template", templatePath, templateName, activeTheme);
+    const filteredPath = await applyFilters("theme:template", templatePath, templateName, activeTheme);
     if (filteredPath !== templatePath) {
       console.log(`🔄 Template overridden by filter: ${filteredPath}`);
       const overrideModule = await loadThemeModule(filteredPath);
@@ -242,7 +242,7 @@ async function getThemeTemplate(templateName: string) {
     console.log(`✅ Using fallback template from default theme`);
 
     // Apply filter even for fallback
-    const filteredPath = await hookManager.applyFilters("theme:template", defaultTemplatePath, templateName, "default");
+    const filteredPath = await applyFilters("theme:template", defaultTemplatePath, templateName, "default");
     if (filteredPath !== defaultTemplatePath) {
       const overrideModule = await loadThemeModule(filteredPath);
       return overrideModule.default;
@@ -281,7 +281,7 @@ async function loadPageTemplate(
       await Deno.stat(fullPath);
 
       // Apply theme:pageTemplate filter
-      customPath = await hookManager.applyFilters("theme:pageTemplate", customPath, templateName, activeTheme);
+      customPath = await applyFilters("theme:pageTemplate", customPath, templateName, activeTheme);
 
       const module = await loadThemeModule(customPath);
       console.log(
@@ -304,7 +304,7 @@ async function loadPageTemplate(
     await Deno.stat(themeDefaultFullPath);
 
     // Apply theme:pageTemplate filter
-    themeDefaultPath = await hookManager.applyFilters("theme:pageTemplate", themeDefaultPath, null, activeTheme);
+    themeDefaultPath = await applyFilters("theme:pageTemplate", themeDefaultPath, null, activeTheme);
 
     const module = await loadThemeModule(themeDefaultPath);
     console.log(`✅ Usando template default del tema: ${activeTheme}`);
@@ -678,7 +678,7 @@ async function renderPageById(c: any, pageId: number) {
     id: page.id,
     title: page.title,
     slug: page.slug,
-    body: await hookManager.applyFilters("content:render", page.body || ""),
+    body: await applyFilters("content:render", page.body || ""),
     featureImage: page.featuredImage?.url || undefined,
     createdAt: page.createdAt,
     updatedAt: page.updatedAt,
