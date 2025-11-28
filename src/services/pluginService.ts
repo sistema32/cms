@@ -105,6 +105,12 @@ export class PluginService {
     }
 
     await pluginManager.activate(pluginName);
+
+    // Ensure DB reflects activation state (DB as source of truth)
+    const { plugins } = await import("../db/schema.ts");
+    const { db } = await import("../db/index.ts");
+    const { eq } = await import("drizzle-orm");
+    await db.update(plugins).set({ isActive: true }).where(eq(plugins.name, pluginName));
   }
 
   /**
@@ -116,13 +122,13 @@ export class PluginService {
       throw new Error(`Plugin "${pluginName}" is not installed`);
     }
 
-    // Check if already inactive - just return instead of throwing error
-    if (!await pluginManager.isActive(pluginName)) {
-      console.log(`[PluginService] Plugin "${pluginName}" is already inactive, skipping deactivation`);
-      return;
-    }
-
     await pluginManager.deactivate(pluginName);
+
+    // Ensure DB reflects deactivation state (DB as source of truth)
+    const { plugins } = await import("../db/schema.ts");
+    const { db } = await import("../db/index.ts");
+    const { eq } = await import("drizzle-orm");
+    await db.update(plugins).set({ isActive: false }).where(eq(plugins.name, pluginName));
   }
 
   /**

@@ -179,15 +179,13 @@ export class PluginManager {
     }
 
     async getStats() {
-        const total = this.plugins.size;
-        const active = this.activePlugins.size;
+        // DB is the source of truth
+        const dbPlugins = await db.select().from(plugins);
+        const total = dbPlugins.length;
+        const active = dbPlugins.filter(p => p.isActive).length;
         const inactive = total - active;
 
-        return {
-            total,
-            active,
-            inactive
-        };
+        return { total, active, inactive };
     }
 
     async isInstalled(name: string): Promise<boolean> {
@@ -196,22 +194,39 @@ export class PluginManager {
     }
 
     async isActive(name: string) {
-        return this.activePlugins.has(name);
+        // DB is authoritative for status
+        const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+        return !!dbPlugin?.isActive;
     }
 
     async getActive() {
-        const activePlugins: any[] = [];
-        for (const [name, worker] of this.activePlugins.entries()) {
-            const plugin = this.plugins.get(name);
-            if (plugin) {
-                // We need to return PluginDB structure or similar, but PluginService expects PluginDB
-                // Let's fetch from DB to be sure
-                const dbPlugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
-                if (dbPlugin) {
-                    activePlugins.push(dbPlugin);
+        // Pull active list from DB and align workers to match
+        const dbPlugins = await db.select().from(plugins);
+        const activePlugins = dbPlugins.filter(p => p.isActive);
+
+        // Start workers for DB-active plugins that are not running
+        for (const plugin of activePlugins) {
+            if (!this.activePlugins.has(plugin.name)) {
+                try {
+                    await this.activate(plugin.name);
+                } catch (error) {
+                    console.error(`[PluginManager] Failed to start worker for active plugin ${plugin.name}:`, error);
                 }
             }
         }
+
+        // Stop stray workers not marked active in DB
+        for (const name of Array.from(this.activePlugins.keys())) {
+            const isActiveInDb = activePlugins.some(p => p.name === name);
+            if (!isActiveInDb) {
+                try {
+                    await this.deactivate(name);
+                } catch (error) {
+                    console.error(`[PluginManager] Failed to stop worker for inactive plugin ${name}:`, error);
+                }
+            }
+        }
+
         return activePlugins;
     }
 

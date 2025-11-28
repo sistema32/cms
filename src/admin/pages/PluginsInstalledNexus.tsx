@@ -527,16 +527,20 @@ export const PluginsInstalledNexusPage = (
                     ${isActive
             ? html`
                         <button
-                          onclick="deactivatePlugin('${plugin.name}')"
-                          class="nexus-btn nexus-btn-outline nexus-btn-sm"
+                          onclick="togglePlugin('${plugin.name}', 'deactivate', this)"
+                          class="nexus-btn nexus-btn-outline nexus-btn-sm plugin-toggle-btn"
+                          data-action="deactivate"
+                          data-plugin-name="${plugin.name}"
                         >
                           Desactivar
                         </button>
                       `
             : html`
                         <button
-                          onclick="activatePlugin('${plugin.name}')"
-                          class="nexus-btn nexus-btn-primary nexus-btn-sm"
+                          onclick="togglePlugin('${plugin.name}', 'activate', this)"
+                          class="nexus-btn nexus-btn-primary nexus-btn-sm plugin-toggle-btn"
+                          data-action="activate"
+                          data-plugin-name="${plugin.name}"
                         >
                           Activar
                         </button>
@@ -620,43 +624,94 @@ export const PluginsInstalledNexusPage = (
       </dialog>
 
       <script>
-      async function activatePlugin(pluginName) {
-        if (!confirm('¿Activar el plugin "' + pluginName + '"?')) return;
-
-        try {
-          const response = await fetch('/api/plugins/' + pluginName + '/activate', {
-            method: 'POST',
-            credentials: 'same-origin'
-          });
-
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            const error = await response.json();
-            alert('Error: ' + (error.message || 'No se pudo activar el plugin'));
-          }
-        } catch (error) {
-          alert('Error: ' + error.message);
+      function setButtonLoading(btn, loading) {
+        if (!btn) return;
+        if (loading) {
+          btn.dataset.prevText = btn.textContent;
+          btn.textContent = 'Procesando...';
+          btn.disabled = true;
+        } else {
+          if (btn.dataset.prevText) btn.textContent = btn.dataset.prevText;
+          btn.disabled = false;
         }
       }
 
-      async function deactivatePlugin(pluginName) {
-        if (!confirm('¿Desactivar el plugin "' + pluginName + '"?')) return;
+      function renderToggleButton(pluginName, isActive) {
+        const label = isActive ? 'Desactivar' : 'Activar';
+        const typeClass = isActive ? 'nexus-btn-outline' : 'nexus-btn-primary';
+        const action = isActive ? 'deactivate' : 'activate';
+        return `
+          <button
+            class="nexus-btn ${typeClass} nexus-btn-sm plugin-toggle-btn"
+            data-plugin-name="${pluginName}"
+            data-action="${action}"
+            onclick="togglePlugin('${pluginName}', '${action}', this)"
+          >
+            ${label}
+          </button>
+        `;
+      }
 
+      function updatePluginCard(pluginName, isActive) {
+        const card = document.querySelector(\`[data-plugin-name="\${pluginName}"]\`);
+        if (!card) return;
+        card.dataset.pluginStatus = isActive ? 'active' : 'inactive';
+
+        const badge = card.querySelector('.plugin-header .nexus-badge');
+        if (badge) {
+          badge.textContent = isActive ? 'Activo' : 'Inactivo';
+          badge.classList.toggle('success', isActive);
+          badge.classList.toggle('default', !isActive);
+        }
+
+        const actions = card.querySelector('.plugin-actions');
+        if (actions) {
+          const settingsBtn = actions.querySelector('.btn-settings');
+          const uninstallBtn = actions.querySelector('.btn-uninstall');
+          actions.innerHTML = `
+            ${renderToggleButton(pluginName, isActive)}
+            <button data-plugin-name="${pluginName}" class="action-btn btn-settings" title="Configuración">${settingsBtn?.innerHTML || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v6m0 6v6m-6-6h6m6 0h-6" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>'}
+            </button>
+            <button data-plugin-name="${pluginName}" class="action-btn danger btn-uninstall" title="Desinstalar">${uninstallBtn?.innerHTML || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>'}
+            </button>
+          `;
+        }
+      }
+
+      async function fetchPluginStatus(pluginName) {
+        const res = await fetch('/api/plugins/' + pluginName, { credentials: 'same-origin' });
+        if (!res.ok) {
+          throw new Error('No se pudo obtener el estado del plugin');
+        }
+        const data = await res.json();
+        return data?.data?.status === 'active';
+      }
+
+      async function togglePlugin(pluginName, action, btn) {
+        if (action === 'activate') {
+          if (!confirm('¿Activar el plugin "' + pluginName + '"?')) return;
+        } else {
+          if (!confirm('¿Desactivar el plugin "' + pluginName + '"?')) return;
+        }
+
+        setButtonLoading(btn, true);
         try {
-          const response = await fetch('/api/plugins/' + pluginName + '/deactivate', {
+          const response = await fetch('/api/plugins/' + pluginName + '/' + action, {
             method: 'POST',
             credentials: 'same-origin'
           });
 
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            const error = await response.json();
-            alert('Error: ' + (error.message || 'No se pudo desactivar el plugin'));
+          const isActive = await fetchPluginStatus(pluginName);
+          updatePluginCard(pluginName, isActive);
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            alert('Error: ' + (error.message || 'Acción no completada'));
           }
         } catch (error) {
           alert('Error: ' + error.message);
+        } finally {
+          setButtonLoading(btn, false);
         }
       }
 
