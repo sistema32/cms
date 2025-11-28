@@ -4,6 +4,7 @@ import { hash } from "bcrypt";
 import { seedRBAC } from "./seeds/rbac.ts";
 import { seedTestContent } from "./seeds/testContent.ts";
 import { seedTestComments } from "./seeds/testComments.ts";
+import { seedPlugins } from "./seeds/plugins.ts";
 import { eq } from "drizzle-orm";
 
 console.log("🌱 Seeding database...\n");
@@ -42,6 +43,9 @@ await seedTestContent();
 
 // Ejecutar seed de comentarios de prueba
 await seedTestComments();
+
+// Ejecutar seed de plugins base
+await seedPlugins();
 
 console.log("\n✅ Database seeded successfully!");
 console.log("\n🎉 Sistema listo para usar:");
