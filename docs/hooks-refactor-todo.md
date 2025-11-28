@@ -12,6 +12,7 @@ Extraer los hooks del sistema de plugins y centralizar en una librería global (
   - [x] Métricas básicas: invocaciones, duración promedio y errores por hook.
 - [x] Implementación inicial en `src/lib/hooks/index.ts` (acciones/filtros, timeouts, metrics, breaker, namespacing).
 - [x] Bloqueo de nombres sin prefijo y listado de hooks core reservados.
+- [x] Modo compat WP opt-in documentado (helpers wp_ → cms_).
 - [x] Definir hooks reservados/core y documentarlos (`docs/hooks-core.md`).
 - [ ] Agregar adaptador/shim de compatibilidad:
   - [x] Shim eliminado (HookManager retirado); usar solo API global.

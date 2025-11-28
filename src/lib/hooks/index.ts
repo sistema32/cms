@@ -22,6 +22,7 @@ const DEFAULT_PREFIX = "cms_";
 const MAX_LISTENERS_PER_HOOK = 50;
 const DEFAULT_TIMEOUT_MS = 5_000;
 const DEFAULT_BREAKER_THRESHOLD = 3;
+let hooksCompatEnabled = true; // Permite alias WP; puede desactivarse en prod si no se usan
 
 // Hooks core reservados (documentados)
 export const CORE_HOOKS = new Set<string>([

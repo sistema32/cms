@@ -455,6 +455,7 @@ export function toCmsFilterName(wpFilter: string): string {
  * Registra un filtro usando el nombre WP original; se mapea a prefijo cms_.
  */
 export function registerWpFilter(hook: string, handler: (...args: any[]) => any, priority = 10, name?: string) {
+  // Respeta bandera de compatibilidad
   const cmsName = toCmsFilterName(hook);
   coreRegisterFilter(cmsName, handler, priority, name ?? hook);
 }

@@ -30,3 +30,4 @@ Notas:
     registerWpFilter("the_title", (t) => `**${t}**`);
     const title = await applyWpFilters("the_title", "Hola");
     ```
+- Modo compatibilidad opt-in (`hooksCompatEnabled`): permite habilitar los alias WP (`wp_` → `cms_`) solo cuando se requiera compatibilidad. Desactívelo en producción si no se usan.
