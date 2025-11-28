@@ -14,8 +14,7 @@ Extraer los hooks del sistema de plugins y centralizar en una librería global (
 - [x] Bloqueo de nombres sin prefijo y listado de hooks core reservados.
 - [ ] Definir hooks reservados/core (p.ej. `cms_title`, `cms_enqueue_scripts`, `cms_render_block`, etc.) y documentarlos.
 - [ ] Agregar adaptador/shim de compatibilidad:
-  - [ ] `src/lib/plugin-system/HookManager.ts` delega en la nueva API durante transición (sin worker RPC).
-  - [ ] Marcar como deprecated y preparar eliminación.
+  - [x] Shim eliminado (HookManager retirado); usar solo API global.
 - [ ] Migrar llamadas existentes:
   - [ ] Frontend (`themes/default/templates/Layout.tsx`) → nueva API.
   - [ ] Admin (`src/lib/admin/hooks.ts` y usos) → nueva API.
@@ -25,8 +24,8 @@ Extraer los hooks del sistema de plugins y centralizar en una librería global (
   - [x] Unit tests iniciales para registro, prioridades, filtros encadenados, timeouts y prefix.
   - [x] Test de compatibilidad del shim (HookManager → hooks globales).
 - [ ] Limpieza final:
-  - [ ] Retirar uso de `HookManager` en plugins.
-  - [ ] Eliminar shim y referencias legacy.
+  - [x] Retirar uso de `HookManager` en plugins.
+  - [x] Eliminar shim y referencias legacy.
 
 ## Notas de seguridad
 - Prefijo obligatorio `cms_` para evitar colisiones (no exponer nombres WP).

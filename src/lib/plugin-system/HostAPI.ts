@@ -1,7 +1,6 @@
 import { db, executeQuery } from '../../db/index.ts';
 import { pluginRouteRegistry } from './PluginRouteRegistry.ts';
 import { adminPanelRegistry } from './AdminPanelRegistry.ts';
-import { hookManager } from './HookManager.ts';
 import { Validator } from './validation/validator.ts';
 import { DatabaseQuerySchema, DatabaseInsertSchema, DatabaseUpdateSchema, DatabaseDeleteSchema } from './validation/schemas.ts';
 
