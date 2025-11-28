@@ -274,49 +274,7 @@ export async function moderate(c: Context) {
 
     const comment = await commentService.moderateComment(id, data.status);
 
-    // Feedback loop: Report to auto-moderation plugin if applicable
-    try {
-      const { getAutoModeration } = await import("../../plugins/auto-moderation/index.ts");
-      const plugin = getAutoModeration();
-
-      if (plugin && plugin.getConfig().learning.enabled) {
-        const wasSpam = commentBefore.status === "spam";
-        const isNowSpam = data.status === "spam";
-        const wasApproved = commentBefore.status === "approved";
-        const isNowApproved = data.status === "approved";
-
-        // False Positive: Was marked as spam, but admin approved it
-        if (wasSpam && isNowApproved) {
-          await plugin.reportFalsePositive({
-            authorId: commentBefore.authorId,
-            authorName: commentBefore.authorName,
-            authorEmail: commentBefore.authorEmail,
-            authorWebsite: commentBefore.authorWebsite,
-            body: commentBefore.body,
-            ipAddress: commentBefore.ipAddress,
-            userAgent: commentBefore.userAgent,
-          });
-          console.log(`[Feedback] False positive reported for comment ${id}`);
-        }
-
-        // False Negative: Was approved, but admin marked as spam
-        if (wasApproved && isNowSpam) {
-          await plugin.reportFalseNegative({
-            authorId: commentBefore.authorId,
-            authorName: commentBefore.authorName,
-            authorEmail: commentBefore.authorEmail,
-            authorWebsite: commentBefore.authorWebsite,
-            body: commentBefore.body,
-            ipAddress: commentBefore.ipAddress,
-            userAgent: commentBefore.userAgent,
-          });
-          console.log(`[Feedback] False negative reported for comment ${id}`);
-        }
-      }
-    } catch (error) {
-      // Don't fail the moderation if feedback fails
-      console.error('[Feedback] Error reporting to auto-moderation:', error);
-    }
+    // Feedback loop removed (auto-moderation plugin eliminado)
 
     return c.json({
       success: true,

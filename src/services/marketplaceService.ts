@@ -4,7 +4,18 @@
  */
 
 import { join } from '@std/path';
-import { MarketplacePlugin } from '../lib/plugin-system/types.ts';
+export interface MarketplacePlugin {
+    id: string;
+    name: string;
+    displayName: string;
+    description: string;
+    version: string;
+    author?: string;
+    category?: string;
+    tags?: string[];
+    homepage?: string;
+    sourceUrl?: string;
+}
 
 export class MarketplaceService {
     private dataPath: string;

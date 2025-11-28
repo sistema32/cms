@@ -17,7 +17,6 @@ import commentRoutes from "./comments.ts";
 import contentFilterRoutes from "./contentFilters.ts";
 import seoRoutes from "./seo.ts";
 import settingsRoutes from "./settings.ts";
-import pluginRoutes from "./plugins.ts";
 import cacheRoutes from "./cache.ts";
 import auditRoutes from "./audit.ts";
 import webhookRoutes from "./webhooks.ts";
@@ -67,7 +66,6 @@ export function registerRoutes(app: Hono) {
     seoAi: "enabled",
     settings: "enabled",
     themes: "enabled",
-    plugins: "enabled",
     cache: "enabled",
     audit: "enabled",
     webhooks: "enabled",
@@ -129,8 +127,6 @@ export function registerRoutes(app: Hono) {
   // Registrar rutas de Settings
   app.route("/api/settings", settingsRoutes);
 
-  // Registrar rutas de Plugins
-  app.route("/api/plugins", pluginRoutes);
 
   // Registrar rutas de Cache
   app.route("/api/cache", cacheRoutes);
@@ -195,4 +191,3 @@ export function registerRoutes(app: Hono) {
   // Registrar rutas del Frontend (ÚLTIMO para que no interfiera con API)
   app.route("/", frontendRouter);
 }
-

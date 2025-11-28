@@ -1,6 +1,5 @@
 import { app } from "./app.ts";
 import { env, isDevelopment } from "./config/env.ts";
-import { pluginManager } from "./lib/plugin-system/index.ts";
 import { cacheManager } from "./lib/cache/index.ts";
 import { emailManager } from "./lib/email/index.ts";
 import { backupManager } from "./lib/backup/index.ts";
@@ -40,14 +39,7 @@ try {
   // Continue anyway - cache is optional
 }
 
-// Initialize plugin system
-console.log('\n🔌 Initializing plugin system...');
-try {
-  await pluginManager.init();
-} catch (error) {
-  console.error('❌ Failed to initialize plugin system:', error);
-  // Continue anyway - plugins are optional
-}
+// Plugin system removed (pending DB-first refactor)
 
 // Initialize email system
 console.log('\n📧 Initializing email system...');
@@ -177,11 +169,6 @@ try {
    DELETE /api/users/:id (protegido)
 
 🔌 Plugin System:
-   GET    /api/plugins (protegido)
-   POST   /api/plugins/:name/install (protegido)
-   POST   /api/plugins/:name/activate (protegido)
-   POST   /api/plugins/:name/deactivate (protegido)
-   PATCH  /api/plugins/:name/settings (protegido)
 `);
 
   Deno.serve({ port: availablePort }, app.fetch);

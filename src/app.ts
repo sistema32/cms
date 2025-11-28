@@ -51,11 +51,7 @@ app.use(
 );
 
 // Plugin middlewares (must be before registerRoutes)
-import { pluginAssetMiddleware } from "./middleware/pluginAssetMiddleware.ts";
-import { pluginRouteMiddleware } from "./middleware/pluginRouteMiddleware.ts";
-
-app.use("*", pluginAssetMiddleware);
-app.use("*", pluginRouteMiddleware);
+// Plugin middlewares removed (legacy system retired)
 
 registerRoutes(app);
 

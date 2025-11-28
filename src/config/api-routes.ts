@@ -81,14 +81,7 @@ export const API_ROUTES = {
   },
 
   // Plugins
-  PLUGINS: {
-    BASE: '/api/plugins',
-    BY_ID: (id: string) => `/api/plugins/${id}`,
-    INSTALL: '/api/plugins/install',
-    UNINSTALL: (id: string) => `/api/plugins/${id}/uninstall`,
-    ACTIVATE: (id: string) => `/api/plugins/${id}/activate`,
-    DEACTIVATE: (id: string) => `/api/plugins/${id}/deactivate`,
-  },
+  PLUGINS: {},
 
   // Backups
   BACKUPS: {
