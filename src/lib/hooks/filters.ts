@@ -449,3 +449,19 @@ export function toCmsFilterName(wpFilter: string): string {
   const cleaned = wpFilter.replace(/[^\w]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
   return `cms_${cleaned}`;
 }
+
+/**
+ * Registra un filtro usando el nombre WP original; se mapea a prefijo cms_.
+ */
+export function registerWpFilter(hook: string, handler: (...args: any[]) => any, priority = 10, name?: string) {
+  const cmsName = toCmsFilterName(hook);
+  registerFilter(cmsName, handler, priority, name ?? hook);
+}
+
+/**
+ * Aplica filtros usando nombre WP original; se mapea a prefijo cms_.
+ */
+export async function applyWpFilters<T = any>(hook: string, value: T, ...args: any[]): Promise<T> {
+  const cmsName = toCmsFilterName(hook);
+  return applyFilters(cmsName, value, ...args);
+}
