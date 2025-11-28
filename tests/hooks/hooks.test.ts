@@ -49,4 +49,7 @@ Deno.test("namespacing enforces cms_ prefix", async () => {
     errorCaught = true;
   }
   if (!errorCaught) throw new Error("Expected error for missing prefix");
+
+  // Should work with prefix
+  registerAction("cms_ok", () => {});
 });
