@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import * as registry from "../services/pluginRegistry.ts";
+import * as reconciler from "../services/pluginReconciler.ts";
 
 export const pluginsNewRouter = new Hono();
 
@@ -19,7 +20,7 @@ pluginsNewRouter.post("/:name/activate", async (c) => {
   const name = c.req.param("name");
   const plugin = await registry.getPluginByName(name);
   if (!plugin) return c.json({ success: false, error: "Plugin not found" }, 404);
-  await registry.setStatus(name, "active");
+  await reconciler.activate(name);
   return c.json({ success: true, message: `Plugin ${name} activated` });
 });
 
@@ -28,7 +29,7 @@ pluginsNewRouter.post("/:name/deactivate", async (c) => {
   const plugin = await registry.getPluginByName(name);
   if (!plugin) return c.json({ success: false, error: "Plugin not found" }, 404);
   if (plugin.isSystem) return c.json({ success: false, error: "System plugin cannot be deactivated" }, 400);
-  await registry.setStatus(name, "inactive");
+  await reconciler.deactivate(name);
   return c.json({ success: true, message: `Plugin ${name} deactivated` });
 });
 
