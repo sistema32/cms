@@ -1,27 +1,21 @@
-import { hookManager } from "../../src/lib/plugin-system/HookManager.ts";
-import { resetHooks, applyFilters } from "../../src/lib/hooks/index.ts";
+// Shim removed; ensure imports fail gracefully and global hooks still work
+import { resetHooks, applyFilters, registerAction, registerFilter } from "../../src/lib/hooks/index.ts";
 
 Deno.test("HookManager shim delegates to global hooks (actions)", async () => {
   resetHooks();
-  (globalThis as any)._shimTestAction = () => {
-    (globalThis as any)._shimCalled = true;
-  };
-  hookManager.registerAction("test:shimAction", "_shimTestAction", 10, "test-plugin");
-  await hookManager.doAction("test:shimAction");
-  if (!(globalThis as any)._shimCalled) {
-    throw new Error("Shim action did not execute");
+  let called = false;
+  registerAction("test:shimAction", () => { called = true; });
+  await (await import("../../src/lib/hooks/index.ts")).doAction("test:shimAction");
+  if (!called) {
+    throw new Error("Action did not execute");
   }
-  delete (globalThis as any)._shimTestAction;
-  delete (globalThis as any)._shimCalled;
 });
 
 Deno.test("HookManager shim delegates to global hooks (filters)", async () => {
   resetHooks();
-  (globalThis as any)._shimTestFilter = (val: string) => val + "Z";
-  hookManager.registerFilter("test:shimFilter", "_shimTestFilter", 10, "test-plugin");
+  registerFilter("test:shimFilter", (val: string) => val + "Z");
   const result = await applyFilters("test:shimFilter", "A");
   if (result !== "AZ") {
     throw new Error(`Unexpected filter result: ${result}`);
   }
-  delete (globalThis as any)._shimTestFilter;
 });

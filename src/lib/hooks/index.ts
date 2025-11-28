@@ -96,14 +96,16 @@ export function registerFilter(hook: string, handler: HookHandler, priority = 10
 }
 
 async function runWithTimeout(fn: () => Promise<any> | any, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  let timeoutId: number;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error("Hook handler timed out")), timeoutMs) as unknown as number;
+    timeoutId = setTimeout(() => reject(new Error("Hook handler timed out")), timeoutMs);
   });
   try {
     return await Promise.race([Promise.resolve(fn()), timeoutPromise]);
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
