@@ -66,8 +66,15 @@ adminRouter.route("/", formsRouter);
 adminRouter.route("/", toolsRouter);
 adminRouter.route("/", widgetsRouter);
 
-// Admin Panel API - Menu endpoint
-import { getAdminMenu, renderPluginAdminPage } from "../controllers/adminPanelController.ts";
-adminRouter.get("/api/menu", getAdminMenu);
+// Admin Panel API - Menu endpoint (placeholder, legacy controller removed)
+// import { getAdminMenu, renderPluginAdminPage } from "../controllers/adminPanelController.ts";
+// adminRouter.get("/api/menu", getAdminMenu);
+
+// Simple DB-first plugins page (temporary)
+import PluginsDbNexus from "./admin/PluginsDbNexus.tsx";
+adminRouter.get("/plugins/db", (c) => {
+  const user = c.get("user");
+  return c.html(PluginsDbNexus({ user }));
+});
 
 export default adminRouter;
