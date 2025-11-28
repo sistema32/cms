@@ -21,3 +21,6 @@ Tabla de hooks reservados y su propósito. Todos requieren prefijo `cms_`; se re
 Notas:
 - Se pueden definir hooks adicionales, siempre con prefijo `cms_`. Los core listados arriba son reservados y deben mantener semántica estable.
 - Los plugins deben pasar por la nueva librería global (`src/lib/hooks`) y no usar directamente el shim legacy.
+- Alias tipo WordPress:
+  - Acciones: `src/lib/hooks/actions.ts` expone `registerAction` y `doAction`.
+  - Filtros: `src/lib/hooks/filters.ts` expone `registerFilter` y `applyFilters`.
