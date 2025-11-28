@@ -23,7 +23,7 @@ Extraer los hooks del sistema de plugins y centralizar en una librería global (
   - [ ] Utils (`utils/media/imageProcessor.ts`) → nueva API.
 - [ ] Testing:
   - [x] Unit tests iniciales para registro, prioridades, filtros encadenados, timeouts y prefix.
-  - [ ] Test de compatibilidad del shim (HookManager → hooks globales).
+  - [x] Test de compatibilidad del shim (HookManager → hooks globales).
 - [ ] Limpieza final:
   - [ ] Retirar uso de `HookManager` en plugins.
   - [ ] Eliminar shim y referencias legacy.
