@@ -555,6 +555,16 @@ export const pluginHealth = pgTable("plugin_health", {
     status: text("status").notNull().default("ok"),
     lastCheckedAt: timestamp("last_checked_at"),
     lastError: text("last_error"),
+    latencyMs: integer("latency_ms"),
+});
+
+export const pluginPermissionGrants = pgTable("plugin_permission_grants", {
+    id: serial("id").primaryKey(),
+    pluginId: integer("plugin_id").notNull().references(() => plugins.id, { onDelete: "cascade" }),
+    permission: text("permission").notNull(),
+    granted: boolean("granted").notNull().default(true),
+    grantedBy: integer("granted_by"), // user id opcional
+    grantedAt: timestamp("granted_at").notNull().defaultNow(),
 });
 
 // ============= AUDIT LOGS =============
@@ -924,6 +934,7 @@ export const contentRevisionsRelations = relations(
 export const pluginsRelations = relations(plugins, ({ many }) => ({
     migrations: many(pluginMigrations),
     health: many(pluginHealth),
+    permissionGrants: many(pluginPermissionGrants),
 }));
 
 export const pluginMigrationsRelations = relations(pluginMigrations, ({ one }) => ({
@@ -936,6 +947,13 @@ export const pluginMigrationsRelations = relations(pluginMigrations, ({ one }) =
 export const pluginHealthRelations = relations(pluginHealth, ({ one }) => ({
     plugin: one(plugins, {
         fields: [pluginHealth.pluginId],
+        references: [plugins.id],
+    }),
+}));
+
+export const pluginPermissionGrantsRelations = relations(pluginPermissionGrants, ({ one }) => ({
+    plugin: one(plugins, {
+        fields: [pluginPermissionGrants.pluginId],
         references: [plugins.id],
     }),
 }));

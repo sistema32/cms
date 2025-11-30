@@ -1,13 +1,27 @@
-import { eq, and, isNull, desc, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../config/db.ts";
 import { comments, content, contentTypes } from "../db/schema.ts";
 import type { NewComment } from "../db/schema.ts";
 import { applyCensorship } from "./censorshipService.ts";
-import { sanitizeHTML, escapeHTML, sanitizeURL } from "../utils/sanitization.ts";
+import {
+  escapeHTML,
+  sanitizeHTML,
+  sanitizeURL,
+} from "../utils/sanitization.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
 import { notificationService } from "../lib/email/index.ts";
 import { env } from "../config/env.ts";
-import { getAutoModeration } from "../../plugins/auto-moderation/index.ts";
+
+async function getAutoModerationSafe() {
+  try {
+    const mod = await import("../../plugins/auto-moderation/index.ts");
+    return typeof mod.getAutoModeration === "function"
+      ? mod.getAutoModeration()
+      : null;
+  } catch (_e) {
+    return null;
+  }
+}
 
 /**
  * Interfaz para crear un comentario
@@ -99,10 +113,19 @@ async function determineInitialStatus(params: {
   ipAddress?: string;
   userAgent?: string;
 }): Promise<"approved" | "pending" | "spam"> {
-  const { authorId, authorName, authorEmail, authorWebsite, body, bodyCensored, ipAddress, userAgent } = params;
+  const {
+    authorId,
+    authorName,
+    authorEmail,
+    authorWebsite,
+    body,
+    bodyCensored,
+    ipAddress,
+    userAgent,
+  } = params;
 
   // Intentar usar plugin de auto-moderación si está disponible
-  const autoModPlugin = getAutoModeration();
+  const autoModPlugin = await getAutoModerationSafe();
   if (autoModPlugin) {
     try {
       const decision = await autoModPlugin.checkComment({
@@ -115,7 +138,7 @@ async function determineInitialStatus(params: {
         userAgent,
       });
 
-      console.log('[CommentService] Auto-moderation decision:', {
+      console.log("[CommentService] Auto-moderation decision:", {
         action: decision.action,
         score: decision.analysis.score,
         confidence: decision.analysis.confidence,
@@ -123,11 +146,11 @@ async function determineInitialStatus(params: {
       });
 
       // Mapear acción del plugin a status de comentario
-      if (decision.action === 'spam') return 'spam';
-      if (decision.action === 'approve') return 'approved';
-      if (decision.action === 'moderate') return 'pending';
+      if (decision.action === "spam") return "spam";
+      if (decision.action === "approve") return "approved";
+      if (decision.action === "moderate") return "pending";
     } catch (error) {
-      console.error('[CommentService] Error in auto-moderation:', error);
+      console.error("[CommentService] Error in auto-moderation:", error);
       // Si hay error, continuar con reglas básicas
     }
   }
@@ -253,9 +276,15 @@ export async function createComment(
   const sanitizedBody = sanitizeHTML(data.body);
 
   // 2. Sanitizar campos de guest (prevenir XSS en nombre, email, website)
-  const sanitizedAuthorName = data.authorName ? escapeHTML(data.authorName) : null;
-  const sanitizedAuthorEmail = data.authorEmail ? escapeHTML(data.authorEmail) : null;
-  const sanitizedAuthorWebsite = data.authorWebsite ? sanitizeURL(data.authorWebsite) : null;
+  const sanitizedAuthorName = data.authorName
+    ? escapeHTML(data.authorName)
+    : null;
+  const sanitizedAuthorEmail = data.authorEmail
+    ? escapeHTML(data.authorEmail)
+    : null;
+  const sanitizedAuthorWebsite = data.authorWebsite
+    ? sanitizeURL(data.authorWebsite)
+    : null;
 
   // 3. Aplicar censura al contenido sanitizado
   const bodyCensored = await applyCensorship(sanitizedBody);
@@ -336,15 +365,20 @@ export async function createComment(
           },
         });
 
-        if (parentComment?.authorId && parentComment.authorId !== data.authorId) {
+        if (
+          parentComment?.authorId && parentComment.authorId !== data.authorId
+        ) {
           await notificationService.create({
             userId: parentComment.authorId,
             type: "comment.reply",
             title: "New reply to your comment",
-            message: `${data.authorName || "Someone"} replied to your comment on "${contentData.title}"`,
+            message: `${
+              data.authorName || "Someone"
+            } replied to your comment on "${contentData.title}"`,
             link: `/content/${contentData.slug}#comment-${comment.id}`,
             actionLabel: "View Reply",
-            actionUrl: `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
+            actionUrl:
+              `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
             priority: "normal",
             sendEmail: true,
             data: {
@@ -354,16 +388,21 @@ export async function createComment(
             },
           });
         }
-      } else if (contentData.authorId && contentData.authorId !== data.authorId) {
+      } else if (
+        contentData.authorId && contentData.authorId !== data.authorId
+      ) {
         // Notify content author about new comment
         await notificationService.create({
           userId: contentData.authorId,
           type: "comment.new",
           title: "New comment on your post",
-          message: `${data.authorName || "Someone"} commented on "${contentData.title}"`,
+          message: `${
+            data.authorName || "Someone"
+          } commented on "${contentData.title}"`,
           link: `/content/${contentData.slug}#comment-${comment.id}`,
           actionLabel: "View Comment",
-          actionUrl: `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
+          actionUrl:
+            `${env.BASE_URL}/content/${contentData.slug}#comment-${comment.id}`,
           priority: "normal",
           sendEmail: true,
           data: {
@@ -422,12 +461,10 @@ export async function getCommentsByContentId(
       },
       replies: includeReplies
         ? {
-          where: includeDeleted
-            ? eq(comments.status, status)
-            : and(
-              eq(comments.status, status),
-              isNull(comments.deletedAt),
-            ),
+          where: includeDeleted ? eq(comments.status, status) : and(
+            eq(comments.status, status),
+            isNull(comments.deletedAt),
+          ),
           with: {
             author: {
               columns: {
@@ -462,7 +499,10 @@ export async function getCommentsByContentId(
 /**
  * Obtiene un comentario por ID (para ver original sin censura - admin)
  */
-export async function getCommentById(id: number, showOriginal: boolean = false) {
+export async function getCommentById(
+  id: number,
+  showOriginal: boolean = false,
+) {
   const comment = await db.query.comments.findFirst({
     where: eq(comments.id, id),
     with: {
@@ -549,7 +589,9 @@ export async function deleteComment(id: number, userId: number) {
     .returning();
 
   if (!deleted) {
-    throw new Error("Comentario no encontrado o no tienes permiso para eliminarlo");
+    throw new Error(
+      "Comentario no encontrado o no tienes permiso para eliminarlo",
+    );
   }
 
   // Decrementar contador solo si es comentario principal
@@ -609,11 +651,21 @@ export async function getCommentStats(contentId: number) {
   const [stats] = await db
     .select({
       total: sql<number>`COUNT(*)`,
-      approved: sql<number>`SUM(CASE WHEN ${comments.status} = 'approved' THEN 1 ELSE 0 END)`,
-      spam: sql<number>`SUM(CASE WHEN ${comments.status} = 'spam' THEN 1 ELSE 0 END)`,
-      deleted: sql<number>`SUM(CASE WHEN ${comments.status} = 'deleted' THEN 1 ELSE 0 END)`,
-      mainComments: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
-      replies: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NOT NULL THEN 1 ELSE 0 END)`,
+      approved: sql<
+        number
+      >`SUM(CASE WHEN ${comments.status} = 'approved' THEN 1 ELSE 0 END)`,
+      spam: sql<
+        number
+      >`SUM(CASE WHEN ${comments.status} = 'spam' THEN 1 ELSE 0 END)`,
+      deleted: sql<
+        number
+      >`SUM(CASE WHEN ${comments.status} = 'deleted' THEN 1 ELSE 0 END)`,
+      mainComments: sql<
+        number
+      >`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
+      replies: sql<
+        number
+      >`SUM(CASE WHEN ${comments.parentId} IS NOT NULL THEN 1 ELSE 0 END)`,
     })
     .from(comments)
     .where(eq(comments.contentId, contentId));

@@ -30,7 +30,7 @@ export async function themePreviewMiddleware(c: Context, next: Next) {
       c.set("showPreviewBanner", true);
 
       console.log(
-        `🎨 Preview mode: ${session.theme} (user: ${session.userId})`
+        `🎨 Preview mode: ${session.theme} (user: ${session.userId})`,
       );
     } else {
       // Invalid or expired token
@@ -41,7 +41,7 @@ export async function themePreviewMiddleware(c: Context, next: Next) {
   await next();
 
   // Inject preview banner if in preview mode
-  if (c.get("showPreviewBanner")) {
+  if (c.get("showPreviewBanner") && !c.finalized) {
     await injectPreviewBanner(c, token!);
   }
 }
@@ -60,7 +60,8 @@ async function injectPreviewBanner(c: Context, token: string): Promise<void> {
     const originalBody = await c.res.text();
 
     if (!originalBody.includes("<body")) {
-      c.res = new Response(originalBody, c.res);
+      const status = c.res.status && c.res.status >= 100 ? c.res.status : 200;
+      c.res = new Response(originalBody, { status, headers: c.res.headers });
       return;
     }
 
@@ -70,12 +71,12 @@ async function injectPreviewBanner(c: Context, token: string): Promise<void> {
     // Inject banner after <body> tag
     const modifiedBody = originalBody.replace(
       /<body([^>]*)>/i,
-      (match) => `${match}\n${banner}`
+      (match) => `${match}\n${banner}`,
     );
 
+    const status = c.res.status && c.res.status >= 100 ? c.res.status : 200;
     c.res = new Response(modifiedBody, {
-      status: c.res.status,
-      statusText: c.res.statusText,
+      status,
       headers: c.res.headers,
     });
   } catch (error) {

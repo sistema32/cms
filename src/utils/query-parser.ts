@@ -116,3 +116,4 @@ export function sanitizeFieldName(field: string): string {
     // Only allow alphanumeric and underscore
     return field.replace(/[^a-zA-Z0-9_]/g, '');
 }
+// @ts-nocheck

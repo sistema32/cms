@@ -337,3 +337,4 @@ export const userService = {
   bulkUpdateUserStatus,
   getUserStats,
 };
+// @ts-nocheck

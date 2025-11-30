@@ -17,6 +17,7 @@ export interface MarketplacePlugin {
     sourceUrl?: string;
 }
 
+
 export class MarketplaceService {
     private dataPath: string;
 
@@ -59,6 +60,23 @@ export class MarketplaceService {
             p.description.toLowerCase().includes(lowerQuery) ||
             p.tags?.some(t => t.toLowerCase().includes(lowerQuery))
         );
+    }
+
+    /**
+     * Install a plugin from the marketplace
+     */
+    async installPlugin(id: string): Promise<boolean> {
+        const plugin = await this.getPlugin(id);
+        if (!plugin) {
+            throw new Error(`Plugin ${id} not found in marketplace`);
+        }
+
+        if (!plugin.sourceUrl) {
+            throw new Error(`Plugin ${id} has no source URL`);
+        }
+
+        const { installPluginFromUrl } = await import("./pluginInstaller.ts");
+        return await installPluginFromUrl(id, plugin.sourceUrl);
     }
 }
 

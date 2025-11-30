@@ -1,0 +1,20 @@
+{
+    "manifestVersion": "v2",
+    "id": "hello-world",
+    "name": "Hello World Plugin",
+    "version": "1.0.0",
+    "description": "A simple example plugin to demonstrate the system.",
+    "author": "User",
+    "permissions": [],
+    "capabilities": {
+        "db": [],
+        "fs": [],
+        "http": []
+    },
+    "routes": [
+        {
+            "method": "GET",
+            "path": "/hello"
+        }
+    ]
+}

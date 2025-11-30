@@ -256,6 +256,7 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
   // 10. Trigger plugin hook: media:afterUpload
   try {
     await doAction('media:afterUpload', newMedia);
+    await doAction('cms_media:afterUpload', newMedia);
   } catch (error) {
     console.error('Error in media:afterUpload hook:', error);
     // Don't fail upload if plugin fails
@@ -382,6 +383,7 @@ export async function deleteMedia(id: number): Promise<void> {
   // Trigger plugin hook: media:beforeDelete
   try {
     await doAction('media:beforeDelete', mediaData.media);
+    await doAction('cms_media:beforeDelete', mediaData.media);
   } catch (error) {
     console.error('Error in media:beforeDelete hook:', error);
     // Don't fail deletion if plugin fails

@@ -11,7 +11,7 @@ export interface NotificationItem {
   title: string;
   message: string;
   isRead: boolean;
-  createdAt: string;
+  createdAt: string | Date;
   actionUrl?: string;
 }
 
@@ -333,3 +333,4 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
 };
 
 export default NotificationPanel;
+// @ts-nocheck

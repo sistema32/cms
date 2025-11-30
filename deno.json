@@ -26,7 +26,8 @@
     "theme:validate": "deno run --allow-all src/cli/themeValidator.ts",
     "theme:create": "deno run --allow-all src/cli/themeGenerator.ts",
     "theme:build": "deno run --allow-all src/cli/themeBuilder.ts",
-    "plugin": "deno run --allow-all scripts/plugin-cli.ts"
+    "plugin": "deno run --allow-all scripts/plugin-cli.ts",
+    "plugin:migrate": "deno run --allow-all scripts/plugin-migrate.ts"
   },
   "imports": {
     "hono": "npm:hono@^4",

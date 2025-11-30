@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Slider 3</title>
+    <!-- Base tag is injected server-side for SPA routing -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <!-- VIEW: DASHBOARD -->
+        <div id="view-dashboard" class="view active">
+            <header class="header">
+                <div class="header-left">
+                    <span class="logo">Smart Slider 3</span>
+                </div>
+                <button id="btn-new-slider" class="btn-primary">
+                    <span class="material-icons-round">add</span> New Slider
+                </button>
+            </header>
+
+            <main class="content">
+                <div id="slider-list" class="slider-grid">
+                    <p class="loading">Loading sliders...</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- VIEW: EDITOR -->
+        <div id="view-editor" class="view hidden">
+            <header class="editor-header">
+                <div class="header-left">
+                    <button id="btn-back-dashboard" class="btn-icon" title="Back to Dashboard">
+                        <span class="material-icons-round">arrow_back</span>
+                    </button>
+                    <div class="slider-meta">
+                        <span id="editor-slider-name" class="slider-name">My Slider</span>
+                        <span class="badge">AUTOSAVED</span>
+                    </div>
+                </div>
+
+                <div class="header-center">
+                    <div class="device-switcher">
+                        <button class="btn-icon active" data-device="desktop" title="Desktop">
+                            <span class="material-icons-round">desktop_windows</span>
+                        </button>
+                        <button class="btn-icon" data-device="tablet" title="Tablet">
+                            <span class="material-icons-round">tablet_mac</span>
+                        </button>
+                        <button class="btn-icon" data-device="mobile" title="Mobile">
+                            <span class="material-icons-round">smartphone</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <button id="btn-add-slide" class="btn-secondary">
+                        <span class="material-icons-round">add_photo_alternate</span> Add Slide
+                    </button>
+                    <button id="btn-save-slider" class="btn-primary">
+                        <span class="material-icons-round">save</span> Save
+                    </button>
+                </div>
+            </header>
+
+            <div class="editor-workspace">
+                <!-- LEFT SIDEBAR: LAYERS & SLIDES -->
+                <aside class="editor-sidebar left">
+                    <div class="sidebar-tabs">
+                        <button class="tab-btn active" data-tab="layers">Layers</button>
+                        <button class="tab-btn" data-tab="slides">Slides</button>
+                    </div>
+
+                    <div id="tab-layers" class="sidebar-panel active">
+                        <div class="panel-header">
+                            <h3>Layers</h3>
+                            <div class="layer-tools">
+                                <button class="btn-tool" onclick="editor.addLayer('heading')" title="Heading"><span
+                                        class="material-icons-round">title</span></button>
+                                <button class="btn-tool" onclick="editor.addLayer('text')" title="Text"><span
+                                        class="material-icons-round">text_fields</span></button>
+                                <button class="btn-tool" onclick="editor.addLayer('image')" title="Image"><span
+                                        class="material-icons-round">image</span></button>
+                                <button class="btn-tool" onclick="editor.addLayer('button')" title="Button"><span
+                                        class="material-icons-round">smart_button</span></button>
+                            </div>
+                        </div>
+                        <div id="layer-list" class="layer-tree">
+                            <!-- Layer items injected here -->
+                        </div>
+                    </div>
+
+                    <div id="tab-slides" class="sidebar-panel">
+                        <div id="slide-list" class="slide-list">
+                            <!-- Slide items injected here -->
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- CENTER: CANVAS -->
+                <div class="editor-canvas-area">
+                    <div class="canvas-wrapper">
+                        <div id="editor-canvas" class="editor-canvas desktop">
+                            <!-- Slide content rendered here -->
+                            <div id="canvas-content" class="canvas-content"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDEBAR: PROPERTIES -->
+                <aside class="editor-sidebar right">
+                    <div class="panel-header">
+                        <h3>Properties</h3>
+                    </div>
+                    <div id="property-inspector" class="property-form">
+                        <p class="empty-selection">Select a layer to edit properties</p>
+                        <!-- Properties injected here -->
+                    </div>
+                </aside>
+            </div>
+
+            <!-- TIMELINE PANEL -->
+            <div id="timeline-panel" class="timeline-panel">
+                <div class="timeline-header">
+                    <span class="material-icons-round" style="font-size: 16px; margin-right: 8px;">animation</span>
+                    Timeline & Animations
+                </div>
+                <div class="timeline-tracks" id="timeline-tracks">
+                    <!-- Tracks injected here -->
+                    <p style="color: var(--text-muted); padding: 10px; font-size: 11px;">Select a layer to view its
+                        timeline.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu hidden">
+        <div class="context-menu-item" id="ctx-duplicate">
+            <span class="material-icons-round">content_copy</span> Duplicate
+        </div>
+        <div class="context-menu-item" id="ctx-delete">
+            <span class="material-icons-round">delete</span> Delete
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" id="ctx-front">
+            <span class="material-icons-round">flip_to_front</span> Bring to Front
+        </div>
+        <div class="context-menu-item" id="ctx-back">
+            <span class="material-icons-round">flip_to_back</span> Send to Back
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal: New Slider -->
+    <div id="modal-new-slider" class="modal hidden">
+        <div class="modal-content">
+            <h2>Create New Slider</h2>
+            <form id="form-new-slider">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" required placeholder="My Awesome Slider">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Width (px)</label>
+                        <input type="number" name="width" value="1200">
+                    </div>
+                    <div class="form-group">
+                        <label>Height (px)</label>
+                        <input type="number" name="height" value="600">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="editor.js"></script>
+</body>
+
+</html>

@@ -40,6 +40,7 @@ import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
 import pluginsNewRouter from "./plugins-new.ts";
+import { buildPluginRouter } from "../services/pluginRuntimeRouter.ts";
 
 
 export function registerRoutes(app: Hono) {
@@ -178,6 +179,8 @@ export function registerRoutes(app: Hono) {
   app.route("/api/system-updates", systemUpdatesRoutes);
   // New DB-first plugin API
   app.route("/api/plugins", pluginsNewRouter);
+  // Declarative plugin routes (sandboxed, stubbed)
+  app.route("/plugins-runtime", buildPluginRouter());
 
   // Registrar rutas de Forms
   app.route("/api/forms", formsRoutes);

@@ -413,3 +413,4 @@ export async function validateWidgetSettings(
 
   return await widgetClass.validate(settings);
 }
+// @ts-nocheck

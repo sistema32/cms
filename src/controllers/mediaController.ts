@@ -279,10 +279,8 @@ export async function serveMedia(c: Context) {
       headers.set("Last-Modified", fileInfo.mtime.toUTCString());
     }
 
-    return c.newResponse(file.readable, {
-      status: 200,
-      headers,
-    });
+    // Hono 4: use Response directly instead of c.newResponse to avoid polyfill issues
+    return new Response(file.readable, { status: 200, headers });
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       return c.json({ error: "Archivo no encontrado" }, 404);

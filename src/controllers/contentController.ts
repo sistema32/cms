@@ -132,6 +132,7 @@ export async function createContent(c: Context) {
     // Trigger content:created hook
     const { doAction } = await import("../lib/hooks/index.ts");
     await doAction("content:created", content ?? createdContent);
+    await doAction("cms_content:created", content ?? createdContent);
 
     return c.json({ content: content ?? createdContent }, 201);
   } catch (error) {

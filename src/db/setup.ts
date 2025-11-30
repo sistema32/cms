@@ -57,36 +57,57 @@ What gets installed:
 
 console.log("🚀 Starting database setup...\n");
 
-// Set environment variable for optional migrations
-if (args.demo) {
-  console.log("📝 Demo mode enabled - will include test content and comments\n");
-  Deno.env.set("LOAD_OPTIONAL_MIGRATIONS", "true");
-} else {
-  console.log("⚙️  Production mode - essential data only\n");
-  Deno.env.set("LOAD_OPTIONAL_MIGRATIONS", "false");
-}
-
-// Run migrations
-const migrateCommand = new Deno.Command("deno", {
-  args: ["run", "-A", "src/db/migrate.ts"],
+// 1. Generate migrations
+console.log("📦 Generating migrations...");
+const generateCommand = new Deno.Command("deno", {
+  args: ["task", "db:generate"],
   stdout: "inherit",
   stderr: "inherit",
 });
 
-const { code } = await migrateCommand.output();
+const generateResult = await generateCommand.output();
+if (generateResult.code !== 0) {
+  console.error("❌ Migration generation failed");
+  Deno.exit(generateResult.code);
+}
 
-if (code === 0) {
+// 2. Run migrations
+console.log("\n📦 Running migrations...");
+const migrateCommand = new Deno.Command("deno", {
+  args: ["task", "db:migrate"],
+  stdout: "inherit",
+  stderr: "inherit",
+});
+
+const migrateResult = await migrateCommand.output();
+if (migrateResult.code !== 0) {
+  console.error("❌ Migration failed");
+  Deno.exit(migrateResult.code);
+}
+
+// 3. Run seeds
+console.log("\n🌱 Seeding database...");
+const seedArgs = ["run", "-A", "src/db/seed.ts"];
+if (args.demo) {
+  seedArgs.push("--demo");
+}
+
+const seedCommand = new Deno.Command("deno", {
+  args: seedArgs,
+  stdout: "inherit",
+  stderr: "inherit",
+});
+
+const seedResult = await seedCommand.output();
+
+if (seedResult.code === 0) {
   console.log("\n✅ Database setup completed successfully!\n");
 
   if (!args.demo) {
     console.log("💡 Tip: Run with --demo flag to include sample content for development:");
     console.log("   deno task db:setup --demo\n");
   }
-
-  console.log("🔐 Admin credentials:");
-  console.log("   Email: admin@lexcms.local");
-  console.log("   Password: admin123\n");
 } else {
-  console.error("\n❌ Database setup failed with exit code:", code);
-  Deno.exit(code);
+  console.error("\n❌ Database seeding failed with exit code:", seedResult.code);
+  Deno.exit(seedResult.code);
 }

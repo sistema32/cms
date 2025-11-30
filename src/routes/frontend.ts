@@ -704,6 +704,8 @@ async function renderPageById(c: any, pageId: number) {
     breadcrumbs,
   });
 
+  await doAction("frontend:rendered", pageData);
+
   return c.html(
     PageTemplate({
       site,

@@ -1,5 +1,0 @@
--- Migration: DB-first plugin tables for PostgreSQL (structure only)
--- Created: 2025-11-27
--- Note: Apply equivalent changes in PostgreSQL if needed. SQLite migration 0026 covers sqlite runtime.
--- Tables (mirror of sqlite): plugins, plugin_migrations, plugin_health
--- This file is a placeholder; apply with Drizzle for PG target if required.

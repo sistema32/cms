@@ -1,0 +1,26 @@
+## TODO – Plugin System (pendiente)
+
+- Sandbox
+  - [x] DB/FS/HTTP sandbox real (deny-all por defecto, allowlist por manifest).
+  - [x] Manifiesto exige capabilities; sin ellas, capacidades quedan desactivadas.
+  - [x] DB client read-only con límites, HTTP fetch con dominios permitidos y timeouts/límites.
+- Manifest/runtime
+  - [x] Manifest v2 + checksum/firma.
+  - [x] Checksum/HMAC opcional con secreto de entorno; rechaza mismatches.
+  - [x] Validar hooks/rutas declarativas vs permisos y montar/desmontar dinámicamente (Hono + hooks).
+  - [x] Carga de bundle real por plugin (loader de index.ts con register(ctx)).
+- Reconciler/health/metrics
+  - [x] Job periódico con métricas (in-memory) y endpoint `/api/plugins/metrics`.
+  - [x] Health avanzado (latencia y errores en plugin_health, breaker persistente en rutas/hooks).
+- Migraciones por plugin
+  - [x] CLI/endpoint `plugin:migrate <name> up|down|status` y auto-aplicar en activación.
+- Admin/UI
+  - [x] Mostrar requested/granted/missing, health, métricas y logs; botones reintento/pausa.
+- Seguridad y calidad
+  - [x] Linting de hooks (prefijo cms_, colisiones básicas).
+  - [x] Escáner básico y cache/invalidación para filtros pesados.
+  - [x] Sandbox de cron/tareas (frecuencia/cuotas, auditables).
+- Compat/migración
+  - [ ] Plan y ejecución de migración de plugins legacy; compat temporal.
+- Testing
+  - [ ] Tests e2e reales de activación/desactivación/reconciler y rutas/hooks declarativos con sandbox.

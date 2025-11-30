@@ -1,0 +1,16 @@
+{
+    "manifestVersion": "v2",
+    "id": "core-system",
+    "name": "Core System",
+    "version": "1.0.0",
+    "description": "System plugin placeholder",
+    "author": "LexCMS",
+    "permissions": [
+        "route:GET:/ping"
+    ],
+    "capabilities": {
+        "db": [],
+        "fs": [],
+        "http": []
+    }
+}

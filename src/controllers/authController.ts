@@ -50,6 +50,7 @@ export async function register(c: Context) {
 
       // Trigger user:register hook
       await doAction("user:register", result.user);
+      await doAction("cms_user:register", result.user);
     } catch (error) {
       console.warn("Failed to dispatch user.created webhook or hook:", error);
     }
@@ -159,6 +160,7 @@ export async function login(c: Context) {
 
         // Trigger user:login hook
         await doAction("user:login", result.user);
+        await doAction("cms_user:login", result.user);
       } catch (error) {
         console.warn("Failed to dispatch user.login webhook or hook:", error);
       }

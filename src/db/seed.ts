@@ -7,6 +7,12 @@ import { seedTestComments } from "./seeds/testComments.ts";
 import { seedPlugins } from "./seeds/plugins.ts";
 import { eq } from "drizzle-orm";
 
+import { parseArgs } from "https://deno.land/std@0.224.0/cli/parse_args.ts";
+
+const args = parseArgs(Deno.args, {
+  boolean: ["demo"],
+});
+
 console.log("🌱 Seeding database...\n");
 
 // Crear usuario administrador
@@ -38,14 +44,17 @@ console.log("   Password: password123\n");
 // Ejecutar seed de RBAC (roles y permisos)
 await seedRBAC();
 
-// Ejecutar seed de contenido de prueba
-await seedTestContent();
-
-// Ejecutar seed de comentarios de prueba
-await seedTestComments();
-
 // Ejecutar seed de plugins base
 await seedPlugins();
+
+// Ejecutar seed de contenido de prueba solo si se solicita
+if (args.demo) {
+  console.log("📝 Demo mode enabled - seeding test content...");
+  await seedTestContent();
+  await seedTestComments();
+} else {
+  console.log("ℹ️  Skipping test content (use --demo to include)");
+}
 
 console.log("\n✅ Database seeded successfully!");
 console.log("\n🎉 Sistema listo para usar:");

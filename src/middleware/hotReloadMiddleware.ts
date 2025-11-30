@@ -32,7 +32,8 @@ export async function hotReloadMiddleware(c: Context, next: Next) {
     // Check if body contains </body> tag
     if (!originalBody.includes("</body>")) {
       // Return original response if no </body> tag
-      c.res = new Response(originalBody, c.res);
+      const status = c.res.status && c.res.status >= 100 ? c.res.status : 200;
+      c.res = new Response(originalBody, { status, headers: c.res.headers });
       return;
     }
 
@@ -40,13 +41,13 @@ export async function hotReloadMiddleware(c: Context, next: Next) {
     const hotReloadScript = getHotReloadScript();
     const modifiedBody = originalBody.replace(
       "</body>",
-      `${hotReloadScript}\n</body>`
+      `${hotReloadScript}\n</body>`,
     );
 
     // Create new response with modified body
+    const status = c.res.status && c.res.status >= 100 ? c.res.status : 200;
     c.res = new Response(modifiedBody, {
-      status: c.res.status,
-      statusText: c.res.statusText,
+      status,
       headers: c.res.headers,
     });
   } catch (error) {

@@ -47,6 +47,7 @@ const actions = new Map<string, HandlerEntry[]>();
 const filters = new Map<string, HandlerEntry[]>();
 const metrics = new Map<string, HookMetrics>();
 const breaker = new Map<string, number>(); // hook -> consecutive errors
+const filterCache = new Map<string, Map<string, { value: any; expires: number }>>(); // hook -> key -> entry
 
 function normalizeHookName(name: string): string {
   const normalized = name.startsWith(DEFAULT_PREFIX) ? name : `${DEFAULT_PREFIX}${name}`;
@@ -111,6 +112,15 @@ async function runWithTimeout(fn: () => Promise<any> | any, timeoutMs = DEFAULT_
 }
 
 export async function doAction(hook: string, ...args: any[]) {
+  // Emit plugin runtime hooks (breaker/timeout) if registered
+  const { emitHook } = await import("../services/pluginRuntime.ts").catch(() => ({ emitHook: null }));
+  if (emitHook) {
+    try {
+      await emitHook(hook, ...args);
+    } catch (e) {
+      console.error("[hooks] emitHook failed:", e);
+    }
+  }
   const key = normalizeHookName(hook);
   if (isBroken(key)) return;
   const list = actions.get(key) || [];
@@ -133,6 +143,14 @@ export async function doAction(hook: string, ...args: any[]) {
 }
 
 export async function applyFilters<T = any>(hook: string, value: T, ...args: any[]): Promise<T> {
+  const { emitHook } = await import("../services/pluginRuntime.ts").catch(() => ({ emitHook: null }));
+  if (emitHook) {
+    try {
+      await emitHook(hook, value, ...args);
+    } catch (e) {
+      console.error("[hooks] emitHook failed:", e);
+    }
+  }
   const key = normalizeHookName(hook);
   if (isBroken(key)) return value;
   const list = filters.get(key) || [];
@@ -157,6 +175,46 @@ export async function applyFilters<T = any>(hook: string, value: T, ...args: any
     }
   }
   return result;
+}
+
+export function registerCachedFilter<T = any>(
+  hook: string,
+  handler: (value: T, ...args: any[]) => Promise<T> | T,
+  options: { ttlMs?: number; keyFn?: (value: T, ...args: any[]) => string } = {},
+  priority = 10,
+  name?: string,
+) {
+  const ttl = options.ttlMs ?? 5_000;
+  const keyFn = options.keyFn ?? ((v: T, ...a: any[]) => JSON.stringify([v, ...a]).slice(0, 500));
+  registerFilter(hook, async (value: T, ...args: any[]) => {
+    const cacheKey = normalizeHookName(hook);
+    const entryKey = keyFn(value, ...args);
+    const byHook = filterCache.get(cacheKey) ?? new Map();
+    const cached = byHook.get(entryKey);
+    const now = Date.now();
+    if (cached && cached.expires > now) {
+      return cached.value;
+    }
+    const next = await handler(value, ...args);
+    byHook.set(entryKey, { value: next, expires: now + ttl });
+    filterCache.set(cacheKey, byHook);
+    return next;
+  }, priority, name ?? `${hook}-cached`);
+}
+
+export function invalidateFilterCache(hook?: string, key?: string) {
+  if (!hook) {
+    filterCache.clear();
+    return;
+  }
+  const cacheKey = normalizeHookName(hook);
+  if (!filterCache.has(cacheKey)) return;
+  if (!key) {
+    filterCache.delete(cacheKey);
+  } else {
+    const map = filterCache.get(cacheKey);
+    map?.delete(key);
+  }
 }
 
 export function getMetrics(hook?: string) {

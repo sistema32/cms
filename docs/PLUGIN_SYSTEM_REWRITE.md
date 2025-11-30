@@ -57,9 +57,13 @@ Objetivo: reescribir el sistema de plugins para que **la base de datos sea la ú
    - Fase 4: limpiar APIs legacy (acceso directo a db/fs) y migrar plugins internos (lexslider, hello-world).
 
 ### TODO (ejecutable)
-- [ ] Esquema DB: tabla `plugins` extendida, tabla `plugin_migrations`, tabla `plugin_permissions_grants`.
+- [x] Esquema DB: tabla `plugins` extendida, tabla `plugin_migrations`, tabla `plugin_permissions_grants`.
 - [ ] Reconciler: job periódico que alinea workers con DB (start/stop) y repara drift.
+  - [x] Loop inicial en `main` (reconcile + interval).
+  - [ ] Health + breaker avanzado en loop.
 - [ ] Manifest v2 + validador + checksum.
+  - [x] Parser inicial y derivación de permisos (manifest → requestedPermissions).
+  - [ ] Carga de bundle/manifiesto real y validación de hooks/rutas vs permisos.
 - [ ] API limitada de DB/FS/HTTP en el worker (capabilities + quotas).
 - [ ] Registro declarativo de rutas y hooks desde el manifest; host monta/desmonta dinámicamente.
 - [ ] Pipeline de migraciones por plugin (CLI + on-activate).
@@ -72,10 +76,19 @@ Objetivo: reescribir el sistema de plugins para que **la base de datos sea la ú
 - [ ] Perfilado y límites por hook/ruta: medir duración y recursos; cortar handlers que excedan umbrales configurables por plugin.
 - [ ] Modo “dry-run” de activación: simular validaciones/migraciones y mostrar reporte de cambios antes de aplicar.
 - [ ] Modo desarrollo con controles de seguridad desactivables (opt-in): permitir reducir restricciones de sandbox para plugins en entorno dev, nunca en prod.
-- [ ] Compat de hooks estilo WordPress con namespace CMS: exponer equivalentes (`cms_title`, `cms_enqueue_scripts`, etc.) sin colisionar con nombres WP.
+- [x] Compat de hooks estilo WordPress con namespace CMS: exponer equivalentes (`cms_title`, `cms_enqueue_scripts`, etc.) sin colisionar con nombres WP (helpers wp_* → cms_* ya implementados).
 - [ ] Bibliotecar hooks globales (fuera del sistema de plugins): crear `src/lib/hooks` con registro/ejecución independiente del PluginManager; migrar llamadas existentes a usar la nueva librería; los plugins futuros solo se conectan a esta API pública.
 - [ ] Plan de retirada del sistema de plugins actual: aislar llamadas legacy, desregistrar HookManager de plugins y preparar migración hacia el nuevo runtime DB-first; documentar fases de eliminación y compatibilidad temporal.
 - [ ] Permisos declarativos por hook/route: al registrar hooks o rutas desde un plugin, exigir permisos explícitos y mostrar diff/consentimiento en el admin (similar a capabilities).
+  - [x] Bloqueo de activación si faltan permisos concedidos (valida contra grants).
+  - [x] Admin UI permite otorgar permisos faltantes en línea al intentar activar.
+  - [x] Derivar permisos solicitados desde manifest/permissions.
+  - [ ] Validación de manifiesto vs permisos por hook/ruta en runtime/worker.
+- [ ] Testing y validación:
+  - [x] Unit tests de helpers de permisos y workers (activación/permisos).
+  - [x] Unit tests manifest → requestedPermissions.
+  - [x] Test e2e simulado de activación/reconciler (pendiente con worker real/bundle).
+  - [ ] Tests e2e de activación/desactivación y reconciler con workers reales.
 - [ ] Cache/invalidación para filtros pesados: permitir marcar hooks cacheables o idempotentes y gestionar invalidación desde el host para reducir costo.
 - [ ] Sandbox de cron/tareas: registro de tareas con límites de frecuencia y cuotas; auditables y desactivables desde el admin (run now / pause).
 - [ ] Linting de hooks previo a activación: validar prefijo `cms_`, permisos declarados y detectar colisiones/conflictos (p.ej. múltiples overrides de `cms_theme:template`).

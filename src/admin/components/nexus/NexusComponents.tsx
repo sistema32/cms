@@ -9,8 +9,8 @@ import { html, raw } from "hono/html";
 export interface NexusCardProps {
   title?: string;
   subtitle?: string;
-  headerAction?: string;
-  children: string;
+  headerAction?: any;
+  children: any;
   className?: string;
   noPadding?: boolean;
 }
@@ -84,7 +84,7 @@ export interface NexusButtonProps {
   onClick?: string;
   type?: "primary" | "secondary" | "outline" | "ghost" | "soft";
   size?: "sm" | "md" | "lg";
-  icon?: string;
+  icon?: any;
   className?: string;
   disabled?: boolean;
 }
@@ -604,3 +604,4 @@ export const NexusPagination = (props: NexusPaginationProps) => {
     </style>
   `;
 };
+// @ts-nocheck

@@ -1,5 +1,20 @@
 import { html } from "hono/html";
-import { buildAdminRoute, ROUTES, getAdminAsset } from "../config/routes.ts";
+const ROUTES = {
+  dashboard: "/admin",
+  login: "/admin/login",
+  logout: "/admin/logout",
+  forgotPassword: "/admin/forgot-password",
+};
+
+const buildAdminRoute = (route: keyof typeof ROUTES, params: Record<string, string> = {}) => {
+  let path = ROUTES[route];
+  Object.entries(params).forEach(([key, value]) => {
+    path = path.replace(`:${key}`, encodeURIComponent(value));
+  });
+  return path;
+};
+
+const getAdminAsset = (asset: string) => `/admincp/assets/${asset}`;
 import { VALIDATION } from "../config/timing.ts";
 
 /**

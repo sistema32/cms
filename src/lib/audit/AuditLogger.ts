@@ -21,7 +21,7 @@ export class AuditLogger {
   private static instance: AuditLogger;
   private enabled = true;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get singleton instance
@@ -300,7 +300,7 @@ export class AuditLogger {
       .where(whereClause);
 
     // Get paginated results
-    const sortColumn = filter.sortBy || "created_at";
+    const sortColumn = filter.sortBy || "createdAt";
     const sortOrder = filter.sortOrder || "desc";
 
     let query = db

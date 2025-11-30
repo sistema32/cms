@@ -20,8 +20,9 @@ adminRouter.get(
   "/assets/*",
   serveStatic({
     root: "./src/admin",
-    rewriteRequestPath: (path) => path.replace(new RegExp(`^${env.ADMIN_PATH}`), ""),
-  })
+    rewriteRequestPath: (path) =>
+      path.replace(new RegExp(`^${env.ADMIN_PATH}`), ""),
+  }),
 );
 
 // Mount Auth routes (Login, Logout, 2FA)
@@ -35,15 +36,19 @@ adminRouter.use("*", async (c, next) => {
   // (Although they should be handled by authRouter above, Hono might continue matching if next() is called or if not fully handled)
   // But authRouter routes don't call next() if they handle the request.
   // However, to be safe and explicit:
+  const adminPath = env.ADMIN_PATH;
   if (
-    c.req.path === "/admincp/login" ||
-    c.req.path === "/admincp/login/verify-2fa" ||
-    c.req.path === "/admincp/logout"
+    c.req.path === `${adminPath}/login` ||
+    c.req.path === `${adminPath}/login/verify-2fa` ||
+    c.req.path === `${adminPath}/logout`
   ) {
     await next();
     return;
   }
-  await adminAuth(c, next);
+  const res = await adminAuth(c, next);
+  if (res instanceof Response) {
+    return res;
+  }
 
   // Trigger admin:init hook after authentication
   try {
@@ -66,12 +71,19 @@ adminRouter.route("/", formsRouter);
 adminRouter.route("/", toolsRouter);
 adminRouter.route("/", widgetsRouter);
 
+// Plugin Static Files (Admin Dashboard)
+// Maps /admincp/plugin/:pluginName/* -> plugins/:pluginName/public/*
+import { servePluginStaticFile } from "../controllers/adminPluginController.ts";
+
+adminRouter.get("/plugin/:pluginName", servePluginStaticFile);
+adminRouter.get("/plugin/:pluginName/*", servePluginStaticFile);
+
 // Admin Panel API - Menu endpoint (placeholder, legacy controller removed)
 // import { getAdminMenu, renderPluginAdminPage } from "../controllers/adminPanelController.ts";
 // adminRouter.get("/api/menu", getAdminMenu);
 
-// Simple DB-first plugins page (temporary)
-import PluginsDbNexus from "./admin/PluginsDbNexus.tsx";
+// Plugins page
+import PluginsDbNexus from "../admin/pages/PluginsDbNexus.tsx";
 adminRouter.get("/plugins/db", (c) => {
   const user = c.get("user");
   return c.html(PluginsDbNexus({ user }));

@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/mysql2";
 import postgres from "postgres";
 import mysql from "mysql2/promise";
-import { createClient } from "npm:@libsql/client@^0.14/node";
+import { createClient as createClientWasm } from "npm:@libsql/client-wasm@^0.14";
 import * as schema from "./schema.ts";
 import { env } from "../config/env.ts";
 import { getDbType } from "./config/database-type.ts";
@@ -21,7 +21,10 @@ import { getDbType } from "./config/database-type.ts";
 const dbType = getDbType();
 
 // Definir tipo unificado para la DB
-export type Database = LibSQLDatabase<typeof schema> | PostgresJsDatabase<typeof schema> | MySql2Database<typeof schema>;
+export type Database =
+  | LibSQLDatabase<typeof schema>
+  | PostgresJsDatabase<typeof schema>
+  | MySql2Database<typeof schema>;
 
 let dbInstance: Database;
 
@@ -34,11 +37,25 @@ if (dbType === "postgresql") {
   dbInstance = drizzleMySQL(connection, { schema, mode: "default" });
 } else {
   // SQLite / Turso
-  const client = createClient({
-    url: env.DATABASE_URL || "file:local.db",
+  const url = env.DATABASE_URL || "file:local.db";
+
+  const mod = await import("npm:@libsql/client@^0.14/node");
+  const factory = (mod as any).createClient ?? (mod as any).default;
+  const client = factory({
+    url,
     authToken: env.DATABASE_AUTH_TOKEN,
   });
   dbInstance = drizzleSQLite(client, { schema });
+
+  // Enable WAL mode for better concurrency
+  if (url.startsWith("file:")) {
+    try {
+      await client.execute("PRAGMA journal_mode = WAL;");
+      await client.execute("PRAGMA busy_timeout = 5000;");
+    } catch (err) {
+      console.warn("Failed to configure SQLite:", err);
+    }
+  }
 }
 
 export const db = dbInstance;
@@ -47,19 +64,21 @@ export const db = dbInstance;
  * Helper to execute raw queries across different database drivers
  * Handles the differences between SQLite (.all/.run) and Postgres/MySQL (.execute)
  */
-import { sql, type SQL } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 
-export async function executeQuery(query: string | SQL, params: any[] = []): Promise<any> {
+export async function executeQuery(
+  query: string | SQL,
+  params: any[] = [],
+): Promise<any> {
   const type = getDbType();
-
 
   // Convert string query + params to Drizzle SQL object
   let sqlQuery: SQL;
-  if (typeof query === 'string') {
+  if (typeof query === "string") {
     // Build SQL using sql.raw with parameters
     // For parameterized queries, we need to manually construct the SQL object
     // Replace ? placeholders with actual values using sql helper
-    const parts = query.split('?');
+    const parts = query.split("?");
     if (parts.length === 1) {
       // No parameters
       sqlQuery = sql.raw(query);
@@ -68,9 +87,9 @@ export async function executeQuery(query: string | SQL, params: any[] = []): Pro
       const sqlParts: (string | SQL)[] = [sql.raw(parts[0])];
       for (let i = 0; i < params.length; i++) {
         sqlParts.push(sql`${params[i]}`);
-        sqlParts.push(sql.raw(parts[i + 1] || ''));
+        sqlParts.push(sql.raw(parts[i + 1] || ""));
       }
-      sqlQuery = sql.join(sqlParts, sql.raw(''));
+      sqlQuery = sql.join(sqlParts, sql.raw(""));
     }
   } else {
     sqlQuery = query;
@@ -79,10 +98,12 @@ export async function executeQuery(query: string | SQL, params: any[] = []): Pro
   try {
     if (type === "sqlite") {
       // For SQLite, check query type
-      const queryStr = typeof query === 'string' ? query.trim().toUpperCase() : '';
+      const queryStr = typeof query === "string"
+        ? query.trim().toUpperCase()
+        : "";
 
       // Use .all() for SELECT and INSERT...RETURNING
-      if (queryStr.startsWith('SELECT') || queryStr.includes('RETURNING')) {
+      if (queryStr.startsWith("SELECT") || queryStr.includes("RETURNING")) {
         return await (db as any).all(sqlQuery);
       } else {
         // Use .run() for INSERT/UPDATE/DELETE without RETURNING

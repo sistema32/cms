@@ -165,36 +165,56 @@ export async function seedTestContent() {
 
     const createdPosts = [];
     for (const post of posts) {
+      // Check if post already exists
+      const existingPost = await db.query.content.findFirst({
+        where: (content, { eq }) => eq(content.slug, post.slug)
+      });
+
+      if (existingPost) {
+        console.log(`ℹ️  Post '${post.slug}' ya existe. Saltando.`);
+        createdPosts.push(existingPost);
+        continue;
+      }
+
       const [created] = await db.insert(content).values(post).returning();
       createdPosts.push(created);
     }
 
-    console.log("✅ Posts creados");
+    console.log("✅ Posts creados/verificados");
 
     // Asignar categorías a posts
-    await db.insert(contentCategories).values([
-      { contentId: createdPosts[0].id, categoryId: techCat.id },
-      { contentId: createdPosts[1].id, categoryId: techCat.id },
-      { contentId: createdPosts[2].id, categoryId: newsCat.id }
-    ]);
+    try {
+      await db.insert(contentCategories).values([
+        { contentId: createdPosts[0].id, categoryId: techCat.id },
+        { contentId: createdPosts[1].id, categoryId: techCat.id },
+        { contentId: createdPosts[2].id, categoryId: newsCat.id }
+      ]).onConflictDoNothing();
+    } catch (e) {
+      // Ignore if already exists (fallback if onConflictDoNothing doesn't work as expected with some drivers)
+      console.log("ℹ️  Relaciones de categorías ya existen o error al crear:", e.message);
+    }
 
     // Asignar tags a posts
-    await db.insert(contentTags).values([
-      { contentId: createdPosts[0].id, tagId: denoTag.id },
-      { contentId: createdPosts[1].id, tagId: jsTag.id },
-      { contentId: createdPosts[1].id, tagId: denoTag.id },
-      { contentId: createdPosts[2].id, tagId: webTag.id }
-    ]);
+    try {
+      await db.insert(contentTags).values([
+        { contentId: createdPosts[0].id, tagId: denoTag.id },
+        { contentId: createdPosts[1].id, tagId: jsTag.id },
+        { contentId: createdPosts[1].id, tagId: denoTag.id },
+        { contentId: createdPosts[2].id, tagId: webTag.id }
+      ]).onConflictDoNothing();
+    } catch (e) {
+      console.log("ℹ️  Relaciones de tags ya existen o error al crear:", e.message);
+    }
 
     console.log("✅ Relaciones creadas");
     console.log("\n🎉 Contenido de prueba creado exitosamente!");
-    console.log(`   - ${createdPosts.length} posts`);
+    console.log(`   - ${createdPosts.length} posts procesados`);
     console.log(`   - 2 categorías`);
     console.log(`   - 3 tags`);
 
   } catch (error) {
     console.error("❌ Error creando contenido de prueba:", error);
-    throw error;
+    // Don't throw, just log, so other seeds can continue
   }
 }
 

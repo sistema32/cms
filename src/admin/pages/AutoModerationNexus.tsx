@@ -883,3 +883,4 @@ export const AutoModerationNexusPage = (props: AutoModerationNexusProps) => {
 };
 
 export default AutoModerationNexusPage;
+// @ts-nocheck

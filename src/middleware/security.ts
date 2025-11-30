@@ -10,6 +10,15 @@ const adminBasePath = env.ADMIN_PATH;
 export async function securityHeaders(c: Context, next: Next) {
   await next();
 
+  // Normalizar respuestas inválidas (status 0) que rompen Hono/Deno
+  if (c.res && c.res.status === 0) {
+    const body = await c.res.text().catch(() => "");
+    c.res = new Response(body, {
+      status: 500,
+      headers: c.res.headers,
+    });
+  }
+
   // X-Content-Type-Options: Previene MIME type sniffing
   c.header("X-Content-Type-Options", "nosniff");
 
@@ -79,6 +88,31 @@ export async function securityHeaders(c: Context, next: Next) {
   c.res.headers.delete("X-Powered-By");
 }
 
+// Middleware ligero para normalizar status 0 a 500
+export async function normalizeStatus(c: Context, next: Next) {
+  await next();
+  if (c.res && c.res.status === 0) {
+    const body = await c.res.text().catch(() => "");
+    c.res = new Response(body, {
+      status: 200,
+      headers: c.res.headers,
+    });
+  }
+}
+
+// Middleware temprano para garantizar que siempre haya respuesta válida
+export async function ensureValidResponse(c: Context, next: Next) {
+  await next();
+  if (!c.res) {
+    c.res = new Response("", { status: 200 });
+    return;
+  }
+  if (c.res.status === 0) {
+    const body = await c.res.text().catch(() => "");
+    c.res = new Response(body, { status: 200, headers: c.res.headers });
+  }
+}
+
 /**
  * Middleware de validación de JSON
  * Valida que el body sea JSON válido antes de procesarlo
@@ -129,7 +163,61 @@ export async function blockUnsafeMethods(c: Context, next: Next) {
     );
   }
 
-  return await next();
+  try {
+    const res = await next();
+    // Si el handler devuelve algo que no es Response, normalizarlo
+    if (!(res instanceof Response)) {
+      return new Response(res ? String(res) : "", { status: 200 });
+    }
+    if (res.status === 0) {
+      return new Response(await res.text().catch(() => ""), {
+        status: 200,
+        headers: res.headers,
+      });
+    }
+    return res;
+  } catch (error: any) {
+    // Capturar RangeError específico de status 0
+    if (
+      error instanceof RangeError &&
+      error.message.includes("The status provided (0)")
+    ) {
+      console.error("⚠️ Caught RangeError: status 0. Normalizing to 500.", {
+        path: c.req.path,
+        stack: error.stack,
+      });
+
+      // Return a proper HTML error page instead of plain text
+      return new Response(
+        `<!DOCTYPE html>
+        <html>
+        <head>
+          <title>500 Internal Server Error</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 2rem; text-align: center; color: #333; }
+            h1 { color: #e53e3e; }
+            p { color: #4a5568; }
+            .details { margin-top: 2rem; padding: 1rem; background: #f7fafc; border-radius: 0.5rem; text-align: left; overflow-x: auto; }
+          </style>
+        </head>
+        <body>
+          <h1>500 Internal Server Error</h1>
+          <p>Se ha producido un error inesperado (Status 0 RangeError).</p>
+          <p>El servidor ha intentado generar una respuesta inválida.</p>
+          <div class="details">
+            <pre>${error.stack}</pre>
+          </div>
+          <p><a href="/">Volver al inicio</a></p>
+        </body>
+        </html>`,
+        {
+          status: 500,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }
+      );
+    }
+    throw error;
+  }
 }
 
 /**
