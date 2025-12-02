@@ -117,6 +117,9 @@ export async function runHookSafely(hookName: string, ...args: any[]) {
 export const runtimeRoutes = new Map<string, RegisteredRoute>(); // key: method:path
 export const runtimeHooks = new Map<string, RegisteredHook[]>(); // key: hook name
 export const registeredSlots: { plugin: string; slot: string; label: string; url: string }[] = [];
+export const registeredAssets: { plugin: string; type: "css" | "js"; url: string }[] = [];
+export const registeredWidgets: { plugin: string; widget: string; label: string; renderUrl: string }[] = [];
+export const registeredCrons: { plugin: string; schedule: string; permission: string }[] = [];
 
 export function registerRoute(ctx: SandboxContext, route: RegisteredRoute) {
   assertPermission(ctx.plugin, route.permission);
@@ -135,11 +138,9 @@ export function registerHook(ctx: SandboxContext, hook: RegisteredHook) {
   runtimeHooks.set(hook.name, list);
 }
 
-export const registeredAssets: { plugin: string; type: "css" | "js"; url: string }[] = [];
-export const registeredWidgets: { plugin: string; widget: string; label: string; renderUrl: string }[] = [];
-
 export function registerUiSlot(ctx: SandboxContext, slot: string, label: string, url: string) {
-  // TODO: Check permissions
+  const permission = `ui:slot:${slot}`;
+  assertPermission(ctx.plugin, permission);
   registeredSlots.push({
     plugin: ctx.plugin,
     slot,
@@ -149,6 +150,8 @@ export function registerUiSlot(ctx: SandboxContext, slot: string, label: string,
 }
 
 export function registerAsset(ctx: SandboxContext, type: "css" | "js", url: string) {
+  const permission = `ui:asset:${type}`;
+  assertPermission(ctx.plugin, permission);
   registeredAssets.push({
     plugin: ctx.plugin,
     type,
@@ -157,12 +160,24 @@ export function registerAsset(ctx: SandboxContext, type: "css" | "js", url: stri
 }
 
 export function registerWidget(ctx: SandboxContext, widget: string, label: string, renderUrl: string) {
+  const permission = `ui:widget:${widget}`;
+  assertPermission(ctx.plugin, permission);
   registeredWidgets.push({
     plugin: ctx.plugin,
     widget,
     label,
     renderUrl
   });
+}
+
+export function registerCron(ctx: SandboxContext, cron: { schedule: string; permission: string; plugin: string; capabilities: any }) {
+  assertPermission(ctx.plugin, cron.permission);
+  registeredCrons.push({
+    plugin: ctx.plugin,
+    schedule: cron.schedule,
+    permission: cron.permission
+  });
+  console.log(`[runtime] Registered cron for ${ctx.plugin}: ${cron.schedule} (${cron.permission})`);
 }
 
 export function clearRuntime(plugin: string) {

@@ -7,6 +7,8 @@ import {
   setStatus,
   updateHealth,
   registerDiscoveredPlugin,
+  removePlugin,
+  listPermissionGrants,
 } from "./pluginRegistry.ts";
 import { extractRequestedPermissions, computeMissingPermissions } from "./pluginPermissions.ts";
 import { startWorker, stopWorker, getWorker, setWorkerError } from "./pluginWorker.ts";
@@ -17,6 +19,7 @@ import { resolve, join } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { seedBreaker } from "./pluginRuntime.ts";
 import { applyPending as applyPendingMigrations, status as migrationStatus } from "./pluginMigrations.ts";
 import { discoverPlugins } from "./pluginDiscovery.ts";
+import { extractCapabilitiesFromManifest } from "./pluginCapabilities.ts";
 
 const DEFAULT_INTERVAL_MS = 15_000;
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
@@ -26,11 +29,19 @@ let healthLoopHandle: ReturnType<typeof setInterval> | null = null;
 
 export function startReconcilerLoop() {
   if (intervalHandle) return;
+  // Run once on startup to boot active plugins
+  reconcilePlugins().catch((err) => {
+    console.error("[reconciler] startup reconcile failed", err);
+  });
+
+  // Disable periodic loop for on-demand discovery
+  /*
   intervalHandle = setInterval(() => {
     reconcilePlugins().catch((err) => {
       console.error("[reconciler] periodic reconcile failed", err);
     });
   }, DEFAULT_INTERVAL_MS);
+  */
 }
 
 export function stopReconcilerLoop() {
@@ -41,10 +52,24 @@ export function stopReconcilerLoop() {
 }
 
 export async function reconcilePlugins() {
-  await discoverPlugins();
+  const discoveredIds = await discoverPlugins();
   const plugins = await listPlugins();
-  // Seed breaker counts from last health status
+
+  // 1. Remove plugins that are in DB but not on disk
   for (const plugin of plugins) {
+    if (!discoveredIds.includes(plugin.name)) {
+      console.log(`[reconciler] Plugin ${plugin.name} not found on disk. Removing...`);
+      stopWorker(plugin.name);
+      await removePlugin(plugin.name);
+      continue; // Skip further processing for this plugin
+    }
+  }
+
+  // Refresh list after removal
+  const activePlugins = plugins.filter(p => discoveredIds.includes(p.name));
+
+  // Seed breaker counts from last health status
+  for (const plugin of activePlugins) {
     if (
       plugin.lastHealthStatus === "error" ||
       plugin.lastHealthStatus === "degraded" ||
@@ -56,7 +81,7 @@ export async function reconcilePlugins() {
       }
     }
   }
-  for (const plugin of plugins) {
+  for (const plugin of activePlugins) {
     const requested = extractRequestedPermissions(plugin.permissions);
     const missing = computeMissingPermissions(requested, plugin.grants);
     const lastHealth = plugin.lastHealthStatus;
@@ -112,7 +137,8 @@ export async function reconcilePlugins() {
               capabilities: { db: ["read"], fs: ["read"], http: [] },
             };
           const manifestPermissions = requestedPermissionsFromManifest(manifest);
-          startWorker(plugin.name, manifestPermissions, manifest);
+          const capabilities = extractCapabilitiesFromManifest(manifest);
+          startWorker(plugin.name, manifestPermissions, manifest, capabilities);
           await updateHealth(plugin.name, "active");
         } catch (err) {
           console.error(`[reconciler] Failed to start worker for ${plugin.name}`, err);
@@ -145,15 +171,69 @@ export async function activate(name: string) {
     await updateHealth(name, "error", `Migration failed: ${msg}`);
     throw err;
   }
-  startWorker(name);
-  await updateHealth(name, "active");
+
+  // Stop existing worker if any (restart)
+  stopWorker(name);
+
+  // Fetch grants to pass to worker
+  const grants = await listPermissionGrants(name);
+  const grantedPermissions = grants.filter(g => g.granted).map(g => g.permission);
+
+  // Load manifest for validation
+  const cwd = Deno.cwd();
+  const manifest = await tryLoadManifest(resolve(cwd), name);
+
+  // If manifest load fails, we might want to fail activation or warn
+  if (!manifest) {
+    console.warn(`[reconciler] Activating ${name} without manifest (could not load)`);
+  }
+
+  // Try to start the worker - if it fails, auto-deactivate to prevent corruption
+  try {
+    const capabilities = manifest ? extractCapabilitiesFromManifest(manifest) : { dbRead: false, fsRead: false, httpAllowlist: [] };
+    startWorker(name, grantedPermissions, manifest || undefined, capabilities);
+    await updateHealth(name, "active");
+  } catch (err) {
+    // Worker startup failed - auto-deactivate to prevent system corruption
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[reconciler] Worker startup failed for ${name}, auto-deactivating:`, msg);
+
+    // Revert status to inactive
+    await setStatus(name, "inactive");
+
+    // Update health with error details
+    await updateHealth(name, "error", `Worker startup failed: ${msg}`);
+
+    // Stop any partially started worker
+    stopWorker(name);
+
+    // Re-throw to notify caller
+    throw new Error(`Plugin activation failed: ${msg}`);
+  }
 }
 
-export async function deactivate(name: string) {
+export async function deactivate(name: string, rollback = false) {
   await setStatus(name, "inactive");
   stopWorker(name);
   await updateHealth(name, "inactive");
-  // TODO: optional rollback
+
+  if (rollback) {
+    try {
+      const { listApplied, rollbackLast } = await import("./pluginMigrations.ts");
+      const applied = await listApplied(name);
+
+      if (applied.length > 0) {
+        console.log(`[reconciler] Rolling back ${applied.length} migrations for ${name}`);
+        await rollbackLast(name, applied.length);
+        console.log(`[reconciler] Rollback completed for ${name}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[reconciler] Rollback failed for ${name}:`, msg);
+      await updateHealth(name, "error", `Rollback failed: ${msg}`);
+      throw new Error(`Deactivation rollback failed: ${msg}`);
+    }
+  }
 }
 
 export function startHealthCheckLoop(intervalMs = 60_000) {

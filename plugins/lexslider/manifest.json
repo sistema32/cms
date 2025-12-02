@@ -1,0 +1,87 @@
+{
+    "manifestVersion": "v2",
+    "id": "lexslider",
+    "name": "LexSlider",
+    "version": "1.0.0",
+    "description": "A powerful and intuitive slider plugin for LexCMS.",
+    "author": "Nextend (Ported)",
+    "homepage": "https://smartslider3.com",
+    "permissions": [
+        "route:GET:/sliders",
+        "route:POST:/sliders",
+        "route:GET:/sliders/:id",
+        "route:PUT:/sliders/:id",
+        "route:DELETE:/sliders/:id",
+        "route:GET:/sliders/:id/slides",
+        "route:POST:/sliders/:id/slides",
+        "route:PUT:/slides/:id",
+        "route:DELETE:/slides/:id",
+        "route:GET:/render/:id",
+        "route:GET:/sliders/:id/global-layers",
+        "route:PUT:/sliders/:id/global-layers",
+        "ui:slot:sidebar",
+        "ui:widget:lexslider_widget",
+        "ui:asset:css",
+        "ui:asset:js"
+    ],
+    "routes": [
+        {
+            "method": "GET",
+            "path": "/sliders"
+        },
+        {
+            "method": "POST",
+            "path": "/sliders"
+        },
+        {
+            "method": "GET",
+            "path": "/sliders/:id"
+        },
+        {
+            "method": "PUT",
+            "path": "/sliders/:id"
+        },
+        {
+            "method": "DELETE",
+            "path": "/sliders/:id"
+        },
+        {
+            "method": "GET",
+            "path": "/sliders/:id/slides"
+        },
+        {
+            "method": "POST",
+            "path": "/sliders/:id/slides"
+        },
+        {
+            "method": "PUT",
+            "path": "/slides/:id"
+        },
+        {
+            "method": "DELETE",
+            "path": "/slides/:id"
+        },
+        {
+            "method": "GET",
+            "path": "/render/:id"
+        },
+        {
+            "method": "GET",
+            "path": "/sliders/:id/global-layers"
+        },
+        {
+            "method": "PUT",
+            "path": "/sliders/:id/global-layers"
+        }
+    ],
+    "capabilities": {
+        "db": [
+            "read",
+            "write"
+        ],
+        "fs": [
+            "read"
+        ],
+        "http": []
+    }
+}

@@ -230,9 +230,22 @@ export function buildPluginRouter() {
         };
       }
       const start = performance.now();
+
+      // Parse body if JSON
+      let parsedBody: any = undefined;
+      const contentType = c.req.header("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          parsedBody = await c.req.json();
+        } catch (e) {
+          console.warn("Failed to parse plugin request body", e);
+        }
+      }
+
       const reqProxy = new Proxy(c.req, {
         get(target, prop) {
           if (prop === "path") return path;
+          if (prop === "body") return parsedBody; // Expose parsed body
           const value = Reflect.get(target, prop);
           if (typeof value === "function") {
             return value.bind(target);

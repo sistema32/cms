@@ -11,6 +11,7 @@ export interface PluginManifest {
     { method: string; path: string; permission?: ManifestPermission }
   >;
   hooks?: Array<{ name: string; permission?: ManifestPermission }>;
+  cron?: Array<{ name: string; schedule: string; permission?: ManifestPermission }>;
   httpAllowlist?: string[];
   capabilities?: {
     db?: ("read" | "write")[];
@@ -39,14 +40,16 @@ function lintHooks(hooks: Array<{ name: string }>) {
 
 export function parseManifest(raw: unknown): PluginManifest {
   if (!raw || typeof raw !== "object") {
-    throw new Error("Manifest must be an object");
+    throw new Error("Manifest must be a JSON object");
   }
   const obj = raw as Record<string, unknown>;
   if (obj.manifestVersion !== "v2") {
-    throw new Error("Manifest.manifestVersion must be 'v2'");
+    throw new Error(
+      `Manifest must have "manifestVersion": "v2" (found: ${JSON.stringify(obj.manifestVersion)})`
+    );
   }
   if (typeof obj.id !== "string") {
-    throw new Error("Manifest.id is required");
+    throw new Error('Manifest must have "id" field as a string');
   }
   if (typeof obj.name !== "string") {
     throw new Error("Manifest.name is required");
@@ -81,13 +84,9 @@ export function requestedPermissionsFromManifest(
   const base: string[] = [];
   if (manifest.permissions) {
     if (Array.isArray(manifest.permissions)) {
-      base.push(...manifest.permissions.map(String));
-    }
-    if (
-      typeof manifest.permissions === "object" &&
-      Array.isArray((manifest.permissions as any).required)
-    ) {
-      base.push(...(manifest.permissions as any).required.map(String));
+      base.push(...manifest.permissions);
+    } else if (manifest.permissions.required) {
+      base.push(...manifest.permissions.required);
     }
   }
   const routePerms = (manifest.routes ?? [])
@@ -97,10 +96,14 @@ export function requestedPermissionsFromManifest(
     .filter(Boolean)
     .map(String);
   const hookPerms = (manifest.hooks ?? [])
-    .map((h) => h.permission ?? h.name)
+    .map((h) => h.permission ?? `hook:${h.name}`)
     .filter(Boolean)
     .map(String);
-  return Array.from(new Set([...base, ...routePerms, ...hookPerms]));
+  const cronPerms = (manifest.cron ?? [])
+    .map((c) => c.permission ?? `cron:${c.name}`)
+    .filter(Boolean)
+    .map(String);
+  return Array.from(new Set([...base, ...routePerms, ...hookPerms, ...cronPerms]));
 }
 
 export function validateManifestAgainstPermissions(

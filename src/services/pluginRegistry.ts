@@ -10,10 +10,15 @@ import {
   pluginHealth,
   pluginPermissionGrants,
 } from "../db/schema.ts";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
-  computeMissingPermissions,
+  Plugin,
+  PluginRecord,
+  PluginHealth,
+  PermissionGrant,
+  PluginMigration,
   extractRequestedPermissions,
+  computeMissingPermissions,
 } from "./pluginPermissions.ts";
 
 export type PluginStatus = "inactive" | "active" | "error" | "degraded";
@@ -69,18 +74,7 @@ function mapPlugin(row: typeof plugins.$inferSelect): PluginRecord {
   };
 }
 
-export function extractRequestedPermissions(permissions: unknown): string[] {
-  if (!permissions) return [];
-  if (Array.isArray(permissions)) return permissions.map((p) => String(p)).filter(Boolean);
-  if (typeof permissions === "object" && permissions !== null) {
-    const permObj = permissions as Record<string, unknown>;
-    if (Array.isArray(permObj.required)) {
-      return permObj.required.map((p) => String(p)).filter(Boolean);
-    }
-  }
-  return [];
-}
-
+// extractRequestedPermissions moved to pluginPermissions.ts to avoid duplication
 export async function listPlugins(): Promise<PluginRecord[]> {
   const rows = await db.select().from(plugins);
   const base = rows.map(mapPlugin);
@@ -235,7 +229,6 @@ export async function listPermissionGrants(name: string): Promise<PermissionGran
     granted: !!g.granted,
     grantedAt: g.grantedAt ? new Date(g.grantedAt as unknown as number) : new Date(),
     grantedBy: g.grantedBy ?? null,
-    grantedBy: g.grantedBy ?? null,
   }));
 }
 
@@ -243,11 +236,68 @@ import { requestedPermissionsFromManifest } from "./pluginManifest.ts";
 
 export async function registerDiscoveredPlugin(manifest: any) {
   const existing = await db.select().from(plugins).where(eq(plugins.name, manifest.id)).get();
-  if (existing) return;
-
   const allPermissions = requestedPermissionsFromManifest(manifest);
 
-  await db.insert(plugins).values({
+  if (existing) {
+    // Check if update is actually needed to avoid unnecessary DB writes
+    const currentPerms = existing.permissions ? JSON.parse(existing.permissions) : [];
+    const newPermsJson = JSON.stringify(allPermissions);
+
+    // Simple string comparison for permissions (assuming deterministic order or we sort)
+    // For robustness, let's sort both
+    const sortedCurrent = [...currentPerms].sort();
+    const sortedNew = [...allPermissions].sort();
+    const permsChanged = JSON.stringify(sortedCurrent) !== JSON.stringify(sortedNew);
+    const versionChanged = existing.version !== manifest.version;
+    const descChanged = existing.description !== manifest.description;
+
+    if (!permsChanged && !versionChanged && !descChanged) {
+      return;
+    }
+
+    // Update existing plugin with new manifest details
+    await db.update(plugins).set({
+      displayName: manifest.name,
+      version: manifest.version,
+      description: manifest.description,
+      author: manifest.author,
+      homepage: manifest.homepage,
+      permissions: newPermsJson,
+      updatedAt: new Date(),
+    }).where(eq(plugins.id, existing.id));
+    console.log(`[registry] Updated plugin: ${manifest.id} (v${manifest.version})`);
+
+    // Auto-grant any new permissions
+    if (permsChanged) {
+      const currentPermSet = new Set(sortedCurrent);
+      const newPerms = allPermissions.filter(p => !currentPermSet.has(p));
+      if (newPerms.length > 0) {
+        const existingGrants = await db.select()
+          .from(pluginPermissionGrants)
+          .where(eq(pluginPermissionGrants.pluginId, existing.id));
+        const existingGrantSet = new Set(existingGrants.map(g => g.permission));
+
+        const grantsToAdd = newPerms
+          .filter(p => !existingGrantSet.has(p))
+          .map(p => ({
+            pluginId: existing.id,
+            permission: p,
+            granted: true,
+            grantedBy: null,
+            grantedAt: new Date(),
+          }));
+
+        if (grantsToAdd.length > 0) {
+          await db.insert(pluginPermissionGrants).values(grantsToAdd);
+          console.log(`[registry] Auto-granted ${grantsToAdd.length} new permissions for ${manifest.id}`);
+        }
+      }
+    }
+    return;
+  }
+
+  // Insert new plugin
+  const result = await db.insert(plugins).values({
     name: manifest.id,
     displayName: manifest.name, // manifest.name is the display name
     version: manifest.version,
@@ -260,5 +310,37 @@ export async function registerDiscoveredPlugin(manifest: any) {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  console.log(`[registry] Auto-discovered plugin: ${manifest.id}`);
+
+  // Get the newly inserted plugin ID
+  const newPlugin = await db.select().from(plugins).where(eq(plugins.name, manifest.id)).get();
+
+  if (newPlugin && allPermissions.length > 0) {
+    // Auto-grant all requested permissions for new plugins
+    const grants = allPermissions.map(p => ({
+      pluginId: newPlugin.id,
+      permission: p,
+      granted: true,
+      grantedBy: null,
+      grantedAt: new Date(),
+    }));
+
+    await db.insert(pluginPermissionGrants).values(grants);
+    console.log(`[registry] Auto-discovered plugin: ${manifest.id} with ${allPermissions.length} permissions auto-granted`);
+  } else {
+    console.log(`[registry] Auto-discovered plugin: ${manifest.id}`);
+  }
+}
+
+export async function removePlugin(name: string) {
+  const plugin = await db.select().from(plugins).where(eq(plugins.name, name)).get();
+  if (!plugin) return;
+
+  // Clean up related tables (cascade should handle this, but explicit is safer for some DBs)
+  await db.delete(pluginHealth).where(eq(pluginHealth.pluginId, plugin.id));
+  await db.delete(pluginPermissionGrants).where(eq(pluginPermissionGrants.pluginId, plugin.id));
+  await db.delete(pluginMigrations).where(eq(pluginMigrations.pluginId, plugin.id));
+
+  // Delete plugin record
+  await db.delete(plugins).where(eq(plugins.id, plugin.id));
+  console.log(`[registry] Removed plugin: ${name}`);
 }

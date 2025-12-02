@@ -6,6 +6,7 @@ import {
 import { registerRoute, registerHook, clearRuntime } from "./pluginRuntime.ts";
 import { MainToWorkerMessage, WorkerToMainMessage } from "./pluginRpc.ts";
 import { db } from "../config/db.ts";
+import type { SandboxCapabilities } from "./pluginSandbox.ts";
 
 export type WorkerHandle = {
   name: string;
@@ -26,11 +27,19 @@ export async function startWorker(
   name: string,
   permissions: string[] = [],
   manifest?: PluginManifest,
+  capabilities?: SandboxCapabilities,
 ) {
   if (manifest) {
     const missing = validateManifestAgainstPermissions(manifest, permissions);
     if (missing.length > 0) {
-      throw new Error(`Manifest requests permissions not granted: ${missing.join(", ")}`);
+      throw new Error(
+        `Plugin "${name}" is missing required permissions:\n` +
+        missing.map(p => `  - ${p}`).join('\n') + '\n\n' +
+        `To fix this:\n` +
+        `1. Add to ${name}/manifest.json:\n` +
+        `   "permissions": [${missing.map(p => `"${p}"`).join(', ')}]\n` +
+        `2. Or grant via Admin UI: /admincp/plugins/${name}/permissions`
+      );
     }
   }
 
@@ -61,21 +70,55 @@ export async function startWorker(
         break;
       case "registerRoute":
         registerRoute(
-          { plugin: name, capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] } }, // TODO: capabilities from manifest
+          { plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } },
           {
             method: msg.payload.method,
             path: msg.payload.path,
             permission: msg.payload.permission,
             plugin: name,
-            capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] },
+            capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] },
             handler: async (reqCtx: any) => {
               const id = generateId();
-              // Serialize request
+
+              // Serialize request with better handling
+              const headers: [string, string][] = [];
+              reqCtx.req.raw.headers.forEach((value: string, key: string) => {
+                headers.push([key, value]);
+              });
+
+              // Serialize body based on content-type
+              let body = null;
+              const contentType = reqCtx.req.header('content-type') || '';
+
+              try {
+                if (contentType.includes('application/json')) {
+                  body = await reqCtx.req.json().catch(() => null);
+                } else if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+                  const formData = await reqCtx.req.formData().catch(() => null);
+                  if (formData) {
+                    const formObj: Record<string, any> = {};
+                    formData.forEach((value: FormDataEntryValue, key: string) => {
+                      formObj[key] = value;
+                    });
+                    body = formObj;
+                  }
+                } else if (contentType.includes('text/')) {
+                  body = await reqCtx.req.text().catch(() => null);
+                } else if (reqCtx.req.body) {
+                  // Try JSON as fallback
+                  body = await reqCtx.req.json().catch(() => null);
+                }
+              } catch (err) {
+                console.warn(`[worker] Body serialization failed:`, err);
+                body = null;
+              }
+
               const reqPayload = {
                 method: reqCtx.req.method,
-                path: reqCtx.req.path, // This might need stripping prefix logic if not done in router
-                headers: [], // TODO: serialize headers
-                body: await reqCtx.req.json().catch(() => ({})), // TODO: handle body better
+                path: reqCtx.req.path,
+                query: reqCtx.req.query(),
+                headers,
+                body,
               };
 
               return new Promise((resolve, reject) => {
@@ -88,7 +131,7 @@ export async function startWorker(
         break;
       case "registerHook":
         const { registerHook } = await import("./pluginRuntime.ts");
-        registerHook({ plugin: name, capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] } }, {
+        registerHook({ plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } }, {
           name: msg.payload.name,
           handler: async (...args: any[]) => {
             const id = crypto.randomUUID();
@@ -98,20 +141,29 @@ export async function startWorker(
           },
           permission: msg.payload.permission,
           plugin: name,
-          capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] }, // TODO: Real capabilities
+          capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] },
+        });
+        break;
+      case "registerCron":
+        const { registerCron } = await import("./pluginRuntime.ts");
+        registerCron({ plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } }, {
+          schedule: msg.payload.schedule,
+          permission: msg.payload.permission,
+          plugin: name,
+          capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] },
         });
         break;
       case "registerUiSlot":
         const { registerUiSlot } = await import("./pluginRuntime.ts");
-        registerUiSlot({ plugin: name, capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] } }, msg.payload.slot, msg.payload.label, msg.payload.url);
+        registerUiSlot({ plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } }, msg.payload.slot, msg.payload.label, msg.payload.url);
         break;
       case "registerAsset":
         const { registerAsset } = await import("./pluginRuntime.ts");
-        registerAsset({ plugin: name, capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] } }, msg.payload.type, msg.payload.url);
+        registerAsset({ plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } }, msg.payload.type, msg.payload.url);
         break;
       case "registerWidget":
         const { registerWidget } = await import("./pluginRuntime.ts");
-        registerWidget({ plugin: name, capabilities: { dbRead: true, fsRead: true, httpAllowlist: [] } }, msg.payload.widget, msg.payload.label, msg.payload.renderUrl);
+        registerWidget({ plugin: name, capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] } }, msg.payload.widget, msg.payload.label, msg.payload.renderUrl);
         break;
       case "routeResult":
         const p = handle.pendingInvocations.get(msg.id);
@@ -135,7 +187,79 @@ export async function startWorker(
           worker.postMessage({ type: "dbResponse", id: msg.id, error: errorMsg } as MainToWorkerMessage);
         }
         break;
-      // TODO: Handle fetch, fsRead
+      case "fetch":
+        try {
+          const { httpFetch } = await import("./pluginHttpSandbox.ts");
+          const cap = capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] };
+          const response = await httpFetch(msg.url, msg.init || {}, {
+            allowlist: cap.httpAllowlist,
+            timeoutMs: 10000
+          });
+
+          // Serialize response
+          const headers: [string, string][] = [];
+          response.headers.forEach((value, key) => {
+            headers.push([key, value]);
+          });
+
+          const body = await response.text();
+
+          worker.postMessage({
+            type: "fetchResult",
+            id: msg.id,
+            response: {
+              status: response.status,
+              statusText: response.statusText,
+              headers,
+              body
+            }
+          } as MainToWorkerMessage);
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          console.error(`[Fetch Error for ${name}]:`, err);
+          worker.postMessage({
+            type: "fetchResult",
+            id: msg.id,
+            error: errorMsg
+          } as MainToWorkerMessage);
+        }
+        break;
+      case "fsRead":
+        try {
+          const { FsSandbox } = await import("./pluginFsSandbox.ts");
+          const cap = capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] };
+
+          if (!cap.fsRead) {
+            throw new Error("Plugin does not have filesystem read capability");
+          }
+
+          const pluginDir = `./plugins/${name}`;
+          const sandbox = new FsSandbox(pluginDir);
+
+          let data;
+          if (msg.method === "readText") {
+            data = await sandbox.readText(msg.path);
+          } else {
+            const bytes = await sandbox.readFile(msg.path);
+            // Convert Uint8Array to base64 for transfer
+            data = btoa(String.fromCharCode(...bytes));
+          }
+
+          worker.postMessage({
+            type: "fsResult",
+            id: msg.id,
+            data
+          } as MainToWorkerMessage);
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          console.error(`[FS Error for ${name}]:`, err);
+          worker.postMessage({
+            type: "fsResult",
+            id: msg.id,
+            error: errorMsg
+          } as MainToWorkerMessage);
+        }
+        break;
     }
   };
 
@@ -144,6 +268,7 @@ export async function startWorker(
     type: "init",
     pluginName: name,
     permissions,
+    capabilities: capabilities || { dbRead: false, fsRead: false, httpAllowlist: [] },
     config: {}
   } as MainToWorkerMessage);
 
