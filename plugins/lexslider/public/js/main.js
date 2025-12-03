@@ -1,6 +1,6 @@
 console.log("[LexSlider] Loading main.js...");
 
-import { initElements, loadSliders, switchView, state, API_BASE, elements } from './modules/EditorCore.js';
+import { initElements, loadSliders, switchView, loadView, state, API_BASE, elements, setDevice } from './modules/EditorCore.js?v=3.0.10';
 import { renderCanvas, selectLayer } from './modules/CanvasRenderer.js';
 import { renderLayerList, addLayer, deleteLayer } from './modules/LayerManager.js';
 import { renderProperties, updateLayerStyle, updateLayerContent, updateLayerProp, updateSlideProperty, toggleTextDecoration, applyCustomCSS, formatText } from './modules/PropertyInspector.js';
@@ -10,8 +10,12 @@ import { initTimeline, renderTimelineTracks, timelineZoom, addKeyframe, startBar
 let assetCallback = null;
 
 window.LexSlider = {
+    setDevice, // Expose Device Switcher
     addLayer,
     deleteLayer,
+    renderProperties,
+    renderLayerList,
+    renderCanvas,
     selectLayerById: (id) => {
         const layer = state.mode === 'global'
             ? state.globalLayers.find(l => l.id === id)
@@ -79,74 +83,64 @@ window.LexSlider = {
             assetCallback(url);
         }
         window.LexSlider.closeAssetManager();
+    },
+
+    // Preview
+    preview: () => {
+        const modal = document.getElementById('modal-preview');
+        const container = document.getElementById('preview-container');
+        modal.classList.remove('hidden');
+
+        // Simple Preview Render (Clone of Canvas)
+        // In a real scenario, this would initialize the frontend runtime
+        container.innerHTML = '';
+
+        const previewFrame = document.createElement('iframe');
+        previewFrame.style.width = '100%';
+        previewFrame.style.height = '100%';
+        previewFrame.style.border = 'none';
+        container.appendChild(previewFrame);
+
+        const doc = previewFrame.contentWindow.document;
+
+        // Inject Styles
+        const styles = document.querySelectorAll('link[rel="stylesheet"], style');
+        styles.forEach(s => doc.head.appendChild(s.cloneNode(true)));
+
+        // Inject Content
+        const canvasContent = document.getElementById('canvas-content').innerHTML;
+        doc.body.innerHTML = `
+            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000;">
+                <div style="position:relative; width:${state.currentSlider.width}px; height:${state.currentSlider.height}px; overflow:hidden; background:${state.currentSlide.background_color || '#fff'};">
+                    ${canvasContent}
+                </div>
+            </div>
+        `;
     }
 };
 
 // --- INITIALIZATION ---
 async function init() {
     console.log("[LexSlider 3.0] Initializing Modular Editor...");
-    initElements();
 
-    // Setup Global Event Listeners
-    setupEventListeners();
+    // Load Dashboard View by default
+    await loadView('dashboard');
 
-    // Init Timeline
+    // Init Timeline (Logic only, UI attached later)
     initTimeline();
-
-    // Initial Load
-    await loadSliders();
 }
 
 function setupEventListeners() {
-    // Dashboard
-    if (elements.dashboard.btnNew) {
-        elements.dashboard.btnNew.onclick = () => {
-            elements.dashboard.modalNew.classList.remove('hidden');
-        };
-    }
-
+    // Global Listeners (Modals)
     if (elements.dashboard.btnCancelNew) {
         elements.dashboard.btnCancelNew.onclick = () => {
-            elements.dashboard.modalNew.classList.add('hidden');
+            elements.dashboard.modalNew.close();
         };
     }
 
     if (elements.dashboard.formNew) {
         elements.dashboard.formNew.onsubmit = handleCreateSlider;
     }
-
-    // Editor
-    if (elements.editor.btnBack) {
-        elements.editor.btnBack.onclick = () => switchView('dashboard');
-    }
-    if (elements.editor.btnSave) {
-        elements.editor.btnSave.onclick = saveSlider;
-    }
-    if (elements.editor.btnAddSlide) {
-        elements.editor.btnAddSlide.onclick = addSlide;
-    }
-
-    // Device Switcher
-    elements.editor.deviceButtons.forEach(btn => {
-        btn.onclick = () => {
-            elements.editor.deviceButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            state.device = btn.dataset.device;
-            elements.editor.canvas.className = `editor-canvas ${state.device}`;
-            renderCanvas();
-            renderProperties();
-        };
-    });
-
-    // Tabs
-    elements.editor.tabButtons.forEach(btn => {
-        btn.onclick = () => {
-            elements.editor.tabButtons.forEach(b => b.classList.remove('active'));
-            elements.editor.panels.forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        };
-    });
 }
 
 async function handleCreateSlider(e) {
@@ -269,7 +263,8 @@ async function addSlide() {
 
 
 // We need to expose init to window or run it
-document.addEventListener('DOMContentLoaded', init);
+// Run init immediately (module is deferred)
+init();
 
 // --- SLIDE MANAGEMENT ---
 function renderSlideList() {
@@ -348,7 +343,7 @@ async function openSlider(id) {
         const basePath = window.location.pathname.split('/plugin/lexslider')[0];
         window.history.pushState({ sliderId: id }, '', `${basePath}/plugin/lexslider/slider/${id}`);
 
-        switchView('editor');
+        await switchView('editor');
         renderCanvas();
         renderLayerList();
         renderSlideList(); // Render slides

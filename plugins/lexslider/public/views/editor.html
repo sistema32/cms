@@ -1,0 +1,161 @@
+<div id="view-editor" class="h-full w-full flex flex-col">
+    <!-- TOP TOOLBAR -->
+    <div class="navbar min-h-[40px] h-[40px] px-2 z-20 border-b border-[#333] flex justify-between bg-[#232323]">
+        <!-- LEFT: Back & Title -->
+        <div class="flex items-center gap-4 w-1/3">
+            <button id="btn-back-dashboard" class="btn btn-ghost btn-sm btn-square" title="Back">
+                <span class="material-icons-round">arrow_back</span>
+            </button>
+            <div class="flex flex-col justify-center">
+                <span id="editor-slider-name" class="font-bold text-sm leading-none mb-0.5">My Slider</span>
+                <span class="text-[10px] opacity-50 leading-none">AUTOSAVED</span>
+            </div>
+        </div>
+
+        <!-- CENTER: Device Switcher -->
+        <div class="flex justify-center w-1/3">
+            <div class="join">
+                <button class="btn btn-sm btn-ghost join-item active h-8 min-h-[32px]"
+                    onclick="window.LexSlider.setDevice('desktop')" title="Desktop">
+                    <span class="material-icons-round text-base">desktop_windows</span>
+                </button>
+                <button class="btn btn-sm btn-ghost join-item h-8 min-h-[32px]"
+                    onclick="window.LexSlider.setDevice('tablet')" title="Tablet">
+                    <span class="material-icons-round text-base">tablet_mac</span>
+                </button>
+                <button class="btn btn-sm btn-ghost join-item h-8 min-h-[32px]"
+                    onclick="window.LexSlider.setDevice('mobile')" title="Mobile">
+                    <span class="material-icons-round text-base">smartphone</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT: Actions -->
+        <div class="flex justify-end gap-2 w-1/3">
+            <button id="btn-new-slide" class="btn btn-success btn-sm gap-2 text-white"
+                onclick="window.LexSlider.addSlide()">
+                <span class="material-icons-round text-sm">add_photo_alternate</span> <span class="hidden sm:inline">New
+                    Slide</span>
+            </button>
+            <button id="btn-preview" class="btn btn-ghost btn-sm gap-2" onclick="window.LexSlider.preview()">
+                <span class="material-icons-round text-sm">play_arrow</span> <span
+                    class="hidden sm:inline">Preview</span>
+            </button>
+            <button id="btn-save-slider" class="btn btn-primary btn-sm gap-2">
+                <span class="material-icons-round text-sm">save</span> <span class="hidden sm:inline">Save</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MIDDLE WORKSPACE (Canvas + Sidebar) -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- CENTER: CANVAS -->
+        <div class="flex-1 bg-base-100 relative overflow-hidden flex items-center justify-center p-8" id="canvas-area">
+            <!-- Rulers -->
+            <div
+                class="absolute top-0 left-0 w-full h-6 bg-base-200 border-b border-base-300 z-10 text-[10px] flex items-end pb-1 px-2 opacity-50">
+                0px</div>
+            <div
+                class="absolute top-0 left-0 w-6 h-full bg-base-200 border-r border-base-300 z-10 text-[10px] flex justify-end pr-1 pt-8 opacity-50 writing-mode-vertical">
+                0px</div>
+
+            <div class="canvas-wrapper shadow-2xl relative z-0">
+                <div id="editor-canvas" class="editor-canvas desktop bg-white transition-all duration-300">
+                    <div id="canvas-content" class="canvas-content w-full h-full relative overflow-hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: PROPERTIES -->
+        <div class="splitter-h" id="splitter-sidebar"></div>
+        <aside class="w-80 bg-base-200 border-l border-base-300 flex flex-col z-10 shadow-lg" id="sidebar-panel">
+            <!-- FIXED TOP PANEL: ADD LAYERS -->
+            <div class="p-2 border-b border-[#333] bg-[#232323]">
+                <div class="text-[9px] font-bold opacity-50 mb-1 uppercase tracking-wider">Add Layer</div>
+                <div class="grid grid-cols-4 gap-1">
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('heading')"
+                        title="Heading"><span class="material-icons-round">title</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('text')"
+                        title="Text"><span class="material-icons-round">text_fields</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('image')"
+                        title="Image"><span class="material-icons-round">image</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('button')"
+                        title="Button"><span class="material-icons-round">smart_button</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('video')"
+                        title="Video"><span class="material-icons-round">play_circle</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('icon')"
+                        title="Icon"><span class="material-icons-round">star</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('shape')"
+                        title="Shape"><span class="material-icons-round">crop_square</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" title="More"><span
+                            class="material-icons-round">more_horiz</span></button>
+                </div>
+            </div>
+
+            <!-- SCROLLABLE PROPERTIES -->
+            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar" id="property-inspector">
+                <div class="h-full flex flex-col items-center justify-center text-base-content/30 p-8 text-center">
+                    <span class="material-icons-round text-5xl mb-2">touch_app</span>
+                    <p class="text-xs">Select a layer to edit properties</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- BOTTOM PANEL: TIMELINE -->
+    <div class="splitter-v" id="splitter-timeline"></div>
+    <div id="timeline-panel" style="height: 300px;"
+        class="bg-base-200 border-t border-base-300 flex flex-col z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <!-- Timeline Header & Controls -->
+        <div class="h-10 border-b border-base-300 flex items-center px-2 bg-base-200 select-none">
+            <div class="flex items-center gap-2 mr-4">
+                <span class="material-icons-round text-primary text-sm">movie</span>
+                <span class="text-xs font-bold">Timeline</span>
+            </div>
+            <div class="join mr-4">
+                <button class="btn btn-xs btn-ghost join-item" id="tl-btn-play"><span
+                        class="material-icons-round text-sm">play_arrow</span></button>
+                <button class="btn btn-xs btn-ghost join-item hidden" id="tl-btn-pause"><span
+                        class="material-icons-round text-sm">pause</span></button>
+                <button class="btn btn-xs btn-ghost join-item" id="tl-btn-stop"><span
+                        class="material-icons-round text-sm">stop</span></button>
+            </div>
+            <span class="font-mono text-xs bg-base-300 px-2 py-1 rounded text-primary"
+                id="tl-time-display">00:00.00</span>
+            <div class="divider divider-horizontal mx-1 my-1"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] opacity-50">DUR:</span>
+                <input type="number" id="tl-duration-input" value="5000" step="100"
+                    class="input input-xs input-bordered w-16 text-right font-mono"
+                    onchange="window.LexSlider.updateSlideDuration(this.value)">
+                <span class="text-[10px] opacity-50">ms</span>
+            </div>
+            <div class="flex-1"></div>
+            <div class="join">
+                <button class="btn btn-xs btn-ghost join-item" onclick="window.LexSlider.timelineZoom(-0.5)"><span
+                        class="material-icons-round text-sm">zoom_out</span></button>
+                <button class="btn btn-xs btn-ghost join-item" onclick="window.LexSlider.timelineZoom(0.5)"><span
+                        class="material-icons-round text-sm">zoom_in</span></button>
+            </div>
+        </div>
+
+        <!-- Timeline Body -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- LEFT: TREE VIEW -->
+            <div class="w-64 border-r border-base-300 bg-base-200 flex flex-col overflow-y-auto custom-scrollbar"
+                id="timeline-tree"></div>
+            <!-- RIGHT: TRACKS -->
+            <div class="flex-1 flex flex-col overflow-hidden bg-base-100 relative">
+                <div class="h-6 border-b border-base-300 bg-base-200 relative overflow-hidden select-none"
+                    id="tl-ruler-container">
+                    <div id="tl-ruler" class="h-full relative"></div>
+                    <div id="tl-playhead"
+                        class="absolute top-0 bottom-0 w-[1px] bg-primary z-50 pointer-events-none h-[1000px]"></div>
+                </div>
+                <div class="flex-1 overflow-auto custom-scrollbar relative" id="tl-tracks-scroll">
+                    <div id="tl-tracks" class="relative min-h-full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,7 +1,7 @@
 
-import { state, elements } from './EditorCore.js';
-import { renderProperties } from './PropertyInspector.js';
-import { renderLayerList } from './LayerManager.js';
+import { state, elements } from './EditorCore.js?v=3.0.10';
+// import { renderProperties } from './PropertyInspector.js';
+// import { renderLayerList } from './LayerManager.js';
 
 let showGrid = false;
 let snapToGrid = false;
@@ -133,8 +133,8 @@ export function renderCanvas() {
         if (e.target === elements.editor.canvas || e.target === canvas || e.target.classList.contains('canvas-grid')) {
             state.selectedLayer = null;
             renderCanvas();
-            renderLayerList();
-            renderProperties();
+            if (window.LexSlider && window.LexSlider.renderLayerList) window.LexSlider.renderLayerList();
+            if (window.LexSlider && window.LexSlider.renderProperties) window.LexSlider.renderProperties();
         }
     };
 }
@@ -161,8 +161,8 @@ function styleObjectToString(style) {
 export function selectLayer(layer) {
     state.selectedLayer = layer;
     renderCanvas();
-    renderLayerList();
-    renderProperties();
+    if (window.LexSlider && window.LexSlider.renderLayerList) window.LexSlider.renderLayerList();
+    if (window.LexSlider && window.LexSlider.renderProperties) window.LexSlider.renderProperties();
 }
 
 let isDragging = false;
@@ -206,7 +206,7 @@ function startDrag(e, layer, element) {
         layer.style.top = element.style.top;
         // layer.style.transform = element.style.transform;
 
-        renderProperties();
+        if (window.LexSlider && window.LexSlider.renderProperties) window.LexSlider.renderProperties();
     };
 
     document.addEventListener('mousemove', onMouseMove);

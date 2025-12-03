@@ -1,0 +1,18 @@
+<div id="view-dashboard" class="h-full w-full flex flex-col p-8">
+    <div class="navbar bg-base-100 rounded-box shadow-lg mb-8">
+        <div class="flex-1">
+            <a class="btn btn-ghost normal-case text-xl text-primary font-bold">LexSlider</a>
+        </div>
+        <div class="flex-none">
+            <button class="btn btn-primary gap-2" id="btn-new-slider">
+                <span class="material-icons-round">add</span> New Slider
+            </button>
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto">
+        <div id="slider-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <p class="loading text-center col-span-full opacity-50">Loading sliders...</p>
+        </div>
+    </main>
+</div>

@@ -1,13 +1,18 @@
 
-import { state, elements } from './EditorCore.js';
-import { renderCanvas } from './CanvasRenderer.js';
+import { state, elements } from './EditorCore.js?v=3.0.10';
+// import { renderCanvas } from './CanvasRenderer.js';
 
 export function renderProperties() {
     const props = elements.editor.propertyInspector;
 
     if (!state.selectedLayer) {
         if (!state.currentSlide) {
-            props.innerHTML = '<p class="empty-text">Select a slide to edit properties</p>';
+            props.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-base-content/30 p-8 text-center">
+                    <span class="material-icons-round text-5xl mb-2">touch_app</span>
+                    <p class="text-xs">Select a slide to edit properties</p>
+                </div>
+            `;
             return;
         }
 
@@ -24,50 +29,58 @@ function renderSlideProperties() {
 
     let html = '';
 
-    //1. Background
+    // 1. Background
     const bgHtml = `
-        <div class="prop-group">
-            <label>Background Image URL</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" value="${slide.background_image || ''}" onchange="window.LexSlider.updateSlideProperty('background_image', this.value)" placeholder="https://example.com/image.jpg">
-                <button class="btn-icon" onclick="window.LexSlider.openAssetManager(url => window.LexSlider.updateSlideProperty('background_image', url))" title="Select Image">
-                    <span class="material-icons-round">image</span>
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Background Image</span></label>
+            <div class="join w-full">
+                <input type="text" value="${slide.background_image || ''}" 
+                       onchange="window.LexSlider.updateSlideProperty('background_image', this.value)" 
+                       placeholder="https://..." class="input input-xs input-bordered join-item flex-1">
+                <button class="btn btn-xs btn-square join-item" 
+                        onclick="window.LexSlider.openAssetManager(url => window.LexSlider.updateSlideProperty('background_image', url))">
+                    <span class="material-icons-round text-xs">image</span>
                 </button>
             </div>
         </div>
-        <div class="prop-group">
-            <label>Background Color</label>
-            <div class="color-picker-wrapper">
-                <input type="color" value="${slide.background_color || '#ffffff'}" onchange="window.LexSlider.updateSlideProperty('background_color', this.value)">
-                <input type="text" value="${slide.background_color || '#ffffff'}" onchange="window.LexSlider.updateSlideProperty('background_color', this.value)" placeholder="#ffffff">
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Background Color</span></label>
+            <div class="join w-full">
+                <input type="color" value="${slide.background_color || '#ffffff'}" 
+                       onchange="window.LexSlider.updateSlideProperty('background_color', this.value)" 
+                       class="input input-xs input-bordered join-item w-8 p-0">
+                <input type="text" value="${slide.background_color || '#ffffff'}" 
+                       onchange="window.LexSlider.updateSlideProperty('background_color', this.value)" 
+                       class="input input-xs input-bordered join-item flex-1 font-mono">
             </div>
         </div>
-        <div class="prop-group">
-            <label>Ken Burns Effect</label>
-            <div class="toggle-wrapper">
-                <label class="switch">
-                    <input type="checkbox" ${slide.ken_burns ? 'checked' : ''} onchange="window.LexSlider.updateSlideProperty('ken_burns', this.checked)">
-                    <span class="slider-toggle round"></span>
-                </label>
-            </div>
+        <div class="form-control w-full mb-2">
+            <label class="label cursor-pointer py-1 justify-start gap-2">
+                <input type="checkbox" ${slide.ken_burns ? 'checked' : ''} 
+                       onchange="window.LexSlider.updateSlideProperty('ken_burns', this.checked)" 
+                       class="toggle toggle-xs toggle-primary">
+                <span class="label-text text-xs">Ken Burns Effect</span>
+            </label>
         </div>
     `;
     html += renderSection('Background', bgHtml);
 
     // 2. Animation
     const animHtml = `
-        <div class="prop-group">
-            <label>Transition</label>
-            <select onchange="window.LexSlider.updateSlideProperty('transition', this.value)">
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Transition</span></label>
+            <select onchange="window.LexSlider.updateSlideProperty('transition', this.value)" class="select select-bordered select-xs w-full">
                 <option value="fade" ${!slide.transition || slide.transition === 'fade' ? 'selected' : ''}>Fade</option>
                 <option value="slide-horizontal" ${slide.transition === 'slide-horizontal' ? 'selected' : ''}>Slide Horizontal</option>
                 <option value="slide-vertical" ${slide.transition === 'slide-vertical' ? 'selected' : ''}>Slide Vertical</option>
                 <option value="zoom" ${slide.transition === 'zoom' ? 'selected' : ''}>Zoom</option>
             </select>
         </div>
-        <div class="prop-group">
-            <label>Duration (ms)</label>
-            <input type="number" value="${slide.duration || 500}" onchange="window.LexSlider.updateSlideProperty('duration', parseInt(this.value))">
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Duration (ms)</span></label>
+            <input type="number" value="${slide.duration || 5000}" 
+                   onchange="window.LexSlider.updateSlideProperty('duration', parseInt(this.value))" 
+                   class="input input-xs input-bordered w-full">
         </div>
     `;
     html += renderSection('Animation', animHtml);
@@ -91,31 +104,38 @@ function renderLayerProperties() {
 
     // 1. General
     html += renderSection('General', `
-        <div class="prop-group">
-            <label>Layer Name</label>
-            <input type="text" value="${layer.name || ''}" onchange="window.LexSlider.updateLayerProp('name', this.value)" placeholder="Layer ${layer.id}">
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Layer Name</span></label>
+            <input type="text" value="${layer.name || ''}" 
+                   onchange="window.LexSlider.updateLayerProp('name', this.value)" 
+                   placeholder="Layer ${layer.id}" class="input input-xs input-bordered w-full">
         </div>
     `);
 
-    // 2. Content Section with Rich Text Editor for text layers
+    // 2. Content
     let contentHtml = '';
-    if (layer.type === 'heading' || layer.type === 'text' || layer.type === 'button') {
+    if (['heading', 'text', 'button'].includes(layer.type)) {
         contentHtml += `
-            <div class="prop-group">
-                <label>Text</label>
-                <textarea id="text-content-editor" rows="3" oninput="window.LexSlider.updateLayerContent('text', this.value)">${layer.content.text || ''}</textarea>
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Text Content</span></label>
+                <textarea id="text-content-editor" rows="3" 
+                          oninput="window.LexSlider.updateLayerContent('text', this.value)" 
+                          class="textarea textarea-bordered textarea-xs w-full">${layer.content.text || ''}</textarea>
             </div>
         `;
     }
 
     if (layer.type === 'image') {
         contentHtml += `
-            <div class="prop-group">
-                <label>Image URL</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" value="${layer.content.src || ''}" onchange="window.LexSlider.updateLayerContent('src', this.value)">
-                    <button class="btn-icon" onclick="window.LexSlider.openAssetManager(url => window.LexSlider.updateLayerContent('src', url))" title="Select Image">
-                        <span class="material-icons-round">image</span>
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Image URL</span></label>
+                <div class="join w-full">
+                    <input type="text" value="${layer.content.src || ''}" 
+                           onchange="window.LexSlider.updateLayerContent('src', this.value)" 
+                           class="input input-xs input-bordered join-item flex-1">
+                    <button class="btn btn-xs btn-square join-item" 
+                            onclick="window.LexSlider.openAssetManager(url => window.LexSlider.updateLayerContent('src', url))">
+                        <span class="material-icons-round text-xs">image</span>
                     </button>
                 </div>
             </div>
@@ -124,105 +144,95 @@ function renderLayerProperties() {
 
     if (layer.type === 'button') {
         contentHtml += `
-            <div class="prop-group">
-                <label>Link URL</label>
-                <input type="text" value="${layer.content.link || '#'}" onchange="window.LexSlider.updateLayerContent('link', this.value)">
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Link URL</span></label>
+                <input type="text" value="${layer.content.link || '#'}" 
+                       onchange="window.LexSlider.updateLayerContent('link', this.value)" 
+                       class="input input-xs input-bordered w-full">
             </div>
         `;
     }
 
     if (layer.type === 'video') {
         contentHtml += `
-            <div class="prop-group">
-                <label>Video URL</label>
-                <input type="text" value="${layer.content.src || ''}" onchange="window.LexSlider.updateLayerContent('src', this.value)" placeholder="https://youtube.com/embed/...">
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Video URL</span></label>
+                <input type="text" value="${layer.content.src || ''}" 
+                       onchange="window.LexSlider.updateLayerContent('src', this.value)" 
+                       placeholder="https://youtube.com/embed/..." class="input input-xs input-bordered w-full">
             </div>
         `;
     }
+
     if (layer.type === 'icon') {
         contentHtml += `
-            <div class="prop-group">
-                <label>Icon Name (Material Icons)</label>
-                <input type="text" value="${layer.content.icon || 'star'}" onchange="window.LexSlider.updateLayerContent('icon', this.value)" placeholder="star">
-                <small style="color: var(--text-muted); font-size: 10px; display: block; margin-top: 4px;">
-                    Browse: <a href="https://fonts.google.com/icons" target="_blank" style="color: var(--primary);">Material Icons</a>
-                </small>
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Icon Name</span></label>
+                <input type="text" value="${layer.content.icon || 'star'}" 
+                       onchange="window.LexSlider.updateLayerContent('icon', this.value)" 
+                       placeholder="star" class="input input-xs input-bordered w-full">
+                <label class="label py-0">
+                    <a href="https://fonts.google.com/icons" target="_blank" class="label-text-alt link link-primary">Browse Icons</a>
+                </label>
             </div>
         `;
     }
     html += renderSection('Content', contentHtml);
 
-    // 3. Typography (for text layers)
-    if (layer.type === 'heading' || layer.type === 'text' || layer.type === 'button') {
+    // 3. Typography
+    if (['heading', 'text', 'button'].includes(layer.type)) {
         const typoHtml = `
-            <div class="prop-group">
-                <label>Font Family</label>
-                <select onchange="window.LexSlider.updateLayerStyle('fontFamily', this.value)">
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Font Family</span></label>
+                <select onchange="window.LexSlider.updateLayerStyle('fontFamily', this.value)" class="select select-bordered select-xs w-full">
                     <option value="Inter, sans-serif" ${(effectiveStyle.fontFamily || '').includes('Inter') ? 'selected' : ''}>Inter</option>
                     <option value="Roboto, sans-serif" ${(effectiveStyle.fontFamily || '').includes('Roboto') ? 'selected' : ''}>Roboto</option>
                     <option value="'Playfair Display', serif" ${(effectiveStyle.fontFamily || '').includes('Playfair') ? 'selected' : ''}>Playfair Display</option>
                     <option value="'Montserrat', sans-serif" ${(effectiveStyle.fontFamily || '').includes('Montserrat') ? 'selected' : ''}>Montserrat</option>
-                    <option value="Georgia, serif" ${(effectiveStyle.fontFamily || '').includes('Georgia') ? 'selected' : ''}>Georgia</option>
                 </select>
             </div>
-            <div class="prop-row">
-                <div class="prop-group">
-                    <label>Font Size</label>
-                    <input type="text" value="${effectiveStyle.fontSize || '16px'}" onchange="window.LexSlider.updateLayerStyle('fontSize', this.value)">
+            <div class="flex gap-2 mb-2">
+                <div class="form-control w-1/2">
+                    <label class="label py-1"><span class="label-text text-xs font-bold">Size</span></label>
+                    <input type="text" value="${effectiveStyle.fontSize || '16px'}" 
+                           onchange="window.LexSlider.updateLayerStyle('fontSize', this.value)" 
+                           class="input input-xs input-bordered w-full">
                 </div>
-                <div class="prop-group">
-                    <label>Font Weight</label>
-                    <select onchange="window.LexSlider.updateLayerStyle('fontWeight', this.value)">
+                <div class="form-control w-1/2">
+                    <label class="label py-1"><span class="label-text text-xs font-bold">Weight</span></label>
+                    <select onchange="window.LexSlider.updateLayerStyle('fontWeight', this.value)" class="select select-bordered select-xs w-full">
                         <option value="300" ${effectiveStyle.fontWeight === '300' ? 'selected' : ''}>Light</option>
-                        <option value="400" ${!effectiveStyle.fontWeight || effectiveStyle.fontWeight === '400' || effectiveStyle.fontWeight === 'normal' ? 'selected' : ''}>Normal</option>
-                        <option value="500" ${effectiveStyle.fontWeight === '500' ? 'selected' : ''}>Medium</option>
-                        <option value="600" ${effectiveStyle.fontWeight === '600' ? 'selected' : ''}>Semi-Bold</option>
-                        <option value="700" ${effectiveStyle.fontWeight === '700' || effectiveStyle.fontWeight === 'bold' ? 'selected' : ''}>Bold</option>
+                        <option value="400" ${!effectiveStyle.fontWeight || effectiveStyle.fontWeight === '400' ? 'selected' : ''}>Normal</option>
+                        <option value="700" ${effectiveStyle.fontWeight === '700' ? 'selected' : ''}>Bold</option>
                     </select>
                 </div>
             </div>
-            <div class="prop-row">
-                <div class="prop-group">
-                    <label>Text Align</label>
-                    <div class="icon-toggles">
-                        <button class="icon-toggle ${effectiveStyle.textAlign === 'left' ? 'active' : ''}" onclick="window.LexSlider.updateLayerStyle('textAlign', 'left')">
-                            <span class="material-icons-round">format_align_left</span>
-                        </button>
-                        <button class="icon-toggle ${effectiveStyle.textAlign === 'center' ? 'active' : ''}" onclick="window.LexSlider.updateLayerStyle('textAlign', 'center')">
-                            <span class="material-icons-round">format_align_center</span>
-                        </button>
-                        <button class="icon-toggle ${effectiveStyle.textAlign === 'right' ? 'active' : ''}" onclick="window.LexSlider.updateLayerStyle('textAlign', 'right')">
-                            <span class="material-icons-round">format_align_right</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="prop-row">
-                <div class="prop-group">
-                    <label>Text Color</label>
-                    <div class="color-picker-wrapper">
-                        <input type="color" value="${effectiveStyle.color || '#000000'}" onchange="window.LexSlider.updateLayerStyle('color', this.value)">
-                        <input type="text" value="${effectiveStyle.color || '#000000'}" onchange="window.LexSlider.updateLayerStyle('color', this.value)">
-                    </div>
-                </div>
-            </div>
-            <div class="prop-group">
-                <label>Text Decoration</label>
-                <div class="icon-toggles">
-                    <button class="icon-toggle ${(effectiveStyle.textDecoration || '').includes('underline') ? 'active' : ''}" onclick="window.LexSlider.toggleTextDecoration('underline')">
-                        <span class="material-icons-round">format_underlined</span>
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Alignment</span></label>
+                <div class="btn-group w-full flex">
+                    <button class="btn btn-xs flex-1 ${effectiveStyle.textAlign === 'left' ? 'btn-active' : ''}" 
+                            onclick="window.LexSlider.updateLayerStyle('textAlign', 'left')">
+                        <span class="material-icons-round text-xs">format_align_left</span>
                     </button>
-                    <button class="icon-toggle ${(effectiveStyle.textDecoration || '').includes('line-through') ? 'active' : ''}" onclick="window.LexSlider.toggleTextDecoration('line-through')">
-                        <span class="material-icons-round">strikethrough_s</span>
+                    <button class="btn btn-xs flex-1 ${effectiveStyle.textAlign === 'center' ? 'btn-active' : ''}" 
+                            onclick="window.LexSlider.updateLayerStyle('textAlign', 'center')">
+                        <span class="material-icons-round text-xs">format_align_center</span>
+                    </button>
+                    <button class="btn btn-xs flex-1 ${effectiveStyle.textAlign === 'right' ? 'btn-active' : ''}" 
+                            onclick="window.LexSlider.updateLayerStyle('textAlign', 'right')">
+                        <span class="material-icons-round text-xs">format_align_right</span>
                     </button>
                 </div>
             </div>
-            <div class="prop-group">
-                <label>Font Style</label>
-                <div class="icon-toggles">
-                    <button class="icon-toggle ${effectiveStyle.fontStyle === 'italic' ? 'active' : ''}" onclick="window.LexSlider.updateLayerStyle('fontStyle', '${effectiveStyle.fontStyle === 'italic' ? 'normal' : 'italic'}')">
-                        <span class="material-icons-round">format_italic</span>
-                    </button>
+            <div class="form-control w-full mb-2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Color</span></label>
+                <div class="join w-full">
+                    <input type="color" value="${effectiveStyle.color || '#000000'}" 
+                           onchange="window.LexSlider.updateLayerStyle('color', this.value)" 
+                           class="input input-xs input-bordered join-item w-8 p-0">
+                    <input type="text" value="${effectiveStyle.color || '#000000'}" 
+                           onchange="window.LexSlider.updateLayerStyle('color', this.value)" 
+                           class="input input-xs input-bordered join-item flex-1 font-mono">
                 </div>
             </div>
         `;
@@ -231,51 +241,87 @@ function renderLayerProperties() {
 
     // 4. Style
     const styleHtml = `
-        <div class="prop-row">
-            <div class="prop-group">
-                <label>Width</label>
-                <input type="text" value="${effectiveStyle.width || 'auto'}" onchange="window.LexSlider.updateLayerStyle('width', this.value)" placeholder="auto, 100px, 50%">
+        <div class="flex gap-2 mb-2">
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Width</span></label>
+                <input type="text" value="${effectiveStyle.width || 'auto'}" 
+                       onchange="window.LexSlider.updateLayerStyle('width', this.value)" 
+                       placeholder="auto" class="input input-xs input-bordered w-full">
             </div>
-            <div class="prop-group">
-                <label>Height</label>
-                <input type="text" value="${effectiveStyle.height || 'auto'}" onchange="window.LexSlider.updateLayerStyle('height', this.value)" placeholder="auto, 100px">
-            </div>
-        </div>
-        <div class="prop-group">
-            <label>Background</label>
-            <div class="color-picker-wrapper">
-                <input type="color" value="${effectiveStyle.background || '#ffffff'}" onchange="window.LexSlider.updateLayerStyle('background', this.value)">
-                <input type="text" value="${effectiveStyle.background || 'transparent'}" onchange="window.LexSlider.updateLayerStyle('background', this.value)">
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Height</span></label>
+                <input type="text" value="${effectiveStyle.height || 'auto'}" 
+                       onchange="window.LexSlider.updateLayerStyle('height', this.value)" 
+                       placeholder="auto" class="input input-xs input-bordered w-full">
             </div>
         </div>
-        <div class="prop-row">
-            <div class="prop-group">
-                <label>Padding</label>
-                <input type="text" value="${effectiveStyle.padding || '0px'}" onchange="window.LexSlider.updateLayerStyle('padding', this.value)" placeholder="10px, 10px 20px">
-            </div>
-            <div class="prop-group">
-                <label>Border Radius</label>
-                <input type="text" value="${effectiveStyle.borderRadius || '0px'}" onchange="window.LexSlider.updateLayerStyle('borderRadius', this.value)" placeholder="4px">
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Background</span></label>
+            <div class="join w-full">
+                <input type="color" value="${effectiveStyle.background || '#ffffff'}" 
+                       onchange="window.LexSlider.updateLayerStyle('background', this.value)" 
+                       class="input input-xs input-bordered join-item w-8 p-0">
+                <input type="text" value="${effectiveStyle.background || 'transparent'}" 
+                       onchange="window.LexSlider.updateLayerStyle('background', this.value)" 
+                       class="input input-xs input-bordered join-item flex-1 font-mono">
             </div>
         </div>
-        <div class="prop-group">
-            <label>Opacity</label>
-            <input type="range" min="0" max="1" step="0.1" value="${effectiveStyle.opacity || '1'}" oninput="window.LexSlider.updateLayerStyle('opacity', this.value)">
-            <span style="font-size: 11px; color: var(--text-muted);">${Math.round((effectiveStyle.opacity || 1) * 100)}%</span>
+        <div class="flex gap-2 mb-2">
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Padding</span></label>
+                <input type="text" value="${effectiveStyle.padding || '0px'}" 
+                       onchange="window.LexSlider.updateLayerStyle('padding', this.value)" 
+                       class="input input-xs input-bordered w-full">
+            </div>
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Radius</span></label>
+                <input type="text" value="${effectiveStyle.borderRadius || '0px'}" 
+                       onchange="window.LexSlider.updateLayerStyle('borderRadius', this.value)" 
+                       class="input input-xs input-bordered w-full">
+            </div>
+        </div>
+        <div class="flex gap-2 mb-2">
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Border Width</span></label>
+                <input type="text" value="${effectiveStyle.borderWidth || '0px'}" 
+                       onchange="window.LexSlider.updateLayerStyle('borderWidth', this.value)" 
+                       placeholder="0px" class="input input-xs input-bordered w-full">
+            </div>
+            <div class="form-control w-1/2">
+                <label class="label py-1"><span class="label-text text-xs font-bold">Border Color</span></label>
+                <div class="join w-full">
+                    <input type="color" value="${effectiveStyle.borderColor || '#000000'}" 
+                           onchange="window.LexSlider.updateLayerStyle('borderColor', this.value)" 
+                           class="input input-xs input-bordered join-item w-8 p-0">
+                    <input type="text" value="${effectiveStyle.borderColor || 'transparent'}" 
+                           onchange="window.LexSlider.updateLayerStyle('borderColor', this.value)" 
+                           class="input input-xs input-bordered join-item flex-1 font-mono">
+                </div>
+            </div>
+        </div>
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Z-Index</span></label>
+            <input type="number" value="${effectiveStyle.zIndex || '1'}" 
+                   onchange="window.LexSlider.updateLayerStyle('zIndex', this.value)" 
+                   class="input input-xs input-bordered w-full">
+        </div>
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Opacity</span></label>
+            <input type="range" min="0" max="1" step="0.1" value="${effectiveStyle.opacity || '1'}" 
+                   oninput="window.LexSlider.updateLayerStyle('opacity', this.value)" 
+                   class="range range-xs range-primary">
         </div>
     `;
     html += renderSection('Style', styleHtml);
 
     // 5. Custom CSS
     const cssHtml = `
-        <div class="prop-group">
-            <label>Custom CSS Properties</label>
-            <textarea id="custom-css-editor" rows="5" onchange="window.LexSlider.applyCustomCSS(this.value)" placeholder="box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-border: 1px solid #ccc;
-transform: rotate(5deg);">${effectiveStyle.customCSS || ''}</textarea>
-            <small style="color: var(--text-muted); font-size: 10px; display: block; margin-top: 4px;">
-                Enter CSS properties one per line without selectors
-            </small>
+        <div class="form-control w-full mb-2">
+            <label class="label py-1"><span class="label-text text-xs font-bold">Custom CSS</span></label>
+            <textarea id="custom-css-editor" rows="5" 
+                      onchange="window.LexSlider.applyCustomCSS(this.value)" 
+                      class="textarea textarea-bordered textarea-xs w-full font-mono text-[10px]"
+                      placeholder="box-shadow: ...">${effectiveStyle.customCSS || ''}</textarea>
         </div>
     `;
     html += renderSection('Advanced CSS', cssHtml, false);
@@ -283,22 +329,21 @@ transform: rotate(5deg);">${effectiveStyle.customCSS || ''}</textarea>
     props.innerHTML = html;
 }
 
-
-
 function renderSection(title, content, isOpen = true) {
     return `
-        <div class="prop-section ${isOpen ? '' : 'collapsed'}">
-            <div class="prop-header" onclick="this.parentElement.classList.toggle('collapsed')">
-                <h4>${title}</h4>
-                <span class="material-icons-round icon">expand_more</span>
+        <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-2">
+            <input type="checkbox" ${isOpen ? 'checked' : ''} /> 
+            <div class="collapse-title text-xs font-bold min-h-0 py-2 px-4 flex items-center">
+                ${title}
             </div>
-            <div class="prop-content">
+            <div class="collapse-content px-4 py-2 text-xs"> 
                 ${content}
             </div>
         </div>
     `;
 }
 
+// ... Exports for update functions remain the same ...
 export function updateLayerStyle(key, value) {
     if (!state.selectedLayer) return;
 
@@ -310,26 +355,26 @@ export function updateLayerStyle(key, value) {
         }
         state.selectedLayer.style[state.device][key] = value;
     }
-    renderCanvas();
+    if (window.LexSlider && window.LexSlider.renderCanvas) window.LexSlider.renderCanvas();
     renderProperties();
 }
 
 export function updateLayerContent(key, value) {
     if (!state.selectedLayer) return;
     state.selectedLayer.content[key] = value;
-    renderCanvas();
+    if (window.LexSlider && window.LexSlider.renderCanvas) window.LexSlider.renderCanvas();
 }
 
 export function updateLayerProp(key, value) {
     if (!state.selectedLayer) return;
     state.selectedLayer[key] = value;
-    renderCanvas();
+    if (window.LexSlider && window.LexSlider.renderCanvas) window.LexSlider.renderCanvas();
 }
 
 export function updateSlideProperty(key, value) {
     if (!state.currentSlide) return;
     state.currentSlide[key] = value;
-    renderCanvas();
+    if (window.LexSlider && window.LexSlider.renderCanvas) window.LexSlider.renderCanvas();
     renderProperties();
 }
 
@@ -350,7 +395,6 @@ export function toggleTextDecoration(decoration) {
 export function applyCustomCSS(cssText) {
     if (!state.selectedLayer) return;
     state.selectedLayer.style.customCSS = cssText;
-    // Parse and apply custom CSS
     const lines = cssText.split('\n');
     lines.forEach(line => {
         const [property, value] = line.split(':').map(s => s.trim());

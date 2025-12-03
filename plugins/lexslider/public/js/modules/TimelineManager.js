@@ -1,6 +1,6 @@
-import { state, elements } from './EditorCore.js';
+import { state, elements } from './EditorCore.js?v=3.0.10';
 import { renderCanvas } from './CanvasRenderer.js';
-import { renderLayerList } from './LayerManager.js';
+// import { renderLayerList } from './LayerManager.js';
 
 let isPlaying = false;
 let animationFrameId = null;
@@ -19,154 +19,136 @@ export function updateSlideDuration(value) {
 }
 
 export function initTimeline() {
-    const timelinePanel = document.getElementById('timeline-panel');
-    if (!timelinePanel) return;
+    // Event Listeners for Controls
+    const btnPlay = document.getElementById('tl-btn-play');
+    const btnPause = document.getElementById('tl-btn-pause');
+    const btnStop = document.getElementById('tl-btn-stop');
 
-    // RevSlider-style Timeline UI
-    timelinePanel.innerHTML = `
-        <div class="timeline-header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-icons-round" style="font-size: 16px;">movie</span>
-                <span>Timeline</span>
-            </div>
-            <div class="timeline-controls">
-                <button class="btn-icon-sm" id="tl-btn-play" title="Play"><span class="material-icons-round">play_arrow</span></button>
-                <button class="btn-icon-sm" id="tl-btn-pause" style="display:none;" title="Pause"><span class="material-icons-round">pause</span></button>
-                <button class="btn-icon-sm" id="tl-btn-stop" title="Stop"><span class="material-icons-round">stop</span></button>
-                
-                <span class="time-display" id="tl-time-display">00:00.00</span>
-                
-                <div style="display: flex; align-items: center; gap: 4px; margin: 0 8px; border-left: 1px solid #333; padding-left: 8px;">
-                    <span style="font-size: 10px; color: #777;">DUR:</span>
-                    <input type="number" id="tl-duration-input" value="5000" step="100" 
-                           style="width: 50px; background: #111; border: 1px solid #333; color: #ccc; font-size: 10px; padding: 2px;"
-                           onchange="window.LexSlider.updateSlideDuration(this.value)">
-                    <span style="font-size: 10px; color: #777;">ms</span>
-                </div>
+    if (btnPlay) btnPlay.onclick = playTimeline;
+    if (btnPause) btnPause.onclick = pauseTimeline;
+    if (btnStop) btnStop.onclick = stopTimeline;
 
-                <div style="width: 1px; height: 20px; background: var(--border); margin: 0 8px;"></div>
-                <button class="btn-icon-sm" onclick="window.LexSlider.timelineZoom(-0.5)" title="Zoom Out"><span class="material-icons-round">zoom_out</span></button>
-                <button class="btn-icon-sm" onclick="window.LexSlider.timelineZoom(0.5)" title="Zoom In"><span class="material-icons-round">zoom_in</span></button>
-            </div>
-        </div>
-        <div class="timeline-body">
-            <div class="timeline-ruler-container">
-                <div class="timeline-layer-headers" id="tl-layer-headers">
-                    <div class="timeline-ruler-header">Time</div>
-                </div>
-                <div class="timeline-ruler-wrapper">
-                    <div class="timeline-ruler" id="tl-ruler"></div>
-                    <div class="timeline-playhead" id="tl-playhead" style="left: 0px;"></div>
-                </div>
-            </div>
-            <div class="timeline-tracks-wrapper">
-                <div class="timeline-layer-headers-fixed" id="tl-layer-names"></div>
-                <div class="timeline-tracks-scroll" id="tl-tracks-scroll">
-                    <div class="timeline-tracks" id="tl-tracks"></div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Bind Events
-    document.getElementById('tl-btn-play').onclick = playTimeline;
-    document.getElementById('tl-btn-pause').onclick = pauseTimeline;
-    document.getElementById('tl-btn-stop').onclick = stopTimeline;
-
-    // Sync scroll between ruler and tracks
+    // Sync scroll between Tree and Tracks (Vertical)
+    const treeContainer = document.getElementById('timeline-tree');
     const tracksScroll = document.getElementById('tl-tracks-scroll');
-    const rulerWrapper = document.querySelector('.timeline-ruler-wrapper');
-    tracksScroll.addEventListener('scroll', () => {
-        rulerWrapper.scrollLeft = tracksScroll.scrollLeft;
-    });
+
+    if (treeContainer && tracksScroll) {
+        treeContainer.addEventListener('scroll', () => {
+            tracksScroll.scrollTop = treeContainer.scrollTop;
+        });
+        tracksScroll.addEventListener('scroll', () => {
+            treeContainer.scrollTop = tracksScroll.scrollTop;
+            // Also sync horizontal ruler
+            const rulerWrapper = document.getElementById('tl-ruler-container');
+            if (rulerWrapper) rulerWrapper.scrollLeft = tracksScroll.scrollLeft;
+        });
+    }
 
     // Initial Render
     renderTimelineTracks();
 }
 
 export function renderTimelineTracks() {
+    const treeContainer = document.getElementById('timeline-tree');
     const tracksContainer = document.getElementById('tl-tracks');
-    const layerNames = document.getElementById('tl-layer-names');
-    const layerHeaders = document.getElementById('tl-layer-headers');
 
-    if (!tracksContainer || !layerNames) return;
+    if (!treeContainer || !tracksContainer) return;
+    if (!state.currentSlider) return;
 
-    const layers = state.mode === 'global' ? state.globalLayers : (state.currentSlide ? state.currentSlide.layers : []);
+    // 1. Render Tree View (Slides -> Layers)
+    let treeHTML = '';
+    let tracksHTML = '';
 
-    if (layers.length === 0) {
-        tracksContainer.innerHTML = `
-            <div style="grid-column: 1/-1; padding: 2rem; text-align: center; color: var(--text-muted);">
-                <span class="material-icons-round" style="font-size: 48px; opacity: 0.2; margin-bottom: 1rem;">movie_filter</span>
-                <p style="font-size: 12px; margin: 0;">Add layers to animate</p>
-            </div>
-        `;
-        layerNames.innerHTML = '';
-        layerHeaders.innerHTML = '<div class="timeline-ruler-header">Time</div>';
-        renderRuler();
-        return;
-    }
-
-    // Render layer name column (Draggable for reordering)
-    layerNames.innerHTML = layers.map((layer, index) => `
-        <div class="timeline-layer-name ${state.selectedLayer === layer ? 'selected' : ''}" 
-             draggable="true"
-             ondragstart="window.LexSlider.onLayerDragStart(event, ${index})"
-             ondragover="window.LexSlider.onLayerDragOver(event)"
-             ondragleave="window.LexSlider.onLayerDragLeave(event)"
-             ondrop="window.LexSlider.onLayerDrop(event, ${index})"
-             title="${layer.name || getLayerTypeName(layer.type)}">
-            <div class="layer-controls">
-                <button class="btn-icon-xs ${layer.hidden ? 'active' : ''}" onclick="event.stopPropagation(); window.LexSlider.toggleLayerVisibility(${layer.id})" title="Toggle Visibility">
-                    <span class="material-icons-round">${layer.hidden ? 'visibility_off' : 'visibility'}</span>
-                </button>
-                <button class="btn-icon-xs ${layer.locked ? 'active' : ''}" onclick="event.stopPropagation(); window.LexSlider.toggleLayerLock(${layer.id})" title="Toggle Lock">
-                    <span class="material-icons-round">${layer.locked ? 'lock' : 'lock_open'}</span>
-                </button>
-            </div>
-            <span class="material-icons-round icon">${getLayerIcon(layer.type)}</span>
-            <span class="name" style="${layer.hidden ? 'opacity: 0.5; text-decoration: line-through;' : ''}">${layer.name || getLayerTypeName(layer.type)}</span>
-        </div>
-    `).join('');
-
-    // Update header count
-    layerHeaders.innerHTML = `<div class="timeline-ruler-header">${layers.length} Layer${layers.length > 1 ? 's' : ''}</div>`;
-
-    // Render tracks with duration bars
     const currentDuration = getDuration();
     const timelineWidth = Math.max(currentDuration * zoomLevel / 100, 800);
-    tracksContainer.innerHTML = layers.map(layer => {
-        // Ensure defaults
-        if (layer.startTime === undefined) layer.startTime = 0;
-        if (layer.duration === undefined) layer.duration = currentDuration;
 
-        const left = (layer.startTime / currentDuration) * timelineWidth;
-        const width = (layer.duration / currentDuration) * timelineWidth;
+    // Iterate Slides
+    (state.currentSlider.slides || []).forEach((slide, slideIndex) => {
+        const isActiveSlide = state.currentSlide && state.currentSlide.id === slide.id;
 
-        return `
-            <div class="timeline-track-lane ${state.selectedLayer === layer ? 'selected' : ''}" 
-                 style="width: ${timelineWidth}px;"
-                 data-layer-id="${layer.id}">
-                
-                <!-- Duration Bar -->
-                <div class="timeline-layer-bar ${state.selectedLayer === layer ? 'selected' : ''}"
-                     style="left: ${left}px; width: ${width}px;"
-                     onmousedown="window.LexSlider.startBarDrag(event, ${layer.id}, 'move')">
-                    <div class="bar-handle left" onmousedown="event.stopPropagation(); window.LexSlider.startBarDrag(event, ${layer.id}, 'resize-left')"></div>
-                    <div class="bar-handle right" onmousedown="event.stopPropagation(); window.LexSlider.startBarDrag(event, ${layer.id}, 'resize-right')"></div>
+        // Slide Row
+        treeHTML += `
+            <div class="tree-item ${isActiveSlide ? 'bg-base-300 font-bold' : ''}" 
+                 onclick="window.LexSlider.switchSlide(${slide.id})">
+                <span class="material-icons-round icon text-primary">${isActiveSlide ? 'folder_open' : 'folder'}</span>
+                <span class="flex-1 truncate">${slide.title || 'Slide ' + (slideIndex + 1)}</span>
+                <div class="actions">
+                     <button class="btn btn-ghost btn-xs btn-square" onclick="event.stopPropagation(); window.LexSlider.deleteSlide(${slide.id})">
+                        <span class="material-icons-round text-xs">delete</span>
+                    </button>
                 </div>
-
-                <!-- Keyframes (Optional, rendered on top of bar or track) -->
-                ${(layer.keyframes || []).map(kf => `
-                    <div class="timeline-keyframe" 
-                         style="left: ${(kf.time / currentDuration) * timelineWidth}px;"
-                         data-time="${kf.time}"
-                         title="Keyframe at ${(kf.time / 1000).toFixed(2)}s">
-                        <div class="keyframe-diamond"></div>
-                    </div>
-                `).join('')}
             </div>
         `;
-    }).join('');
+
+        // Slide Track Placeholder (Empty or Summary)
+        tracksHTML += `<div class="timeline-track-lane bg-base-300/50" style="width: ${timelineWidth}px;"></div>`;
+
+        // If Active, Render Layers
+        if (isActiveSlide && slide.layers) {
+            slide.layers.forEach((layer, layerIndex) => {
+                const isSelected = state.selectedLayer === layer;
+
+                // Layer Row (Indented)
+                treeHTML += `
+                    <div class="tree-item pl-8 ${isSelected ? 'active' : ''}"
+                         onclick="window.LexSlider.selectLayerById(${layer.id})"
+                         draggable="true"
+                         ondragstart="window.LexSlider.onLayerDragStart(event, ${layerIndex})"
+                         ondragover="window.LexSlider.onLayerDragOver(event)"
+                         ondragleave="window.LexSlider.onLayerDragLeave(event)"
+                         ondrop="window.LexSlider.onLayerDrop(event, ${layerIndex})">
+                        <span class="material-icons-round icon text-xs">${getLayerIcon(layer.type)}</span>
+                        <span class="flex-1 truncate text-xs">${layer.name || layer.type}</span>
+                        <div class="actions">
+                            <button class="btn btn-ghost btn-xs btn-square ${layer.hidden ? 'text-warning' : ''}" 
+                                    onclick="event.stopPropagation(); window.LexSlider.toggleLayerVisibility(${layer.id})">
+                                <span class="material-icons-round text-xs">${layer.hidden ? 'visibility_off' : 'visibility'}</span>
+                            </button>
+                            <button class="btn btn-ghost btn-xs btn-square ${layer.locked ? 'text-warning' : ''}" 
+                                    onclick="event.stopPropagation(); window.LexSlider.toggleLayerLock(${layer.id})">
+                                <span class="material-icons-round text-xs">${layer.locked ? 'lock' : 'lock_open'}</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Layer Track
+                // Ensure defaults
+                if (layer.startTime === undefined) layer.startTime = 0;
+                if (layer.duration === undefined) layer.duration = currentDuration;
+
+                const left = (layer.startTime / currentDuration) * timelineWidth;
+                const width = (layer.duration / currentDuration) * timelineWidth;
+
+                tracksHTML += `
+                    <div class="timeline-track-lane ${isSelected ? 'selected' : ''}" 
+                         style="width: ${timelineWidth}px;"
+                         data-layer-id="${layer.id}"
+                         onclick="window.LexSlider.addKeyframe(${layer.id}, event)">
+                        
+                        <!-- Duration Bar -->
+                        <div class="timeline-layer-bar ${isSelected ? 'selected' : ''}"
+                             style="left: ${left}px; width: ${width}px;"
+                             onmousedown="window.LexSlider.startBarDrag(event, ${layer.id}, 'move')">
+                            <div class="bar-handle left" onmousedown="event.stopPropagation(); window.LexSlider.startBarDrag(event, ${layer.id}, 'resize-left')"></div>
+                            <div class="bar-handle right" onmousedown="event.stopPropagation(); window.LexSlider.startBarDrag(event, ${layer.id}, 'resize-right')"></div>
+                        </div>
+
+                        <!-- Keyframes -->
+                        ${(layer.keyframes || []).map(kf => `
+                            <div class="timeline-keyframe" 
+                                 style="left: ${(kf.time / currentDuration) * timelineWidth}px;"
+                                 title="Keyframe at ${(kf.time / 1000).toFixed(2)}s">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            });
+        }
+    });
+
+    treeContainer.innerHTML = treeHTML;
+    tracksContainer.innerHTML = tracksHTML;
 
     renderRuler();
 }
@@ -209,8 +191,8 @@ function renderRuler() {
 function playTimeline() {
     if (isPlaying) return;
     isPlaying = true;
-    document.getElementById('tl-btn-play').style.display = 'none';
-    document.getElementById('tl-btn-pause').style.display = 'inline-flex';
+    document.getElementById('tl-btn-play').classList.add('hidden');
+    document.getElementById('tl-btn-pause').classList.remove('hidden');
 
     startTime = Date.now() - currentTime;
     loop();
@@ -218,8 +200,8 @@ function playTimeline() {
 
 function pauseTimeline() {
     isPlaying = false;
-    document.getElementById('tl-btn-play').style.display = 'inline-flex';
-    document.getElementById('tl-btn-pause').style.display = 'none';
+    document.getElementById('tl-btn-play').classList.remove('hidden');
+    document.getElementById('tl-btn-pause').classList.add('hidden');
     cancelAnimationFrame(animationFrameId);
 }
 
@@ -270,11 +252,17 @@ export function timelineZoom(delta) {
 export function addKeyframe(layerId, event) {
     if (!state.currentSlide) return;
 
+    // Prevent adding keyframe when clicking on bar or handle
+    if (event.target.classList.contains('timeline-layer-bar') || event.target.classList.contains('bar-handle')) return;
+
     const track = event.currentTarget;
     const rect = track.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
+    const clickX = event.clientX - rect.left + track.scrollLeft; // Adjust for scroll if needed, though track usually doesn't scroll horizontally itself, the container does.
+    // Actually, event.offsetX is safer relative to target
+    const offsetX = event.offsetX;
+
     const timelineWidth = Math.max(getDuration() * zoomLevel / 100, 800);
-    const time = (clickX / timelineWidth) * getDuration();
+    const time = (offsetX / timelineWidth) * getDuration();
 
     const layer = state.currentSlide.layers.find(l => l.id === layerId);
     if (!layer) return;
@@ -366,7 +354,7 @@ let draggedLayerIndex = null;
 
 export function onLayerDragStart(event, index) {
     draggedLayerIndex = index;
-    event.target.classList.add('dragging');
+    event.target.classList.add('opacity-50');
     event.dataTransfer.effectAllowed = 'move';
 }
 
@@ -378,21 +366,21 @@ export function onLayerDragOver(event) {
     const rect = target.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
 
-    target.classList.remove('drag-over-top', 'drag-over-bottom');
+    target.classList.remove('border-t-2', 'border-b-2', 'border-primary');
     if (event.clientY < midY) {
-        target.classList.add('drag-over-top');
+        target.classList.add('border-t-2', 'border-primary');
     } else {
-        target.classList.add('drag-over-bottom');
+        target.classList.add('border-b-2', 'border-primary');
     }
 }
 
 export function onLayerDragLeave(event) {
-    event.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+    event.currentTarget.classList.remove('border-t-2', 'border-b-2', 'border-primary');
 }
 
 export function onLayerDrop(event, targetIndex) {
     event.preventDefault();
-    event.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+    event.currentTarget.classList.remove('border-t-2', 'border-b-2', 'border-primary', 'opacity-50');
 
     if (draggedLayerIndex === null || draggedLayerIndex === targetIndex) return;
 
@@ -403,7 +391,7 @@ export function onLayerDrop(event, targetIndex) {
     // Re-render everything to reflect new order (z-index is implicit by array order)
     renderTimelineTracks();
     renderCanvas();
-    renderLayerList(); // Update sidebar list too
+    // renderLayerList(); // Deprecated in favor of tree view
 }
 
 function getLayerIcon(type) {
@@ -413,19 +401,8 @@ function getLayerIcon(type) {
         image: 'image',
         video: 'play_circle',
         icon: 'star',
-        button: 'smart_button'
+        button: 'smart_button',
+        shape: 'crop_square'
     };
     return icons[type] || 'layers';
-}
-
-function getLayerTypeName(type) {
-    const names = {
-        heading: 'Heading',
-        text: 'Text',
-        image: 'Image',
-        video: 'Video',
-        icon: 'Icon',
-        button: 'Button'
-    };
-    return names[type] || 'Layer';
 }
