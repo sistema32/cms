@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "description": "A simple example plugin to demonstrate the system.",
     "author": "User",
-    "permissions": [],
+    "permissions": [
+        "ui:slot:sidebar"
+    ],
     "capabilities": {
         "db": [],
         "fs": [],

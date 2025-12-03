@@ -1,4 +1,4 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 
 /**
  * Notification Panel Component - DaisyUI Native
@@ -145,6 +145,7 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
       </div>
     </div>
 
+    ${raw(`
     <script>
       function markNotificationAsRead(notificationId) {
         // Send request to mark as read
@@ -276,6 +277,7 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
             eventSource = new EventSource(url);
 
           eventSource.onmessage = (event) => {
+            if (!event.data || event.data.trim() === '') return;
             try {
               const data = JSON.parse(event.data);
               console.log('Mensaje SSE recibido:', data);
@@ -284,7 +286,8 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
                 location.reload();
               }
             } catch (err) {
-              console.error('Error al parsear mensaje SSE:', err);
+              // Ignore parse errors for keep-alive or non-JSON messages
+              // console.error('Error al parsear mensaje SSE:', err);
             }
           };
 
@@ -329,6 +332,7 @@ export const NotificationPanel = (props: NotificationPanelProps) => {
         }
       });
     </script>
+    `)}
   `;
 };
 

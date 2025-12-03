@@ -22,6 +22,8 @@ function getAuditContext(c: any) {
 }
 
 pluginsNewRouter.get("/", async (c) => {
+  // On-demand discovery (WordPress style)
+  await reconciler.reconcilePlugins();
   const list = await registry.listPlugins();
   const { getMetrics } = await import("../services/pluginMetrics.ts");
   const metrics = getMetrics();
@@ -73,9 +75,13 @@ pluginsNewRouter.post("/:name/activate", async (c) => {
       });
       return c.json({
         success: false,
-        error: "Faltan permisos antes de activar",
-        missing,
-      }, 400);
+        error: `Cannot activate plugin "${name}" - missing permissions`,
+        details: {
+          missing,
+          message: `This plugin requires additional permissions. Add them to the manifest or grant manually.`,
+          helpUrl: `/admincp/plugins/${name}/permissions`
+        }
+      }, 403);
     }
   }
 
@@ -149,6 +155,130 @@ pluginsNewRouter.put("/:name/grants", async (c) => {
     return c.json({ success: true, data: updated });
   } catch (err) {
     return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+// ========== PENDING PLUGINS APPROVAL ENDPOINTS ==========
+
+/**
+ * Get all pending plugins awaiting approval
+ */
+pluginsNewRouter.get("/pending/list", async (c) => {
+  const { getPendingPlugins } = await import("../services/pluginPendingApproval.ts");
+  const pending = getPendingPlugins();
+  return c.json({ success: true, data: pending });
+});
+
+/**
+ * Approve a pending plugin
+ */
+pluginsNewRouter.post("/pending/:name/approve", async (c) => {
+  const name = c.req.param("name");
+  const { getPendingPlugin, removePendingPlugin } = await import("../services/pluginPendingApproval.ts");
+
+  const pending = getPendingPlugin(name);
+  if (!pending) {
+    return c.json({ success: false, error: "Plugin not found in pending list" }, 404);
+  }
+
+  try {
+    // Parse the manifest and register the plugin
+    const manifest = parseManifest({
+      manifestVersion: "v2",
+      id: pending.name,
+      name: pending.displayName,
+      version: pending.version,
+      description: pending.description,
+      permissions: pending.permissions,
+      capabilities: pending.capabilities
+    });
+
+    // Register the plugin
+    const { registerDiscoveredPlugin } = await import("../services/pluginRegistry.ts");
+    await registerDiscoveredPlugin(manifest);
+
+    // Remove from pending
+    removePendingPlugin(name);
+
+    await audit.log({
+      action: "plugin.approved",
+      entity: "plugin", // Added required field
+      resource: "plugin",
+      resourceId: name,
+      description: `Approved plugin: ${pending.displayName}`,
+      severity: "info",
+      ...getAuditContext(c),
+    });
+
+    return c.json({
+      success: true,
+      message: "Plugin approved and registered successfully",
+      plugin: { name, displayName: pending.displayName }
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: `Failed to approve plugin: ${errorMsg}` }, 500);
+  }
+});
+
+/**
+ * Reject a pending plugin
+ */
+pluginsNewRouter.post("/pending/:name/reject", async (c) => {
+  const name = c.req.param("name");
+  const { getPendingPlugin, removePendingPlugin } = await import("../services/pluginPendingApproval.ts");
+
+  const pending = getPendingPlugin(name);
+  if (!pending) {
+    return c.json({ success: false, error: "Plugin not found in pending list" }, 404);
+  }
+
+  // Remove from pending
+  removePendingPlugin(name);
+
+  await audit.log({
+    action: "plugin.rejected",
+    entity: "plugin", // Added required field
+    resource: "plugin",
+    resourceId: name,
+    description: `Rejected plugin: ${pending.displayName}`,
+    severity: "info",
+    ...getAuditContext(c),
+  });
+
+  return c.json({
+    success: true,
+    message: "Plugin rejected and removed from pending list",
+    plugin: { name, displayName: pending.displayName }
+  });
+});
+
+/**
+ * Scan for new plugins (discovery)
+ */
+pluginsNewRouter.post("/discover", async (c) => {
+  try {
+    await reconciler.reconcilePlugins();
+    const { getPendingPlugins } = await import("../services/pluginPendingApproval.ts");
+    const pending = getPendingPlugins();
+
+    await audit.log({
+      action: "plugin.discovery",
+      entity: "system", // Added required field
+      resource: "plugins",
+      description: `Discovered ${pending.length} new plugins awaiting approval`,
+      severity: "info",
+      ...getAuditContext(c),
+    });
+
+    return c.json({
+      success: true,
+      message: `Discovery complete. ${pending.length} plugins found.`,
+      pending: pending.length
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: `Discovery failed: ${errorMsg}` }, 500);
   }
 });
 

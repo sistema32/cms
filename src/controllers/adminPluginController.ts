@@ -16,21 +16,27 @@ export async function servePluginStaticFile(c: Context) {
     // Note: This controller is mounted under adminRouter, which is mounted at env.ADMIN_PATH
     // But we don't need to know env.ADMIN_PATH if we just look for /plugin/{name}/
 
-    // Check for missing trailing slash
+    // Check for missing trailing slash - DO NOT REDIRECT (causes loop with trailingSlashMiddleware)
+    // Instead, handle it by assuming root
+    let relativePath = "";
     if (c.req.path.endsWith(`/plugin/${pluginName}`)) {
-        return c.redirect(c.req.path + "/");
+        relativePath = "";
+    } else {
+        const pathParts = c.req.path.split(`/plugin/${pluginName}/`);
+        if (pathParts.length < 2) return c.notFound();
+        relativePath = pathParts[1];
     }
-
-    const pathParts = c.req.path.split(`/plugin/${pluginName}/`);
-    if (pathParts.length < 2) return c.notFound();
-
-    let relativePath = pathParts[1];
 
     // Ensure path starts with / for join, or just join relative
     // join("plugins", name, "public", "foo.html")
 
     // Prevent directory traversal
     if (relativePath.includes("..")) return c.notFound();
+
+    // If relativePath is empty, we are at root, serve index.html
+    if (relativePath === "") {
+        relativePath = "index.html";
+    }
 
     const filePath = join(Deno.cwd(), "plugins", pluginName, "public", relativePath);
 
@@ -56,7 +62,8 @@ export async function servePluginStaticFile(c: Context) {
                 let indexContent = await Deno.readTextFile(indexPath);
 
                 // Inject base tag for SPA routing
-                const basePath = c.req.path.match(/(.*\/plugin\/[^\/]+\/)/)?.[1] || '';
+                // Ensure base path always ends with /
+                let basePath = c.req.path.split(`/plugin/${pluginName}`)[0] + `/plugin/${pluginName}/`;
                 const baseTag = `<base href="${basePath}" />`;
 
                 // Insert base tag right after <head>

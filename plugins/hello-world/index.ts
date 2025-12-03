@@ -14,5 +14,5 @@ export default function (ctx: any) {
     });
 
     // Register a link in the sidebar
-    ctx.ui.registerSlot("sidebar", "Hello World", "/plugins-runtime/plugins-static/hello-world/index.html");
+    ctx.registerUiSlot("sidebar", "Hello World", "/plugins-runtime/plugins-static/hello-world/index.html", "ui:slot:sidebar");
 }

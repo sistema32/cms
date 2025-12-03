@@ -1,9 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run --allow-all --unstable-worker-options --watch src/main.ts",
+    "dev": "deno run --allow-read --allow-write --allow-net --allow-env --allow-run --allow-ffi --allow-sys --unstable-worker-options --watch src/main.ts",
     "dev:css": "deno task css:watch",
     "dev:all": "deno task css:build && deno task dev",
-    "start": "deno run --allow-all --unstable-worker-options src/main.ts",
+    "start": "deno run --allow-read --allow-write --allow-net --allow-env --allow-run --allow-ffi --allow-sys --unstable-worker-options src/main.ts",
     "css:build": "deno run -A scripts/build-css.ts",
     "css:watch": "deno run -A scripts/build-css.ts --watch",
     "css:minify": "deno run -A scripts/build-css.ts --minify",
@@ -60,7 +60,8 @@
     "@tailwindcss/cli": "npm:tailwindcss@^3.4.0",
     "daisyui": "npm:daisyui@^4.12.14",
     "autoprefixer": "npm:autoprefixer@^10.4",
-    "lowlight": "npm:lowlight@^3.1.0"
+    "lowlight": "npm:lowlight@^3.1.0",
+    "@/": "./src/"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {

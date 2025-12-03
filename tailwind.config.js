@@ -5,6 +5,7 @@ export default {
     "./src/routes/frontend.ts",
     "./src/admin/**/*.{tsx,ts,html}",
     "./src/routes/admin.ts",
+    "./plugins/lexslider/**/*.{js,ts,html,css}",
   ],
   darkMode: 'class',
   theme: {
