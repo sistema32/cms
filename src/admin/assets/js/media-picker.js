@@ -76,18 +76,26 @@
             </form>
             
             <!-- Modal Window -->
-            <div class="modal-box p-0 flex flex-col shadow-2xl overflow-hidden" style="background-color: #ffffff; color: #1f2937; width: 90vw; max-width: 1800px; min-width: 320px; max-height: 85vh;">
+            <div class="modal-box p-0 flex flex-col shadow-2xl overflow-hidden" style="background-color: #ffffff; color: #1f2937; width: 1800px; height: 900px;">
                 
                 <!-- HEADER -->
                 <div class="flex items-center justify-between px-4 md:px-6 py-3 shrink-0" style="border-bottom: 1px solid #e5e7eb; background-color: #f9fafb;">
-                    <h3 class="font-bold text-base md:text-lg" style="color: #111827;">${i18n.title}</h3>
+                    <div class="flex items-center gap-3">
+                        <!-- Hamburger Menu (Mobile Only) -->
+                        <button class="md:hidden btn btn-sm btn-ghost btn-square" onclick="document.getElementById('cms-media-picker-sidebar').classList.toggle('hidden')">
+                            <svg class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        <h3 class="font-bold text-base md:text-lg" style="color: #111827;">${i18n.title}</h3>
+                    </div>
                     
                     <div class="flex items-center gap-2 md:gap-3">
                         <!-- Search -->
                         <div class="relative w-40 md:w-64">
                             <input type="text" 
                                    placeholder="${i18n.search}" 
-                                   class="input input-sm input-bordered w-full pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   class="input input-sm input-bordered w-full pl-11 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    style="background-color: #ffffff; border-color: #d1d5db; color: #1f2937; font-size: 0.875rem;"
                                    id="cms-media-picker-search"
                                    oninput="window.CMS.MediaPicker.search(this.value)">
@@ -103,22 +111,29 @@
                 </div>
 
                 <!-- BODY -->
-                <div class="flex-1 flex flex-col md:flex-row overflow-hidden" style="min-height: 0;">
+                <div class="flex-1 flex overflow-hidden relative" style="min-height: 0;">
                     
-                    <!-- SIDEBAR -->
-                    <div class="w-full md:w-56 p-3 md:p-4 flex flex-row md:flex-col gap-2 md:gap-3 shrink-0 overflow-x-auto md:overflow-y-auto" style="background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; border-right: none; md:border-bottom: none; md:border-right: 1px solid #e5e7eb;">
-                        <button class="btn btn-primary btn-sm gap-2 whitespace-nowrap" style="background-color: #4f46e5; border-color: #4f46e5; color: #ffffff !important;"
+                    <!-- SIDEBAR (1/3) - Always visible on desktop, toggleable on mobile -->
+                    <div id="cms-media-picker-sidebar" class="flex md:w-64 p-5 flex-col gap-4 shrink-0 overflow-y-auto md:relative h-full md:h-auto" style="background-color: #f8f9fa; border-right: 1px solid #dee2e6; box-shadow: 1px 0 3px rgba(0,0,0,0.05);">
+                        <!-- Close button for mobile -->
+                        <button class="md:hidden self-end btn btn-sm btn-ghost btn-circle mb-2" onclick="document.getElementById('cms-media-picker-sidebar').classList.add('hidden')">
+                            <svg class="w-5 h-5" style="color: #6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="btn btn-primary btn-sm w-full gap-2" style="background-color: #4f46e5 !important; border-color: #4f46e5 !important; color: #ffffff !important;"
                                 onclick="document.getElementById('cms-media-picker-file-input').click()">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" style="color: #ffffff !important;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            <span style="color: #ffffff;">${i18n.upload}</span>
+                            <span style="color: #ffffff !important;">${i18n.upload}</span>
                         </button>
                         <input type="file" id="cms-media-picker-file-input" class="hidden" multiple accept="image/*,video/*,application/pdf"
                                onchange="window.CMS.MediaPicker.handleUpload(this.files)">
 
                         <!-- Upload Progress -->
-                        <div id="cms-media-picker-upload-progress" class="hidden p-2 rounded text-xs w-full md:w-auto" style="background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div id="cms-media-picker-upload-progress" class="hidden p-2 rounded text-xs" style="background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                             <div class="flex justify-between mb-1" style="color: #6b7280;">
                                 <span>${i18n.uploading}</span>
                                 <span id="cms-media-picker-upload-status">0%</span>
@@ -127,17 +142,19 @@
                         </div>
 
                         <!-- Filters -->
-                        <ul class="menu p-2 rounded-lg text-sm flex-row md:flex-col md:w-full whitespace-nowrap" style="background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <li class="menu-title text-xs uppercase px-2 hidden md:block" style="color: #9ca3af;">${i18n.filter}</li>
-                            <li><a class="active rounded hover:bg-gray-100" style="color: #374151;" data-filter="" onclick="window.CMS.MediaPicker.setFilter(null)">${i18n.allMedia}</a></li>
-                            <li><a class="rounded hover:bg-gray-100" style="color: #374151;" data-filter="image" onclick="window.CMS.MediaPicker.setFilter('image')">${i18n.images}</a></li>
-                            <li><a class="rounded hover:bg-gray-100" style="color: #374151;" data-filter="video" onclick="window.CMS.MediaPicker.setFilter('video')">${i18n.videos}</a></li>
-                            <li><a class="rounded hover:bg-gray-100" style="color: #374151;" data-filter="document" onclick="window.CMS.MediaPicker.setFilter('document')">${i18n.documents}</a></li>
-                        </ul>
+                        <div>
+                            <h4 class="text-xs uppercase font-semibold mb-2 px-2" style="color: #9ca3af;">${i18n.filter}</h4>
+                            <ul class="menu p-0 w-full text-sm" style="background-color: transparent;">
+                                <li><a class="active rounded hover:bg-white/50" style="color: #374151;" data-filter="" onclick="window.CMS.MediaPicker.setFilter(null)">${i18n.allMedia}</a></li>
+                                <li><a class="rounded hover:bg-white/50" style="color: #374151;" data-filter="image" onclick="window.CMS.MediaPicker.setFilter('image')">${i18n.images}</a></li>
+                                <li><a class="rounded hover:bg-white/50" style="color: #374151;" data-filter="video" onclick="window.CMS.MediaPicker.setFilter('video')">${i18n.videos}</a></li>
+                                <li><a class="rounded hover:bg-white/50" style="color: #374151;" data-filter="document" onclick="window.CMS.MediaPicker.setFilter('document')">${i18n.documents}</a></li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <!-- DROPZONE / GRID -->
-                    <div class="flex-1 overflow-y-auto p-3 md:p-4 relative" style="background-color: #ffffff; min-height: 0;" id="cms-media-picker-dropzone">
+                    <!-- GRID AREA (2/3) -->
+                    <div class="flex-1 overflow-y-auto p-6 relative" style="background-color: #ffffff; min-height: 0;" id="cms-media-picker-dropzone">
                         <div id="cms-media-picker-grid">
                             <!-- JS Injected Grid -->
                         </div>
@@ -150,8 +167,8 @@
                          <span id="cms-media-picker-selected-count">0</span> ${i18n.selected}
                     </div>
                     <div class="flex gap-2">
-                        <button class="btn btn-sm btn-ghost hover:bg-gray-100" style="color: #374151;" onclick="window.CMS.MediaPicker.close()">${i18n.cancel}</button>
-                        <button class="btn btn-sm btn-primary" style="background-color: #4f46e5; border-color: #4f46e5; color: #ffffff;" id="cms-media-picker-confirm-btn" disabled onclick="window.CMS.MediaPicker.confirm()">${i18n.select}</button>
+                        <button class="btn btn-sm btn-ghost hover:bg-gray-100" style="color: #374151 !important;" onclick="window.CMS.MediaPicker.close()">${i18n.cancel}</button>
+                        <button class="btn btn-sm btn-primary" style="background-color: #4f46e5; border-color: #4f46e5; color: #ffffff !important;" id="cms-media-picker-confirm-btn" disabled onclick="window.CMS.MediaPicker.confirm()">${i18n.select}</button>
                     </div>
                 </div>
             </div>
@@ -163,28 +180,64 @@
             #cms-media-picker-modal .menu a.active {
                 background-color: #4f46e5 !important;
                 color: #ffffff !important;
+                font-weight: 500;
             }
             #cms-media-picker-modal .menu a:hover {
-                background-color: #f3f4f6;
+                background-color: rgba(79, 70, 229, 0.08);
             }
             #cms-media-picker-modal .menu a.active:hover {
                 background-color: #4338ca !important;
+            }
+            #cms-media-picker-modal .menu a {
+                transition: all 0.15s ease;
+            }
+            
+            /* Upload button override */
+            #cms-media-picker-modal .btn-primary {
+                background-color: #4f46e5 !important;
+                border-color: #4f46e5 !important;
+                color: #ffffff !important;
+            }
+            #cms-media-picker-modal .btn-primary:hover {
+                background-color: #4338ca !important;
+                border-color: #4338ca !important;
+            }
+            
+            /* Professional polish */
+            #cms-media-picker-modal .modal-box {
+                border-radius: 12px;
+            }
+            #cms-media-picker-modal h3 {
+                letter-spacing: -0.02em;
+            }
+            #cms-media-picker-modal h4 {
+                letter-spacing: 0.05em;
             }
             
             /* Mobile responsive adjustments */
             @media (min-width: 768px) {
                 #cms-media-picker-modal .modal-box {
-                    min-width: 1200px !important;
+                    width: 1800px !important;
+                    height: 900px !important;
                 }
             }
             
+            /* Mobile sidebar overlay */
             @media (max-width: 767px) {
-                #cms-media-picker-modal .menu {
-                    display: flex !important;
-                    gap: 0.5rem;
+                #cms-media-picker-modal .modal-box {
+                    width: 95vw !important;
+                    height: 90vh !important;
+                    max-height: 90vh !important;
                 }
-                #cms-media-picker-modal .menu li {
-                    flex-shrink: 0;
+                #cms-media-picker-sidebar {
+                    position: absolute;
+                    width: 80vw;
+                    max-width: 300px;
+                    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+                    z-index: 10 !important;
+                }
+                #cms-media-picker-sidebar.hidden {
+                    display: none !important;
                 }
             }
         `;

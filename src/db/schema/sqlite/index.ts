@@ -868,8 +868,8 @@ export const mediaRelations = relations(media, ({ one, many }) => ({
     }),
     sizes: many(mediaSizes),
     seo: one(mediaSeo, {
-        fields: [mediaSeo.mediaId],
-        references: [media.id],
+        fields: [media.id],
+        references: [mediaSeo.mediaId],
     }),
 }));
 
@@ -879,6 +879,8 @@ export const mediaSizesRelations = relations(mediaSizes, ({ one }) => ({
         references: [media.id],
     }),
 }));
+
+
 
 export const mediaSeoRelations = relations(mediaSeo, ({ one }) => ({
     media: one(media, {
