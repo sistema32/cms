@@ -35,6 +35,7 @@ import seoOptimizationRoutes from "./seo-optimization.ts";
 import systemUpdatesRoutes from "./system-updates.ts";
 import formsRoutes from "./forms.ts";
 import publicFormsRouter from "./public-forms.ts";
+import cmsRoutes from "./cms.ts";
 import { securityRoutes as securityAdminRoutes } from "./admin/security.ts";
 import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
@@ -184,6 +185,9 @@ export function registerRoutes(app: Hono) {
 
   // Registrar rutas de Forms
   app.route("/api/forms", formsRoutes);
+
+  // Registrar rutas de CMS SDK
+  app.route("/api/cms", cmsRoutes);
 
   // Servir archivos estáticos (uploads)
   app.route("/uploads", mediaRoutes);

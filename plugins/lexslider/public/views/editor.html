@@ -28,6 +28,19 @@
                     <span class="material-icons-round text-base">smartphone</span>
                 </button>
             </div>
+
+            <!-- Undo/Redo -->
+            <div class="divider divider-horizontal mx-1"></div>
+            <div class="join">
+                <button id="btn-undo" class="btn btn-sm btn-ghost join-item h-8 min-h-[32px] btn-disabled"
+                    onclick="window.LexSlider.undo(); window.LexSlider.updateUndoRedoButtons();" title="Undo (Ctrl+Z)">
+                    <span class="material-icons-round text-base">undo</span>
+                </button>
+                <button id="btn-redo" class="btn btn-sm btn-ghost join-item h-8 min-h-[32px] btn-disabled"
+                    onclick="window.LexSlider.redo(); window.LexSlider.updateUndoRedoButtons();" title="Redo (Ctrl+Y)">
+                    <span class="material-icons-round text-base">redo</span>
+                </button>
+            </div>
         </div>
 
         <!-- RIGHT: Actions -->
@@ -51,13 +64,13 @@
     <div class="flex-1 flex overflow-hidden">
         <!-- CENTER: CANVAS -->
         <div class="flex-1 bg-base-100 relative overflow-hidden flex items-center justify-center p-8" id="canvas-area">
-            <!-- Rulers -->
-            <div
-                class="absolute top-0 left-0 w-full h-6 bg-base-200 border-b border-base-300 z-10 text-[10px] flex items-end pb-1 px-2 opacity-50">
-                0px</div>
-            <div
-                class="absolute top-0 left-0 w-6 h-full bg-base-200 border-r border-base-300 z-10 text-[10px] flex justify-end pr-1 pt-8 opacity-50 writing-mode-vertical">
-                0px</div>
+            <!-- Rulers (populated by CanvasRenderer.js) -->
+            <div id="canvas-ruler-h"
+                class="absolute top-0 left-6 right-0 h-6 bg-base-200 border-b border-base-300 z-10 overflow-hidden">
+            </div>
+            <div id="canvas-ruler-v"
+                class="absolute top-6 left-0 bottom-0 w-6 bg-base-200 border-r border-base-300 z-10 overflow-hidden">
+            </div>
 
             <div class="canvas-wrapper shadow-2xl relative z-0">
                 <div id="editor-canvas" class="editor-canvas desktop bg-white transition-all duration-300">
@@ -72,7 +85,7 @@
             <!-- FIXED TOP PANEL: ADD LAYERS -->
             <div class="p-2 border-b border-[#333] bg-[#232323]">
                 <div class="text-[9px] font-bold opacity-50 mb-1 uppercase tracking-wider">Add Layer</div>
-                <div class="grid grid-cols-4 gap-1">
+                <div class="grid grid-cols-4 gap-2 p-2">
                     <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('heading')"
                         title="Heading"><span class="material-icons-round">title</span></button>
                     <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('text')"
@@ -87,8 +100,9 @@
                         title="Icon"><span class="material-icons-round">star</span></button>
                     <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('shape')"
                         title="Shape"><span class="material-icons-round">crop_square</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" title="More"><span
-                            class="material-icons-round">more_horiz</span></button>
+                    <button class="btn btn-square btn-outline btn-xs h-10 w-full"
+                        onclick="window.LexSlider.groupLayers()" title="Add Group"><span
+                            class="material-icons-round">folder</span></button>
                 </div>
             </div>
 
@@ -130,7 +144,23 @@
                     onchange="window.LexSlider.updateSlideDuration(this.value)">
                 <span class="text-[10px] opacity-50">ms</span>
             </div>
+            <div class="flex items-center gap-2 ml-2 border-l border-base-300 pl-2">
+                <span class="text-[10px] opacity-50">SPEED:</span>
+                <select id="tl-speed-input" class="select select-bordered select-xs w-16 px-1"
+                    onchange="window.LexSlider.setPlaybackSpeed(this.value)">
+                    <option value="0.25">0.25x</option>
+                    <option value="0.5">0.5x</option>
+                    <option value="1.0" selected>1x</option>
+                    <option value="2.0">2x</option>
+                </select>
+            </div>
             <div class="flex-1"></div>
+            <div class="join mr-2">
+                <button class="btn btn-xs btn-ghost join-item" id="tl-btn-snap"
+                    onclick="window.LexSlider.toggleTimelineSnap()" title="Toggle Snap">
+                    <span class="material-icons-round text-sm opacity-50">magnet_alt</span>
+                </button>
+            </div>
             <div class="join">
                 <button class="btn btn-xs btn-ghost join-item" onclick="window.LexSlider.timelineZoom(-0.5)"><span
                         class="material-icons-round text-sm">zoom_out</span></button>
@@ -141,9 +171,16 @@
 
         <!-- Timeline Body -->
         <div class="flex-1 flex overflow-hidden">
-            <!-- LEFT: TREE VIEW -->
-            <div class="w-64 border-r border-base-300 bg-base-200 flex flex-col overflow-y-auto custom-scrollbar"
-                id="timeline-tree"></div>
+            <!-- LEFT: TREE VIEW (no scroll, synced via JS) -->
+            <div class="w-64 border-r border-base-300 bg-base-200 flex flex-col overflow-hidden"
+                id="timeline-tree-wrapper">
+                <!-- Spacer for ruler alignment -->
+                <div class="h-6 border-b border-base-300 bg-base-200 shrink-0"></div>
+                <!-- Tree content -->
+                <div class="flex-1 overflow-hidden" id="timeline-tree"
+                    style="overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none;">
+                </div>
+            </div>
             <!-- RIGHT: TRACKS -->
             <div class="flex-1 flex flex-col overflow-hidden bg-base-100 relative">
                 <div class="h-6 border-b border-base-300 bg-base-200 relative overflow-hidden select-none"
@@ -152,8 +189,16 @@
                     <div id="tl-playhead"
                         class="absolute top-0 bottom-0 w-[1px] bg-primary z-50 pointer-events-none h-[1000px]"></div>
                 </div>
-                <div class="flex-1 overflow-auto custom-scrollbar relative" id="tl-tracks-scroll">
-                    <div id="tl-tracks" class="relative min-h-full"></div>
+                <!-- Tracks -->
+                <div class="flex-1 overflow-auto custom-scrollbar relative bg-[#1e1e1e]" id="tl-tracks-scroll">
+                    <div id="tl-tracks" class="min-w-full min-h-full relative">
+                        <!-- Tracks injected here -->
+                    </div>
+                    <div id="tl-playhead" class="absolute top-0 bottom-0 w-px bg-error z-50 pointer-events-none"
+                        style="left: 0;"></div>
+                    <div id="tl-snap-line"
+                        class="absolute top-0 bottom-0 w-px bg-primary z-50 hidden pointer-events-none"
+                        style="left: 0;"></div>
                 </div>
             </div>
         </div>

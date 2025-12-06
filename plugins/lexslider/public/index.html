@@ -8,13 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- Admin Global CSS (DaisyUI + Tailwind) -->
-    <link rel="stylesheet" href="../../assets/css/admin-compiled.css">
+    <link rel="stylesheet" href="/admincp/assets/css/admin-compiled.css">
     <!-- Plugin Specific Styles -->
     <link rel="stylesheet" href="styles.compiled.css">
 </head>
 
 <body
-    class="h-screen w-screen overflow-hidden bg-base-300 text-base-content font-sans antialiased selection:bg-primary selection:text-primary-content">
+    class="h-screen w-screen overflow-hidden bg-base-300 text-base-content font-sans antialiased selection:bg-primary selection:text-primary-content"
+    style="visibility: hidden; opacity: 0; transition: opacity 0.2s;">
 
     <!-- App Container (Views injected here) -->
     <div id="app" class="h-full w-full flex flex-col"></div>
@@ -80,30 +81,10 @@
                     </div>
                 </div>
 
-                <!-- Tab: Library (Mock) -->
+                <!-- Tab: Library (Dynamic) -->
                 <div id="asset-tab-library" class="hidden flex-1 overflow-y-auto custom-scrollbar">
-                    <div class="grid grid-cols-4 gap-2">
-                        <!-- Mock Images -->
-                        <div class="aspect-square bg-[#111] border border-[#333] cursor-pointer hover:border-primary"
-                            onclick="window.LexSlider.selectAsset('https://picsum.photos/800/600?random=1')">
-                            <img src="https://picsum.photos/800/600?random=1"
-                                class="w-full h-full object-cover opacity-70 hover:opacity-100">
-                        </div>
-                        <div class="aspect-square bg-[#111] border border-[#333] cursor-pointer hover:border-primary"
-                            onclick="window.LexSlider.selectAsset('https://picsum.photos/800/600?random=2')">
-                            <img src="https://picsum.photos/800/600?random=2"
-                                class="w-full h-full object-cover opacity-70 hover:opacity-100">
-                        </div>
-                        <div class="aspect-square bg-[#111] border border-[#333] cursor-pointer hover:border-primary"
-                            onclick="window.LexSlider.selectAsset('https://picsum.photos/800/600?random=3')">
-                            <img src="https://picsum.photos/800/600?random=3"
-                                class="w-full h-full object-cover opacity-70 hover:opacity-100">
-                        </div>
-                        <div class="aspect-square bg-[#111] border border-[#333] cursor-pointer hover:border-primary"
-                            onclick="window.LexSlider.selectAsset('https://picsum.photos/800/600?random=4')">
-                            <img src="https://picsum.photos/800/600?random=4"
-                                class="w-full h-full object-cover opacity-70 hover:opacity-100">
-                        </div>
+                    <div id="media-library-content" class="grid grid-cols-4 gap-2">
+                        <!-- Dynamic content loaded via JS -->
                     </div>
                 </div>
             </div>
@@ -128,7 +109,11 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=3.0.10"></script>
+    <!-- CMS SDK (provides permissions, user context, wrapped MediaPicker) -->
+    <script src="/admincp/assets/js/cms-sdk.js"></script>
+    <script src="/admincp/assets/js/media-picker.js"></script>
+
+    <script type="module" src="js/main.js?v=3.0.28"></script>
 </body>
 
 </html>

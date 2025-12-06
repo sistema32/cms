@@ -55,6 +55,11 @@ aside,
     border-color: var(--border-color) !important;
 }
 
+/* Hide scrollbar on timeline-tree but keep scrollable */
+#timeline-tree::-webkit-scrollbar {
+    display: none;
+}
+
 /* Inputs (SR Style: Dark, Inset, Sharp) */
 input,
 select,
@@ -410,4 +415,53 @@ body {
     color: rgba(255, 255, 255, 0.4);
     margin-left: 4px;
     margin-top: 2px;
+}
+
+/* Resize Handles */
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    border: 1px solid var(--primary);
+    z-index: 100;
+}
+
+.resize-handle.nw {
+    top: -5px;
+    left: -5px;
+    cursor: nw-resize;
+}
+
+.resize-handle.ne {
+    top: -5px;
+    right: -5px;
+    cursor: ne-resize;
+}
+
+.resize-handle.sw {
+    bottom: -5px;
+    left: -5px;
+    cursor: sw-resize;
+}
+
+.resize-handle.se {
+    bottom: -5px;
+    right: -5px;
+    cursor: se-resize;
+}
+
+/* Selected Layer Border */
+.layer-item.selected {
+    outline: 1px solid var(--primary);
+}
+
+@keyframes kenBurns {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.15);
+    }
 }

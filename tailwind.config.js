@@ -3,7 +3,7 @@ export default {
   content: [
     "./src/themes/**/*.{tsx,ts,html}",
     "./src/routes/frontend.ts",
-    "./src/admin/**/*.{tsx,ts,html}",
+    "./src/admin/**/*.{js,tsx,ts,html}",
     "./src/routes/admin.ts",
     "./plugins/lexslider/**/*.{js,ts,html,css}",
   ],

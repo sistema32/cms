@@ -1,4 +1,4 @@
-console.log("Loading EditorCore v3.0.10");
+console.log("Loading EditorCore v3.0.28");
 export const API_BASE = '/plugins-runtime/lexslider';
 
 export const state = {
@@ -43,15 +43,26 @@ export function initElements() {
 
 export async function loadView(viewName) {
     const app = document.getElementById('app');
-    console.log(`[EditorCore] Loading view: ${viewName}`, app);
+    console.log(`[EditorCore] Loading v3.0.28 view: ${viewName}`, app);
     try {
-        const res = await fetch(`views/${viewName}.html`);
+        // Get base path for plugin (handles both /admincp/plugin/lexslider and /admincp/plugin/lexslider/slider/:id)
+        const basePath = window.location.pathname.split('/plugin/lexslider')[0] + '/plugin/lexslider';
+        const res = await fetch(`${basePath}/views/${viewName}.html`);
         if (!res.ok) throw new Error(`Failed to load view: ${viewName}`);
         const html = await res.text();
         app.innerHTML = html;
 
+        // Wait for DOM to be fully processed
+        await new Promise(resolve => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(resolve);
+            });
+        });
+
         state.view = viewName;
         initElements();
+
+        console.log(`[EditorCore] View ${viewName} loaded, elements.editor exists:`, !!elements.editor?.canvas);
 
         // Setup View-Specific Logic
         if (viewName === 'dashboard') {
@@ -132,6 +143,12 @@ function initResizing() {
 }
 
 export function setDevice(mode) {
+    // Guard: ensure elements are ready
+    if (!elements.editor?.canvas || !elements.editor?.deviceButtons) {
+        console.warn('[EditorCore] Elements not ready for setDevice');
+        return;
+    }
+
     state.device = mode;
 
     // Update Buttons
@@ -149,25 +166,28 @@ export function setDevice(mode) {
     canvas.classList.add(mode);
 
     // Apply specific widths via style
+    const slider = state.currentSlider;
     if (mode === 'desktop') {
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
+        canvas.style.width = slider ? `${slider.width}px` : '100%';
+        canvas.style.height = slider ? `${slider.height}px` : '100%';
         canvas.style.maxWidth = 'none';
+        canvas.style.margin = '0 auto';
     } else if (mode === 'tablet') {
-        canvas.style.width = '770px';
-        canvas.style.height = '100%'; // Or specific height if needed
+        canvas.style.width = '768px';
+        canvas.style.height = slider ? `${slider.height}px` : '500px';
         canvas.style.maxWidth = '100%';
+        canvas.style.margin = '0 auto';
     } else if (mode === 'mobile') {
-        canvas.style.width = '360px';
-        canvas.style.height = '100%';
+        canvas.style.width = '375px';
+        canvas.style.height = slider ? `${slider.height}px` : '500px';
         canvas.style.maxWidth = '100%';
+        canvas.style.margin = '0 auto';
     }
 
-    // Re-render to update layer properties if they have device-specific overrides
-    // We need to import renderProperties dynamically or ensure circular deps are handled
-    // For now, we assume window.LexSlider.renderProperties exists or we dispatch an event
-    if (window.LexSlider && window.LexSlider.renderProperties) {
-        window.LexSlider.renderProperties();
+    // Re-render canvas and properties
+    if (window.LexSlider) {
+        if (window.LexSlider.renderCanvas) window.LexSlider.renderCanvas();
+        if (window.LexSlider.renderProperties) window.LexSlider.renderProperties();
     }
 }
 
@@ -206,15 +226,51 @@ export function renderDashboard() {
     }
 
     elements.dashboard.list.innerHTML = state.sliders.map(slider => `
-        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all cursor-pointer group" onclick="window.openSlider(${slider.id})">
-            <figure class="h-48 bg-base-200 flex items-center justify-center group-hover:bg-base-300 transition-colors">
+        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all group">
+            <figure class="h-40 bg-base-200 flex items-center justify-center group-hover:bg-base-300 transition-colors cursor-pointer" onclick="window.openSlider(${slider.id})">
                 <span class="material-icons-round text-6xl opacity-10">collections</span>
             </figure>
-            <div class="card-body p-6">
-                <h2 class="card-title text-sm">${slider.title || slider.name || 'Untitled'}</h2>
-                <div class="flex gap-2 text-xs opacity-50 mt-2">
+            <div class="card-body p-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="card-title text-sm cursor-pointer hover:text-primary" onclick="window.openSlider(${slider.id})">${slider.title || slider.name || 'Untitled'}</h2>
+                    <div class="flex gap-1">
+                        <button class="btn btn-ghost btn-xs" onclick="window.openSlider(${slider.id})" title="Edit">
+                            <span class="material-icons-round text-sm">edit</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-2 text-xs opacity-50 mt-1">
                     <span class="badge badge-ghost badge-xs">${slider.width || 1200}x${slider.height || 600}</span>
                     <span class="badge badge-ghost badge-xs">${slider.type || 'simple'}</span>
+                </div>
+                
+                <!-- Embed Shortcuts -->
+                <div class="mt-3 pt-3 border-t border-base-300 space-y-2">
+                    <div class="text-xs opacity-60 uppercase tracking-wider font-semibold">Embed</div>
+                    
+                    <!-- Shortcode -->
+                    <div class="flex items-center gap-2" title="Use in WordPress/CMS posts">
+                        <span class="text-xs opacity-50 w-16">Shortcode:</span>
+                        <code class="flex-1 bg-base-200 px-2 py-1 rounded text-xs font-mono truncate">[lexslider id="${slider.id}"]</code>
+                        <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation(); window.LexSlider.copyToClipboard('[lexslider id=\\'${slider.id}\\']', this)" title="Copy">
+                            <span class="material-icons-round text-sm">content_copy</span>
+                        </button>
+                    </div>
+                    
+                    <!-- HTML Embed -->
+                    <div class="flex items-center gap-2" title="Add to any HTML page">
+                        <span class="text-xs opacity-50 w-16">HTML:</span>
+                        <code class="flex-1 bg-base-200 px-2 py-1 rounded text-xs font-mono truncate">&lt;div data-lexslider="${slider.id}"&gt;&lt;/div&gt;</code>
+                        <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation(); window.LexSlider.copyToClipboard('<div data-lexslider=\\'${slider.id}\\'></div>', this)" title="Copy">
+                            <span class="material-icons-round text-sm">content_copy</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Script (for external sites) -->
+                    <div class="mt-2 pt-2 border-t border-base-300/50">
+                        <div class="text-[10px] opacity-40">Include script once per page:</div>
+                        <code class="block bg-base-200 px-2 py-1 rounded text-[10px] font-mono truncate opacity-60">&lt;script src="/plugins-runtime/plugins-static/lexslider/lexslider-embed.js"&gt;&lt;/script&gt;</code>
+                    </div>
                 </div>
             </div>
         </div>

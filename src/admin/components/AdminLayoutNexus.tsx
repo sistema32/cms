@@ -95,6 +95,9 @@ export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
             });
           });
         </script>
+
+        <!-- Global Media Picker Component -->
+        <script src="${adminPath}/assets/js/media-picker.js"></script>
       </body>
     </html>
   `;
