@@ -10,8 +10,11 @@ import { securityPagesRouter } from "./admin/security-pages.ts";
 import { usersRouter } from "./admin/users.ts";
 import { commentsRouter } from "./admin/comments.ts";
 import { formsRouter } from "./admin/forms.ts";
+import { mediaRouter } from "./admin/media.ts";
 import { toolsRouter } from "./admin/tools.ts";
 import { widgetsRouter } from "./admin/widgets.ts";
+import { categoriesRouter } from "./admin/categories.ts";
+import { tagsRouter } from "./admin/tags.ts";
 
 const adminRouter = new Hono();
 
@@ -68,8 +71,11 @@ adminRouter.route("/", securityPagesRouter);
 adminRouter.route("/", usersRouter);
 adminRouter.route("/", commentsRouter);
 adminRouter.route("/", formsRouter);
+adminRouter.route("/", mediaRouter);
 adminRouter.route("/", toolsRouter);
 adminRouter.route("/", widgetsRouter);
+adminRouter.route("/", categoriesRouter);
+adminRouter.route("/", tagsRouter);
 
 // Plugin Static Files (Admin Dashboard)
 // Maps /admincp/plugin/:pluginName/* -> plugins/:pluginName/public/*
@@ -84,9 +90,16 @@ adminRouter.get("/plugin/:pluginName/*", servePluginStaticFile);
 
 // Plugins page
 import PluginsDbNexus from "../admin/pages/PluginsDbNexus.tsx";
+import AdminDemoNexus from "../admin/pages/AdminDemoNexus.tsx";
 adminRouter.get("/plugins/db", (c) => {
   const user = c.get("user");
   return c.html(PluginsDbNexus({ user }));
+});
+
+// Admin Demo (Focus Mode)
+adminRouter.get("/admindemo", (c) => {
+  const user = c.get("user");
+  return c.html(AdminDemoNexus({ user }));
 });
 
 export default adminRouter;

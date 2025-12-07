@@ -31,8 +31,8 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
     <style>
       .lex-editor-wrapper {
         display: grid;
-        grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
-        gap: 1.5rem;
+        grid-template-columns: 1fr;
+        gap: 0;
       }
 
       @media (max-width: 1024px) {
@@ -151,6 +151,7 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
       }
     </style>
 
+
     <div class="lex-editor-wrapper">
       <div>
         <div class="lex-editor-container">
@@ -164,15 +165,6 @@ export const CKEditorField = (props: CKEditorFieldProps) => {
           ${required ? "required" : ""}
         />
       </div>
-
-      <aside class="lex-editor-toc">
-        <h4
-          class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3"
-        >
-          Contenido
-        </h4>
-        <div id="${tocId}" class="space-y-1 text-sm"></div>
-      </aside>
     </div>
 
     <div

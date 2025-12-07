@@ -13,6 +13,7 @@ import type { ProcessedImage } from "../utils/media/imageProcessor.ts";
 import * as videoProcessor from "../utils/media/videoProcessor.ts";
 import * as documentProcessor from "../utils/media/documentProcessor.ts";
 import { env } from "../config/env.ts";
+import { MEDIA_TYPES, STORAGE_PROVIDERS, DEFAULT_PATHS, MIME_TYPES } from "../config/constants.ts";
 import { doAction, applyFilters } from "../lib/hooks/index.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
 
@@ -49,7 +50,7 @@ export interface MediaWithSizes {
   };
 }
 
-const BASE_URL = env.BASE_URL || "http://localhost:8000";
+const BASE_URL = env.BASE_URL;
 
 /**
  * Sube y procesa un archivo
@@ -95,12 +96,14 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
   let finalMimeType: string;
 
   switch (mediaType) {
-    case "image": {
+    case MEDIA_TYPES.IMAGE: {
       const processed = await imageProcessor.processImage(input.data);
       processedData = processed.data;
       width = processed.width;
       height = processed.height;
-      finalMimeType = "image/webp";
+      width = processed.width;
+      height = processed.height;
+      finalMimeType = MIME_TYPES.WEBP;
 
       // Guardar archivo original procesado
       await fileUtils.saveFile(processedData, fullPath);
@@ -124,9 +127,9 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
       break;
     }
 
-    case "video": {
+    case MEDIA_TYPES.VIDEO: {
       // Guardar archivo temporal
-      const tempDir = "temp";
+      const tempDir = DEFAULT_PATHS.TEMP;
       await fileUtils.ensureDir(tempDir);
       const tempInput = `${tempDir}/input_${Date.now()}`;
       const tempOutput = `${tempDir}/output_${Date.now()}.webm`;
@@ -144,7 +147,10 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
       width = videoInfo.width;
       height = videoInfo.height;
       duration = videoInfo.duration;
-      finalMimeType = "video/webm";
+      width = videoInfo.width;
+      height = videoInfo.height;
+      duration = videoInfo.duration;
+      finalMimeType = MIME_TYPES.WEBM_VIDEO;
 
       // Guardar archivo final
       await fileUtils.saveFile(processedData, fullPath);
@@ -156,9 +162,9 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
       break;
     }
 
-    case "audio": {
+    case MEDIA_TYPES.AUDIO: {
       // Similar a video pero sin dimensiones
-      const tempDir = "temp";
+      const tempDir = DEFAULT_PATHS.TEMP;
       await fileUtils.ensureDir(tempDir);
       const tempInput = `${tempDir}/input_${Date.now()}`;
       const tempOutput = `${tempDir}/output_${Date.now()}.webm`;
@@ -172,7 +178,9 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
 
       processedData = await fileUtils.readFile(tempOutput);
       duration = audioInfo.duration;
-      finalMimeType = "audio/webm";
+      processedData = await fileUtils.readFile(tempOutput);
+      duration = audioInfo.duration;
+      finalMimeType = MIME_TYPES.WEBM_AUDIO;
 
       await fileUtils.saveFile(processedData, fullPath);
 
@@ -182,8 +190,8 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
       break;
     }
 
-    case "document": {
-      const tempDir = "temp";
+    case MEDIA_TYPES.DOCUMENT: {
+      const tempDir = DEFAULT_PATHS.TEMP;
       await fileUtils.ensureDir(tempDir);
       const tempInput = `${tempDir}/input_${Date.now()}`;
 
@@ -195,7 +203,8 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
       );
 
       processedData = processed.data;
-      finalMimeType = "application/pdf";
+      processedData = processed.data;
+      finalMimeType = MIME_TYPES.PDF;
 
       await fileUtils.saveFile(processedData, fullPath);
 
@@ -212,7 +221,7 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
     hash,
     path: relativePath,
     url,
-    storageProvider: "local",
+    storageProvider: STORAGE_PROVIDERS.LOCAL,
     type: mediaType,
     width,
     height,
@@ -221,7 +230,7 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
   }).returning();
 
   // 8. Guardar tamaños de imagen si corresponde
-  if (mediaType === "image") {
+  if (mediaType === MEDIA_TYPES.IMAGE) {
     const sizes = generatedImageSizes ??
       await imageProcessor.generateImageSizes(input.data);
 
@@ -259,7 +268,6 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
     await doAction('cms_media:afterUpload', newMedia);
   } catch (error) {
     console.error('Error in media:afterUpload hook:', error);
-    // Don't fail upload if plugin fails
   }
 
   // 11. Dispatch webhook event

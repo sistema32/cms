@@ -1,0 +1,498 @@
+/* Nexus Focus Mode - Total Customization Layer */
+
+:root {
+    /* ==============================================
+     DaisyUI Color System Overrides (Focus Mode) 
+     Minimalist, High Contrast, Elegant
+     ============================================== */
+
+    /* Primary: Deep Black/Charcoal for Focus */
+    --p: 0 0% 10%;
+    /* #1a1a1a */
+    --pc: 0 0% 100%;
+    /* #ffffff */
+
+    /* Secondary: Subtle Gray */
+    --s: 0 0% 96%;
+    /* #f3f4f6 */
+    --sc: 0 0% 10%;
+    /* #1a1a1a */
+
+    /* Accent: Sharp Blue (for minimal highlights) */
+    --a: 217 91% 60%;
+    /* #3b82f6 */
+    --ac: 0 0% 100%;
+    /* #ffffff */
+
+    /* Neutral */
+    --n: 0 0% 10%;
+    /* #1a1a1a */
+    --nc: 0 0% 100%;
+    /* #ffffff */
+
+    /* Base Backgrounds */
+    --b1: 0 0% 100%;
+    /* #ffffff - Pure White */
+    --b2: 0 0% 98%;
+    /* #fafafa - Very Light Gray */
+    --b3: 0 0% 95%;
+    /* #f4f4f5 - Light Gray */
+    --bc: 0 0% 10%;
+    /* #1a1a1a - Deep Content */
+
+    /* Feedback */
+    --in: 217 91% 60%;
+    /* Info */
+    --su: 142 71% 45%;
+    /* Success */
+    --wa: 32 95% 44%;
+    /* Warning */
+    --er: 0 84% 60%;
+    /* Error */
+
+    /* Rounded Corners - SHARP for Neo-Brutalism */
+    --rounded-box: 0px;
+    --rounded-btn: 0px;
+    --rounded-badge: 0px;
+    --animation-btn: 0.1s;
+    --animation-input: 0.1s;
+    --btn-focus-scale: 0.98;
+    --border-btn: 1px;
+    --tab-border: 1px;
+    --tab-radius: 0px;
+
+    /* ==============================================
+     Nexus System Variables (Focus Mode Mapped)
+     ============================================== */
+    --sidebar-width: 260px;
+    /* Slightly narrower */
+    --header-height: 64px;
+
+    --nexus-primary: #000000;
+    --nexus-primary-content: #ffffff;
+    --nexus-secondary: #f3f4f6;
+    --nexus-accent: #000000;
+
+    --nexus-base-100: #ffffff;
+    --nexus-base-200: #f7f7f7;
+    --nexus-base-300: #000000;
+    /* Darker borders */
+    --nexus-base-content: #000000;
+
+    --nexus-root-bg: #fff;
+    --nexus-sidebar-bg: #fff;
+    /* Fades into background */
+    --nexus-topbar-bg: rgba(255, 255, 255, 0.9);
+
+    --nexus-radius-sm: 0px;
+    --nexus-radius-md: 0px;
+    --nexus-radius-lg: 0px;
+
+    --nexus-card-padding: 24px;
+
+    /* Focus Mode Specifics */
+    --focus-ring: 0 0 0 2px rgba(0, 0, 0, 1);
+    --glass-border: 1px solid #000000;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--nexus-base-content);
+    background-color: var(--nexus-root-bg);
+    letter-spacing: -0.02em;
+    /* Tighter tracking */
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 800;
+    /* Heavier weights */
+    letter-spacing: -0.04em;
+    color: #000;
+    text-transform: uppercase;
+    /* Opt: often used in brutalism */
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    margin-bottom: 0.5rem;
+    color: #000;
+    /* Solid black */
+    background: none;
+    -webkit-text-fill-color: initial;
+    /* Reset gradient */
+}
+
+/* Card Styles - Sharp, Bordered */
+/* Card Styles - Sharp, Bordered */
+.content-card {
+    background: #fff;
+    border: 2px solid #000;
+    /* Thicker, high contrast border */
+    border-radius: 0px;
+    box-shadow: none;
+    transition: none;
+    /* Disable transition */
+}
+
+/* Remove hover effects requested by user */
+.content-card:hover {
+    border-color: #000;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Dark Card Variant for Nexus Pro */
+.content-card.card-dark {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: 2px solid #000;
+}
+
+.content-card.card-dark .opacity-70 {
+    opacity: 0.7;
+}
+
+.content-card.card-dark .btn {
+    background-color: #fff;
+    color: #000;
+    border: none;
+}
+
+.content-card.card-dark .btn:hover {
+    background-color: #e5e5e5;
+}
+
+/* Sidebar Customization for Focus Mode */
+.nexus-sidebar {
+    border-right: none;
+    /* Remove border for cleaner look */
+    background: #fafafa;
+    /* Very subtle separation */
+}
+
+/* Input Customization */
+.input,
+.textarea,
+.select {
+    border-radius: var(--nexus-radius-md);
+    border-color: #e5e7eb;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 1px #000;
+}
+
+/* Button Customization */
+.btn {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    height: 3rem;
+    min-height: 3rem;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    height: 2rem;
+    min-height: 2rem;
+}
+
+.btn-primary {
+    background-color: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #fff;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: #000;
+    border-color: #000;
+    transform: translateY(-1px);
+}
+
+/* Ensure outline buttons also have contrast */
+.btn-outline {
+    border-width: 1px;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+}
+
+.btn-outline:hover {
+    background-color: #1a1a1a;
+    color: #fff;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+/* Timeline Customization */
+.timeline-widget {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 24px;
+    border-left: 2px solid #f3f4f6;
+    padding-left: 24px;
+}
+
+.timeline-item:last-child {
+    border-left-color: transparent;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -9px;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #f3f4f6;
+    transition: all 0.2s;
+}
+
+.timeline-item:hover .timeline-marker {
+    border-color: #1a1a1a;
+    transform: scale(1.1);
+}
+
+/* Table Enhancements */
+.table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.table td {
+    font-size: 0.9rem;
+}
+
+/* ==============================================
+   STRUCTURAL LAYOUT (Previously in NexusStyles)
+   Copied here to allow decoupling from Nexus visual theme
+   ============================================== */
+
+/* ========== LAYOUT ========== */
+.nexus-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ========== SIDEBAR ========== */
+.nexus-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--nexus-sidebar-bg);
+    /* border-right removed in Focus overrides above */
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    /* Focus mode: no shadow */
+}
+
+/* FOCUS SIDEBAR OVERRIDES */
+.focus-sidebar .nexus-sidebar-nav>ul>li>a {
+    color: #666;
+    font-weight: 500;
+}
+
+.focus-sidebar .nexus-sidebar-nav>ul>li>a:hover {
+    background: #f5f5f5;
+    color: #000;
+    border-radius: 6px;
+}
+
+.focus-sidebar .nexus-sidebar-nav>ul>li>a.active {
+    background: #000;
+    color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Active icon overrides */
+.focus-sidebar .nexus-sidebar-nav>ul>li>a.active svg {
+    color: #fff;
+}
+
+/* FOCUS HEADER OVERRIDES */
+.focus-header {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.focus-search input {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+}
+
+.focus-search input:focus {
+    background: #fff;
+    box-shadow: 0 0 0 2px #e5e7eb;
+}
+
+.nexus-sidebar.closed {
+    transform: translateX(-100%);
+}
+
+/* Sidebar Header */
+.nexus-sidebar-header {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    /* border-bottom removed in Focus overrides? Check below */
+}
+
+/* Sidebar Navigation */
+.nexus-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem 0.75rem;
+}
+
+.nexus-sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nexus-sidebar-nav>ul>li {
+    margin-bottom: 0.125rem;
+}
+
+/* Main menu items */
+.nexus-sidebar-nav>ul>li>a,
+.nexus-sidebar-nav>ul>li>details>summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--nexus-radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    /* Copied from NexusStyles */
+    line-height: 1.25;
+    color: var(--nexus-base-content);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+}
+
+/* Submenu container */
+.nexus-sidebar-nav details>ul {
+    padding: 0.25rem 0 0.5rem 0;
+}
+
+/* Sidebar Footer */
+.nexus-sidebar-footer {
+    padding: 0.75rem;
+    /* border-top handled by theme vars/overrides */
+}
+
+/* ========== MAIN CONTENT ========== */
+.nexus-main {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nexus-main.expanded {
+    margin-left: 0;
+}
+
+/* ========== HEADER ========== */
+.nexus-header {
+    height: var(--header-height);
+    background: var(--nexus-topbar-bg);
+    /* border-bottom handled by theme vars/overrides */
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.nexus-breadcrumbs {
+    flex: 1;
+}
+
+.nexus-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* ========== CONTENT ========== */
+.nexus-content {
+    flex: 1;
+    padding: 2rem 2.5rem;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ========== MOBILE OVERLAY ========== */
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 45;
+}
+
+@media (max-width: 1024px) {
+    .nexus-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .nexus-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .nexus-main {
+        margin-left: 0;
+    }
+
+    .mobile-overlay.open {
+        display: block;
+    }
+}

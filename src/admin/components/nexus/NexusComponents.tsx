@@ -1,5 +1,11 @@
 import { html, raw } from "hono/html";
 
+// Export CollapsibleSection
+export { CollapsibleSection } from "./CollapsibleSection.tsx";
+export { MinimalSection } from "../MinimalSection.tsx";
+export { SidebarCustomizationPanel, SidebarCustomizationScript } from "../SidebarCustomizationPanel.tsx";
+export type { CollapsibleSectionProps } from "./CollapsibleSection.tsx";
+
 /**
  * Nexus Design System - Reusable Components
  * Componentes reutilizables con el estilo de Nexus DaisyUI
@@ -106,8 +112,8 @@ export const NexusButton = (props: NexusButtonProps) => {
 
   return html`
     <${Tag}
-      ${href ? `href="${href}"` : ''}
-      ${onClick ? `onclick="${onClick}"` : ''}
+      ${raw(href ? `href="${href}"` : '')}
+      ${raw(onClick ? `onclick="${onClick}"` : '')}
       ${disabled ? 'disabled' : ''}
       class="${baseClass}"
     >

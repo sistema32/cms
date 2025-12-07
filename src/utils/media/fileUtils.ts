@@ -5,6 +5,8 @@ function bufferToHex(buffer: ArrayBuffer): string {
     .join("");
 }
 
+import { MEDIA_TYPES } from "../../config/constants.ts";
+
 // Tipos MIME permitidos
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -120,13 +122,13 @@ export function getProcessedExtension(mimeType: string): string {
  */
 export function getMediaType(mimeType: string): "image" | "video" | "audio" | "document" {
   if (ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-    return "image";
+    return MEDIA_TYPES.IMAGE;
   } else if (ALLOWED_VIDEO_TYPES.includes(mimeType)) {
-    return "video";
+    return MEDIA_TYPES.VIDEO;
   } else if (ALLOWED_AUDIO_TYPES.includes(mimeType)) {
-    return "audio";
+    return MEDIA_TYPES.AUDIO;
   } else if (ALLOWED_DOCUMENT_TYPES.includes(mimeType)) {
-    return "document";
+    return MEDIA_TYPES.DOCUMENT;
   }
   throw new Error(`Tipo MIME no soportado: ${mimeType}`);
 }
@@ -139,16 +141,16 @@ export function validateFileSize(size: number, mimeType: string): void {
 
   let maxSize: number;
   switch (type) {
-    case "image":
+    case MEDIA_TYPES.IMAGE:
       maxSize = MAX_IMAGE_SIZE;
       break;
-    case "video":
+    case MEDIA_TYPES.VIDEO:
       maxSize = MAX_VIDEO_SIZE;
       break;
-    case "audio":
+    case MEDIA_TYPES.AUDIO:
       maxSize = MAX_AUDIO_SIZE;
       break;
-    case "document":
+    case MEDIA_TYPES.DOCUMENT:
       maxSize = MAX_DOCUMENT_SIZE;
       break;
   }

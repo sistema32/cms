@@ -9,6 +9,10 @@ const media = new Hono();
 media.get("/serve/uploads/:year/:month/:file", mediaController.serveMedia);
 media.get("/serve/*", mediaController.serveMedia);
 
+// Ruta para servir archivos directamente: /:year/:month/:file
+// Mover antes del middleware de autenticación para permitir acceso público a imágenes
+media.get("/:year{[0-9]{4}}/:month{[0-9]{2}}/:file", mediaController.serveMedia);
+
 // Aplicar autenticación a todas las rutas excepto las de servir archivos
 media.use("*", authMiddleware);
 
@@ -28,9 +32,6 @@ media.patch("/:id{[0-9]+}/seo", requirePermission("media", "update"), mediaContr
 // Eliminar media
 media.delete("/:id{[0-9]+}", requirePermission("media", "delete"), mediaController.deleteMedia);
 
-// Ruta para servir archivos directamente: /:year/:month/:file
-// Esta ruta está al final y requiere autenticación (por el middleware anterior)
-// Nota: Las imágenes se sirven públicamente a través de /serve/uploads/:year/:month/:file
-media.get("/:year{[0-9]{4}}/:month{[0-9]{2}}/:file", mediaController.serveMedia);
+// (Ruta movida al inicio para acceso público)
 
 export default media;

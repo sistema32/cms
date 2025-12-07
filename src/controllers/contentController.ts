@@ -77,7 +77,10 @@ const createContentSchema = z.object({
   meta: z.array(metaFieldSchema).optional(),
 });
 
-const updateContentSchema = createContentSchema.partial().omit({ contentTypeId: true });
+const updateContentSchema = createContentSchema.partial().omit({ contentTypeId: true }).extend({
+  saveRevision: z.boolean().optional(),
+  changesSummary: z.string().optional(),
+});
 
 export async function createContent(c: Context) {
   try {

@@ -285,15 +285,15 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
       <h1 class="page-title-nexus">Biblioteca de Medios</h1>
       ${!pickerMode ? html`
         ${NexusButton({
-          label: "Subir Archivo",
-          type: "primary",
-          icon: html`
+    label: "Subir Archivo",
+    type: "primary",
+    icon: html`
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
           `,
-          onClick: "triggerUpload()"
-        })}
+    onClick: "triggerUpload()"
+  })}
       ` : ''}
     </div>
 
@@ -311,8 +311,8 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
 
     <!-- Filters -->
     ${NexusCard({
-      className: "filters-container",
-      children: html`
+    className: "filters-container",
+    children: html`
         <div class="filters-grid">
           <select id="typeFilter" class="filter-select" data-filter="type">
             <option value="">Todos los tipos</option>
@@ -350,7 +350,7 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
           </div>
         </div>
       `
-    })}
+  })}
 
     <!-- Media Grid -->
     ${media.length === 0 ? html`
@@ -365,7 +365,7 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
       </div>
     ` : html`
       <div class="media-grid" id="mediaGrid">
-        ${media.map((item) => html`
+        ${raw(media.map((item) => html`
           <div class="media-item" data-media-id="${item.id}" data-media-url="${item.url}" data-media-filename="${item.originalFilename}">
             <div class="media-thumbnail">
               ${item.type === "image" ? html`
@@ -419,7 +419,7 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
               </div>
             ` : ''}
           </div>
-        `).join('')}
+        `).join(''))}
       </div>
 
       <!-- Pagination -->
@@ -430,26 +430,28 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
         <div class="pagination-buttons">
           ${offset > 0 ? html`
             ${NexusButton({
-              label: "Anterior",
-              type: "outline",
-              size: "sm",
-              href: `${adminPath}/media?offset=${Math.max(0, offset - limit)}&limit=${limit}`
-            })}
+    label: "Anterior",
+    type: "outline",
+    size: "sm",
+    href: `${adminPath}/media?offset=${Math.max(0, offset - limit)}&limit=${limit}`
+  })}
           ` : ''}
           ${offset + media.length < total ? html`
             ${NexusButton({
-              label: "Siguiente",
-              type: "primary",
-              size: "sm",
-              href: `${adminPath}/media?offset=${offset + limit}&limit=${limit}`
-            })}
+    label: "Siguiente",
+    type: "primary",
+    size: "sm",
+    href: `${adminPath}/media?offset=${offset + limit}&limit=${limit}`
+  })}
           ` : ''}
         </div>
       </div>
     `}
 
-    ${raw(`
-      <script>
+    ${raw(
+    `<script>
+        const ADMIN_PATH = ` + JSON.stringify(adminPath) + `;
+        
         document.addEventListener('DOMContentLoaded', function() {
           const uploadInput = document.getElementById('uploadInput');
           const mediaGrid = document.getElementById('mediaGrid');
@@ -470,7 +472,7 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
                 formData.append('files', files[i]);
               }
 
-              fetch('${adminPath}/api/media/upload', {
+              fetch(ADMIN_PATH + '/api/media/upload', {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -552,7 +554,7 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
               if (action === 'delete') {
                 // XSS safe - Use textContent for alert
                 if (confirm('¿Eliminar ' + mediaFilename + '?')) {
-                  fetch('${adminPath}/api/media/' + mediaId, {
+                  fetch(ADMIN_PATH + '/api/media/' + mediaId, {
                     method: 'DELETE',
                     headers: {
                       'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -577,8 +579,8 @@ export const MediaLibraryNexusPage = (props: MediaLibraryNexusPageProps) => {
             });
           }
         });
-      </script>
-    `)}
+      </script>`
+  )}
   `;
 
   return AdminLayoutNexus({

@@ -1,0 +1,73 @@
+{
+    "manifestVersion": "v2",
+    "id": "lexcommerce",
+    "name": "LexCommerce",
+    "version": "0.1.0",
+    "description": "A robust e-commerce solution for LexCMS.",
+    "author": "Antigravity",
+    "homepage": "",
+    "permissions": [
+        "route:GET:/shop",
+        "route:GET:/product/:slug",
+        "route:GET:/cart",
+        "route:POST:/cart/add",
+        "route:POST:/cart/remove",
+        "route:GET:/checkout",
+        "route:POST:/checkout",
+        "route:GET:/products",
+        "route:POST:/products",
+        "ui:slot:sidebar",
+        "role:admin"
+    ],
+    "routes": [
+        {
+            "method": "GET",
+            "path": "/shop"
+        },
+        {
+            "method": "GET",
+            "path": "/product/:slug"
+        },
+        {
+            "method": "GET",
+            "path": "/cart"
+        },
+        {
+            "method": "POST",
+            "path": "/cart/add"
+        },
+        {
+            "method": "POST",
+            "path": "/cart/remove"
+        },
+        {
+            "method": "GET",
+            "path": "/checkout"
+        },
+        {
+            "method": "POST",
+            "path": "/checkout"
+        },
+        {
+            "method": "GET",
+            "path": "/products"
+        },
+        {
+            "method": "POST",
+            "path": "/products"
+        }
+    ],
+    "capabilities": {
+        "db": [
+            "read",
+            "write"
+        ],
+        "fs": [
+            "read",
+            "write"
+        ],
+        "http": [
+            "fetch"
+        ]
+    }
+}

@@ -412,7 +412,7 @@ async function generateSEOMetaTags(options: {
   const site = await settingsService.getSetting("site_name", "LexCMS");
   const siteUrl = await settingsService.getSetting(
     "site_url",
-    env.BASE_URL || "http://localhost:8000",
+    env.BASE_URL,
   );
   const twitterHandle = await settingsService.getSetting(
     "twitter_handle",
