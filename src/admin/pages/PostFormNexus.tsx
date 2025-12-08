@@ -2,7 +2,7 @@ import { html, raw } from "hono/html";
 import AdminLayoutNexus from "../components/AdminLayoutNexus.tsx";
 import { NexusCard, NexusButton, NexusBadge, MinimalSection, SidebarCustomizationPanel, SidebarCustomizationScript } from "../components/nexus/NexusComponents.tsx";
 import { MediaPickerModal } from "../components/MediaPickerModal.tsx";
-import { CKEditorField } from "../components/CKEditorField.tsx";
+import { TipTapEditor } from "../components/TipTapEditor.tsx";
 import { AutoSaveIndicator, AutoSaveScript } from "../components/AutoSaveIndicator.tsx";
 import { ImmersiveModeStyles, ImmersiveModeScript, ImmersiveModeToggle } from "../components/ImmersiveMode.tsx";
 import { EditorEnhancements, WordCounter, SeoScoreWidget, EditorEnhancementsScript } from "../components/EditorEnhancements.tsx";
@@ -677,13 +677,11 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
               <!-- Body -->
               <div class="form-field">
                 <label class="form-label">Contenido de la Entrada *</label>
-                ${CKEditorField({
+                ${TipTapEditor({
     name: "body",
     value: post?.body || "",
     placeholder: "Escribe la entrada aquí...",
-    required: true,
-    mediaListEndpoint: `${env.ADMIN_PATH}/media/data`,
-    mediaUploadEndpoint: `${env.ADMIN_PATH}/media`
+    required: true
   })}
             
             ${WordCounter()}
@@ -976,38 +974,8 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
         }
       };
 
-        hiddenInput.value = id;
+      // Legacy code removed
 
-        previewDiv.innerHTML = \`
-          <img
-            id="featuredImageImg"
-            src="\${url}"
-            alt="Imagen destacada"
-            style="width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem;"
-          />
-          <button
-            type="button"
-            onclick="removeFeaturedImage()"
-            style="width: 100%; padding: 0.5rem; background: #f31260; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;"
-          >
-            Eliminar imagen
-          </button>
-        \`;
-
-        closeFeaturedImagePicker();
-      }
-
-      function removeFeaturedImage() {
-        const previewDiv = document.getElementById('featuredImagePreview');
-        const hiddenInput = document.getElementById('featuredImageId');
-
-        hiddenInput.value = '';
-        previewDiv.innerHTML = \`
-          <div style="text-align: center; padding: 2rem; border: 2px dashed #dcdee0; border-radius: 0.5rem; color: #888;">
-            No hay imagen seleccionada
-          </div>
-        \`;
-      }
 
       // Close modal when clicking outside
       document.getElementById('featuredImageModal')?.addEventListener('click', function(e) {

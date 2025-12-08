@@ -139,25 +139,48 @@ import { uploadMedia, deleteMedia } from "../../services/mediaService.ts";
 mediaRouter.post("/api/media/upload", async (c) => {
     try {
         const user = c.get("user");
+        if (!user) {
+            console.error("[DEBUG] Upload Failed: User not authenticated (c.get('user') is null)");
+            return c.json({ success: false, error: "Unauthorized" }, 401);
+        }
+        console.log("[DEBUG] Upload Start. User:", user.userId);
+
         const body = await c.req.parseBody();
-        const files = body['files'];
+        console.log("[DEBUG] Upload Body Parsed Keys:", Object.keys(body));
+
+        const files = body['files']; // Matches frontend FormData field 'files'
+
+        if (!files) {
+            console.error("[DEBUG] No files found in body['files']");
+            return c.json({ success: false, error: "No files provided" }, 400);
+        }
 
         const uploadedFiles = [];
         const fileList = Array.isArray(files) ? files : [files];
 
         for (const file of fileList) {
             if (file instanceof File) {
-                const buffer = await file.arrayBuffer();
-                const uploaded = await uploadMedia({
-                    data: new Uint8Array(buffer),
-                    filename: file.name,
-                    mimeType: file.type,
-                    uploadedBy: user.userId
-                });
-                uploadedFiles.push(uploaded);
+                console.log("[DEBUG] Processing file:", file.name, file.type, file.size);
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const uploaded = await uploadMedia({
+                        data: new Uint8Array(buffer),
+                        filename: file.name,
+                        mimeType: file.type,
+                        uploadedBy: user.userId
+                    });
+                    uploadedFiles.push(uploaded);
+                } catch (innerError: any) {
+                    console.error("[DEBUG] Error processing specific file:", file.name, innerError);
+                    // Continue with other files? Or fail? Let's fail for now to be explicit.
+                    throw new Error(`Failed to process ${file.name}: ${innerError.message}`);
+                }
+            } else {
+                console.warn("[DEBUG] Item is not a File instance:", typeof file, file);
             }
         }
 
+        console.log("[DEBUG] Upload Success. Files:", uploadedFiles.length);
         return c.json({ success: true, files: uploadedFiles });
     } catch (error: any) {
         console.error("Error uploading media:", error);

@@ -147,9 +147,10 @@ export const EditorEnhancementsScript = () => {
           let text = '';
           
           // Try to get text from CKEditor
-          // Try to get text from CKEditor (Check for global instance exposed by ckeditor-init.js)
+          // Try to get text from TipTap
           if (window.editor_body) {
-             text = window.editor_body.getData().replace(/<[^>]*>/g, ' ');
+             // Access the underlying ProseMirror doc text often needs care, but getText() is usually fine
+             text = window.editor_body.getText();
           } else if (window.CKEDITOR && window.CKEDITOR.instances) {
             // Legacy/Fallback
             const editors = Object.values(window.CKEDITOR.instances);
@@ -260,14 +261,15 @@ export const EditorEnhancementsScript = () => {
           // Update word count on editor change
           // Update word count on editor change
           const checkEditor = setInterval(() => {
+            // Check for TipTap instance
             if (window.editor_body) {
               clearInterval(checkEditor);
               
               // Initial update
               updateWordCount();
               
-              // Listen for changes (CKEditor 5)
-              window.editor_body.model.document.on('change:data', () => {
+              // Listen for changes (TipTap)
+              window.editor_body.on('update', () => {
                 updateWordCount();
               });
             }

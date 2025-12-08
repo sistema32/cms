@@ -73,6 +73,7 @@ export async function uploadMedia(input: UploadFileInput): Promise<Media> {
   });
 
   if (existing) {
+    console.log("[DEBUG] Media already exists with hash. Returning existing ID:", existing.id, existing.filename);
     return existing;
   }
 

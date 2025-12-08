@@ -138,11 +138,16 @@ export const MediaPickerModal = () => {
             const grid = document.getElementById('mediaGrid');
             try {
                 // Fetch data
-                const response = await fetch('${env.ADMIN_PATH}/media/data?limit=100', { credentials: 'include' });
+                const response = await fetch('${env.ADMIN_PATH}/media/data?limit=100', { 
+                    credentials: 'include',
+                    cache: 'no-store'
+                });
                 if (!response.ok) throw new Error('Error de red');
                 const data = await response.json();
+                console.log('Media Picker Loaded:', data);
                 
-                allMedia = Array.isArray(data.media) ? data.media : [];
+                // Handle direct array or object with media property from different API conventions
+                allMedia = Array.isArray(data) ? data : (Array.isArray(data.media) ? data.media : []);
                 renderGrid(allMedia);
                 
             } catch (e) {
@@ -164,13 +169,20 @@ export const MediaPickerModal = () => {
 
         function renderGrid(items) {
             const grid = document.getElementById('mediaGrid');
+            console.log('[renderGrid] Total items received:', items.length, items);
+            
             if (!items.length) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #999; padding: 2rem;">No se encontraron archivos.</div>';
                 return;
             }
 
-            // Only images for now as per requirement, but extensible
-            const images = items.filter(i => i.type === 'image');
+            // Relaxed filter: check for 'image' type or mime types starting with 'image/'
+            const images = items.filter(i => {
+                 if (!i.type) return false;
+                 const t = i.type.toLowerCase();
+                 return t === 'image' || t.startsWith('image/');
+            });
+            console.log('[renderGrid] Images after filter:', images.length, images.map(i => ({ id: i.id, type: i.type })));
 
             grid.innerHTML = images.map(media => {
                 const isSelected = selectedItems.has(media.id);
@@ -259,34 +271,78 @@ export const MediaPickerModal = () => {
                     bar.style.width = '10%';
 
                     try {
+                        console.group('Media Upload Debug');
+                        console.log('Starting upload. Files:', files);
+                        
+                        const uploadedIds = []; // Collect IDs for auto-selection
+
                         // Quick sequential upload (or parallel)
                         for (const file of files) {
+                            console.log('Processing file:', file.name, file.type, file.size);
                             const formData = new FormData();
-                            formData.append('file', file);
+                            formData.append('files', file);
 
                             bar.style.width = '50%';
                             
-                            const res = await fetch('${env.ADMIN_PATH}/media', {
+                            const uploadUrl = '${env.ADMIN_PATH}/api/media/upload';
+                            console.log('Uploading to:', uploadUrl);
+
+                            const res = await fetch(uploadUrl, {
                                 method: 'POST',
                                 body: formData,
                                 credentials: 'include'
                             });
                             
-                            if (!res.ok) throw new Error('Upload failed');
+                            console.log('Upload response status:', res.status);
+
+                            if (!res.ok) {
+                                let errorText;
+                                try {
+                                    const errorJson = await res.json();
+                                    console.error('Upload failed (JSON):', errorJson);
+                                    errorText = errorJson.error || 'Server Error';
+                                } catch (e) {
+                                    errorText = await res.text();
+                                    console.error('Upload failed (Text):', errorText);
+                                }
+                                throw new Error('Upload failed: ' + errorText);
+                            }
+
+                            const json = await res.json();
+                            console.log('Upload success payload:', json);
+
+                            // Collect IDs of uploaded files for auto-selection
+                            if (json.files && json.files.length > 0) {
+                                json.files.forEach(f => uploadedIds.push(f.id));
+                            } else {
+                                console.warn('Server processed request but returned no files. Check field name match.');
+                            }
                         }
                         
                         bar.style.width = '100%';
-                        setTimeout(() => {
-                            switchMediaTab('library');
-                            loadMediaLibrary(); // Refresh grid
-                            progressBox.style.display = 'none';
-                            bar.style.width = '0%';
-                            input.value = '';
-                        }, 500);
+                        
+                        // Switch to library tab and reload
+                        switchMediaTab('library');
+                        await loadMediaLibrary();
+                        
+                        // Auto-select the uploaded items
+                        if (uploadedIds.length > 0) {
+                            console.log('[AutoSelect] Selecting uploaded IDs:', uploadedIds);
+                            uploadedIds.forEach(id => selectedItems.add(id));
+                            renderGrid(allMedia); // Re-render to show selection
+                            updateSelectButton();
+                        }
+                        
+                        progressBox.style.display = 'none';
+                        bar.style.width = '0%';
+                        input.value = '';
 
                     } catch (e) {
-                         alert('Error subiendo archivos');
+                         console.error('Upload Exception:', e);
+                         alert('Error subiendo archivos: ' + e.message);
                          progressBox.style.display = 'none';
+                    } finally {
+                        console.groupEnd();
                     }
                 });
             }
