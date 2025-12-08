@@ -71,6 +71,8 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
     ? `${env.ADMIN_PATH}/posts/edit/${post!.id}`
     : `${env.ADMIN_PATH}/posts/new`;
 
+  const initialEditorMode = 'classic';
+
   const content_html = html`
     ${ImmersiveModeStyles()}
     ${EditorEnhancements()}
@@ -104,6 +106,41 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
         max-width: 1200px;
         margin: 0 auto;
         align-items: start; /* Fix sidebar height */
+      }
+
+      /* Editor Mode Toggle */
+      .editor-mode-toggle {
+        display: flex;
+        background: #f3f4f6;
+        padding: 4px;
+        border-radius: 999px;
+        gap: 4px;
+      }
+      
+      .mode-btn {
+        border: none;
+        background: transparent;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .mode-btn.active {
+        background: white;
+        color: #000;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+
+      /* ========== FORM FIELDS REPAIRED ========== */
+      .form-input {
+        background: #fff;
+        border: 1px solid var(--nexus-base-300, #dcdee0);
+        border-radius: var(--nexus-radius-md, 0.5rem);
+        transition: all 0.2s;
       }
 
       /* sticky toolbar */
@@ -645,6 +682,21 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
         <div class="main-content-wrapper">
           
           <div class="main-content-container">
+              <!-- Sticky Toolbar -->
+              <div class="editor-toolbar-sticky">
+                   <!-- Editor Mode Toggle -->
+                   <div class="editor-mode-toggle" id="editorModeToggle">
+                       <button type="button" class="mode-btn mode-classic active" data-mode="classic">Clásico</button>
+                       <button type="button" class="mode-btn mode-blocks" data-mode="blocks">Bloques</button>
+                   </div>
+
+                   <div style="flex: 1"></div> <!-- Spacer -->
+
+                   <div class="save-status" id="autoSaveIndicator">
+                      ${AutoSaveIndicator({})}
+                   </div>
+              </div>
+
               <!-- Title -->
               <div class="form-field">
                 <input
@@ -681,7 +733,8 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
     name: "body",
     value: post?.body || "",
     placeholder: "Escribe la entrada aquí...",
-    required: true
+    required: true,
+    editorMode: initialEditorMode,
   })}
             
             ${WordCounter()}
@@ -1235,6 +1288,49 @@ export const PostFormNexusPage = (props: PostFormNexusProps) => {
     ${ImmersiveModeScript()}
     ${EditorEnhancementsScript()}
     ${SidebarCustomizationScript()}
+
+    ${raw(`<script>
+      // Editor Mode Logic
+      (function() {
+        const toggleContainer = document.getElementById('editorModeToggle');
+        if (!toggleContainer) return;
+        
+        const modeBtns = toggleContainer.querySelectorAll('.mode-btn');
+        let currentMode = localStorage.getItem('nexus_editor_mode') || 'classic';
+        
+        // Update UI
+        function updateToggleUI(mode) {
+            modeBtns.forEach(btn => {
+                if (btn.dataset.mode === mode) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            
+            const wrapper = document.querySelector('.lex-editor-wrapper');
+            if (wrapper) {
+                if (mode === 'blocks') {
+                    wrapper.classList.add('editor-mode-blocks');
+                    wrapper.classList.remove('editor-mode-classic');
+                } else {
+                    wrapper.classList.add('editor-mode-classic');
+                    wrapper.classList.remove('editor-mode-blocks');
+                }
+            }
+        }
+        
+        // Initialize
+        updateToggleUI(currentMode);
+        
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newMode = btn.dataset.mode;
+                currentMode = newMode;
+                localStorage.setItem('nexus_editor_mode', newMode);
+                updateToggleUI(newMode);
+            });
+        });
+        
+      })();
+    </script>`)}
 `;
 
   return AdminLayoutNexus({
