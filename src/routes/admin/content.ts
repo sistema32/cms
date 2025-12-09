@@ -14,7 +14,7 @@ import { notificationService } from "../../lib/email/index.ts";
 import * as contentService from "../../services/contentService.ts";
 import ContentListNexusPage from "../../admin/pages/ContentListNexus.tsx";
 import ContentFormNexusPage from "../../admin/pages/ContentFormNexus.tsx";
-import PostFormNexusPage from "../../admin/pages/PostFormNexus.tsx";
+import { PostFormNexusPage } from "../../admin/pages/PostFormNexus.tsx";
 import PageFormNexusPage from "../../admin/pages/PageFormNexus.tsx";
 import {
     extractSeoPayload,
@@ -445,6 +445,62 @@ contentRouter.get("/posts", async (c) => {
     } catch (error: any) {
         console.error("Error rendering posts list:", error);
         return c.text("Error al cargar las entradas", 500);
+    }
+});
+
+/**
+ * POST /posts/autosave - Autosave post draft
+ */
+contentRouter.post("/posts/autosave", async (c) => {
+    try {
+        const user = c.get("user");
+        const body = await c.req.json();
+
+        let id = body.id ? parseInt(body.id) : null;
+
+        if (!body.title) {
+            return c.json({ success: false, error: "Title required" }, 400);
+        }
+
+        const postType = await getContentTypeBySlug("post");
+
+        const updateData: any = {
+            title: body.title,
+            slug: body.slug,
+            body: body.body,
+            excerpt: body.excerpt || null,
+            updatedAt: new Date(),
+            contentTypeId: postType.id,
+            authorId: user.id || user.userId, // Fallback for safety
+        };
+
+        if (body.status) updateData.status = body.status;
+        if (body.featuredImageId) updateData.featuredImageId = parseInt(body.featuredImageId);
+        if (body.visibility) updateData.visibility = body.visibility;
+        if (body.password) updateData.password = body.password;
+
+        if (id) {
+            await db.update(content).set(updateData).where(eq(content.id, id));
+            if (body['categoryIds[]']) {
+                const catIds = Array.isArray(body['categoryIds[]'])
+                    ? body['categoryIds[]'].map((i: any) => parseInt(i))
+                    : [parseInt(body['categoryIds[]'])].filter((n: any) => !isNaN(n));
+
+                await db.delete(contentCategories).where(eq(contentCategories.contentId, id));
+                if (catIds.length > 0) {
+                    await db.insert(contentCategories).values(catIds.map((cid: number) => ({ contentId: id, categoryId: cid })));
+                }
+            }
+        } else {
+            updateData.status = 'draft';
+            const [newPost] = await db.insert(content).values(updateData).returning();
+            id = newPost.id;
+        }
+
+        return c.json({ success: true, id: id });
+    } catch (error: any) {
+        console.error("Autosave error:", error);
+        return c.json({ success: false, error: error.message }, 500);
     }
 });
 

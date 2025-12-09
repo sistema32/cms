@@ -319,11 +319,19 @@ export const TipTapEditor = (props: TipTapEditorProps) => {
     ${raw(`<script type="module">
       import { initTipTap } from '${env.ADMIN_PATH}/assets/js/editor-core.js';
       
+      console.log('[NexusEditor] Script module executing, import path:', '${env.ADMIN_PATH}/assets/js/editor-core.js');
       const name = "${name}";
-      document.addEventListener('DOMContentLoaded', () => {
-         // The global NexusEditor object is initialized by editor-core.js
-         initTipTap(name);
-      });
+      
+      try {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => initTipTap(name));
+          } else {
+            console.log('[NexusEditor] Immediate init called for', name);
+            initTipTap(name);
+          }
+      } catch (e) {
+          console.error('[NexusEditor] Init error:', e);
+      }
     </script>`)
     }
 `;
