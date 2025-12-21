@@ -1,21 +1,21 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface RateLimitConfigProps {
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    notifications?: NotificationItem[];
-    unreadNotificationCount?: number;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
-    const { user, notifications = [], unreadNotificationCount = 0 } = props;
+  const { user, notifications = [], unreadNotificationCount = 0 } = props;
 
-    const content = html`
+  const content = html`
     <style>
       .dashboard-title {
         font-size: 2rem;
@@ -153,7 +153,7 @@ export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
 
     <!-- Add New Rule Form -->
     <div class="content-card">
-      <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem;">Nueva Regla</h2>
+      <h2 class="content-card-title u-mb-lg">Nueva Regla</h2>
       <form id="add-rule-form" onsubmit="handleAddRule(event)">
         <div class="form-grid">
           <div class="form-group">
@@ -189,9 +189,9 @@ export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
 
     <!-- Existing Rules -->
     <div class="content-card">
-      <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem;">Reglas Activas</h2>
+      <h2 class="content-card-title u-mb-lg">Reglas Activas</h2>
       <div id="rules-container">
-        <p style="text-align: center; padding: 2rem; color: var(--nexus-base-content); opacity: 0.6;">Cargando reglas...</p>
+        <p class="p-8 text-center opacity-60">Cargando reglas...</p>
       </div>
     </div>
 
@@ -215,7 +215,7 @@ export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
         const container = document.getElementById('rules-container');
         
         if (rules.length === 0) {
-          container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--nexus-base-content); opacity: 0.6;">No hay reglas configuradas</p>';
+          container.innerHTML = '<p class="p-8 text-center opacity-60">No hay reglas configuradas</p>';
           return;
         }
 
@@ -230,7 +230,7 @@ export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
               </h3>
               <p>\${rule.path} \${rule.method ? '(' + rule.method + ')' : ''} - \${rule.maxRequests} requests / \${rule.windowSeconds}s</p>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
+            <div class="u-flex-gap-sm">
               <button class="btn btn-primary" onclick="toggleRule(\${rule.id}, \${!rule.enabled})">
                 \${rule.enabled ? 'Desactivar' : 'Activar'}
               </button>
@@ -304,14 +304,14 @@ export const RateLimitConfigPage = (props: RateLimitConfigProps) => {
     </script>
   `;
 
-    return AdminLayoutNexus({
-        title: "Configuración de Rate Limiting",
-        children: content,
-        activePage: "security.ratelimit",
-        user,
-        notifications,
-        unreadNotificationCount,
-    });
+  return AdminLayoutNexus({
+    title: "Configuración de Rate Limiting",
+    children: content,
+    activePage: "security.ratelimit",
+    user,
+    notifications,
+    unreadNotificationCount,
+  });
 };
 
 export default RateLimitConfigPage;

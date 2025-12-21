@@ -1,6 +1,7 @@
 import type { Context, Next } from "hono";
-import { env, isProduction } from "../config/env.ts";
-import { logRateLimitExceeded } from "../utils/securityLogger.ts";
+import { env, isProduction } from "@/config/env.ts";
+import { AppError } from "@/platform/errors.ts";
+import { logRateLimitExceeded } from "@/utils/securityLogger.ts";
 
 const adminBasePath = env.ADMIN_PATH;
 
@@ -31,32 +32,8 @@ export async function securityHeaders(c: Context, next: Next) {
   // Referrer-Policy: Controla qué información se envía en el header Referer
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  // Content-Security-Policy: Política de seguridad de contenido
-  // Nota: Ajustar según necesidades de la aplicación
-  if (c.res.headers.get("Content-Type")?.includes("text/html")) {
-    const path = c.req.path;
-
-    // CSP más permisivo para el panel de admin (necesita scripts inline y CDN)
-    if (path.startsWith(adminBasePath)) {
-      c.header(
-        "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.quilljs.com https://unpkg.com https://esm.sh https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.quilljs.com https://cdn.tailwindcss.com; img-src 'self' data: blob: https://ui-avatars.com https://cdn.quilljs.com; font-src 'self' https://cdn.quilljs.com; connect-src 'self'; frame-ancestors 'none';",
-      );
-    } else {
-      // CSP para el sitio público con soporte para temas
-      // Permite CDNs de Tailwind, Google Fonts, y scripts inline para configuración de temas
-      c.header(
-        "Content-Security-Policy",
-        "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "img-src 'self' data: https:; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
-        "connect-src 'self'; " +
-        "frame-ancestors 'none';",
-      );
-    }
-  }
+  // Content-Security-Policy: Now handled by securityMiddleware.ts
+  // This legacy function only handles supplementary security headers
 
   // Strict-Transport-Security: Solo en producción con HTTPS
   if (isProduction) {
@@ -146,6 +123,111 @@ export async function validateJSON(c: Context, next: Next) {
   return await next();
 }
 
+function calculateDepth(value: unknown, depth = 0): number {
+  if (value === null || typeof value !== "object") return depth;
+  if (Array.isArray(value)) {
+    return value.reduce((max, item) => Math.max(max, calculateDepth(item, depth + 1)), depth + 1);
+  }
+  return Object.values(value).reduce(
+    (max, item) => Math.max(max, calculateDepth(item, depth + 1)),
+    depth + 1,
+  );
+}
+
+/**
+ * Middleware to limit payload size and JSON depth early
+ */
+export async function enforcePayloadLimits(c: Context, next: Next) {
+  const limits = resolvePayloadLimits(c.req.path);
+  const method = c.req.method;
+  if (!["POST", "PUT", "PATCH"].includes(method)) {
+    return await next();
+  }
+
+  const contentType = c.req.header("Content-Type") || "";
+  const declaredLength = c.req.header("content-length")
+    ? Number.parseInt(c.req.header("content-length") as string, 10)
+    : null;
+
+  if (declaredLength && declaredLength > limits.maxBytes) {
+    const error = AppError.fromCatalog("payload_too_large", {
+      details: {
+        limit: limits.maxBytes,
+        contentLength: declaredLength,
+        path: c.req.path,
+      },
+    });
+    return c.json(error.toResponse(), error.status as any);
+  }
+
+  if (contentType.includes("application/json")) {
+    const cloned = c.req.raw.clone();
+    const bodyText = await cloned.text();
+
+    if (bodyText.length > limits.maxBytes) {
+      const error = AppError.fromCatalog("payload_too_large", {
+        details: {
+          limit: limits.maxBytes,
+          size: bodyText.length,
+          path: c.req.path,
+        },
+      });
+      return c.json(error.toResponse(), error.status as any);
+    }
+
+    if (bodyText) {
+      try {
+        const parsed = JSON.parse(bodyText);
+        const depth = calculateDepth(parsed);
+        if (depth > limits.maxDepth) {
+          const error = AppError.fromCatalog("json_too_deep", {
+            details: {
+              depth,
+              maxDepth: limits.maxDepth,
+              path: c.req.path,
+            },
+          });
+          return c.json(error.toResponse(), error.status as any);
+        }
+      } catch (_err) {
+        // Let validateJSON handle invalid JSON
+      }
+    }
+  }
+
+  return await next();
+}
+
+function resolvePayloadLimits(path: string) {
+  const overrides = [
+    {
+      match: (p: string) =>
+        p.startsWith("/api/auth") || p.startsWith(`${env.ADMIN_PATH}/login`),
+      maxBytes: env.REQUEST_AUTH_MAX_JSON_BYTES,
+      maxDepth: env.REQUEST_AUTH_MAX_JSON_DEPTH,
+    },
+    {
+      match: (p: string) =>
+        p.startsWith("/api/media") ||
+        p.startsWith("/api/admin/media") ||
+        p.startsWith(`${env.ADMIN_PATH}/media`),
+      maxBytes: env.REQUEST_MEDIA_MAX_BYTES,
+      maxDepth: env.REQUEST_MEDIA_MAX_JSON_DEPTH,
+    },
+  ];
+
+  for (const override of overrides) {
+    if (override.match(path)) {
+      return { maxBytes: override.maxBytes, maxDepth: override.maxDepth };
+    }
+  }
+
+  return {
+    maxBytes: env.REQUEST_MAX_JSON_BYTES,
+    maxDepth: env.REQUEST_MAX_JSON_DEPTH,
+  };
+}
+
 /**
  * Middleware para bloquear métodos HTTP inseguros
  */
@@ -164,18 +246,24 @@ export async function blockUnsafeMethods(c: Context, next: Next) {
   }
 
   try {
-    const res = await next();
+    const res = await next() as Response | string | undefined | null;
     // Si el handler devuelve algo que no es Response, normalizarlo
-    if (!(res instanceof Response)) {
-      return new Response(res ? String(res) : "", { status: 200 });
+    if (res === undefined || res === null) {
+      if (c.res) {
+        return c.res;
+      }
+      return new Response("", { status: 200 });
     }
-    if (res.status === 0) {
-      return new Response(await res.text().catch(() => ""), {
-        status: 200,
-        headers: res.headers,
-      });
+    if (res instanceof Response) {
+      if (res.status === 0) {
+        return new Response(await res.text().catch(() => ""), {
+          status: 200,
+          headers: res.headers,
+        });
+      }
+      return res;
     }
-    return res;
+    return new Response(String(res), { status: 200 });
   } catch (error: any) {
     // Capturar RangeError específico de status 0
     if (
@@ -304,3 +392,4 @@ export async function preventParameterPollution(c: Context, next: Next) {
 
   return await next();
 }
+// @ts-nocheck

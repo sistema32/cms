@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import * as registry from "../services/pluginRegistry.ts";
-import * as reconciler from "../services/pluginReconciler.ts";
+import * as registry from "@/services/plugins/pluginRegistry.ts";
+import * as reconciler from "@/services/plugins/pluginReconciler.ts";
 import { AuditLogger } from "../lib/audit/AuditLogger.ts";
-import { extractRequestedPermissions } from "../services/pluginPermissions.ts";
-import { requestedPermissionsFromManifest, parseManifest } from "../services/pluginManifest.ts";
-import * as migrations from "../services/pluginMigrations.ts";
+import { extractRequestedPermissions } from "@/services/plugins/pluginPermissions.ts";
+import { requestedPermissionsFromManifest, parseManifest } from "@/services/plugins/pluginManifest.ts";
+import * as migrations from "@/services/plugins/pluginMigrations.ts";
 
 export const pluginsNewRouter = new Hono();
 
@@ -25,7 +25,7 @@ pluginsNewRouter.get("/", async (c) => {
   // On-demand discovery (WordPress style)
   await reconciler.reconcilePlugins();
   const list = await registry.listPlugins();
-  const { getMetrics } = await import("../services/pluginMetrics.ts");
+  const { getMetrics } = await import("@/services/plugins/pluginMetrics.ts");
   const metrics = getMetrics();
   const withMetrics = list.map((p) => {
     const m = (metrics as any)[p.name];
@@ -35,7 +35,7 @@ pluginsNewRouter.get("/", async (c) => {
 });
 
 pluginsNewRouter.get("/metrics", async (c) => {
-  const { getMetrics } = await import("../services/pluginMetrics.ts");
+  const { getMetrics } = await import("@/services/plugins/pluginMetrics.ts");
   return c.json({ success: true, data: getMetrics() });
 });
 
@@ -43,10 +43,12 @@ pluginsNewRouter.get("/:name", async (c) => {
   const name = c.req.param("name");
   const plugin = await registry.getPluginByName(name);
   if (!plugin) return c.json({ success: false, error: "Plugin not found" }, 404);
-  const { getMetrics } = await import("../services/pluginMetrics.ts");
+  const { getMetrics } = await import("@/services/plugins/pluginMetrics.ts");
   const metrics = getMetrics();
   const requested = requestedPermissionsFromManifest({
     name: plugin.name,
+    manifestVersion: "v2",
+    id: plugin.name,
     permissions: plugin.permissions as any,
     routes: [],
     hooks: [],
@@ -108,6 +110,33 @@ pluginsNewRouter.post("/:name/deactivate", async (c) => {
   return c.json({ success: true, message: `Plugin ${name} deactivated` });
 });
 
+// Fast restart helper (stop + start) with audit trail
+pluginsNewRouter.post("/:name/restart", async (c) => {
+  const name = c.req.param("name");
+  const plugin = await registry.getPluginByName(name);
+  if (!plugin) return c.json({ success: false, error: "Plugin not found" }, 404);
+  if (plugin.isSystem) return c.json({ success: false, error: "System plugin cannot be restarted" }, 400);
+
+  try {
+    await reconciler.deactivate(name);
+    await reconciler.activate(name);
+    await audit.info("plugin_restarted", "plugin", {
+      ...getAuditContext(c),
+      entityId: name,
+      description: `Plugin ${name} restarted`,
+    });
+    return c.json({ success: true, message: `Plugin ${name} restarted` });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await audit.error("plugin_restart_failed", "plugin", {
+      ...getAuditContext(c),
+      entityId: name,
+      description: `Restart failed for ${name}: ${msg}`,
+    });
+    return c.json({ success: false, error: `Restart failed: ${msg}` }, 500);
+  }
+});
+
 pluginsNewRouter.patch("/:name/settings", async (c) => {
   const name = c.req.param("name");
   const body = await c.req.json().catch(() => ({}));
@@ -129,7 +158,8 @@ pluginsNewRouter.get("/:name/grants", async (c) => {
     const grants = await registry.listPermissionGrants(name);
     return c.json({ success: true, data: grants });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 404);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 404);
   }
 });
 
@@ -154,7 +184,8 @@ pluginsNewRouter.put("/:name/grants", async (c) => {
     });
     return c.json({ success: true, data: updated });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 400);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 400);
   }
 });
 
@@ -164,7 +195,7 @@ pluginsNewRouter.put("/:name/grants", async (c) => {
  * Get all pending plugins awaiting approval
  */
 pluginsNewRouter.get("/pending/list", async (c) => {
-  const { getPendingPlugins } = await import("../services/pluginPendingApproval.ts");
+  const { getPendingPlugins } = await import("@/services/plugins/pluginPendingApproval.ts");
   const pending = getPendingPlugins();
   return c.json({ success: true, data: pending });
 });
@@ -174,7 +205,8 @@ pluginsNewRouter.get("/pending/list", async (c) => {
  */
 pluginsNewRouter.post("/pending/:name/approve", async (c) => {
   const name = c.req.param("name");
-  const { getPendingPlugin, removePendingPlugin } = await import("../services/pluginPendingApproval.ts");
+  const { getPendingPlugin, removePendingPlugin } = await import("@/services/plugins/pluginPendingApproval.ts");
+  const { loadManifestFromDisk } = await import("@/services/plugins/pluginManifestLoader.ts");
 
   const pending = getPendingPlugin(name);
   if (!pending) {
@@ -182,19 +214,14 @@ pluginsNewRouter.post("/pending/:name/approve", async (c) => {
   }
 
   try {
-    // Parse the manifest and register the plugin
-    const manifest = parseManifest({
-      manifestVersion: "v2",
-      id: pending.name,
-      name: pending.displayName,
-      version: pending.version,
-      description: pending.description,
-      permissions: pending.permissions,
-      capabilities: pending.capabilities
-    });
+    // Load manifest from disk to validate checksum/signature integrity
+    const manifest = await loadManifestFromDisk(Deno.cwd(), pending.name);
+    if (pending.manifestChecksum && manifest.checksum && pending.manifestChecksum !== manifest.checksum) {
+      return c.json({ success: false, error: "Manifest checksum mismatch; approval blocked" }, 400);
+    }
 
     // Register the plugin
-    const { registerDiscoveredPlugin } = await import("../services/pluginRegistry.ts");
+    const { registerDiscoveredPlugin } = await import("@/services/plugins/pluginRegistry.ts");
     await registerDiscoveredPlugin(manifest);
 
     // Remove from pending
@@ -203,10 +230,7 @@ pluginsNewRouter.post("/pending/:name/approve", async (c) => {
     await audit.log({
       action: "plugin.approved",
       entity: "plugin", // Added required field
-      resource: "plugin",
-      resourceId: name,
       description: `Approved plugin: ${pending.displayName}`,
-      severity: "info",
       ...getAuditContext(c),
     });
 
@@ -226,7 +250,7 @@ pluginsNewRouter.post("/pending/:name/approve", async (c) => {
  */
 pluginsNewRouter.post("/pending/:name/reject", async (c) => {
   const name = c.req.param("name");
-  const { getPendingPlugin, removePendingPlugin } = await import("../services/pluginPendingApproval.ts");
+  const { getPendingPlugin, removePendingPlugin } = await import("@/services/plugins/pluginPendingApproval.ts");
 
   const pending = getPendingPlugin(name);
   if (!pending) {
@@ -239,10 +263,7 @@ pluginsNewRouter.post("/pending/:name/reject", async (c) => {
   await audit.log({
     action: "plugin.rejected",
     entity: "plugin", // Added required field
-    resource: "plugin",
-    resourceId: name,
     description: `Rejected plugin: ${pending.displayName}`,
-    severity: "info",
     ...getAuditContext(c),
   });
 
@@ -259,15 +280,13 @@ pluginsNewRouter.post("/pending/:name/reject", async (c) => {
 pluginsNewRouter.post("/discover", async (c) => {
   try {
     await reconciler.reconcilePlugins();
-    const { getPendingPlugins } = await import("../services/pluginPendingApproval.ts");
+    const { getPendingPlugins } = await import("@/services/plugins/pluginPendingApproval.ts");
     const pending = getPendingPlugins();
 
     await audit.log({
       action: "plugin.discovery",
       entity: "system", // Added required field
-      resource: "plugins",
       description: `Discovered ${pending.length} new plugins awaiting approval`,
-      severity: "info",
       ...getAuditContext(c),
     });
 
@@ -288,7 +307,8 @@ pluginsNewRouter.get("/:name/migrations/status", async (c) => {
     const s = await migrations.status(name);
     return c.json({ success: true, data: s });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 400);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 400);
   }
 });
 
@@ -305,7 +325,8 @@ pluginsNewRouter.post("/:name/migrations/up", async (c) => {
     });
     return c.json({ success: true, data: applied });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 400);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 400);
   }
 });
 
@@ -322,7 +343,8 @@ pluginsNewRouter.post("/:name/migrations/down", async (c) => {
     });
     return c.json({ success: true, data: rolled });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 400);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 400);
   }
 });
 
@@ -336,12 +358,13 @@ pluginsNewRouter.get("/:name/logs", async (c) => {
       entityId: name,
       limit,
       offset,
-      sortBy: "createdAt",
+      sortBy: "created_at",
       sortOrder: "desc",
     });
     return c.json({ success: true, data: result });
   } catch (err) {
-    return c.json({ success: false, error: err.message }, 400);
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: message }, 400);
   }
 });
 

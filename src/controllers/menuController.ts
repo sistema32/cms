@@ -1,7 +1,14 @@
 import { Context } from "hono";
 import { z } from "zod";
-import * as menuService from "../services/menuService.ts";
-import * as menuItemService from "../services/menuItemService.ts";
+import * as menuService from "@/services/content/menuService.ts";
+import * as menuItemService from "@/services/content/menuItemService.ts";
+import { AppError, parseNumericParam } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { isSafePublicUrl } from "@/utils/validation.ts";
+import { optionalSafePublicUrl } from "@/lib/security/urlPolicy.ts";
+
+const log = createLogger("menuController");
 
 /**
  * ============================================
@@ -47,7 +54,10 @@ const createMenuItemSchema = z
     parentId: z.number().int().positive().optional().nullable(),
     label: z.string().min(1, "El label es requerido").max(100),
     title: z.string().max(200).optional(),
-    url: z.string().url().optional().nullable(),
+    url: z.string().url().optional().nullable().refine(
+      (url) => !url || isSafePublicUrl(url),
+      { message: "URL no permitida" },
+    ),
     contentId: z.number().int().positive().optional().nullable(),
     categoryId: z.number().int().positive().optional().nullable(),
     tagId: z.number().int().positive().optional().nullable(),
@@ -76,7 +86,10 @@ const updateMenuItemSchema = z
     parentId: z.number().int().positive().optional().nullable(),
     label: z.string().min(1).max(100).optional(),
     title: z.string().max(200).optional(),
-    url: z.string().url().optional().nullable(),
+    url: z.string().url().optional().nullable().refine(
+      (url) => !url || isSafePublicUrl(url),
+      { message: "URL no permitida" },
+    ),
     contentId: z.number().int().positive().optional().nullable(),
     categoryId: z.number().int().positive().optional().nullable(),
     tagId: z.number().int().positive().optional().nullable(),
@@ -122,9 +135,10 @@ export async function getAllMenus(c: Context) {
     return c.json(result, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al obtener menús", details: String(error) }, 500);
+    log.error("Error al obtener menús", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_list_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -134,21 +148,18 @@ export async function getAllMenus(c: Context) {
  */
 export async function getMenuById(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de menú");
 
     const menu = await menuService.getMenuById(id);
 
     if (!menu) {
-      return c.json({ error: "Menú no encontrado" }, 404);
+      throw AppError.fromCatalog("menu_not_found");
     }
 
     return c.json(menu, 200);
   } catch (error) {
-    return c.json({ error: "Error al obtener menú", details: String(error) }, 500);
+    log.error("Error al obtener menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_get_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -163,12 +174,13 @@ export async function getMenuBySlug(c: Context) {
     const menu = await menuService.getMenuBySlug(slug);
 
     if (!menu) {
-      return c.json({ error: "Menú no encontrado" }, 404);
+      throw AppError.fromCatalog("menu_not_found");
     }
 
     return c.json(menu, 200);
   } catch (error) {
-    return c.json({ error: "Error al obtener menú", details: String(error) }, 500);
+    log.error("Error al obtener menú por slug", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_get_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -186,9 +198,10 @@ export async function createMenu(c: Context) {
     return c.json(menu, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al crear menú", details: String(error) }, 500);
+    log.error("Error al crear menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_create_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -198,11 +211,7 @@ export async function createMenu(c: Context) {
  */
 export async function updateMenu(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de menú");
 
     const body = await c.req.json();
     const data = updateMenuSchema.parse(body);
@@ -212,9 +221,10 @@ export async function updateMenu(c: Context) {
     return c.json(menu, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al actualizar menú", details: String(error) }, 500);
+    log.error("Error al actualizar menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_update_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -224,17 +234,14 @@ export async function updateMenu(c: Context) {
  */
 export async function deleteMenu(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de menú");
 
     await menuService.deleteMenu(id);
 
     return c.json({ message: "Menú eliminado exitosamente" }, 200);
   } catch (error) {
-    return c.json({ error: "Error al eliminar menú", details: String(error) }, 500);
+    log.error("Error al eliminar menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_delete_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -244,17 +251,14 @@ export async function deleteMenu(c: Context) {
  */
 export async function toggleMenuStatus(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de menú");
 
     const menu = await menuService.toggleMenuStatus(id);
 
     return c.json(menu, 200);
   } catch (error) {
-    return c.json({ error: "Error al cambiar estado del menú", details: String(error) }, 500);
+    log.error("Error al cambiar estado del menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_toggle_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -266,17 +270,14 @@ export async function toggleMenuStatus(c: Context) {
  */
 export async function getMenuItems(c: Context) {
   try {
-    const menuId = parseInt(c.req.param("menuId"));
-
-    if (isNaN(menuId)) {
-      return c.json({ error: "ID de menú inválido" }, 400);
-    }
+    const menuId = parseNumericParam(c.req.param("menuId"), "ID de menú");
 
     const items = await menuItemService.getMenuItems(menuId);
 
     return c.json({ items }, 200);
   } catch (error) {
-    return c.json({ error: "Error al obtener items", details: String(error) }, 500);
+    log.error("Error al obtener items de menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_items_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -286,17 +287,14 @@ export async function getMenuItems(c: Context) {
  */
 export async function getMenuItemsHierarchy(c: Context) {
   try {
-    const menuId = parseInt(c.req.param("menuId"));
-
-    if (isNaN(menuId)) {
-      return c.json({ error: "ID de menú inválido" }, 400);
-    }
+    const menuId = parseNumericParam(c.req.param("menuId"), "ID de menú");
 
     const hierarchy = await menuItemService.getMenuItemsHierarchy(menuId);
 
     return c.json({ items: hierarchy }, 200);
   } catch (error) {
-    return c.json({ error: "Error al obtener jerarquía", details: String(error) }, 500);
+    log.error("Error al obtener jerarquía de menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_items_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -306,21 +304,18 @@ export async function getMenuItemsHierarchy(c: Context) {
  */
 export async function getMenuItemById(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de item");
 
     const item = await menuItemService.getMenuItemById(id);
 
     if (!item) {
-      return c.json({ error: "Item no encontrado" }, 404);
+      throw AppError.fromCatalog("menu_item_not_found");
     }
 
     return c.json(item, 200);
   } catch (error) {
-    return c.json({ error: "Error al obtener item", details: String(error) }, 500);
+    log.error("Error al obtener item de menú", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("menu_item_get_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -332,15 +327,17 @@ export async function createMenuItem(c: Context) {
   try {
     const body = await c.req.json();
     const data = createMenuItemSchema.parse(body);
+    const safeUrl = optionalSafePublicUrl(data.url, "menu.item.url");
+    data.url = safeUrl ?? null;
 
     const item = await menuItemService.createMenuItem(data);
 
     return c.json(item, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al crear item", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_create_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -350,23 +347,22 @@ export async function createMenuItem(c: Context) {
  */
 export async function updateMenuItem(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de item");
 
     const body = await c.req.json();
     const data = updateMenuItemSchema.parse(body);
+    if (data.url !== undefined) {
+      data.url = optionalSafePublicUrl(data.url, "menu.item.url") ?? null;
+    }
 
     const item = await menuItemService.updateMenuItem(id, data);
 
     return c.json(item, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al actualizar item", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_update_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -376,17 +372,13 @@ export async function updateMenuItem(c: Context) {
  */
 export async function deleteMenuItem(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de item");
 
     await menuItemService.deleteMenuItem(id);
 
     return c.json({ message: "Item eliminado exitosamente" }, 200);
   } catch (error) {
-    return c.json({ error: "Error al eliminar item", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_delete_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -404,9 +396,9 @@ export async function reorderMenuItems(c: Context) {
     return c.json({ message: "Items reordenados exitosamente" }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al reordenar items", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_reorder_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -416,11 +408,7 @@ export async function reorderMenuItems(c: Context) {
  */
 export async function moveMenuItem(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de item");
 
     const body = await c.req.json();
     const { newParentId } = moveMenuItemSchema.parse(body);
@@ -430,9 +418,9 @@ export async function moveMenuItem(c: Context) {
     return c.json(item, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: "Error al mover item", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_move_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -442,17 +430,13 @@ export async function moveMenuItem(c: Context) {
  */
 export async function duplicateMenuItem(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de item");
 
     const item = await menuItemService.duplicateMenuItem(id);
 
     return c.json(item, 201);
   } catch (error) {
-    return c.json({ error: "Error al duplicar item", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_duplicate_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -462,16 +446,12 @@ export async function duplicateMenuItem(c: Context) {
  */
 export async function countMenuItems(c: Context) {
   try {
-    const menuId = parseInt(c.req.param("menuId"));
-
-    if (isNaN(menuId)) {
-      return c.json({ error: "ID de menú inválido" }, 400);
-    }
+    const menuId = parseNumericParam(c.req.param("menuId"), "ID de menú");
 
     const count = await menuItemService.countMenuItems(menuId);
 
     return c.json({ menuId, count }, 200);
   } catch (error) {
-    return c.json({ error: "Error al contar items", details: String(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("menu_item_count_failed", getErrorMessage(error), 500);
   }
 }

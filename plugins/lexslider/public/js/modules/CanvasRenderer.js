@@ -5,6 +5,14 @@ let showGrid = false;
 let snapToGrid = false;
 const gridSize = 20; // px
 
+// Performance optimizations
+let renderScheduled = false;
+let lastRenderTime = 0;
+const MIN_RENDER_INTERVAL = 16; // ~60fps max
+
+// Layer element cache for DOM reuse
+const layerElementCache = new Map();
+
 export function toggleGrid() {
     showGrid = !showGrid;
     renderCanvas();
@@ -32,11 +40,35 @@ export function setPreviewAnimation(layerId, animationName) {
 
 function previewLoop() {
     if (!previewLayerId) return;
-    renderCanvas();
+    renderCanvasInternal();
     requestAnimationFrame(previewLoop);
 }
 
+// Debounced public render function
 export function renderCanvas() {
+    // Skip if render already scheduled
+    if (renderScheduled) return;
+
+    const now = performance.now();
+    const elapsed = now - lastRenderTime;
+
+    if (elapsed < MIN_RENDER_INTERVAL) {
+        // Schedule render on next RAF
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+            renderScheduled = false;
+            lastRenderTime = performance.now();
+            renderCanvasInternal();
+        });
+    } else {
+        // Render immediately
+        lastRenderTime = now;
+        renderCanvasInternal();
+    }
+}
+
+// Internal render (no debouncing)
+function renderCanvasInternal() {
     // Guard: ensure elements are ready
     if (!elements.editor?.canvasContent || !elements.editor?.canvas) {
         console.warn('[CanvasRenderer] Elements not ready, skipping render');
@@ -142,35 +174,33 @@ export function renderCanvas() {
                 }
             }
 
-            // Entrance Animation
+            // Entrance Animation - ONLY apply when previewing a specific animation
+            // In normal edit mode, layers should always be fully visible
             let animName = layer.style.animationIn;
             let currentLocalTime = localTime;
 
-            // Preview Override
-            if (layer.id === previewLayerId && previewAnimationName) {
+            // Preview Override - only apply entrance animations during animation preview
+            const isAnimationPreview = layer.id === previewLayerId && previewAnimationName;
+
+            if (isAnimationPreview) {
                 animName = previewAnimationName;
                 currentLocalTime = Date.now() - previewStartTime;
-            }
 
-            if (currentLocalTime >= 0 && currentLocalTime <= duration) {
-                if (animName && animName !== 'none') {
-                    const animDuration = (parseFloat(layer.style.animationDuration) || 1.0) * 1000;
-                    const animDelay = (parseFloat(layer.style.animationDelay) || 0.0) * 1000;
-
-                    // For preview, ignore delay? Or keep it? Let's keep it but maybe user wants instant feedback.
-                    // Let's ignore delay for preview to make it snappy.
-                    const effectiveDelay = (layer.id === previewLayerId) ? 0 : animDelay;
-
-                    if (currentLocalTime < effectiveDelay) {
-                        opacityMultiplier = 0;
-                    } else if (currentLocalTime < effectiveDelay + animDuration) {
-                        const progress = (currentLocalTime - effectiveDelay) / animDuration;
-                        const entrance = getEntranceTransform(animName, progress);
-                        opacityMultiplier *= entrance.opacity;
-                        transform += ` ${entrance.transform}`;
+                if (currentLocalTime >= 0 && currentLocalTime <= duration) {
+                    if (animName && animName !== 'none') {
+                        const animDuration = (parseFloat(layer.style.animationDuration) || 1.0) * 1000;
+                        // No delay for preview to make it snappy
+                        if (currentLocalTime < animDuration) {
+                            const progress = currentLocalTime / animDuration;
+                            const entrance = getEntranceTransform(animName, progress);
+                            opacityMultiplier *= entrance.opacity;
+                            transform += ` ${entrance.transform}`;
+                        }
                     }
                 }
             }
+            // NOTE: In normal edit mode, we don't apply entrance animations
+            // so layers remain visible and editable at all times
 
             // Keyframe Interpolation
             if (layer.keyframes && layer.keyframes.length > 0) {

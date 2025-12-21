@@ -47,6 +47,38 @@ export const urlSchema = z.string().url("URL inválida").refine(
   { message: "Protocolo de URL no permitido. Solo se permiten: http, https, mailto, tel" }
 );
 
+const PRIVATE_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+  /^0\.0\.0\.0$/,
+  /^169\.254\./,
+  /^\[?::1\]?$/,
+];
+
+function isPrivateHost(hostname: string): boolean {
+  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
+}
+
+/**
+ * Validates URLs that must not point to private/internal hosts (basic SSRF guard).
+ */
+export function isSafePublicUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) return false;
+    const hostname = parsed.hostname;
+    if (!hostname) return false;
+    if (isPrivateHost(hostname)) return false;
+    if (hostname.endsWith(".internal") || hostname.endsWith(".local")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Esquema para búsquedas (search queries)
 export const searchQuerySchema = z.string()
   .max(100, "La búsqueda no puede exceder 100 caracteres")

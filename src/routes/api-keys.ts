@@ -4,12 +4,13 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 import { apiKeyManager, openAPIGenerator } from "../lib/api/index.ts";
 import { API_PERMISSIONS } from "../lib/api/types.ts";
 import { z } from "zod";
 
 const apiKeys = new Hono();
+const getUserId = (user: any) => Number(user?.userId ?? user?.id);
 
 // All routes require admin authentication
 apiKeys.use("*", authMiddleware);
@@ -21,7 +22,7 @@ apiKeys.use("*", authMiddleware);
 apiKeys.get("/", async (c) => {
   try {
     const user = c.get("user");
-    const keys = await apiKeyManager.getUserAPIKeys(user.id);
+    const keys = await apiKeyManager.getUserAPIKeys(getUserId(user));
 
     // Don't return the actual key values for security
     const safeKeys = keys.map((key) => ({
@@ -106,7 +107,7 @@ apiKeys.post("/", async (c) => {
 
     const apiKey = await apiKeyManager.createAPIKey({
       name,
-      userId: user.id,
+      userId: getUserId(user),
       permissions: permissions as any[],
       rateLimit,
       expiresAt: expiresAt ? new Date(expiresAt) : undefined,

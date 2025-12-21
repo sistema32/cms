@@ -17,7 +17,7 @@ export class RobotsManager {
         {
           userAgent: "*",
           allow: ["/"],
-          disallow: ["/api/", "/admin/", "/*?*"],
+          disallow: ["/api/", `/${env.ADMIN_PATH}/`, "/*?*"],
         },
       ],
       sitemaps: [`${env.BASE_URL}/sitemap.xml`],
@@ -185,7 +185,7 @@ export class RobotsManager {
     for (const bot of searchEngines) {
       this.addUserAgent(bot, {
         allow: ["/"],
-        disallow: ["/api/", "/admin/"],
+        disallow: ["/api/", `/${env.ADMIN_PATH}/`],
       });
     }
   }

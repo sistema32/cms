@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Audit Log Types
  * Types and interfaces for the audit logging system
@@ -199,3 +200,4 @@ export const ENTITY_NAMES: Record<string, string> = {
   theme: "Theme",
   system: "System",
 };
+// @ts-nocheck

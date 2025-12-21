@@ -4,8 +4,8 @@
  */
 
 import { Hono } from "hono";
-import * as dashboardService from "../services/dashboardService.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+import * as dashboardService from "@/services/system/dashboardService.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 
 const dashboard = new Hono();
 

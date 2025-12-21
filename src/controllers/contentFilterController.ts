@@ -1,6 +1,8 @@
 import { Context } from "hono";
 import { z } from "zod";
-import * as contentFilterService from "../services/contentFilterService.ts";
+import * as contentFilterService from "@/services/content/contentFilterService.ts";
+import { AppError, parseNumericParam } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
 
 /**
  * Esquemas de validación Zod
@@ -45,7 +47,7 @@ export async function create(c: Context) {
 
     const user = c.get("user");
     if (!user) {
-      return c.json({ success: false, error: "No autenticado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const filter = await contentFilterService.createFilter({
@@ -62,10 +64,10 @@ export async function create(c: Context) {
       201,
     );
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al crear filtro";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("filter_create_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -82,10 +84,7 @@ export async function list(c: Context) {
     // Filtrar por tipo
     if (query.type) {
       if (!["word", "email", "link", "phone"].includes(query.type)) {
-        return c.json(
-          { success: false, error: "Tipo de filtro inválido" },
-          400,
-        );
+        throw new AppError("invalid_filter_type", "Tipo de filtro inválido", 400);
       }
       options.type = query.type;
     }
@@ -97,10 +96,18 @@ export async function list(c: Context) {
 
     // Paginación
     if (query.limit) {
-      options.limit = parseInt(query.limit);
+      const limit = Number(query.limit);
+      if (Number.isNaN(limit)) {
+        throw new AppError("invalid_limit", "Límite inválido", 400);
+      }
+      options.limit = limit;
     }
     if (query.offset) {
-      options.offset = parseInt(query.offset);
+      const offset = Number(query.offset);
+      if (Number.isNaN(offset)) {
+        throw new AppError("invalid_offset", "Offset inválido", 400);
+      }
+      options.offset = offset;
     }
 
     const filters = await contentFilterService.getFilters(options);
@@ -113,10 +120,8 @@ export async function list(c: Context) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al listar filtros";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof AppError) throw error;
+    throw new AppError("filter_list_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -126,16 +131,12 @@ export async function list(c: Context) {
  */
 export async function getById(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de filtro");
 
     const filter = await contentFilterService.getFilterById(id);
 
     if (!filter) {
-      return c.json({ success: false, error: "Filtro no encontrado" }, 404);
+      throw AppError.fromCatalog("not_found", { message: "Filtro no encontrado" });
     }
 
     return c.json({
@@ -143,10 +144,7 @@ export async function getById(c: Context) {
       data: filter,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener filtro";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("filter_get_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -156,11 +154,7 @@ export async function getById(c: Context) {
  */
 export async function update(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de filtro");
 
     const body = await c.req.json();
     const data = updateFilterSchema.parse(body);
@@ -173,10 +167,10 @@ export async function update(c: Context) {
       message: "Filtro actualizado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al actualizar filtro";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("filter_update_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -186,11 +180,7 @@ export async function update(c: Context) {
  */
 export async function deleteFilter(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de filtro");
 
     await contentFilterService.deleteFilter(id);
 
@@ -199,10 +189,7 @@ export async function deleteFilter(c: Context) {
       message: "Filtro eliminado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al eliminar filtro";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("filter_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -212,11 +199,7 @@ export async function deleteFilter(c: Context) {
  */
 export async function toggle(c: Context) {
   try {
-    const id = parseInt(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de filtro");
 
     const body = await c.req.json();
     const data = toggleFilterSchema.parse(body);
@@ -229,10 +212,10 @@ export async function toggle(c: Context) {
       message: `Filtro ${data.isActive ? "activado" : "desactivado"} exitosamente`,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al cambiar estado del filtro";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("filter_toggle_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -257,10 +240,10 @@ export async function test(c: Context) {
       data: result,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al probar filtro";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("filter_test_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -277,9 +260,6 @@ export async function getStats(c: Context) {
       data: stats,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener estadísticas";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("filter_stats_failed", getErrorMessage(error), 400);
   }
 }

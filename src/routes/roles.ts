@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as roleController from "../controllers/roleController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, requireSuperAdmin } from "../middleware/permission.ts";
+import * as roleController from "@/controllers/roleController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, requireSuperAdmin } from "@/middleware/permission.ts";
 
 const roles = new Hono();
 

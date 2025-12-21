@@ -7,7 +7,8 @@ import type { Context, Next } from "hono";
 import {
   extractPreviewInfo,
   themePreviewService,
-} from "../services/themePreviewService.ts";
+} from "@/services/themes/themePreviewService.ts";
+import { env } from "../config/env.ts";
 
 /**
  * Middleware to handle theme preview mode
@@ -66,7 +67,7 @@ async function injectPreviewBanner(c: Context, token: string): Promise<void> {
     }
 
     const session = c.get("previewSession");
-    const banner = createPreviewBanner(session.theme, token);
+    const banner = createPreviewBanner(session.theme, token, env.ADMIN_PATH);
 
     // Inject banner after <body> tag
     const modifiedBody = originalBody.replace(
@@ -87,7 +88,7 @@ async function injectPreviewBanner(c: Context, token: string): Promise<void> {
 /**
  * Create preview banner HTML
  */
-function createPreviewBanner(themeName: string, token: string): string {
+function createPreviewBanner(themeName: string, token: string, adminPath: string): string {
   return `
 <div id="theme-preview-banner" style="
   position: fixed;
@@ -160,7 +161,7 @@ function createPreviewBanner(themeName: string, token: string): string {
 
       if (result.success) {
         alert('Theme activated successfully!');
-        window.location.href = '/admin/appearance/themes';
+        window.location.href = '${adminPath}/appearance/themes';
       } else {
         alert('Error: ' + (result.error || 'Failed to activate theme'));
       }

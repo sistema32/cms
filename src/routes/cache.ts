@@ -4,8 +4,8 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 import { getCache, cacheManager } from "../lib/cache/index.ts";
 
 const cache = new Hono();

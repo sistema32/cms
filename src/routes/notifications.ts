@@ -6,7 +6,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { notificationService } from "../lib/email/index.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 
 const notifications = new Hono();
 

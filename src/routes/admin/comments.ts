@@ -3,7 +3,7 @@ import { and, count, desc, eq, isNotNull } from "drizzle-orm";
 import { db } from "../../db/index.ts";
 import { comments, content } from "../../db/schema.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import CommentsNexusPage from "../../admin/pages/CommentsNexus.tsx";
+import CommentsNexusPage from "../../admin/pages/content/CommentsNexus.tsx";
 
 export const commentsRouter = new Hono();
 
@@ -117,20 +117,20 @@ commentsRouter.get("/comments", async (c) => {
         const formattedComments = commentsData.map((comment) => ({
             id: comment.id,
             contentId: comment.contentId,
-            contentTitle: comment.contentTitle,
-            contentSlug: comment.contentSlug,
-            parentId: comment.parentId,
+            contentTitle: comment.contentTitle ?? "",
+            contentSlug: comment.contentSlug ?? "",
+            parentId: comment.parentId ?? undefined,
             author: {
-                id: comment.authorId,
-                name: comment.authorName || "Anónimo",
+                id: comment.authorId ?? undefined,
+                name: comment.authorName || comment.authorEmail || "Anónimo",
                 email: comment.authorEmail || "",
-                website: comment.authorWebsite,
+                website: comment.authorWebsite ?? undefined,
             },
             body: comment.body,
             bodyCensored: comment.bodyCensored,
             status: comment.status as "approved" | "spam" | "deleted" | "pending",
-            ipAddress: comment.ipAddress,
-            userAgent: comment.userAgent,
+            ipAddress: comment.ipAddress ?? undefined,
+            userAgent: comment.userAgent ?? undefined,
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
         }));
@@ -139,7 +139,7 @@ commentsRouter.get("/comments", async (c) => {
             CommentsNexusPage({
                 user: {
                     id: user.userId,
-                    name: user.name || user.email,
+                    name: (user.name as string | undefined) || user.email,
                     email: user.email,
                 },
                 comments: formattedComments,

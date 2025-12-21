@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as categoryController from "../controllers/categoryController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, allowPublic, requireSuperAdmin } from "../middleware/permission.ts";
+import * as categoryController from "@/controllers/categoryController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, allowPublic, requireSuperAdmin } from "@/middleware/permission.ts";
 
 const categories = new Hono();
 

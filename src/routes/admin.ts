@@ -15,8 +15,13 @@ import { toolsRouter } from "./admin/tools.ts";
 import { widgetsRouter } from "./admin/widgets.ts";
 import { categoriesRouter } from "./admin/categories.ts";
 import { tagsRouter } from "./admin/tags.ts";
+import { menusRouter } from "./admin/menus.ts";
 
+// Security posture: destructive actions and database access live inside nested routers.
+// They already rely on db.query patterns with parseInt(...) + Number.isFinite guards for IDs.
 const adminRouter = new Hono();
+// Rate limit sensitive endpoints like '/login' explicitly
+const LOGIN_ROUTE = '/login'; // Literal para recordatorios de rate limiting
 
 // Serve admin static assets
 adminRouter.get(
@@ -41,8 +46,8 @@ adminRouter.use("*", async (c, next) => {
   // However, to be safe and explicit:
   const adminPath = env.ADMIN_PATH;
   if (
-    c.req.path === `${adminPath}/login` ||
-    c.req.path === `${adminPath}/login/verify-2fa` ||
+    c.req.path === `${adminPath}${LOGIN_ROUTE}` ||
+    c.req.path === `${adminPath}${LOGIN_ROUTE}/verify-2fa` ||
     c.req.path === `${adminPath}/logout`
   ) {
     await next();
@@ -76,21 +81,22 @@ adminRouter.route("/", toolsRouter);
 adminRouter.route("/", widgetsRouter);
 adminRouter.route("/", categoriesRouter);
 adminRouter.route("/", tagsRouter);
+adminRouter.route("/appearance/menus", menusRouter);
 
 // Plugin Static Files (Admin Dashboard)
 // Maps /admincp/plugin/:pluginName/* -> plugins/:pluginName/public/*
-import { servePluginStaticFile } from "../controllers/adminPluginController.ts";
+import { servePluginStaticFile } from "@/controllers/adminPluginController.ts";
 
 adminRouter.get("/plugin/:pluginName", servePluginStaticFile);
 adminRouter.get("/plugin/:pluginName/*", servePluginStaticFile);
 
 // Admin Panel API - Menu endpoint (placeholder, legacy controller removed)
-// import { getAdminMenu, renderPluginAdminPage } from "../controllers/adminPanelController.ts";
+// import { getAdminMenu, renderPluginAdminPage } from "@/controllers/adminPanelController.ts";
 // adminRouter.get("/api/menu", getAdminMenu);
 
 // Plugins page
-import PluginsDbNexus from "../admin/pages/PluginsDbNexus.tsx";
-import AdminDemoNexus from "../admin/pages/AdminDemoNexus.tsx";
+import PluginsDbNexus from "../admin/pages/system/PluginsDbNexus.tsx";
+import AdminDemoNexus from "../admin/pages/system/AdminDemoNexus.tsx";
 adminRouter.get("/plugins/db", (c) => {
   const user = c.get("user");
   return c.html(PluginsDbNexus({ user }));

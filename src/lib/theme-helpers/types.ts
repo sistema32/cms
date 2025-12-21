@@ -23,6 +23,7 @@ export interface MenuItem {
     title?: string;
     icon?: string;
     cssClass?: string;
+    cssId?: string;
     target?: string;
     children?: MenuItem[];
 }

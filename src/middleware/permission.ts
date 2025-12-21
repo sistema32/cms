@@ -1,6 +1,6 @@
 import { Context, Next } from "hono";
-import { userHasPermission } from "../services/permissionService.ts";
-import { logPermissionDenied, logUnauthorizedAccess } from "../utils/securityLogger.ts";
+import { userHasPermission } from "@/services/auth/permissionService.ts";
+import { logPermissionDenied, logUnauthorizedAccess } from "@/utils/securityLogger.ts";
 
 /**
  * Middleware para verificar permisos

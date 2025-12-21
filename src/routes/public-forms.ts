@@ -4,10 +4,10 @@
  */
 
 import { Hono } from "hono";
-import { formService } from "../services/formService.ts";
+import { formService } from "@/services/formService.ts";
 import FormRenderer from "../components/FormRenderer.tsx";
-import * as captchaService from "../services/captchaService.ts";
-import * as settingsService from "../services/settingsService.ts";
+import * as captchaService from "@/services/system/captchaService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 
 const publicFormsRouter = new Hono();
 
@@ -75,13 +75,22 @@ publicFormsRouter.get("/:slug", async (c) => {
             }
         }
 
+        const normalizedFields = form.fields.map((field) => ({
+            ...field,
+            placeholder: field.placeholder ?? undefined,
+            helpText: field.helpText ?? undefined,
+            validation: field.validation ?? undefined,
+            options: field.options ?? undefined,
+            conditionalLogic: field.conditionalLogic ?? undefined,
+        }));
+
         // Renderizar formulario
         const formHtml = FormRenderer({
             formId: form.id,
             formSlug: form.slug,
             formName: form.name,
             formDescription: form.description || undefined,
-            fields: form.fields,
+            fields: normalizedFields,
             captchaProvider: captchaProvider || undefined,
             captchaSiteKey: captchaSiteKey || undefined,
         });

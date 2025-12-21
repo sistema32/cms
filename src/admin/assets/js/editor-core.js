@@ -140,16 +140,19 @@ Object.entries(defaultPatterns).forEach(([key, val]) => {
     window.NexusEditor.registerPattern(key, val);
 });
 
-// INIT EDITOR
-import { Editor, Node } from 'https://esm.sh/@tiptap/core@2.4.0';
-import StarterKit from 'https://esm.sh/@tiptap/starter-kit@2.4.0';
-import Image from 'https://esm.sh/@tiptap/extension-image@2.4.0';
-import Placeholder from 'https://esm.sh/@tiptap/extension-placeholder@2.4.0';
-import Link from 'https://esm.sh/@tiptap/extension-link@2.4.0';
-import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2.4.0';
-import Underline from 'https://esm.sh/@tiptap/extension-underline@2.4.0';
-import BubbleMenu from 'https://esm.sh/@tiptap/extension-bubble-menu@2.4.0';
-import FloatingMenu from 'https://esm.sh/@tiptap/extension-floating-menu@2.4.0';
+// INIT EDITOR - Import from local bundle (no CDN)
+import {
+    Editor,
+    Node,
+    StarterKit,
+    Image,
+    Placeholder,
+    Link,
+    TextAlign,
+    Underline,
+    BubbleMenu,
+    FloatingMenu
+} from './tiptap-bundle.js';
 
 export async function initTipTap(name) {
     const container = document.getElementById('editor-container-' + name);
@@ -373,46 +376,46 @@ export async function initTipTap(name) {
             // Update background color while preserving other styles
             // This is a naive replacement, a better approach would be parsing style object
             // For now, prompt-based CSS editing is safer for complex styles, but this handles simple color
-            editor.chain().focus().updateAttributes('box', { style: `background-color: ${color};` }).run(); 
-             // Note: This overwrites all style. 
-             // Ideally we want to merge. Let's try to read current style attribute first.
-             // But BoxNode relies on a single style string.
-             // Let's defer to a more robust merge in future, 
-             // checking if user accepts overwrite or if we implement style merging.
-             // IMPROVEMENT: Parse current style
-             updateBoxStyle(editor, 'background-color', color);
+            editor.chain().focus().updateAttributes('box', { style: `background-color: ${color};` }).run();
+            // Note: This overwrites all style. 
+            // Ideally we want to merge. Let's try to read current style attribute first.
+            // But BoxNode relies on a single style string.
+            // Let's defer to a more robust merge in future, 
+            // checking if user accepts overwrite or if we implement style merging.
+            // IMPROVEMENT: Parse current style
+            updateBoxStyle(editor, 'background-color', color);
         };
 
         imgBtn.onclick = (e) => {
-             e.preventDefault();
-             if (window.openMediaPicker) {
-                 window.openMediaPicker({
-                      type: 'image',
-                      onSelect: (media) => {
-                          if (media && media.url) {
-                              updateBoxStyle(editor, 'background-image', `url('${media.url}')`);
-                              updateBoxStyle(editor, 'background-size', 'cover');
-                              updateBoxStyle(editor, 'background-position', 'center');
-                          }
-                      }
-                 });
-             } else {
-                 const url = window.prompt('URL Imagen de Fondo:');
-                 if (url) {
-                      updateBoxStyle(editor, 'background-image', `url('${url}')`);
-                      updateBoxStyle(editor, 'background-size', 'cover');
-                 }
-             }
+            e.preventDefault();
+            if (window.openMediaPicker) {
+                window.openMediaPicker({
+                    type: 'image',
+                    onSelect: (media) => {
+                        if (media && media.url) {
+                            updateBoxStyle(editor, 'background-image', `url('${media.url}')`);
+                            updateBoxStyle(editor, 'background-size', 'cover');
+                            updateBoxStyle(editor, 'background-position', 'center');
+                        }
+                    }
+                });
+            } else {
+                const url = window.prompt('URL Imagen de Fondo:');
+                if (url) {
+                    updateBoxStyle(editor, 'background-image', `url('${url}')`);
+                    updateBoxStyle(editor, 'background-size', 'cover');
+                }
+            }
         };
 
         delBtn.onclick = (e) => {
             e.preventDefault();
-            if(confirm('¿Eliminar este bloque?')) {
+            if (confirm('¿Eliminar este bloque?')) {
                 editor.chain().focus().deleteSelection().run();
             }
         };
     }
-    
+
     // Helper to merge styles safely
     function updateBoxStyle(editor, property, value) {
         const currentStyle = editor.getAttributes('box').style || '';
@@ -438,7 +441,7 @@ export async function initTipTap(name) {
             <button type="button" class="bubble-btn ${currentWidth === '50%' ? 'is-active' : ''}" data-width="50%">M</button>
             <button type="button" class="bubble-btn ${currentWidth === '100%' ? 'is-active' : ''}" data-width="100%">L</button>
          </div>`;
-         
+
         bubbleMenu.querySelectorAll('button').forEach(btn => {
             btn.onclick = (e) => {
                 e.preventDefault();
@@ -472,12 +475,12 @@ export async function initTipTap(name) {
         }
         updateToolbarState(editor);
     }
-    
+
     sourceArea.addEventListener('input', () => {
-         if (isSourceMode) {
+        if (isSourceMode) {
             input.value = sourceArea.value;
-            input.dispatchEvent(new Event('input', { bubbles: true })); 
-         }
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     });
 
     const buttons = [
@@ -534,7 +537,7 @@ export async function initTipTap(name) {
             return;
         }
         const button = document.createElement('button');
-        button.type = 'button'; 
+        button.type = 'button';
         button.className = 'tiptap-btn';
         button.innerHTML = btn.icon;
         button.title = btn.label;

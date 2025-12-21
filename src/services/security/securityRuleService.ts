@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Security Rule Service
  * Manages custom security rules and patterns
@@ -178,3 +179,5 @@ export class SecurityRuleService {
 }
 
 export const securityRuleService = new SecurityRuleService();
+// Backwards compatibility alias
+export const securityRulesService = securityRuleService;

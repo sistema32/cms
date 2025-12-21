@@ -1,21 +1,21 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface IPWhitelistProps {
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    notifications?: NotificationItem[];
-    unreadNotificationCount?: number;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const IPWhitelistPage = (props: IPWhitelistProps) => {
-    const { user, notifications = [], unreadNotificationCount = 0 } = props;
+  const { user, notifications = [], unreadNotificationCount = 0 } = props;
 
-    const content = html`
+  const content = html`
     <style>
       .modal-overlay {
         display: none;
@@ -186,6 +186,13 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
         color: #0bbf58;
       }
 
+      .loading-spinner {
+        display: inline-block; width: 40px; height: 40px; 
+        border: 3px solid var(--nexus-base-300); 
+        border-top-color: var(--nexus-primary); 
+        border-radius: 50%; 
+        animation: spin 0.8s linear infinite;
+      }
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
@@ -208,7 +215,7 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
     </style>
 
     <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <div class="u-flex-between u-mb-xl">
         <div>
           <h1 class="dashboard-title">Lista Blanca de IPs</h1>
           <p class="dashboard-subtitle">Gestiona las direcciones IP permitidas</p>
@@ -217,9 +224,9 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
       </div>
     </div>
 
-    <div id="loading" style="text-align: center; padding: 3rem;">
-      <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--nexus-base-300); border-top-color: var(--nexus-primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <p style="margin-top: 1rem; color: var(--nexus-base-content); opacity: 0.6;">Cargando...</p>
+    <div id="loading" class="text-center p-12">
+      <div class="loading-spinner"></div>
+      <p class="mt-4 opacity-60">Cargando...</p>
     </div>
 
     <div class="content-card" id="table-container" style="display: none;">
@@ -230,7 +237,7 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
             <th>Razón</th>
             <th>Estado</th>
             <th>Agregada</th>
-            <th style="text-align: right;">Acciones</th>
+            <th class="text-right">Acciones</th>
           </tr>
         </thead>
         <tbody id="ip-tbody">
@@ -241,14 +248,14 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
     <!-- Add IP Modal -->
     <div id="add-modal" class="modal-overlay">
       <div class="modal-content">
-        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">Agregar IP a Lista Blanca</h2>
+        <h2 class="text-xl font-bold mb-6">Agregar IP a Lista Blanca</h2>
         <form id="add-form" onsubmit="window.handleSubmit(event)">
           <div class="form-group">
-            <label class="form-label">Dirección IP <span style="color: var(--nexus-error);">*</span></label>
+            <label class="form-label">Dirección IP <span class="text-error">*</span></label>
             <input type="text" class="form-input" id="ip-input" required placeholder="192.168.1.1">
           </div>
           <div class="form-group">
-            <label class="form-label">Razón <span style="color: var(--nexus-error);">*</span></label>
+            <label class="form-label">Razón <span class="text-error">*</span></label>
             <input type="text" class="form-input" id="reason-input" required placeholder="IP confiable">
           </div>
           <div class="btn-group">
@@ -285,7 +292,7 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
         container.style.display = 'block';
 
         if (rules.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--nexus-base-content); opacity: 0.6;">No hay IPs en la lista blanca</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center p-12 opacity-60">No hay IPs en la lista blanca</td></tr>';
           return;
         }
 
@@ -295,7 +302,7 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
             <td>\${rule.reason}</td>
             <td><span class="badge">Permitida</span></td>
             <td>\${new Date(rule.createdAt).toLocaleDateString('es-ES')}</td>
-            <td style="text-align: right;">
+            <td class="text-right">
               <button class="btn btn-danger" onclick="removeIP(\${rule.id})">Eliminar</button>
             </td>
           </tr>
@@ -367,14 +374,14 @@ export const IPWhitelistPage = (props: IPWhitelistProps) => {
     </script>
   `;
 
-    return AdminLayoutNexus({
-        title: "Lista Blanca de IPs",
-        children: content,
-        activePage: "security.ips",
-        user,
-        notifications,
-        unreadNotificationCount,
-    });
+  return AdminLayoutNexus({
+    title: "Lista Blanca de IPs",
+    children: content,
+    activePage: "security.ips",
+    user,
+    notifications,
+    unreadNotificationCount,
+  });
 };
 
 export default IPWhitelistPage;

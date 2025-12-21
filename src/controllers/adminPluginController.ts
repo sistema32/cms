@@ -1,5 +1,8 @@
 import { Context } from "hono";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { createLogger } from "@/platform/logger.ts";
+
+const log = createLogger("adminPluginController");
 
 export async function servePluginStaticFile(c: Context) {
     const pluginName = c.req.param("pluginName");
@@ -54,7 +57,12 @@ export async function servePluginStaticFile(c: Context) {
 
         c.header("Content-Type", mime);
         return c.body(content);
-    } catch {
+    } catch (error) {
+        log.debug("Plugin asset read failed, using SPA fallback", {
+            pluginName,
+            relativePath,
+            error: error instanceof Error ? error.message : String(error),
+        });
         // SPA Fallback: If file not found and it's an HTML request (or no extension), serve index.html
         if (!relativePath.includes(".") || c.req.header("Accept")?.includes("text/html")) {
             try {
@@ -71,7 +79,12 @@ export async function servePluginStaticFile(c: Context) {
 
                 c.header("Content-Type", "text/html");
                 return c.html(indexContent);
-            } catch {
+            } catch (fallbackError) {
+                log.error(
+                    "Plugin SPA fallback failed",
+                    fallbackError instanceof Error ? fallbackError : undefined,
+                    { pluginName },
+                );
                 return c.notFound();
             }
         }

@@ -1,19 +1,20 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
-import { registerRoutes } from "./routes/index.ts";
-import { errorHandler } from "./middleware/errorHandler.ts";
-import { env, isDevelopment } from "./config/env.ts";
+import { registerRoutes } from "@/routes/index.ts";
+import { errorHandler } from "@/middleware/errorHandler.ts";
+import { env, isDevelopment } from "@/config/env.ts";
 import {
   blockUnsafeMethods,
   ensureValidResponse,
   normalizeStatus,
+  enforcePayloadLimits,
   validateJSON,
-} from "./middleware/security.ts";
-import { securityMiddleware } from "./middleware/securityMiddleware.ts";
-import { hotReloadMiddleware } from "./middleware/hotReloadMiddleware.ts";
-import { themePreviewMiddleware } from "./middleware/themePreviewMiddleware.ts";
-import { trailingSlashMiddleware } from "./middleware/trailingSlash.ts";
+} from "@/middleware/security.ts";
+import { securityMiddleware } from "@/middleware/securityMiddleware.ts";
+import { hotReloadMiddleware } from "@/middleware/hotReloadMiddleware.ts";
+import { themePreviewMiddleware } from "@/middleware/themePreviewMiddleware.ts";
+import { trailingSlashMiddleware } from "@/middleware/trailingSlash.ts";
 
 export const app = new Hono();
 
@@ -34,6 +35,7 @@ app.use("*", ensureValidResponse);
 
 // Apply basic security checks
 app.use("*", blockUnsafeMethods);
+app.use("*", enforcePayloadLimits);
 app.use("*", validateJSON);
 
 // Apply comprehensive security middleware (headers, IP blocking, rate limiting, request inspection)
@@ -80,3 +82,22 @@ app.notFound((c) => {
 });
 
 app.onError(errorHandler);
+
+// Ensure responses returned via app.request expose a cancel() helper on the body for tests
+const originalRequest = app.request.bind(app);
+app.request = (async (...args) => {
+  const res = await originalRequest(...(args as [Request | string, RequestInit?]));
+  const body = (res as any).body;
+  if (body && typeof body.cancel !== "function") {
+    body.cancel = async () => {
+      try {
+        if (typeof body.getReader === "function") {
+          await body.getReader().cancel();
+        }
+      } catch (_err) {
+        // ignore
+      }
+    };
+  }
+  return res;
+}) as typeof app.request;

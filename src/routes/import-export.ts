@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 import { exporter, importer } from "../lib/import-export/index.ts";
 import { jobQueue } from "../lib/jobs/index.ts";
 import { z } from "zod";
@@ -52,18 +52,32 @@ importExport.post("/export", async (c) => {
     }
 
     const options = parsed.data;
+    const exportOptions = {
+      ...options,
+      filters: options.filters
+        ? {
+            ...options.filters,
+            dateFrom: options.filters.dateFrom
+              ? new Date(options.filters.dateFrom)
+              : undefined,
+            dateTo: options.filters.dateTo
+              ? new Date(options.filters.dateTo)
+              : undefined,
+          }
+        : undefined,
+    };
     let result;
 
     switch (options.format) {
       case "json":
-        result = await exporter.exportToJSON(options);
+        result = await exporter.exportToJSON(exportOptions);
         break;
       case "csv":
-        result = await exporter.exportToCSV(options);
+        result = await exporter.exportToCSV(exportOptions);
         break;
       case "wordpress":
       case "xml":
-        result = await exporter.exportToWordPress(options);
+        result = await exporter.exportToWordPress(exportOptions);
         break;
       default:
         return c.json(
@@ -125,13 +139,14 @@ importExport.post("/import", async (c) => {
     }
 
     const { content: importContent, source, async, ...options } = parsed.data;
+    const importOptions = { ...options, source };
 
     // If async, create a job
     if (async) {
       const jobId = await jobQueue.add("import-content", {
         source,
         content: importContent,
-        options,
+        options: importOptions,
       });
 
       return c.json({
@@ -145,10 +160,10 @@ importExport.post("/import", async (c) => {
     let result;
     switch (source) {
       case "wordpress":
-        result = await importer.importFromWordPress(importContent, options);
+        result = await importer.importFromWordPress(importContent, importOptions);
         break;
       case "json":
-        result = await importer.importFromJSON(importContent, options);
+        result = await importer.importFromJSON(importContent, importOptions);
         break;
       default:
         return c.json(

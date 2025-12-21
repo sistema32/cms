@@ -1,9 +1,9 @@
 import { html } from "hono/html";
 import { AdminLayout } from "./AdminLayout.tsx";
-import { CKEditorField } from "./CKEditorField.tsx";
+import { CKEditorField } from "./editors/CKEditorField.tsx";
 import renderSeoFields, { type SeoFormValues } from "./SeoFields.tsx";
 import { CategoryTagSelector } from "./CategoryTagSelector.tsx";
-import { env } from "../../config/env.ts";
+import { env } from "@/config/env.ts";
 import { MediaPicker } from "./MediaPicker.tsx";
 import { RevisionHistory } from "./RevisionHistory.tsx";
 

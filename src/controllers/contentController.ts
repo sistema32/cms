@@ -1,17 +1,22 @@
 import type { Context } from "hono";
-import * as contentService from "../services/contentService.ts";
+import * as contentService from "@/services/content/contentService.ts";
 import { z } from "zod";
-import { sanitizeHTML, escapeHTML } from "../utils/sanitization.ts";
-import { getErrorMessage } from "../utils/errors.ts";
-import { notificationService } from "../lib/email/index.ts";
-import { db } from "../config/db.ts";
-import { users } from "../db/schema.ts";
+import { escapeHTML, sanitizeRichText } from "@/utils/sanitization.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { notificationService } from "@/lib/email/index.ts";
+import { db } from "@/config/db.ts";
+import { users, content } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
+import { isSafePublicUrl } from "@/utils/validation.ts";
+import { AppError } from "@/platform/errors.ts";
 
 const seoSchema = z.object({
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
-  canonicalUrl: z.string().optional(),
+  canonicalUrl: z.string().optional().refine(
+    (url) => !url || isSafePublicUrl(url),
+    { message: "URL canónica no permitida" },
+  ),
   ogTitle: z.string().optional(),
   ogDescription: z.string().optional(),
   ogImage: z.string().optional(),
@@ -36,7 +41,10 @@ const contentSeoPayloadSchema = z.object({
   contentId: z.number(),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
-  canonicalUrl: z.string().optional(),
+  canonicalUrl: z.string().optional().refine(
+    (url) => !url || isSafePublicUrl(url),
+    { message: "URL canónica no permitida" },
+  ),
   ogTitle: z.string().optional(),
   ogDescription: z.string().optional(),
   ogImage: z.string().optional(),
@@ -93,8 +101,8 @@ export async function createContent(c: Context) {
     const sanitizedData = {
       ...data,
       title: escapeHTML(data.title), // El título debe ser texto plano
-      excerpt: data.excerpt ? sanitizeHTML(data.excerpt) : undefined,
-      body: data.body ? sanitizeHTML(data.body) : undefined,
+      excerpt: data.excerpt ? sanitizeRichText(data.excerpt, "adminNote") : undefined,
+      body: data.body ? sanitizeRichText(data.body, "adminNote") : undefined,
     };
 
     const createdContent = await contentService.createContent({
@@ -133,16 +141,18 @@ export async function createContent(c: Context) {
     }
 
     // Trigger content:created hook
-    const { doAction } = await import("../lib/hooks/index.ts");
+    const { doAction } = await import("@/lib/hooks/index.ts");
     await doAction("content:created", content ?? createdContent);
     await doAction("cms_content:created", content ?? createdContent);
 
     return c.json({ content: content ?? createdContent }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", {
+        details: { issues: error.errors },
+      });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_create_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -164,34 +174,34 @@ export async function getAllContent(c: Context) {
 
     return c.json({ content, limit, offset });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("content_list_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function getContentById(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(id)) throw AppError.fromCatalog("invalid_id");
 
-    const content = await contentService.getContentById(id);
-    if (!content) return c.json({ error: "Contenido no encontrado" }, 404);
+    const found = await contentService.getContentById(id);
+    if (!found) throw AppError.fromCatalog("content_not_found");
 
-    return c.json({ content });
+    return c.json({ content: found });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("content_get_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function getContentBySlug(c: Context) {
   try {
     const slug = c.req.param("slug");
-    const content = await contentService.getContentBySlug(slug);
+    const found = await contentService.getContentBySlug(slug);
 
-    if (!content) return c.json({ error: "Contenido no encontrado" }, 404);
+    if (!found) throw AppError.fromCatalog("content_not_found");
 
-    return c.json({ content });
+    return c.json({ content: found });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("content_get_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -200,18 +210,18 @@ export async function searchContent(c: Context) {
     const query = c.req.query("q") ?? "";
     const limit = Number(c.req.query("limit")) || 20;
 
-    const results = await contentService.searchContent(query, limit);
+    const results = await contentService.searchContentDb(query, limit);
 
     return c.json({ results });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_search_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function updateContent(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(id)) throw AppError.fromCatalog("invalid_id");
 
     const body = await c.req.json();
     const data = updateContentSchema.parse(body);
@@ -220,8 +230,8 @@ export async function updateContent(c: Context) {
     const sanitizedData = {
       ...data,
       title: data.title ? escapeHTML(data.title) : undefined,
-      excerpt: data.excerpt ? sanitizeHTML(data.excerpt) : undefined,
-      body: data.body ? sanitizeHTML(data.body) : undefined,
+      excerpt: data.excerpt ? sanitizeRichText(data.excerpt, "adminNote") : undefined,
+      body: data.body ? sanitizeRichText(data.body, "adminNote") : undefined,
     };
 
     const content = await contentService.updateContent(id, sanitizedData);
@@ -255,16 +265,16 @@ export async function updateContent(c: Context) {
     return c.json({ content });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_update_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function deleteContent(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(id)) throw AppError.fromCatalog("invalid_id");
 
     // Get content before deletion for hook
     const existingContent = await db.query.content.findFirst({
@@ -272,18 +282,18 @@ export async function deleteContent(c: Context) {
     });
 
     if (!existingContent) {
-      return c.json({ error: "Contenido no encontrado" }, 404);
+      throw AppError.fromCatalog("content_not_found");
     }
 
     // Trigger content:beforeDelete hook
-    const { doAction } = await import("../lib/hooks/index.ts");
+    const { doAction } = await import("@/lib/hooks/index.ts");
     await doAction("content:beforeDelete", existingContent);
 
     await contentService.deleteContent(id);
 
     return c.json({ message: "Contenido eliminado exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -299,26 +309,26 @@ export async function upsertContentSeo(c: Context) {
     return c.json({ seo }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_seo_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function getContentSeoByContentId(c: Context) {
   try {
     const contentId = Number(c.req.param("id"));
-    if (isNaN(contentId)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(contentId)) throw AppError.fromCatalog("invalid_id");
 
     const seo = await contentService.getContentSeoEntry(contentId);
 
     if (!seo) {
-      return c.json({ error: "SEO no encontrado" }, 404);
+      throw AppError.fromCatalog("seo_not_found");
     }
 
     return c.json({ seo });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_seo_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -336,9 +346,9 @@ export async function createContentMetaEntry(c: Context) {
     return c.json({ meta }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_meta_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -346,12 +356,12 @@ export async function createContentMetaEntry(c: Context) {
 export async function generateSlug(c: Context) {
   try {
     const { title } = await c.req.json();
-    if (!title) return c.json({ error: "Título requerido" }, 400);
+    if (!title) throw AppError.fromCatalog("validation_error", { message: "Título requerido" });
 
     const slug = contentService.generateSlug(title);
     return c.json({ slug });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("slug_generate_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -361,12 +371,12 @@ export async function generateSlug(c: Context) {
 export async function getContentRevisions(c: Context) {
   try {
     const contentId = Number(c.req.param("id"));
-    if (isNaN(contentId)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(contentId)) throw AppError.fromCatalog("invalid_id");
 
     const revisions = await contentService.getContentRevisions(contentId);
     return c.json({ revisions });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_revisions_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -374,14 +384,14 @@ export async function getContentRevisions(c: Context) {
 export async function getRevisionById(c: Context) {
   try {
     const revisionId = Number(c.req.param("revisionId"));
-    if (isNaN(revisionId)) return c.json({ error: "ID de revisión inválido" }, 400);
+    if (isNaN(revisionId)) throw AppError.fromCatalog("invalid_id", { message: "ID de revisión inválido" });
 
     const revision = await contentService.getRevisionById(revisionId);
-    if (!revision) return c.json({ error: "Revisión no encontrada" }, 404);
+    if (!revision) throw AppError.fromCatalog("revision_not_found");
 
     return c.json({ revision });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("revision_get_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -393,13 +403,13 @@ export async function restoreRevision(c: Context) {
     const revisionId = Number(c.req.param("revisionId"));
 
     if (isNaN(contentId) || isNaN(revisionId)) {
-      return c.json({ error: "IDs inválidos" }, 400);
+      throw AppError.fromCatalog("invalid_id", { message: "IDs inválidos" });
     }
 
-    const content = await contentService.restoreRevision(contentId, revisionId, user.userId);
-    return c.json({ content, message: "Revisión restaurada exitosamente" });
+    const restored = await contentService.restoreRevision(contentId, revisionId, user.userId);
+    return c.json({ content: restored, message: "Revisión restaurada exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("revision_restore_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -410,13 +420,13 @@ export async function compareRevisions(c: Context) {
     const revisionId2 = Number(c.req.query("revision2"));
 
     if (isNaN(revisionId1) || isNaN(revisionId2)) {
-      return c.json({ error: "IDs de revisión inválidos" }, 400);
+      throw AppError.fromCatalog("invalid_id", { message: "IDs de revisión inválidos" });
     }
 
     const comparison = await contentService.compareRevisions(revisionId1, revisionId2);
     return c.json({ comparison });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("revision_compare_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -424,12 +434,12 @@ export async function compareRevisions(c: Context) {
 export async function deleteRevision(c: Context) {
   try {
     const revisionId = Number(c.req.param("revisionId"));
-    if (isNaN(revisionId)) return c.json({ error: "ID de revisión inválido" }, 400);
+    if (isNaN(revisionId)) throw AppError.fromCatalog("invalid_id", { message: "ID de revisión inválido" });
 
     await contentService.deleteRevision(revisionId);
     return c.json({ message: "Revisión eliminada exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("revision_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -439,11 +449,11 @@ export async function deleteRevision(c: Context) {
 export async function getChildPages(c: Context) {
   try {
     const parentId = Number(c.req.param("id"));
-    if (isNaN(parentId)) return c.json({ error: "ID inválido" }, 400);
+    if (isNaN(parentId)) throw AppError.fromCatalog("invalid_id");
 
     const children = await contentService.getChildPages(parentId);
     return c.json({ children });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("content_children_failed", getErrorMessage(error), 400);
   }
 }

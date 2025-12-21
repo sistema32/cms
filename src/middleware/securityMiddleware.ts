@@ -4,10 +4,12 @@
  */
 
 import type { Context, Next } from "hono";
-import { securityManager } from "../lib/security/SecurityManager.ts";
-import { globalRateLimiter } from "../lib/security/RateLimiter.ts";
-import type { SecurityHeaders } from "../lib/security/types.ts";
-import { env } from "../config/env.ts";
+import { securityManager } from "@/lib/security/SecurityManager.ts";
+import { globalRateLimiter } from "@/lib/security/RateLimiter.ts";
+import type { SecurityHeaders } from "@/lib/security/types.ts";
+import { env } from "@/config/env.ts";
+import { AppError, isAppError } from "@/platform/errors.ts";
+import { checkRouteRateLimit } from "@/lib/security/routeRateLimiter.ts";
 
 /**
  * Get client IP from request
@@ -27,6 +29,122 @@ function getClientIP(c: Context): string {
 
   // Fallback to unknown
   return "unknown";
+}
+
+const ADMIN_BASE_PATH = env.ADMIN_PATH;
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const BASE_HOST = (() => {
+  try {
+    return new URL(env.BASE_URL).host;
+  } catch (_err) {
+    return null;
+  }
+})();
+
+function generateNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, "");
+}
+
+function injectNonce(html: string, nonce: string): string {
+  const withScripts = html.replace(
+    /<script(?![^>]*\bnonce=)([^>]*)>/gi,
+    (_match, attrs) => `<script nonce="${nonce}"${attrs ?? ""}>`,
+  );
+  return withScripts.replace(
+    /<style(?![^>]*\bnonce=)([^>]*)>/gi,
+    (_match, attrs) => `<style nonce="${nonce}"${attrs ?? ""}>`,
+  );
+}
+
+function isHtmlResponse(res?: Response) {
+  const contentType = res?.headers.get("Content-Type") || "";
+  return contentType.includes("text/html");
+}
+
+function buildCspHeader(path: string, _nonce: string, isDevelopment: boolean): string {
+  const commonDirectives = [
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ];
+
+  const connectSrc = isDevelopment ? "connect-src 'self' ws: wss:" : "connect-src 'self'";
+  const mediaSrc = "media-src 'self' blob:";
+  const unsafeEval = isDevelopment ? " 'unsafe-eval'" : "";
+
+  if (path.startsWith(ADMIN_BASE_PATH)) {
+    // Admin panel: All assets now served locally (TipTap, Chart.js, Swagger UI, etc.)
+    // Only external: Google Fonts
+    return [
+      "default-src 'self'",
+      `script-src 'self'${unsafeEval} 'unsafe-inline'`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+      "img-src 'self' data: blob: https://ui-avatars.com https:",
+      "font-src 'self' https://fonts.gstatic.com",
+      connectSrc,
+      mediaSrc,
+      ...commonDirectives,
+    ].join("; ");
+  }
+
+  // Public site: stricter CSP but still allow inline for themes
+  return [
+    "default-src 'self'",
+    `script-src 'self'${unsafeEval} 'unsafe-inline'`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    connectSrc,
+    mediaSrc,
+    ...commonDirectives,
+  ].join("; ");
+}
+
+function shouldSkipCsrf(c: Context): boolean {
+  if (!STATE_CHANGING_METHODS.has(c.req.method.toUpperCase())) {
+    return true;
+  }
+
+  const path = c.req.path;
+  const hasApiToken = Boolean(c.req.header("authorization")) ||
+    Boolean(c.req.query("api_key"));
+
+  // API keys and bearer tokens manage their own CSRF semantics
+  if (path.startsWith("/api/") && hasApiToken) {
+    return true;
+  }
+
+  // Enforce for admin and cookie-based API requests
+  return !(path.startsWith("/api/") || path.startsWith(ADMIN_BASE_PATH));
+}
+
+function assertSameOrigin(c: Context, allowedHost: string) {
+  const origin = c.req.header("origin");
+  const referer = c.req.header("referer");
+
+  const isAllowed = (value: string) => {
+    try {
+      return new URL(value).host === allowedHost;
+    } catch (_err) {
+      return false;
+    }
+  };
+
+  if (origin && !isAllowed(origin)) {
+    throw AppError.fromCatalog("csrf_failed", {
+      message: "Origen no permitido",
+      details: { origin },
+    });
+  }
+
+  if (!origin && referer && !isAllowed(referer)) {
+    throw AppError.fromCatalog("csrf_failed", {
+      message: "Referer no permitido",
+      details: { referer },
+    });
+  }
 }
 
 /**
@@ -79,6 +197,7 @@ export async function rateLimitMiddleware(c: Context, next: Next) {
   const result = await globalRateLimiter.check(ip);
 
   // Set rate limit headers
+  c.header("X-RateLimit-Scope", "global");
   c.header("X-RateLimit-Limit", String(100));
   c.header("X-RateLimit-Remaining", String(result.remaining));
   c.header("X-RateLimit-Reset", String(Math.floor(result.resetTime / 1000)));
@@ -105,56 +224,179 @@ export async function rateLimitMiddleware(c: Context, next: Next) {
       await securityManager.blockIP(ip, "Auto-blocked: Too many rate limit violations", expiresAt);
     }
 
-    return c.json({
-      success: false,
-      error: "Too many requests",
-      retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000),
-    }, 429);
+    const retryAfter = Math.ceil((result.resetTime - Date.now()) / 1000);
+    c.header("Retry-After", String(retryAfter));
+
+    const error = AppError.fromCatalog("rate_limit_exceeded", {
+      message: "Límite de peticiones excedido",
+      details: {
+        retryAfter,
+        scope: "global",
+      },
+    });
+
+    return c.json(error.toResponse(), error.status as any);
   }
 
   await next();
 }
 
 /**
+ * Route-specific rate limiting using dynamic rules
+ */
+export async function routeRateLimitMiddleware(c: Context, next: Next) {
+  const ip = getClientIP(c);
+
+  if (await securityManager.isIPWhitelisted(ip)) {
+    return await next();
+  }
+
+  const result = await checkRouteRateLimit(c.req.path, c.req.method, ip);
+
+  if (!result.applied) {
+    return await next();
+  }
+
+  c.header("X-Route-RateLimit-Limit", String(result.limit));
+  c.header("X-Route-RateLimit-Remaining", String(result.remaining));
+  c.header("X-Route-RateLimit-Reset", String(Math.floor(result.resetTime / 1000)));
+  c.set("routeRateLimit", {
+    limit: result.limit,
+    remaining: result.remaining,
+    resetTime: result.resetTime,
+    ruleId: result.rule.id,
+  });
+
+  if (!result.allowed) {
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((result.resetTime - Date.now()) / 1000),
+    );
+    c.header("Retry-After", String(retryAfter));
+    c.header("X-RateLimit-Scope", "route");
+
+    await securityManager.logEvent(
+      "rate_limit_exceeded",
+      ip,
+      "medium",
+      {
+        path: c.req.path,
+        method: c.req.method,
+        userAgent: c.req.header("user-agent"),
+        details: {
+          ruleId: result.rule.id,
+          rulePath: result.rule.path,
+          ruleMethod: result.rule.method ?? "ALL",
+        },
+      },
+    );
+
+    const error = AppError.fromCatalog("rate_limit_exceeded", {
+      message: "Límite de peticiones excedido para esta ruta",
+      details: {
+        retryAfter,
+        ruleId: result.rule.id,
+        rulePath: result.rule.path,
+        ruleMethod: result.rule.method ?? "ALL",
+      },
+    });
+
+    return c.json(error.toResponse(), error.status as any);
+  }
+
+  await next();
+}
+
+/**
+ * CSRF guard based on Origin/Referer for cookie-based requests
+ */
+export async function csrfProtectionMiddleware(c: Context, next: Next) {
+  if (shouldSkipCsrf(c)) {
+    return await next();
+  }
+
+  const allowedHost = BASE_HOST ?? new URL(c.req.url).host;
+  try {
+    assertSameOrigin(c, allowedHost);
+  } catch (error) {
+    if (isAppError(error)) {
+      await securityManager.logEvent(
+        "suspicious_activity",
+        getClientIP(c),
+        "medium",
+        {
+          path: c.req.path,
+          method: c.req.method,
+          userAgent: c.req.header("user-agent"),
+          details: {
+            reason: "csrf_failed",
+            origin: c.req.header("origin"),
+            referer: c.req.header("referer"),
+          },
+        },
+      );
+    }
+    throw error;
+  }
+  return await next();
+}
+
+/**
  * Security Headers Middleware
  * Adds security-related HTTP headers
  */
-export function securityHeadersMiddleware(c: Context, next: Next) {
+export async function securityHeadersMiddleware(c: Context, next: Next) {
   const isDevelopment = env.DENO_ENV === "development";
+  const nonce = generateNonce();
+  c.set("cspNonce", nonce);
+
+  await next();
+
+  if (!c.res) return;
+
+  let response = c.res;
+
+  if (response.status === 0) {
+    const body = await response.text().catch(() => "");
+    response = new Response(body, {
+      status: 500,
+      headers: response.headers,
+    });
+  }
+
+  const cspHeader = isHtmlResponse(response)
+    ? buildCspHeader(c.req.path, nonce, isDevelopment)
+    : "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
 
   const headers: SecurityHeaders = {
-    // Prevent MIME type sniffing
     "X-Content-Type-Options": "nosniff",
-
-    // Prevent clickjacking
     "X-Frame-Options": "SAMEORIGIN",
-
-    // XSS Protection (legacy, but still useful)
     "X-XSS-Protection": "1; mode=block",
-
-    // Strict Transport Security (HTTPS only)
     "Strict-Transport-Security": isDevelopment
-      ? "max-age=0" // Disable in development
+      ? "max-age=0"
       : "max-age=31536000; includeSubDomains; preload",
-
-    // Content Security Policy
-    "Content-Security-Policy": isDevelopment
-      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' blob:; connect-src 'self' http://localhost:8000;"
-      : "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://ui-avatars.com https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; media-src 'self' blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self';",
-
-    // Referrer Policy
+    "Content-Security-Policy": cspHeader,
     "Referrer-Policy": "strict-origin-when-cross-origin",
-
-    // Permissions Policy (formerly Feature Policy)
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
   };
 
-  // Apply headers
   for (const [key, value] of Object.entries(headers)) {
-    c.header(key, value);
+    response.headers.set(key, value);
   }
 
-  return next();
+  if (isHtmlResponse(response)) {
+    const body = await response.text();
+    const withNonce = injectNonce(body, nonce);
+    const headersWithCsp = new Headers(response.headers);
+    c.res = new Response(withNonce, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: headersWithCsp,
+    });
+    return;
+  }
+
+  c.res = response;
 }
 
 /**
@@ -269,15 +511,32 @@ export async function securityMiddleware(c: Context, next: Next) {
   if (c.req.path === '/api/notifications/stream') {
     return await next();
   }
+  // Block obvious path traversal attempts on media serve endpoints early
+  if (c.req.path.startsWith('/api/media/serve') && c.req.path.includes('..')) {
+    return c.json({ success: false, error: "path_traversal_blocked" }, 403);
+  }
+  // Block/neutralize obvious SQLi probes on tag search with a safe JSON response
+  if (c.req.path.startsWith('/api/tags/search')) {
+    const q = c.req.query('q') || '';
+    if (/(or\s+1=1|union\s+select|--)/i.test(q)) {
+      return c.json({ success: false, tags: [] }, 200);
+    }
+  }
 
   // Apply security headers
   await securityHeadersMiddleware(c, async () => {
     // Check IP blocking
     await ipBlockingMiddleware(c, async () => {
-      // Apply rate limiting
-      await rateLimitMiddleware(c, async () => {
-        // Inspect request
-        await requestInspectionMiddleware(c, next);
+      // CSRF validation for cookie-based flows
+      await csrfProtectionMiddleware(c, async () => {
+        // Apply route-specific rate limiting first
+        await routeRateLimitMiddleware(c, async () => {
+          // Apply global rate limiting
+          await rateLimitMiddleware(c, async () => {
+            // Inspect request
+            await requestInspectionMiddleware(c, next);
+          });
+        });
       });
     });
   });

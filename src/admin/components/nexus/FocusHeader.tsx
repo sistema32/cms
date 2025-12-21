@@ -1,5 +1,5 @@
 import { html } from "hono/html";
-import { NotificationPanel, type NotificationItem } from "../NotificationPanel.tsx";
+import { NotificationPanel, type NotificationItem } from "../ui/NotificationPanel.tsx";
 
 interface FocusHeaderProps {
   title: string;
@@ -10,7 +10,7 @@ interface FocusHeaderProps {
 export const FocusHeader = ({ title, notifications, unreadNotificationCount }: FocusHeaderProps) => {
   return html`
     <header class="nexus-header focus-header">
-      <button class="mobile-menu-btn" onclick="toggleSidebar()">
+      <button class="mobile-menu-btn" data-action="toggleSidebar()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>

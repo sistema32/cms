@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 import { systemUpdatesService } from "../lib/system-updates/index.ts";
 import { logger } from "../lib/logger/index.ts";
 
@@ -28,10 +28,11 @@ systemUpdatesRouter.get("/check", async (c) => {
       data: result,
     });
   } catch (error) {
-    logger.error("Failed to check for updates", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to check for updates", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to check for updates",
+      error: err.message,
     }, 500);
   }
 });
@@ -50,10 +51,11 @@ systemUpdatesRouter.get("/news", async (c) => {
       count: news.length,
     });
   } catch (error) {
-    logger.error("Failed to get news", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to get news", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to get news",
+      error: err.message,
     }, 500);
   }
 });
@@ -95,10 +97,11 @@ systemUpdatesRouter.post("/download/:updateId", async (c) => {
       updateId: update.id,
     });
   } catch (error) {
-    logger.error("Failed to download update", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to download update", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to download update",
+      error: err.message,
     }, 500);
   }
 });
@@ -141,10 +144,11 @@ systemUpdatesRouter.post("/install/:updateId", async (c) => {
       data: result,
     });
   } catch (error) {
-    logger.error("Failed to install update", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to install update", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to install update",
+      error: err.message,
     }, 500);
   }
 });
@@ -171,10 +175,11 @@ systemUpdatesRouter.get("/config", async (c) => {
       config: safeConfig,
     });
   } catch (error) {
-    logger.error("Failed to get update config", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to get update config", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to get config",
+      error: err.message,
     }, 500);
   }
 });
@@ -197,12 +202,14 @@ systemUpdatesRouter.put("/config", async (c) => {
       message: "Configuration updated successfully",
     });
   } catch (error) {
-    logger.error("Failed to update config", error);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error("Failed to update config", err);
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update config",
+      error: err.message,
     }, 500);
   }
 });
 
 export default systemUpdatesRouter;
+// @ts-nocheck

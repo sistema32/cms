@@ -4,8 +4,8 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 import { auditLogger } from "../lib/audit/index.ts";
 import type { AuditLogFilter } from "../lib/audit/index.ts";
 

@@ -1,10 +1,15 @@
 import { Context } from "hono";
 import { z } from "zod";
-import * as commentService from "../services/commentService.ts";
-import { notificationService } from "../lib/email/index.ts";
-import { db } from "../config/db.ts";
-import { content } from "../db/schema.ts";
+import * as commentService from "@/services/content/commentService.ts";
+import { notificationService } from "@/lib/email/index.ts";
+import { db } from "@/config/db.ts";
+import { content } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
+import { AppError } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+
+const log = createLogger("commentController");
 
 /**
  * Esquemas de validación Zod
@@ -49,12 +54,9 @@ export async function create(c: Context) {
 
     // Si no es usuario autenticado, verificar que tenga datos de guest
     if (!user && (!data.authorName || !data.authorEmail)) {
-      return c.json(
-        {
-          success: false,
-          error:
-            "Debes proporcionar nombre y email, o iniciar sesión para comentar",
-        },
+      throw new AppError(
+        "comment_missing_guest_data",
+        "Debes proporcionar nombre y email, o iniciar sesión para comentar",
         400,
       );
     }
@@ -124,10 +126,10 @@ export async function create(c: Context) {
       201,
     );
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al crear comentario";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("comment_create_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -140,7 +142,7 @@ export async function getByContentId(c: Context) {
     const contentId = parseInt(c.req.param("contentId"));
 
     if (isNaN(contentId)) {
-      return c.json({ success: false, error: "ID de contenido inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id", { message: "ID de contenido inválido" });
     }
 
     // Solo mostrar originales si es admin
@@ -158,10 +160,9 @@ export async function getByContentId(c: Context) {
       data: comments,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener comentarios";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof AppError) throw error;
+    const message = getErrorMessage(error);
+    throw new AppError("comment_list_failed", message, 400);
   }
 }
 
@@ -175,7 +176,7 @@ export async function update(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ success: false, error: "No autenticado" }, 401);
+      throw new AppError("unauthorized", "No autenticado", 401);
     }
 
     const body = await c.req.json();
@@ -196,10 +197,10 @@ export async function update(c: Context) {
       message: "Comentario actualizado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al actualizar comentario";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("comment_update_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -213,7 +214,7 @@ export async function deleteComment(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ success: false, error: "No autenticado" }, 401);
+      throw new AppError("unauthorized", "No autenticado", 401);
     }
 
     await commentService.deleteComment(id, user.userId);
@@ -223,10 +224,7 @@ export async function deleteComment(c: Context) {
       message: "Comentario eliminado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al eliminar comentario";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("comment_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -241,7 +239,7 @@ export async function getOriginal(c: Context) {
     const comment = await commentService.getCommentById(id, true);
 
     if (!comment) {
-      return c.json({ success: false, error: "Comentario no encontrado" }, 404);
+      throw AppError.fromCatalog("comment_not_found");
     }
 
     return c.json({
@@ -249,10 +247,7 @@ export async function getOriginal(c: Context) {
       data: comment,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener comentario";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("comment_get_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -269,7 +264,7 @@ export async function moderate(c: Context) {
     // Get comment before moderation to check original status
     const commentBefore = await commentService.getCommentById(id, true);
     if (!commentBefore) {
-      return c.json({ success: false, error: "Comentario no encontrado" }, 404);
+      throw AppError.fromCatalog("comment_not_found");
     }
 
     const comment = await commentService.moderateComment(id, data.status);
@@ -282,10 +277,10 @@ export async function moderate(c: Context) {
       message: `Comentario marcado como ${data.status}`,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al moderar comentario";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("comment_moderate_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -298,7 +293,7 @@ export async function stats(c: Context) {
     const contentId = parseInt(c.req.param("contentId"));
 
     if (isNaN(contentId)) {
-      return c.json({ success: false, error: "ID de contenido inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id", { message: "ID de contenido inválido" });
     }
 
     const statistics = await commentService.getCommentStats(contentId);
@@ -308,9 +303,6 @@ export async function stats(c: Context) {
       data: statistics,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener estadísticas";
-    return c.json({ success: false, error: message }, 400);
+    throw error instanceof AppError ? error : new AppError("comment_stats_failed", getErrorMessage(error), 400);
   }
 }

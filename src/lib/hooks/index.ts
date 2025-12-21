@@ -41,6 +41,12 @@ export const CORE_HOOKS = new Set<string>([
   "cms_media:afterUpload",
   "cms_media:getUrl",
   "cms_media:beforeDelete",
+  // Editor hooks (for plugins to extend post editor)
+  "cms_admin:editor:sidebar_widgets",
+  "cms_admin:editor:block_patterns",
+  "cms_admin:editor:toolbar_buttons",
+  "cms_admin:editor:scripts",
+  "cms_admin:editor:styles",
 ]);
 
 const actions = new Map<string, HandlerEntry[]>();

@@ -3,8 +3,9 @@ import { count, desc, eq } from "drizzle-orm";
 import { db } from "../../config/db.ts";
 import { media } from "../../db/schema.ts";
 import { env } from "../../config/env.ts";
-import MediaLibraryNexusPage from "../../admin/pages/MediaLibraryNexus.tsx";
+import MediaLibraryNexusPage from "../../admin/pages/dashboard/MediaLibraryNexus.tsx";
 import { notificationService } from "../../lib/email/index.ts";
+import { normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
 
 export const mediaRouter = new Hono();
 
@@ -50,15 +51,15 @@ mediaRouter.get("/media", async (c) => {
         const total = totalResult[0]?.count || 0;
 
         // Get notifications
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -70,16 +71,21 @@ mediaRouter.get("/media", async (c) => {
             MediaLibraryNexusPage({
                 user: {
                     id: user.userId,
-                    name: user.name as string | null,
+                    name: (user.name as string | null) || user.email,
                     email: user.email,
                 },
                 media: mediaItems.map((item) => ({
                     ...item,
-                    uploadedBy: item.uploadedBy ? {
-                        id: item.uploadedBy.id,
-                        name: item.uploadedBy.name || undefined,
-                        email: item.uploadedBy.email
-                    } : undefined
+                    width: item.width ?? undefined,
+                    height: item.height ?? undefined,
+                    duration: item.duration ?? undefined,
+                    uploadedBy: item.uploadedBy
+                        ? {
+                            id: item.uploadedBy.id,
+                            name: item.uploadedBy.name || item.uploadedBy.email,
+                            email: item.uploadedBy.email,
+                        }
+                        : undefined,
                 })),
                 limit,
                 offset,
@@ -134,7 +140,7 @@ mediaRouter.get("/media/data", async (c) => {
  * - ${adminPath}/api/media/:id (DELETE)
  */
 
-import { uploadMedia, deleteMedia } from "../../services/mediaService.ts";
+import { uploadMedia, deleteMedia } from "@/services/content/mediaService.ts";
 
 mediaRouter.post("/api/media/upload", async (c) => {
     try {

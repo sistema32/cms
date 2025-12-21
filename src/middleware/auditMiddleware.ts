@@ -4,7 +4,7 @@
  */
 
 import type { Context, Next } from "hono";
-import { auditLogger, extractAuditContext } from "../lib/audit/index.ts";
+import { auditLogger, extractAuditContext } from "@/lib/audit/index.ts";
 
 /**
  * Audit middleware for logging API requests

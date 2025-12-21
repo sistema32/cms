@@ -6,8 +6,8 @@ import { db } from "../../config/db.ts";
 import { users } from "../../db/schema.ts";
 import { generateToken, verifyToken } from "../../utils/jwt.ts";
 import { comparePassword } from "../../utils/password.ts";
-import { verifyTOTP } from "../../services/twoFactorService.ts";
-import LoginNexusPage from "../../admin/pages/LoginNexus.tsx";
+import { verifyTOTP } from "@/services/auth/twoFactorService.ts";
+import LoginNexusPage from "../../admin/pages/auth/LoginNexus.tsx";
 
 export const authRouter = new Hono();
 

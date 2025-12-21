@@ -11,6 +11,12 @@ import SecurityReportsPage from "../../admin/pages/security/SecurityReports.tsx"
 
 export const securityPagesRouter = new Hono();
 
+const normalizeUser = (user: any) => ({
+    id: user.userId,
+    name: (user.name as string | null) || user.email,
+    email: user.email,
+});
+
 // Security Dashboard
 securityPagesRouter.get("/security/dashboard", async (c) => {
     try {
@@ -33,11 +39,7 @@ securityPagesRouter.get("/security/dashboard", async (c) => {
         }
 
         return c.html(SecurityDashboard({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -69,11 +71,7 @@ securityPagesRouter.get("/security/logs", async (c) => {
         }
 
         return c.html(SecurityLogs({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -105,11 +103,7 @@ securityPagesRouter.get("/security/ips/blacklist", async (c) => {
         }
 
         return c.html(IPBlacklist({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -141,11 +135,7 @@ securityPagesRouter.get("/security/ips/whitelist", async (c) => {
         }
 
         return c.html(IPWhitelist({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -177,11 +167,7 @@ securityPagesRouter.get("/security/rate-limit", async (c) => {
         }
 
         return c.html(RateLimitConfig({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -213,11 +199,7 @@ securityPagesRouter.get("/security/rules", async (c) => {
         }
 
         return c.html(SecurityRules({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -249,11 +231,7 @@ securityPagesRouter.get("/security/settings", async (c) => {
         }
 
         return c.html(SecuritySettings({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));
@@ -285,11 +263,7 @@ securityPagesRouter.get("/security/reports", async (c) => {
         }
 
         return c.html(SecurityReportsPage({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             notifications,
             unreadNotificationCount,
         }));

@@ -1,12 +1,18 @@
 import { Context } from "hono";
 import { z } from "zod";
-import * as twoFactorService from "../services/twoFactorService.ts";
+import * as twoFactorService from "@/services/auth/twoFactorService.ts";
 import {
   log2FAEnabled,
   log2FADisabled,
   log2FASuccess,
   log2FAFailed,
-} from "../utils/securityLogger.ts";
+} from "@/utils/securityLogger.ts";
+import { AppError } from "@/platform/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+
+const log = createLogger("twoFactorController");
+const getClientIp = (c: Context) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
 
 /**
  * ============================================
@@ -32,7 +38,7 @@ export async function setup2FA(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const result = await twoFactorService.setup2FA(user.userId, user.email);
@@ -44,7 +50,8 @@ export async function setup2FA(c: Context) {
       backupCodes: result.backupCodes, // Guardar en lugar seguro
     }, 200);
   } catch (error) {
-    return c.json({ error: String(error) }, 400);
+    log.error("Error al configurar 2FA", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("twofa_setup_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -57,7 +64,7 @@ export async function enable2FA(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const body = await c.req.json();
@@ -66,7 +73,7 @@ export async function enable2FA(c: Context) {
     await twoFactorService.enable2FA(user.userId, token);
 
     // Log de seguridad
-    const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
+    const ip = getClientIp(c);
     await log2FAEnabled(user.userId, user.email, ip);
 
     return c.json({
@@ -74,9 +81,9 @@ export async function enable2FA(c: Context) {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: String(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("twofa_enable_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -89,7 +96,7 @@ export async function disable2FA(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const body = await c.req.json();
@@ -98,7 +105,7 @@ export async function disable2FA(c: Context) {
     await twoFactorService.disable2FA(user.userId, token);
 
     // Log de seguridad
-    const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
+    const ip = getClientIp(c);
     await log2FADisabled(user.userId, user.email, ip);
 
     return c.json({
@@ -106,9 +113,9 @@ export async function disable2FA(c: Context) {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: String(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("twofa_disable_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -121,7 +128,7 @@ export async function verify2FA(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const body = await c.req.json();
@@ -130,13 +137,13 @@ export async function verify2FA(c: Context) {
     const isValid = await twoFactorService.verify2FA(user.userId, token);
 
     if (!isValid) {
-      const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
+      const ip = getClientIp(c);
       await log2FAFailed(user.userId, user.email, ip);
 
-      return c.json({ error: "Código 2FA inválido" }, 401);
+      throw new AppError("invalid_2fa_code", "Código 2FA inválido", 401);
     }
 
-    const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip");
+    const ip = getClientIp(c);
     await log2FASuccess(user.userId, user.email, ip);
 
     return c.json({
@@ -144,9 +151,9 @@ export async function verify2FA(c: Context) {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: String(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("twofa_verify_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -159,7 +166,7 @@ export async function regenerateBackupCodes(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const body = await c.req.json();
@@ -173,9 +180,9 @@ export async function regenerateBackupCodes(c: Context) {
     }, 200);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Validación fallida", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: String(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("twofa_regenerate_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -188,7 +195,7 @@ export async function get2FAStatus(c: Context) {
     const user = c.get("user");
 
     if (!user) {
-      return c.json({ error: "No autorizado" }, 401);
+      throw AppError.fromCatalog("unauthorized");
     }
 
     const isEnabled = await twoFactorService.has2FAEnabled(user.userId);
@@ -198,6 +205,7 @@ export async function get2FAStatus(c: Context) {
       globallyEnabled: twoFactorService.is2FAEnabled(),
     }, 200);
   } catch (error) {
-    return c.json({ error: String(error) }, 500);
+    log.error("Error al obtener estado de 2FA", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("twofa_status_failed", getErrorMessage(error), 500);
   }
 }

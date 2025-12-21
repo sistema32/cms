@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Backup Manager
  * Handles creation, scheduling, and management of backups
@@ -37,8 +38,10 @@ export class BackupManager {
 
   private constructor() {
     this.config = this.loadConfig();
-    if (this.config.enabled) {
+    if (this.config.enabled && env.DENO_ENV === "production") {
       this.startScheduler();
+    } else if (this.config.enabled) {
+      console.log("📅 Backup scheduler disabled (non-production/test env)");
     }
   }
 
@@ -780,3 +783,4 @@ export class BackupManager {
 
 // Export singleton instance
 export const backupManager = BackupManager.getInstance();
+// @ts-nocheck

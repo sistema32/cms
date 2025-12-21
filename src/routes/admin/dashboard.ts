@@ -3,8 +3,9 @@ import { count, desc } from "drizzle-orm";
 import { db } from "../../config/db.ts";
 import { content, users, comments } from "../../db/schema.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import DashboardNexusPage from "../../admin/pages/DashboardNexus.tsx";
-import NotificationsNexusPage from "../../admin/pages/NotificationsNexus.tsx";
+import { normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
+import DashboardNexusPage from "../../admin/pages/dashboard/DashboardNexus.tsx";
+import NotificationsNexusPage from "../../admin/pages/dashboard/NotificationsNexus.tsx";
 
 export const dashboardRouter = new Hono();
 
@@ -51,15 +52,15 @@ dashboardRouter.get("/", async (c) => {
         }));
 
         // Get notifications for the user
-        let notifications = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -93,14 +94,14 @@ dashboardRouter.get("/notifications", async (c) => {
         const user = c.get("user");
 
         // Get all notifications for the user
-        let notifications = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 limit: 100,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );

@@ -1,11 +1,15 @@
 import { Context } from "hono";
-import * as authService from "../services/authService.ts";
-import { loginSchema, registerSchema } from "../utils/validation.ts";
-import { auditLogger, extractAuditContext } from "../lib/audit/index.ts";
-import { webhookManager } from "../lib/webhooks/index.ts";
-import { doAction } from "../lib/hooks/index.ts";
-import { emailManager, notificationService } from "../lib/email/index.ts";
-import { env } from "../config/env.ts";
+import * as authService from "@/services/auth/authService.ts";
+import { loginSchema, registerSchema } from "@/utils/validation.ts";
+import { auditLogger, extractAuditContext } from "@/lib/audit/index.ts";
+import { webhookManager } from "@/lib/webhooks/index.ts";
+import { doAction } from "@/lib/hooks/index.ts";
+import { emailManager, notificationService } from "@/lib/email/index.ts";
+import { env } from "@/config/env.ts";
+import { AppError } from "@/platform/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+
+const log = createLogger("authController");
 
 /**
  * POST /api/auth/register
@@ -17,10 +21,7 @@ export async function register(c: Context) {
       body = await c.req.json();
     } catch (error) {
       if (error instanceof SyntaxError) {
-        return c.json(
-          { success: false, error: "Invalid JSON payload" },
-          400,
-        );
+        throw new AppError("invalid_json", "Invalid JSON payload", 400);
       }
       throw error;
     }
@@ -100,15 +101,11 @@ export async function register(c: Context) {
     );
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return c.json(
-        { success: false, error: "Invalid JSON payload" },
-        400,
-      );
+      throw new AppError("invalid_json", "Invalid JSON payload", 400);
     }
-    const message = error instanceof Error
-      ? error.message
-      : "Error al registrar usuario";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof AppError) throw error;
+    const message = error instanceof Error ? error.message : "Error al registrar usuario";
+    throw new AppError("register_failed", message, 400);
   }
 }
 
@@ -122,10 +119,7 @@ export async function login(c: Context) {
       body = await c.req.json();
     } catch (error) {
       if (error instanceof SyntaxError) {
-        return c.json(
-          { success: false, error: "Invalid JSON payload" },
-          400,
-        );
+        throw new AppError("invalid_json", "Invalid JSON payload", 400);
       }
       throw error;
     }
@@ -175,10 +169,7 @@ export async function login(c: Context) {
     });
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return c.json(
-        { success: false, error: "Invalid JSON payload" },
-        400,
-      );
+      throw new AppError("invalid_json", "Invalid JSON payload", 400);
     }
 
     // Log failed login attempt
@@ -200,7 +191,8 @@ export async function login(c: Context) {
     const message = error instanceof Error
       ? error.message
       : "Error al iniciar sesión";
-    return c.json({ success: false, error: message }, 401);
+    // Para no filtrar detalles, usar código genérico y status 401
+    throw new AppError("login_failed", message, 401);
   }
 }
 

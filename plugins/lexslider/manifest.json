@@ -19,10 +19,18 @@
         "route:GET:/render/:id",
         "route:GET:/sliders/:id/global-layers",
         "route:PUT:/sliders/:id/global-layers",
+        "route:GET:/templates",
+        "route:POST:/templates",
+        "route:DELETE:/templates/:id",
+        "route:POST:/sliders/from-template/:id",
+        "route:GET:/sliders/:id/export",
+        "route:POST:/sliders/import",
+        "route:POST:/sliders/:id/duplicate",
         "ui:slot:sidebar",
         "ui:widget:lexslider_widget",
         "ui:asset:css",
-        "ui:asset:js"
+        "ui:asset:js",
+        "hook:cms_admin:editor:sidebar_widgets"
     ],
     "routes": [
         {
@@ -72,6 +80,34 @@
         {
             "method": "PUT",
             "path": "/sliders/:id/global-layers"
+        },
+        {
+            "method": "GET",
+            "path": "/templates"
+        },
+        {
+            "method": "POST",
+            "path": "/templates"
+        },
+        {
+            "method": "DELETE",
+            "path": "/templates/:id"
+        },
+        {
+            "method": "POST",
+            "path": "/sliders/from-template/:id"
+        },
+        {
+            "method": "GET",
+            "path": "/sliders/:id/export"
+        },
+        {
+            "method": "POST",
+            "path": "/sliders/import"
+        },
+        {
+            "method": "POST",
+            "path": "/sliders/:id/duplicate"
         }
     ],
     "capabilities": {

@@ -121,16 +121,29 @@ export class SMTPProvider implements IEmailProvider {
     return decoder.decode(buffer.subarray(0, n));
   }
 
-  private buildMessage(options: Required<Pick<EmailOptions, "from" | "to" | "subject">> & EmailOptions): string {
+  private buildMessage(
+    options: Required<Pick<EmailOptions, "from" | "to" | "subject">> &
+      EmailOptions,
+  ): string {
     const lines: string[] = [];
+    const toRecipients = Array.isArray(options.to) ? options.to : [options.to];
 
     // Headers
     lines.push(`From: ${this.formatAddress(options.from)}`);
-    lines.push(`To: ${options.to.map((addr) => this.formatAddress(addr)).join(", ")}`);
+    lines.push(
+      `To: ${toRecipients.map((addr) => this.formatAddress(addr)).join(", ")}`,
+    );
 
     if (options.cc) {
       const cc = Array.isArray(options.cc) ? options.cc : [options.cc];
       lines.push(`Cc: ${cc.map((addr) => this.formatAddress(addr)).join(", ")}`);
+    }
+
+    if (options.bcc) {
+      const bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
+      lines.push(
+        `Bcc: ${bcc.map((addr) => this.formatAddress(addr)).join(", ")}`,
+      );
     }
 
     if (options.replyTo) {
@@ -182,3 +195,4 @@ export class SMTPProvider implements IEmailProvider {
     return addr.name ? `"${addr.name}" <${addr.email}>` : addr.email;
   }
 }
+// @ts-nocheck

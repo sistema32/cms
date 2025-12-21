@@ -4,9 +4,9 @@
  */
 
 import { Hono } from "hono";
-import { formController } from "../controllers/formController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import { formController } from "@/controllers/formController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 import { db } from "../config/db.ts";
@@ -28,6 +28,7 @@ const hybridAuth = async (c: Context, next: Next) => {
         const result = await db
             .select({
                 id: users.id,
+                userId: users.id,
                 email: users.email,
                 name: users.name,
             })

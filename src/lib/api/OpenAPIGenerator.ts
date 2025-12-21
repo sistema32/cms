@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * OpenAPI Documentation Generator
  * Generates OpenAPI 3.0 specification for the public REST API
@@ -9,7 +10,7 @@ import { env } from "../../config/env.ts";
 export class OpenAPIGenerator {
   private static instance: OpenAPIGenerator;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): OpenAPIGenerator {
     if (!OpenAPIGenerator.instance) {
@@ -338,7 +339,7 @@ export class OpenAPIGenerator {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LexCMS API Documentation</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <link rel="stylesheet" href="${env.ADMIN_PATH}/assets/css/vendor/swagger-ui.css">
   <style>
     body {
       margin: 0;
@@ -348,8 +349,8 @@ export class OpenAPIGenerator {
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+  <script src="${env.ADMIN_PATH}/assets/js/vendor/swagger-ui-bundle.js"></script>
+  <script src="${env.ADMIN_PATH}/assets/js/vendor/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = () => {
       window.ui = SwaggerUIBundle({

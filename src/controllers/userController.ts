@@ -1,6 +1,11 @@
 import { Context } from "hono";
-import * as userService from "../services/userService.ts";
-import { updateUserSchema } from "../utils/validation.ts";
+import * as userService from "@/services/auth/userService.ts";
+import { updateUserSchema } from "@/utils/validation.ts";
+import { AppError } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+
+const log = createLogger("userController");
 
 /**
  * GET /api/users
@@ -14,8 +19,8 @@ export async function getAllUsers(c: Context) {
       data: users,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al obtener usuarios";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("user_list_failed", message, 500);
   }
 }
 
@@ -25,15 +30,14 @@ export async function getAllUsers(c: Context) {
 export async function getUserById(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-
     if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     const user = await userService.getUserById(id);
 
     if (!user) {
-      return c.json({ success: false, error: "Usuario no encontrado" }, 404);
+      throw AppError.fromCatalog("user_not_found");
     }
 
     return c.json({
@@ -41,8 +45,8 @@ export async function getUserById(c: Context) {
       data: user,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al obtener usuario";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw error instanceof AppError ? error : new AppError("user_get_failed", message, 500);
   }
 }
 
@@ -52,9 +56,8 @@ export async function getUserById(c: Context) {
 export async function updateUser(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-
     if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     const body = await c.req.json();
@@ -68,8 +71,12 @@ export async function updateUser(c: Context) {
       message: "Usuario actualizado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al actualizar usuario";
-    return c.json({ success: false, error: message }, 500);
+    if (error instanceof AppError) throw error;
+    if (error instanceof Error && error.name === "ZodError") {
+      throw AppError.fromCatalog("validation_error");
+    }
+    const message = getErrorMessage(error);
+    throw new AppError("user_update_failed", message, 500);
   }
 }
 
@@ -79,9 +86,8 @@ export async function updateUser(c: Context) {
 export async function deleteUser(c: Context) {
   try {
     const id = Number(c.req.param("id"));
-
     if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     await userService.deleteUser(id);
@@ -91,7 +97,8 @@ export async function deleteUser(c: Context) {
       message: "Usuario eliminado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al eliminar usuario";
-    return c.json({ success: false, error: message }, 500);
+    log.error("Error al eliminar usuario", error instanceof Error ? error : undefined);
+    const message = getErrorMessage(error);
+    throw error instanceof AppError ? error : new AppError("user_delete_failed", message, 500);
   }
 }

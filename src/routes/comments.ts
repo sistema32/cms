@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
-import { requireCaptcha, requireCaptchaForGuests } from "../middleware/captcha.ts";
-import * as commentController from "../controllers/commentController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
+import { requireCaptcha, requireCaptchaForGuests } from "@/middleware/captcha.ts";
+import * as commentController from "@/controllers/commentController.ts";
 
 const comments = new Hono();
 

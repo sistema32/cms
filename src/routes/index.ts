@@ -11,7 +11,7 @@ import contentRoutes from "./contents.ts";
 import contentSeoRoutes from "./contentSeo.ts";
 import contentMetaRoutes from "./contentMeta.ts";
 import mediaRoutes from "./media.ts";
-import * as mediaController from "../controllers/mediaController.ts";
+import * as mediaController from "@/controllers/mediaController.ts";
 import { menus as menuRoutes, menuItems as menuItemRoutes } from "./menus.ts";
 import commentRoutes from "./comments.ts";
 import contentFilterRoutes from "./contentFilters.ts";
@@ -41,7 +41,7 @@ import frontendRouter from "./frontend.ts";
 import adminRouter from "./admin.ts";
 import { env } from "../config/env.ts";
 import pluginsNewRouter from "./plugins-new.ts";
-import { buildPluginRouter } from "../services/pluginRuntimeRouter.ts";
+import { buildPluginRouter } from "@/services/plugins/pluginRuntimeRouter.ts";
 
 
 export function registerRoutes(app: Hono) {

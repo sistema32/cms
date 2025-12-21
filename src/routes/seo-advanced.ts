@@ -4,7 +4,7 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 import {
   sitemapGenerator,
   robotsManager,
@@ -361,7 +361,7 @@ adminRoutes.get("/structured-data/:contentId", async (c) => {
       .limit(1);
 
     const author = authorData?.[0]
-      ? { name: authorData[0].username }
+      ? { name: authorData[0].name || authorData[0].email }
       : { name: "Unknown" };
 
     const schema = structuredDataGenerator.generateArticle(
@@ -427,7 +427,9 @@ adminRoutes.get("/metadata/:contentId", async (c) => {
       .where(eq(users.id, contentData[0].authorId))
       .limit(1);
 
-    const author = authorData?.[0] ? { name: authorData[0].username } : undefined;
+    const author = authorData?.[0]
+      ? { name: authorData[0].name || authorData[0].email }
+      : undefined;
 
     const metadata = seoHelper.generateContentMetadata(contentData[0], author);
 

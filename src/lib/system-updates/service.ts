@@ -87,7 +87,8 @@ export class SystemUpdatesService {
 
       return result;
     } catch (error) {
-      logger.error("Failed to check for updates", error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to check for updates", err);
       return this.emptyCheckResult();
     }
   }
@@ -141,7 +142,8 @@ export class SystemUpdatesService {
 
       return true;
     } catch (error) {
-      logger.error(`Failed to download update ${update.id}`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Failed to download update ${update.id}`, err);
       return false;
     }
   }
@@ -189,17 +191,18 @@ export class SystemUpdatesService {
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      logger.error(`Failed to install update ${update.id}`, error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Failed to install update ${update.id}`, err);
 
       return {
         success: false,
         updateId: update.id,
         version: update.version,
         installedAt: new Date(),
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: err.message,
         logs: [
           `Update ${update.id} installation failed`,
-          error instanceof Error ? error.message : "Unknown error",
+          err.message,
         ],
         rollbackAvailable: false,
       };
@@ -242,7 +245,8 @@ export class SystemUpdatesService {
 
       return data.news || [];
     } catch (error) {
-      logger.error("Failed to fetch news", error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to fetch news", err);
       return [];
     }
   }
@@ -280,7 +284,8 @@ export class SystemUpdatesService {
 
       return hashHex.toLowerCase() === expectedChecksum.toLowerCase();
     } catch (error) {
-      logger.error("Checksum verification error", error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error("Checksum verification error", err);
       return false;
     }
   }

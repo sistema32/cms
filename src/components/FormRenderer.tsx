@@ -1,56 +1,56 @@
 import { html, raw } from "hono/html";
-import type { CaptchaProvider } from "../services/captchaService.ts";
+import type { CaptchaProvider } from "@/services/system/captchaService.ts";
 
 interface FormField {
-    id: number;
-    type: string;
-    label: string;
-    name: string;
-    placeholder?: string;
-    helpText?: string;
-    required: boolean;
-    options?: string;
-    validation?: any;
+  id: number;
+  type: string;
+  label: string;
+  name: string;
+  placeholder?: string | null;
+  helpText?: string | null;
+  required: boolean;
+  options?: string | null;
+  validation?: any;
 }
 
 interface FormRendererProps {
-    formId: number;
-    formSlug: string;
-    formName: string;
-    formDescription?: string;
-    fields: FormField[];
-    captchaProvider?: CaptchaProvider;
-    captchaSiteKey?: string;
-    submitUrl?: string;
+  formId: number;
+  formSlug: string;
+  formName: string;
+  formDescription?: string;
+  fields: FormField[];
+  captchaProvider?: CaptchaProvider;
+  captchaSiteKey?: string;
+  submitUrl?: string;
 }
 
 export const FormRenderer = (props: FormRendererProps) => {
-    const {
-        formId,
-        formSlug,
-        formName,
-        formDescription,
-        fields,
-        captchaProvider,
-        captchaSiteKey,
-        submitUrl = `/api/forms/${formId}/submit`,
-    } = props;
+  const {
+    formId,
+    formSlug,
+    formName,
+    formDescription,
+    fields,
+    captchaProvider,
+    captchaSiteKey,
+    submitUrl = `/api/forms/${formId}/submit`,
+  } = props;
 
-    // Generar scripts de CAPTCHA según el provider
-    const captchaScripts = captchaProvider && captchaSiteKey ? (() => {
-        switch (captchaProvider) {
-            case "recaptcha":
-                return html`<script src="https://www.google.com/recaptcha/api.js" async defer></script>`;
-            case "hcaptcha":
-                return html`<script src="https://js.hcaptcha.com/1/api.js" async defer></script>`;
-            case "turnstile":
-                return html`<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`;
-            default:
-                return '';
-        }
-    })() : '';
+  // Generar scripts de CAPTCHA según el provider
+  const captchaScripts = captchaProvider && captchaSiteKey ? (() => {
+    switch (captchaProvider) {
+      case "recaptcha":
+        return html`<script src="https://www.google.com/recaptcha/api.js" async defer></script>`;
+      case "hcaptcha":
+        return html`<script src="https://js.hcaptcha.com/1/api.js" async defer></script>`;
+      case "turnstile":
+        return html`<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`;
+      default:
+        return '';
+    }
+  })() : '';
 
-    return html`
+  return html`
     ${captchaScripts}
     
     <style>
@@ -247,12 +247,12 @@ export const FormRenderer = (props: FormRendererProps) => {
 
       <form id="dynamicForm" data-form-id="${formId}">
         ${fields.map(field => {
-        const fieldId = `field-${field.name}`;
-        const options = field.options ? JSON.parse(field.options) : [];
+    const fieldId = `field-${field.name}`;
+    const options = field.options ? JSON.parse(field.options) : [];
 
-        switch (field.type) {
-            case 'textarea':
-                return html`
+    switch (field.type) {
+      case 'textarea':
+        return html`
                 <div class="form-field" data-field-name="${field.name}">
                   <label for="${fieldId}" class="form-label ${field.required ? 'required' : ''}">${field.label}</label>
                   <textarea
@@ -267,8 +267,8 @@ export const FormRenderer = (props: FormRendererProps) => {
                 </div>
               `;
 
-            case 'select':
-                return html`
+      case 'select':
+        return html`
                 <div class="form-field" data-field-name="${field.name}">
                   <label for="${fieldId}" class="form-label ${field.required ? 'required' : ''}">${field.label}</label>
                   <select
@@ -285,8 +285,8 @@ export const FormRenderer = (props: FormRendererProps) => {
                 </div>
               `;
 
-            case 'radio':
-                return html`
+      case 'radio':
+        return html`
                 <div class="form-field" data-field-name="${field.name}">
                   <label class="form-label ${field.required ? 'required' : ''}">${field.label}</label>
                   <div class="radio-group">
@@ -308,8 +308,8 @@ export const FormRenderer = (props: FormRendererProps) => {
                 </div>
               `;
 
-            case 'checkbox':
-                return html`
+      case 'checkbox':
+        return html`
                 <div class="form-field" data-field-name="${field.name}">
                   <label class="form-label ${field.required ? 'required' : ''}">${field.label}</label>
                   <div class="checkbox-group">
@@ -330,8 +330,8 @@ export const FormRenderer = (props: FormRendererProps) => {
                 </div>
               `;
 
-            default: // text, email, tel, number, file, date
-                return html`
+      default: // text, email, tel, number, file, date
+        return html`
                 <div class="form-field" data-field-name="${field.name}">
                   <label for="${fieldId}" class="form-label ${field.required ? 'required' : ''}">${field.label}</label>
                   <input
@@ -346,8 +346,8 @@ export const FormRenderer = (props: FormRendererProps) => {
                   <p class="form-error">Este campo es requerido</p>
                 </div>
               `;
-        }
-    })}
+    }
+  })}
 
         ${captchaProvider && captchaSiteKey ? html`
           <div class="captcha-container">

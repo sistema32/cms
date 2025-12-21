@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "../../config/db.ts";
 import { categories } from "../../db/schema.ts";
 import { env } from "../../config/env.ts";
-import CategoriesNexusPage from "../../admin/pages/CategoriesNexus.tsx";
+import CategoriesNexusPage from "../../admin/pages/content/CategoriesNexus.tsx";
 import { notificationService } from "../../lib/email/index.ts";
 import { eq, desc } from "drizzle-orm";
 
@@ -18,7 +18,12 @@ categoriesRouter.get("/categories", async (c) => {
         // Fetch all categories
         const allCategories = await db.query.categories.findMany({
             orderBy: [desc(categories.createdAt)],
-        });
+        }).then((rows) =>
+            rows.map((cat) => ({
+                ...cat,
+                description: cat.description ?? undefined,
+            }))
+        );
 
         // Get notifications
         let notifications: any[] = [];

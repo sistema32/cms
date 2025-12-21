@@ -75,6 +75,7 @@ export const plugins = mysqlTable("plugins", {
     homepage: text("homepage"),
     sourceUrl: text("source_url"),
     manifestHash: text("manifest_hash"),
+    manifestSignature: text("manifest_signature"),
     status: text("status").notNull().default("inactive"), // inactive|active|error|degraded
     isSystem: boolean("is_system").notNull().default(false),
     settings: text("settings"), // JSON string
@@ -500,6 +501,7 @@ export const menuItems = mysqlTable("menu_items", {
     // Configuración visual
     icon: text("icon"),
     cssClass: text("css_class"),
+    cssId: text("css_id"),
     target: text("target").default("_self"), // "_self", "_blank", "_parent"
 
     // Control de orden y visibilidad

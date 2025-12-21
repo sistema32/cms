@@ -93,6 +93,12 @@ export async function loadView(viewName) {
 
 export async function switchView(viewName) {
     await loadView(viewName);
+
+    // Update URL when switching views
+    if (viewName === 'dashboard') {
+        const basePath = window.location.pathname.split('/plugin/lexslider')[0];
+        window.history.pushState({}, '', `${basePath}/plugin/lexslider/index.html`);
+    }
 }
 
 function initResizing() {
@@ -215,64 +221,97 @@ export async function loadSliders() {
 export function renderDashboard() {
     if (!elements.dashboard.list) return;
 
+    // Update count
+    const countEl = document.getElementById('slider-count');
+    if (countEl) countEl.textContent = state.sliders.length;
+
     if (state.sliders.length === 0) {
         elements.dashboard.list.innerHTML = `
-            <div class="col-span-full text-center p-16 text-base-content/30">
-                <span class="material-icons-round text-6xl mb-4 opacity-20">slideshow</span>
-                <p class="text-sm">No sliders yet. Create your first one!</p>
+            <div class="col-span-full flex flex-col items-center justify-center py-20">
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-6">
+                    <span class="material-icons-round text-5xl text-primary/40">slideshow</span>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">No Sliders Yet</h3>
+                <p class="text-sm opacity-60 mb-6 text-center max-w-xs">Create your first slider to start building beautiful presentations</p>
+                <button class="btn btn-primary gap-2 shadow-lg" onclick="document.getElementById('modal-new-slider').showModal()">
+                    <span class="material-icons-round">add</span>
+                    Create Your First Slider
+                </button>
             </div>
         `;
         return;
     }
 
-    elements.dashboard.list.innerHTML = state.sliders.map(slider => `
-        <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all group">
-            <figure class="h-40 bg-base-200 flex items-center justify-center group-hover:bg-base-300 transition-colors cursor-pointer" onclick="window.openSlider(${slider.id})">
-                <span class="material-icons-round text-6xl opacity-10">collections</span>
-            </figure>
-            <div class="card-body p-4">
-                <div class="flex items-center justify-between">
-                    <h2 class="card-title text-sm cursor-pointer hover:text-primary" onclick="window.openSlider(${slider.id})">${slider.title || slider.name || 'Untitled'}</h2>
-                    <div class="flex gap-1">
-                        <button class="btn btn-ghost btn-xs" onclick="window.openSlider(${slider.id})" title="Edit">
-                            <span class="material-icons-round text-sm">edit</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex gap-2 text-xs opacity-50 mt-1">
-                    <span class="badge badge-ghost badge-xs">${slider.width || 1200}x${slider.height || 600}</span>
-                    <span class="badge badge-ghost badge-xs">${slider.type || 'simple'}</span>
+    elements.dashboard.list.innerHTML = state.sliders.map(slider => {
+        const slideCount = slider.slides?.length || 0;
+        const title = slider.title || slider.name || 'Untitled';
+
+        return `
+        <div class="group relative bg-base-100 rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-base-300 hover:border-primary/50 hover:-translate-y-1">
+            <!-- Thumbnail Area -->
+            <div class="relative h-40 bg-gradient-to-br from-base-200 via-base-300 to-base-200 cursor-pointer overflow-hidden" onclick="window.openSlider(${slider.id})">
+                <!-- Animated Pattern Background -->
+                <div class="absolute inset-0 opacity-10">
+                    <div class="absolute top-4 left-4 w-20 h-20 border-2 border-current rounded-lg rotate-12"></div>
+                    <div class="absolute bottom-4 right-4 w-16 h-16 border-2 border-current rounded-full"></div>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 border-2 border-current rotate-45"></div>
                 </div>
                 
-                <!-- Embed Shortcuts -->
-                <div class="mt-3 pt-3 border-t border-base-300 space-y-2">
-                    <div class="text-xs opacity-60 uppercase tracking-wider font-semibold">Embed</div>
-                    
-                    <!-- Shortcode -->
-                    <div class="flex items-center gap-2" title="Use in WordPress/CMS posts">
-                        <span class="text-xs opacity-50 w-16">Shortcode:</span>
-                        <code class="flex-1 bg-base-200 px-2 py-1 rounded text-xs font-mono truncate">[lexslider id="${slider.id}"]</code>
-                        <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation(); window.LexSlider.copyToClipboard('[lexslider id=\\'${slider.id}\\']', this)" title="Copy">
+                <!-- Center Icon -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-16 h-16 rounded-xl bg-base-100/80 backdrop-blur flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <span class="material-icons-round text-3xl text-primary">collections</span>
+                    </div>
+                </div>
+                
+                <!-- Top Badges -->
+                <div class="absolute top-3 left-3 flex gap-2">
+                    <span class="badge badge-sm bg-black/50 backdrop-blur text-white border-0">${slider.width || 1200}×${slider.height || 600}</span>
+                </div>
+                <div class="absolute top-3 right-3">
+                    <span class="badge badge-sm bg-black/60 backdrop-blur text-white border-0 font-medium">${slideCount} slide${slideCount !== 1 ? 's' : ''}</span>
+                </div>
+                
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4">
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-primary shadow-lg" onclick="event.stopPropagation(); window.openSlider(${slider.id})">
+                            <span class="material-icons-round text-sm">edit</span> Edit
+                        </button>
+                        <div class="dropdown dropdown-top dropdown-end">
+                            <label tabindex="0" class="btn btn-sm btn-ghost bg-white/20 hover:bg-white/30" onclick="event.stopPropagation()">
+                                <span class="material-icons-round text-sm">more_vert</span>
+                            </label>
+                            <ul tabindex="0" class="dropdown-content menu menu-sm bg-base-100 rounded-lg shadow-xl border border-base-300 w-44 z-[100] p-2">
+                                <li><a class="flex items-center gap-2" onclick="event.stopPropagation(); window.LexSlider.duplicateSlider(${slider.id})"><span class="material-icons-round text-base">content_copy</span> Duplicate</a></li>
+                                <li><a class="flex items-center gap-2" onclick="event.stopPropagation(); window.LexSlider.exportSlider(${slider.id})"><span class="material-icons-round text-base">download</span> Export</a></li>
+                                <li class="mt-1 pt-1 border-t border-base-300"><a class="flex items-center gap-2 text-error hover:bg-error/10" onclick="event.stopPropagation(); window.LexSlider.deleteSlider(${slider.id}, '${title.replace(/'/g, "\\'")}')"><span class="material-icons-round text-base">delete</span> Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Body -->
+            <div class="p-4">
+                <h3 class="font-semibold text-sm mb-1 truncate cursor-pointer hover:text-primary transition-colors" onclick="window.openSlider(${slider.id})">${title}</h3>
+                <div class="flex items-center justify-between">
+                    <span class="badge badge-ghost badge-xs">${slider.type || 'simple'}</span>
+                    <span class="text-xs opacity-40">#${slider.id}</span>
+                </div>
+                
+                <!-- Quick Embed -->
+                <div class="mt-3 pt-3 border-t border-base-300">
+                    <div class="flex items-center gap-2">
+                        <code class="flex-1 bg-base-200 px-2 py-1.5 rounded text-[10px] font-mono truncate">[lexslider id="${slider.id}"]</code>
+                        <button class="btn btn-ghost btn-xs btn-square" onclick="window.LexSlider.copyToClipboard('[lexslider id=\\'${slider.id}\\']', this)" title="Copy Shortcode">
                             <span class="material-icons-round text-sm">content_copy</span>
                         </button>
-                    </div>
-                    
-                    <!-- HTML Embed -->
-                    <div class="flex items-center gap-2" title="Add to any HTML page">
-                        <span class="text-xs opacity-50 w-16">HTML:</span>
-                        <code class="flex-1 bg-base-200 px-2 py-1 rounded text-xs font-mono truncate">&lt;div data-lexslider="${slider.id}"&gt;&lt;/div&gt;</code>
-                        <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation(); window.LexSlider.copyToClipboard('<div data-lexslider=\\'${slider.id}\\'></div>', this)" title="Copy">
-                            <span class="material-icons-round text-sm">content_copy</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Script (for external sites) -->
-                    <div class="mt-2 pt-2 border-t border-base-300/50">
-                        <div class="text-[10px] opacity-40">Include script once per page:</div>
-                        <code class="block bg-base-200 px-2 py-1 rounded text-[10px] font-mono truncate opacity-60">&lt;script src="/plugins-runtime/plugins-static/lexslider/lexslider-embed.js"&gt;&lt;/script&gt;</code>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
+

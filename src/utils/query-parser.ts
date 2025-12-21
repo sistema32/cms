@@ -49,7 +49,7 @@ export function parseSort(sortParam?: string) {
     if (!sortParam) return [];
 
     return sortParam.split(',').map(field => {
-        const direction = field.startsWith('-') ? 'desc' : 'asc';
+        const direction: "asc" | "desc" = field.startsWith('-') ? 'desc' : 'asc';
         const fieldName = field.startsWith('-') ? field.slice(1) : field;
 
         return {

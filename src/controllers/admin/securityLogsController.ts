@@ -6,6 +6,11 @@
 import type { Context } from "hono";
 import { securityLogService } from "../../services/security/securityLogService.ts";
 import type { SecurityLogFilters } from "../../services/security/securityLogService.ts";
+import { AppError } from "@/platform/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+
+const log = createLogger("securityLogsController");
 
 export class SecurityLogsController {
     /**
@@ -14,15 +19,34 @@ export class SecurityLogsController {
      */
     async getLogs(c: Context) {
         try {
-            const page = parseInt(c.req.query("page") || "1");
-            const limit = parseInt(c.req.query("limit") || "50");
+            const page = Number(c.req.query("page") || "1");
+            const limit = Number(c.req.query("limit") || "50");
+
+            if (Number.isNaN(page) || page < 1) {
+                throw new AppError("invalid_page", "Página inválida", 400);
+            }
+            if (Number.isNaN(limit) || limit < 1) {
+                throw new AppError("invalid_limit", "Límite inválido", 400);
+            }
 
             const filters: SecurityLogFilters = {};
             if (c.req.query("type")) filters.type = c.req.query("type")!;
             if (c.req.query("severity")) filters.severity = c.req.query("severity")!;
             if (c.req.query("ip")) filters.ip = c.req.query("ip")!;
-            if (c.req.query("startDate")) filters.startDate = new Date(c.req.query("startDate")!);
-            if (c.req.query("endDate")) filters.endDate = new Date(c.req.query("endDate")!);
+            if (c.req.query("startDate")) {
+                const start = new Date(c.req.query("startDate")!);
+                if (Number.isNaN(start.getTime())) {
+                    throw new AppError("invalid_date", "Fecha de inicio inválida", 400);
+                }
+                filters.startDate = start;
+            }
+            if (c.req.query("endDate")) {
+                const end = new Date(c.req.query("endDate")!);
+                if (Number.isNaN(end.getTime())) {
+                    throw new AppError("invalid_date", "Fecha de fin inválida", 400);
+                }
+                filters.endDate = end;
+            }
             if (c.req.query("blocked")) filters.blocked = c.req.query("blocked") === "true";
 
             const { events, total } = await securityLogService.getEvents(filters, page, limit);
@@ -38,11 +62,8 @@ export class SecurityLogsController {
                 },
             });
         } catch (error) {
-            console.error("Error getting security logs:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get security logs",
-            }, 500);
+            log.error("Error getting security logs", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("security_logs_fetch_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -59,11 +80,8 @@ export class SecurityLogsController {
                 data: stats,
             });
         } catch (error) {
-            console.error("Error getting log stats:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get log statistics",
-            }, 500);
+            log.error("Error getting log stats", error instanceof Error ? error : undefined);
+            throw new AppError("security_logs_stats_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -74,12 +92,27 @@ export class SecurityLogsController {
     async export(c: Context) {
         try {
             const format = c.req.query("format") || "json";
+            if (format && format !== "csv" && format !== "json") {
+                throw new AppError("invalid_format", "Formato inválido", 400);
+            }
 
             const filters: SecurityLogFilters = {};
             if (c.req.query("type")) filters.type = c.req.query("type")!;
             if (c.req.query("severity")) filters.severity = c.req.query("severity")!;
-            if (c.req.query("startDate")) filters.startDate = new Date(c.req.query("startDate")!);
-            if (c.req.query("endDate")) filters.endDate = new Date(c.req.query("endDate")!);
+            if (c.req.query("startDate")) {
+                const start = new Date(c.req.query("startDate")!);
+                if (Number.isNaN(start.getTime())) {
+                    throw new AppError("invalid_date", "Fecha de inicio inválida", 400);
+                }
+                filters.startDate = start;
+            }
+            if (c.req.query("endDate")) {
+                const end = new Date(c.req.query("endDate")!);
+                if (Number.isNaN(end.getTime())) {
+                    throw new AppError("invalid_date", "Fecha de fin inválida", 400);
+                }
+                filters.endDate = end;
+            }
 
             let content: string;
             let contentType: string;
@@ -99,11 +132,8 @@ export class SecurityLogsController {
             c.header("Content-Disposition", `attachment; filename="${filename}"`);
             return c.body(content);
         } catch (error) {
-            console.error("Error exporting logs:", error);
-            return c.json({
-                success: false,
-                error: "Failed to export logs",
-            }, 500);
+            log.error("Error exporting security logs", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("security_logs_export_failed", getErrorMessage(error), 500);
         }
     }
 }

@@ -15,7 +15,7 @@ export function registerBuiltInHandlers(): void {
   // Email sending job
   jobQueue.registerHandler("send-email", async (data) => {
     const { to, subject, body, from } = data;
-    await emailManager.sendEmail({ to, subject, body, from });
+    await emailManager.sendNow({ to, subject, html: body, from });
     return { sent: true, to };
   });
 
@@ -29,7 +29,7 @@ export function registerBuiltInHandlers(): void {
   // Webhook delivery job
   jobQueue.registerHandler("deliver-webhook", async (data) => {
     const { webhookId, event, payload } = data;
-    await webhookManager.dispatchWebhook(webhookId, event, payload);
+    await webhookManager.dispatch(webhookId, event, payload);
     return { delivered: true };
   });
 

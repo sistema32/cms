@@ -1,7 +1,9 @@
 import type { Context } from "hono";
-import * as categoryService from "../services/categoryService.ts";
+import * as categoryService from "@/services/content/categoryService.ts";
 import { z } from "zod";
-import { getErrorMessage } from "../utils/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { isSafePublicUrl } from "@/utils/validation.ts";
+import { AppError } from "@/platform/errors.ts";
 
 const createCategorySchema = z.object({
   name: z.string().min(1),
@@ -19,7 +21,10 @@ const updateCategorySchema = createCategorySchema.partial();
 const createCategorySeoSchema = z.object({
   metaTitle: z.string().max(60).optional(),
   metaDescription: z.string().max(160).optional(),
-  canonicalUrl: z.string().url().optional(),
+  canonicalUrl: z.string().optional().refine(
+    (url) => !url || isSafePublicUrl(url),
+    { message: "URL canónica no permitida" },
+  ),
   ogTitle: z.string().optional(),
   ogDescription: z.string().optional(),
   ogImage: z.string().optional(),
@@ -59,6 +64,14 @@ const reorderCategoriesSchema = z.object({
   ).min(1),
 });
 
+const parseId = (value: string | undefined, label = "ID") => {
+  const id = Number(value);
+  if (isNaN(id)) {
+    throw AppError.fromCatalog("invalid_id", { message: `${label} inválido` });
+  }
+  return id;
+};
+
 export async function createCategory(c: Context) {
   try {
     const body = await c.req.json();
@@ -67,9 +80,9 @@ export async function createCategory(c: Context) {
     return c.json({ category }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_create_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -81,7 +94,7 @@ export async function getAllCategories(c: Context) {
     );
     return c.json({ categories });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_list_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -93,7 +106,7 @@ export async function getRootCategories(c: Context) {
     );
     return c.json({ categories });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_root_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -105,28 +118,26 @@ export async function getCategoryTree(c: Context) {
     );
     return c.json({ tree });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_tree_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function getCategoryById(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
-    const category = await categoryService.getCategoryById(id);
-    if (!category) return c.json({ error: "Categoría no encontrada" }, 404);
+  const category = await categoryService.getCategoryById(id);
+  if (!category) throw AppError.fromCatalog("category_not_found");
 
     return c.json({ category });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_get_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function updateCategory(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const body = await c.req.json();
     const data = updateCategorySchema.parse(body);
@@ -135,21 +146,20 @@ export async function updateCategory(c: Context) {
     return c.json({ category });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_update_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function deleteCategory(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     await categoryService.deleteCategory(id);
     return c.json({ message: "Categoría eliminada exitosamente (soft delete)" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -157,25 +167,23 @@ export async function deleteCategory(c: Context) {
 
 export async function restoreCategory(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const category = await categoryService.restoreCategory(id);
     return c.json({ category, message: "Categoría restaurada exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_restore_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function forceDeleteCategory(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     await categoryService.forceDeleteCategory(id);
     return c.json({ message: "Categoría eliminada permanentemente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_force_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -183,8 +191,7 @@ export async function forceDeleteCategory(c: Context) {
 
 export async function createCategorySeo(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const body = await c.req.json();
     const data = createCategorySeoSchema.parse(body);
@@ -193,30 +200,28 @@ export async function createCategorySeo(c: Context) {
     return c.json({ seo }, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_seo_create_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function getCategorySeo(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const seo = await categoryService.getCategorySeo(id);
-    if (!seo) return c.json({ error: "SEO no encontrado para esta categoría" }, 404);
+    if (!seo) throw new AppError("seo_not_found", "SEO no encontrado para esta categoría", 404);
 
     return c.json({ seo });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_seo_get_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function updateCategorySeo(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const body = await c.req.json();
     const data = updateCategorySeoSchema.parse(body);
@@ -225,21 +230,20 @@ export async function updateCategorySeo(c: Context) {
     return c.json({ seo });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_seo_update_failed", getErrorMessage(error), 400);
   }
 }
 
 export async function deleteCategorySeo(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     await categoryService.deleteCategorySeo(id);
     return c.json({ message: "SEO eliminado exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_seo_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -247,8 +251,7 @@ export async function deleteCategorySeo(c: Context) {
 
 export async function mergeCategoriesController(c: Context) {
   try {
-    const sourceId = Number(c.req.param("id"));
-    if (isNaN(sourceId)) return c.json({ error: "ID inválido" }, 400);
+    const sourceId = parseId(c.req.param("id"));
 
     const body = await c.req.json();
     const { targetCategoryId } = mergeCategoriesSchema.parse(body);
@@ -261,9 +264,9 @@ export async function mergeCategoriesController(c: Context) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_merge_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -289,14 +292,14 @@ export async function searchCategoriesController(c: Context) {
       orderDirection: orderDirection as "asc" | "desc" | undefined,
     });
 
-    const result = await categoryService.searchCategories(input);
+    const result = await categoryService.searchCategoriesDb(input);
 
     return c.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Parámetros inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors }, message: "Parámetros inválidos" });
     }
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_search_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -304,8 +307,7 @@ export async function searchCategoriesController(c: Context) {
 
 export async function getCategoryContentController(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const limit = c.req.query("limit");
     const offset = c.req.query("offset");
@@ -321,20 +323,19 @@ export async function getCategoryContentController(c: Context) {
 
     return c.json(result);
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_content_failed", getErrorMessage(error), 500);
   }
 }
 
 export async function getCategoryContentCountController(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) return c.json({ error: "ID inválido" }, 400);
+    const id = parseId(c.req.param("id"));
 
     const count = await categoryService.getCategoryContentCount(id);
 
     return c.json({ categoryId: id, count });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("category_content_count_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -350,8 +351,8 @@ export async function reorderCategoriesController(c: Context) {
     return c.json({ message: "Categorías reordenadas exitosamente" });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("category_reorder_failed", getErrorMessage(error), 400);
   }
 }

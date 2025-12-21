@@ -19,7 +19,7 @@ export interface RateLimitEntry {
 export interface IPBlockRule {
   id?: number;
   ip: string;
-  type: "block" | "whitelist";
+  type: "block" | "blacklist" | "whitelist";
   reason?: string;
   expiresAt?: Date;
   createdBy?: number;

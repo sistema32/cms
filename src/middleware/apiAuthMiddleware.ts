@@ -4,8 +4,8 @@
  */
 
 import type { Context, Next } from "hono";
-import { apiKeyManager } from "../lib/api/APIKeyManager.ts";
-import type { APIPermission } from "../lib/api/types.ts";
+import { apiKeyManager } from "@/lib/api/APIKeyManager.ts";
+import type { APIPermission } from "@/lib/api/types.ts";
 
 /**
  * API authentication middleware

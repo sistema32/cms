@@ -11,6 +11,11 @@ import type {
 import { env } from "../../config/env.ts";
 import type { Content } from "../../db/schema.ts";
 
+type ContentWithSeo = Content & {
+  metaKeywords?: string | null;
+  featuredImage?: string | null;
+};
+
 export class StructuredDataGenerator {
   private static instance: StructuredDataGenerator;
 
@@ -27,7 +32,7 @@ export class StructuredDataGenerator {
    * Generate article structured data
    */
   generateArticle(
-    content: Content,
+    content: ContentWithSeo,
     author: { name: string; url?: string },
     publisher: { name: string; logo?: string }
   ): ArticleSchema {
@@ -62,7 +67,7 @@ export class StructuredDataGenerator {
 
     // Add keywords if available
     if (content.metaKeywords) {
-      schema.keywords = content.metaKeywords.split(",").map((k) => k.trim());
+      schema.keywords = content.metaKeywords.split(",").map((k: string) => k.trim());
     }
 
     return schema;

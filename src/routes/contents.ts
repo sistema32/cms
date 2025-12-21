@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as contentController from "../controllers/contentController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, allowPublic } from "../middleware/permission.ts";
+import * as contentController from "@/controllers/contentController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, allowPublic } from "@/middleware/permission.ts";
 
 const contents = new Hono();
 

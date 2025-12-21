@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as contentTypeController from "../controllers/contentTypeController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, requireSuperAdmin } from "../middleware/permission.ts";
+import * as contentTypeController from "@/controllers/contentTypeController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, requireSuperAdmin } from "@/middleware/permission.ts";
 
 const contentTypes = new Hono();
 

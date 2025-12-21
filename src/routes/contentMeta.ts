@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
-import { createContentMetaEntry } from "../controllers/contentController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
+import { createContentMetaEntry } from "@/controllers/contentController.ts";
 
 const contentMetaRouter = new Hono();
 

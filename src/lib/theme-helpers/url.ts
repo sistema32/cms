@@ -1,4 +1,4 @@
-import * as settingsService from "../../services/settingsService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 
 /**
  * URL Helpers - Functions for generating URLs

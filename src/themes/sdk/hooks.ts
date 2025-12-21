@@ -17,6 +17,6 @@ export {
   removeAllHooks,
   removeHook,
   themeHooks,
-} from "../../services/themeHooks.ts";
+} from "@/services/themes/themeHooks.ts";
 
 export type { ActionCallback, FilterCallback } from "./types.ts";

@@ -1,21 +1,21 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface SecurityReportsProps {
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    notifications?: NotificationItem[];
-    unreadNotificationCount?: number;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const SecurityReportsPage = (props: SecurityReportsProps) => {
-    const { user, notifications = [], unreadNotificationCount = 0 } = props;
+  const { user, notifications = [], unreadNotificationCount = 0 } = props;
 
-    const content = html`
+  const content = html`
     <style>
       .dashboard-title {
         font-size: 2rem;
@@ -152,9 +152,9 @@ export const SecurityReportsPage = (props: SecurityReportsProps) => {
         </div>
         <h3 class="report-title">Reporte Diario</h3>
         <p class="report-description">Resumen de eventos de seguridad, IPs bloqueadas y violaciones de rate limit de las últimas 24 horas.</p>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="generateReport('daily', 'csv')" class="btn btn-primary" style="flex: 1;">Descargar CSV</button>
-          <button onclick="generateReport('daily', 'json')" class="btn btn-outline" style="flex: 1;">JSON</button>
+        <div class="u-flex-gap-sm">
+          <button onclick="generateReport('daily', 'csv')" class="btn btn-primary u-flex-1">Descargar CSV</button>
+          <button onclick="generateReport('daily', 'json')" class="btn btn-outline u-flex-1">JSON</button>
         </div>
       </div>
 
@@ -167,9 +167,9 @@ export const SecurityReportsPage = (props: SecurityReportsProps) => {
         </div>
         <h3 class="report-title">Reporte Semanal</h3>
         <p class="report-description">Análisis completo de la última semana, incluyendo tendencias y principales amenazas detectadas.</p>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="generateReport('weekly', 'csv')" class="btn btn-primary" style="flex: 1;">Descargar CSV</button>
-          <button onclick="generateReport('weekly', 'json')" class="btn btn-outline" style="flex: 1;">JSON</button>
+        <div class="u-flex-gap-sm">
+          <button onclick="generateReport('weekly', 'csv')" class="btn btn-primary u-flex-1">Descargar CSV</button>
+          <button onclick="generateReport('weekly', 'json')" class="btn btn-outline u-flex-1">JSON</button>
         </div>
       </div>
 
@@ -182,9 +182,9 @@ export const SecurityReportsPage = (props: SecurityReportsProps) => {
         </div>
         <h3 class="report-title">Auditoría Completa</h3>
         <p class="report-description">Exportación completa de todos los registros de seguridad almacenados en el sistema.</p>
-        <div style="display: flex; gap: 0.5rem;">
-          <button onclick="generateReport('full', 'csv')" class="btn btn-primary" style="flex: 1;">Descargar CSV</button>
-          <button onclick="generateReport('full', 'json')" class="btn btn-outline" style="flex: 1;">JSON</button>
+        <div class="u-flex-gap-sm">
+          <button onclick="generateReport('full', 'csv')" class="btn btn-primary u-flex-1">Descargar CSV</button>
+          <button onclick="generateReport('full', 'json')" class="btn btn-outline u-flex-1">JSON</button>
         </div>
       </div>
     </div>
@@ -233,14 +233,14 @@ export const SecurityReportsPage = (props: SecurityReportsProps) => {
     </script>
   `;
 
-    return AdminLayoutNexus({
-        title: "Reportes de Seguridad",
-        children: content,
-        activePage: "security.reports",
-        user,
-        notifications,
-        unreadNotificationCount,
-    });
+  return AdminLayoutNexus({
+    title: "Reportes de Seguridad",
+    children: content,
+    activePage: "security.reports",
+    user,
+    notifications,
+    unreadNotificationCount,
+  });
 };
 
 export default SecurityReportsPage;

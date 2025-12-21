@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { env } from "../../config/env.ts";
-import { formService } from "../../services/formService.ts";
+import { formService } from "@/services/formService.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import FormsListPage from "../../admin/pages/FormsListPage.tsx";
-import FormEditorPage from "../../admin/pages/FormEditorPage.tsx";
-import FormSubmissionsPage from "../../admin/pages/FormSubmissionsPage.tsx";
+import FormsListPage from "../../admin/pages/forms/FormsListPage.tsx";
+import FormEditorPage from "../../admin/pages/forms/FormEditorPage.tsx";
+import FormSubmissionsPage from "../../admin/pages/forms/FormSubmissionsPage.tsx";
 
 export const formsRouter = new Hono();
 
@@ -167,15 +167,23 @@ formsRouter.post("/forms/new", async (c) => {
     try {
         const user = c.get("user");
         const body = await c.req.parseBody();
+        const userId = Number(user?.userId ?? user?.id);
+
+        const rawStatus = typeof body.status === "string" ? body.status : "";
+        const normalizedStatus = (["active", "inactive", "archived"] as const).includes(
+            rawStatus as "active" | "inactive" | "archived",
+        )
+            ? (rawStatus as "active" | "inactive" | "archived")
+            : "active";
 
         const formData = {
             name: body.name as string,
             slug: body.slug as string,
             description: body.description as string | undefined,
-            status: (body.status as string) || "active",
+            status: normalizedStatus,
         };
 
-        const form = await formService.createForm(formData, user.id);
+        const form = await formService.createForm(formData, userId);
 
         // Process fields if any
         const fieldsData: any = {};
@@ -222,11 +230,18 @@ formsRouter.post("/forms/edit/:id", async (c) => {
         const id = parseInt(c.req.param("id"));
         const body = await c.req.parseBody();
 
+        const rawStatus = typeof body.status === "string" ? body.status : "";
+        const normalizedStatus = (["active", "inactive", "archived"] as const).includes(
+            rawStatus as "active" | "inactive" | "archived",
+        )
+            ? (rawStatus as "active" | "inactive" | "archived")
+            : "active";
+
         const formData = {
             name: body.name as string,
             slug: body.slug as string,
             description: body.description as string | undefined,
-            status: (body.status as string) || "active",
+            status: normalizedStatus,
         };
 
         await formService.updateForm(id, formData);

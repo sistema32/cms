@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "npm:zod";
-import * as settingsService from "../services/settingsService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 
 const settingsRouter = new Hono();
 

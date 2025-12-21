@@ -7,7 +7,7 @@
 
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { verifyToken } from "../utils/jwt.ts";
+import { verifyToken } from "@/utils/jwt.ts";
 import { db } from "../config/db.ts";
 import { users } from "../db/schema.ts";
 import { eq } from "drizzle-orm";

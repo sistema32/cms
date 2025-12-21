@@ -3,7 +3,7 @@ import {
   verifyCaptcha,
   selectRandomProvider,
   type CaptchaProvider,
-} from "../services/captchaService.ts";
+} from "@/services/system/captchaService.ts";
 
 /**
  * Middleware para requerir y verificar CAPTCHA

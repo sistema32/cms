@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface SecuritySettingsProps {
     user?: {

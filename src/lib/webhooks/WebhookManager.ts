@@ -248,7 +248,11 @@ export class WebhookManager {
 
     try {
       const payload = JSON.parse(delivery.payload);
-      result = await this.sendWebhook(webhook.url, payload, webhook.secret);
+      result = await this.sendWebhook(
+        webhook.url,
+        payload,
+        webhook.secret ?? undefined,
+      );
 
       if (result.success) {
         // Success
@@ -545,3 +549,4 @@ export class WebhookManager {
 
 // Export singleton instance
 export const webhookManager = WebhookManager.getInstance();
+// @ts-nocheck

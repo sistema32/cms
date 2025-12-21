@@ -3,16 +3,23 @@ import { eq } from "drizzle-orm";
 import { env } from "../../config/env.ts";
 import { db } from "../../db/index.ts";
 import { users } from "../../db/schema.ts";
-import { userService } from "../../services/userService.ts";
-import { roleService } from "../../services/roleService.ts";
-import { permissionService } from "../../services/permissionService.ts";
+import { userService } from "@/services/auth/userService.ts";
+import { roleService } from "@/services/auth/roleService.ts";
+import { permissionService } from "@/services/auth/permissionService.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import UsersNexusPage from "../../admin/pages/UsersNexus.tsx";
-import RolesNexusPage from "../../admin/pages/RolesNexus.tsx";
-import PermissionsNexusPage from "../../admin/pages/PermissionsNexus.tsx";
+import UsersNexusPage from "../../admin/pages/system/UsersNexus.tsx";
+import RolesNexusPage from "../../admin/pages/system/RolesNexus.tsx";
+import PermissionsNexusPage from "../../admin/pages/system/PermissionsNexus.tsx";
 import { parseNullableField, parseStringField } from "./helpers.ts";
+import { normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
 
 export const usersRouter = new Hono();
+
+const normalizeUser = (user: any) => ({
+    id: user.userId ?? user.id,
+    name: (user.name as string | null) || user.email,
+    email: user.email,
+});
 
 /**
  * GET /users - Users list with filters and pagination
@@ -52,15 +59,15 @@ usersRouter.get("/users", async (c) => {
         ]);
 
         // Get notifications for the user
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -68,13 +75,19 @@ usersRouter.get("/users", async (c) => {
             console.error("Error loading notifications:", error);
         }
 
+        const mappedUsers = usersResult.users.map((u) => ({
+            ...u,
+            name: u.name ?? u.email,
+            role: u.role
+                ? { id: u.role.id, name: u.role.name ?? "Unknown", isSystem: (u.role as any).isSystem }
+                : undefined,
+            twoFactorEnabled: u.twoFactorEnabled ?? false,
+            createdAt: u.createdAt ?? new Date(),
+        }));
+
         return c.html(UsersNexusPage({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
-            users: usersResult.users,
+            user: normalizeUser(user),
+            users: mappedUsers,
             roles: rolesData,
             stats,
             filters,
@@ -326,15 +339,15 @@ usersRouter.get("/roles", async (c) => {
         });
 
         // Get notifications for the user
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -344,11 +357,7 @@ usersRouter.get("/roles", async (c) => {
 
         return c.html(
             RolesNexusPage({
-                user: {
-                    id: user.userId,
-                    name: user.name || user.email,
-                    email: user.email,
-                },
+                user: normalizeUser(user),
                 roles: formattedRoles,
                 permissions: sortedPermissions,
                 stats,
@@ -557,15 +566,15 @@ usersRouter.get("/permissions", async (c) => {
             );
         }
 
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -595,11 +604,7 @@ usersRouter.get("/permissions", async (c) => {
 
         return c.html(
             PermissionsNexusPage({
-                user: {
-                    id: user.userId,
-                    name: user.name || user.email,
-                    email: user.email,
-                },
+                user: normalizeUser(user),
                 permissions: sortedPermissions,
                 permissionsByModule,
                 modules,

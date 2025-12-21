@@ -57,57 +57,84 @@
         </form>
     </dialog>
 
-    <!-- Modal: Asset Manager -->
-    <div id="modal-asset-manager" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center">
-        <div class="bg-[#232323] w-[600px] h-[400px] rounded shadow-2xl flex flex-col border border-[#333]">
-            <div class="h-10 border-b border-[#333] flex items-center px-4 justify-between bg-[#1e1e1e]">
-                <span class="font-bold text-xs uppercase tracking-wider">Select Asset</span>
-                <button class="btn btn-sm btn-square btn-ghost" onclick="window.LexSlider.closeAssetManager()">
-                    <span class="material-icons-round text-sm">close</span>
+    <!-- Modal: Preview (Responsive) -->
+    <div id="modal-preview" class="fixed inset-0 bg-black/90 z-[100] hidden flex flex-col">
+        <div class="h-12 flex items-center justify-between px-4 bg-[#111] text-white border-b border-[#333]">
+            <span class="text-xs font-bold uppercase tracking-wider">PREVIEW MODE</span>
+
+            <!-- Responsive Viewport Buttons -->
+            <div class="flex items-center gap-1 bg-[#222] rounded-lg p-1">
+                <button class="preview-viewport-btn active px-3 py-1 rounded text-xs flex items-center gap-1"
+                    data-viewport="desktop" data-width="100%">
+                    <span class="material-icons-round text-sm">desktop_windows</span>
+                    Desktop
+                </button>
+                <button class="preview-viewport-btn px-3 py-1 rounded text-xs flex items-center gap-1"
+                    data-viewport="tablet" data-width="768px">
+                    <span class="material-icons-round text-sm">tablet_mac</span>
+                    Tablet
+                </button>
+                <button class="preview-viewport-btn px-3 py-1 rounded text-xs flex items-center gap-1"
+                    data-viewport="mobile" data-width="375px">
+                    <span class="material-icons-round text-sm">smartphone</span>
+                    Mobile
                 </button>
             </div>
-            <div class="flex-1 flex flex-col p-4">
-                <div class="tabs tabs-boxed bg-[#111] mb-4 p-1">
-                    <a class="tab tab-xs active" onclick="window.LexSlider.switchAssetTab('url')">From URL</a>
-                    <a class="tab tab-xs" onclick="window.LexSlider.switchAssetTab('library')">Media Library</a>
-                </div>
 
-                <!-- Tab: URL -->
-                <div id="asset-tab-url" class="flex-1">
-                    <div class="form-control w-full">
-                        <label class="label"><span class="label-text text-xs">Image/Video URL</span></label>
-                        <input type="text" id="asset-url-input" placeholder="https://..."
-                            class="input input-sm w-full font-mono text-xs" />
-                    </div>
-                </div>
-
-                <!-- Tab: Library (Dynamic) -->
-                <div id="asset-tab-library" class="hidden flex-1 overflow-y-auto custom-scrollbar">
-                    <div id="media-library-content" class="grid grid-cols-4 gap-2">
-                        <!-- Dynamic content loaded via JS -->
-                    </div>
-                </div>
-            </div>
-            <div class="h-12 border-t border-[#333] flex items-center justify-end px-4 gap-2 bg-[#1e1e1e]">
-                <button class="btn btn-sm btn-ghost" onclick="window.LexSlider.closeAssetManager()">Cancel</button>
-                <button class="btn btn-sm btn-primary" onclick="window.LexSlider.confirmAsset()">Insert</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Preview -->
-    <div id="modal-preview" class="fixed inset-0 bg-black/90 z-[100] hidden flex flex-col">
-        <div class="h-10 flex items-center justify-between px-4 bg-[#111] text-white">
-            <span class="text-xs font-bold">PREVIEW MODE</span>
-            <button class="btn btn-sm btn-square btn-ghost text-white"
+            <button class="btn btn-sm btn-square btn-ghost text-white hover:bg-white/10"
                 onclick="document.getElementById('modal-preview').classList.add('hidden')">
                 <span class="material-icons-round">close</span>
             </button>
         </div>
-        <div class="flex-1 flex items-center justify-center overflow-hidden relative" id="preview-container">
-            <!-- Preview content will be injected here -->
+        <div class="flex-1 flex items-center justify-center overflow-hidden relative bg-[#1a1a1a]"
+            id="preview-container">
+            <div id="preview-frame" class="transition-all duration-300 origin-top" style="width: 100%; height: 100%;">
+                <!-- Preview content will be injected here -->
+            </div>
         </div>
     </div>
+
+    <style>
+        .preview-viewport-btn {
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
+        }
+
+        .preview-viewport-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .preview-viewport-btn.active {
+            background: rgba(132, 112, 255, 0.3);
+            color: white;
+            border: 1px solid rgba(132, 112, 255, 0.5);
+        }
+    </style>
+
+    <script>
+        // Responsive preview viewport switcher
+        document.querySelectorAll('.preview-viewport-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preview-viewport-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const frame = document.getElementById('preview-frame');
+                const viewport = btn.dataset.viewport;
+                const width = btn.dataset.width;
+
+                if (viewport === 'desktop') {
+                    frame.style.width = '100%';
+                    frame.style.maxWidth = 'none';
+                    frame.style.boxShadow = 'none';
+                } else {
+                    frame.style.width = width;
+                    frame.style.maxWidth = width;
+                    frame.style.boxShadow = '0 0 40px rgba(0,0,0,0.5)';
+                }
+            });
+        });
+    </script>
 
     <!-- CMS SDK (provides permissions, user context, wrapped MediaPicker) -->
     <script src="/admincp/assets/js/cms-sdk.js"></script>

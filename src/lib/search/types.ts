@@ -84,6 +84,7 @@ export interface SearchIndexEntry {
   type: "content" | "category" | "tag" | "user";
   data: Record<string, any>;
   searchableText: string; // Combined searchable fields
+  score?: number;
   createdAt: Date;
   updatedAt?: Date;
 }

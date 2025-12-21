@@ -3,7 +3,7 @@
  * Functions for working with widgets in themes
  */
 
-import { renderWidgetArea } from "../../services/widgetService.ts";
+import { renderWidgetArea } from "@/services/system/widgetService.ts";
 import type { WidgetRenderContext } from "../../widgets/types.ts";
 
 // Re-export widget types

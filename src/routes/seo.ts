@@ -7,7 +7,7 @@ import {
   generateSchemaJsonSuggestion,
   regenerateSingleField,
   checkAiServiceHealth,
-} from "../services/seoAiService.ts";
+} from "@/services/system/seoAiService.ts";
 
 /**
  * ============================================

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "../../config/db.ts";
 import { tags } from "../../db/schema.ts";
 import { env } from "../../config/env.ts";
-import TagsNexusPage from "../../admin/pages/TagsNexus.tsx";
+import TagsNexusPage from "../../admin/pages/content/TagsNexus.tsx";
 import { notificationService } from "../../lib/email/index.ts";
 import { eq, desc } from "drizzle-orm";
 

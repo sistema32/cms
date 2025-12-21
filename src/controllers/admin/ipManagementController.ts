@@ -6,6 +6,11 @@
 import type { Context } from "hono";
 import { ipManagementService } from "../../services/security/ipManagementService.ts";
 import { z } from "zod";
+import { AppError, parseNumericParam } from "@/platform/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+
+const log = createLogger("ipManagementController");
 
 // Validation schemas
 const addIPSchema = z.object({
@@ -35,11 +40,8 @@ export class IPManagementController {
                 data: rules,
             });
         } catch (error) {
-            console.error("Error getting IP rules:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get IP rules",
-            }, 500);
+            log.error("Error getting IP rules", error instanceof Error ? error : undefined);
+            throw new AppError("ip_rules_fetch_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -56,11 +58,8 @@ export class IPManagementController {
                 data: rules,
             });
         } catch (error) {
-            console.error("Error getting blacklist:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get blacklist",
-            }, 500);
+            log.error("Error getting blacklist", error instanceof Error ? error : undefined);
+            throw new AppError("ip_blacklist_fetch_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -77,11 +76,8 @@ export class IPManagementController {
                 data: rules,
             });
         } catch (error) {
-            console.error("Error getting whitelist:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get whitelist",
-            }, 500);
+            log.error("Error getting whitelist", error instanceof Error ? error : undefined);
+            throw new AppError("ip_whitelist_fetch_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -94,7 +90,7 @@ export class IPManagementController {
             const body = await c.req.json();
             const validated = addIPSchema.parse(body);
 
-            const user = c.get("user");
+            const user = c.get("user") as { id?: number; userId?: number } | undefined;
             const expiresAt = validated.expiresAt ? new Date(validated.expiresAt) : null;
 
             const rule = validated.type === "block"
@@ -102,12 +98,12 @@ export class IPManagementController {
                     validated.ip,
                     validated.reason,
                     expiresAt,
-                    user?.id
+                    user?.id ?? user?.userId ?? null
                 )
                 : await ipManagementService.whitelistIP(
                     validated.ip,
                     validated.reason,
-                    user?.id
+                    user?.id ?? user?.userId ?? null
                 );
 
             return c.json({
@@ -117,18 +113,11 @@ export class IPManagementController {
             });
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return c.json({
-                    success: false,
-                    error: "Validation error",
-                    details: error.errors,
-                }, 400);
+                throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
             }
 
-            console.error("Error adding IP rule:", error);
-            return c.json({
-                success: false,
-                error: "Failed to add IP rule",
-            }, 500);
+            log.error("Error adding IP rule", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("ip_rule_add_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -138,7 +127,7 @@ export class IPManagementController {
      */
     async update(c: Context) {
         try {
-            const id = parseInt(c.req.param("id"));
+            const id = parseNumericParam(c.req.param("id"), "ID de regla IP");
             const body = await c.req.json();
             const validated = updateIPSchema.parse(body);
 
@@ -151,10 +140,7 @@ export class IPManagementController {
             const rule = await ipManagementService.updateIPRule(id, updates);
 
             if (!rule) {
-                return c.json({
-                    success: false,
-                    error: "IP rule not found",
-                }, 404);
+                throw AppError.fromCatalog("ip_rule_not_found");
             }
 
             return c.json({
@@ -164,18 +150,11 @@ export class IPManagementController {
             });
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return c.json({
-                    success: false,
-                    error: "Validation error",
-                    details: error.errors,
-                }, 400);
+                throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
             }
 
-            console.error("Error updating IP rule:", error);
-            return c.json({
-                success: false,
-                error: "Failed to update IP rule",
-            }, 500);
+            log.error("Error updating IP rule", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("ip_rule_update_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -185,7 +164,7 @@ export class IPManagementController {
      */
     async remove(c: Context) {
         try {
-            const id = parseInt(c.req.param("id"));
+            const id = parseNumericParam(c.req.param("id"), "ID de regla IP");
             await ipManagementService.removeIPRule(id);
 
             return c.json({
@@ -193,11 +172,8 @@ export class IPManagementController {
                 message: "IP rule removed successfully",
             });
         } catch (error) {
-            console.error("Error removing IP rule:", error);
-            return c.json({
-                success: false,
-                error: "Failed to remove IP rule",
-            }, 500);
+            log.error("Error removing IP rule", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("ip_rule_remove_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -214,11 +190,8 @@ export class IPManagementController {
                 data: stats,
             });
         } catch (error) {
-            console.error("Error getting IP stats:", error);
-            return c.json({
-                success: false,
-                error: "Failed to get IP statistics",
-            }, 500);
+            log.error("Error getting IP stats", error instanceof Error ? error : undefined);
+            throw new AppError("ip_rule_stats_failed", getErrorMessage(error), 500);
         }
     }
 }

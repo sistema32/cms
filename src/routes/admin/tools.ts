@@ -3,14 +3,22 @@ import { notificationService } from "../../lib/email/index.ts";
 import { backupManager } from "../../lib/backup/index.ts";
 import { systemUpdatesService } from "../../lib/system-updates/service.ts";
 import {
-  getUpdateConfig,
-  SYSTEM_VERSION,
+    getUpdateConfig,
+    SYSTEM_VERSION,
 } from "../../lib/system-updates/config.ts";
-import BackupsNexusPage from "../../admin/pages/BackupsNexus.tsx";
-import SystemUpdatesNexusPage from "../../admin/pages/SystemUpdatesNexus.tsx";
-import AutoModerationNexusPage from "../../admin/pages/AutoModerationNexus.tsx";
+import { env } from "../../config/env.ts";
+import BackupsNexusPage from "../../admin/pages/system/BackupsNexus.tsx";
+import SystemUpdatesNexusPage from "../../admin/pages/system/SystemUpdatesNexus.tsx";
+import AutoModerationNexusPage from "../../admin/pages/moderation/AutoModerationNexus.tsx";
+import { normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
 
 export const toolsRouter = new Hono();
+
+const normalizeUser = (user: any) => ({
+    id: user.userId ?? user.id,
+    name: (user.name as string | null) || user.email,
+    email: user.email,
+});
 
 /**
  * Auto-Moderation Management
@@ -19,15 +27,15 @@ toolsRouter.get("/auto-moderation", async (c) => {
     try {
         const user = c.get("user");
 
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -60,11 +68,7 @@ toolsRouter.get("/auto-moderation", async (c) => {
 
         return c.html(
             AutoModerationNexusPage({
-                user: {
-                    id: user.userId,
-                    name: user.name || user.email,
-                    email: user.email,
-                },
+                user: normalizeUser(user),
                 config: {
                     enabled: config.enabled,
                     strategy: config.strategy,
@@ -136,7 +140,7 @@ toolsRouter.post("/auto-moderation/update", async (c) => {
         // Update configuration
         plugin.updateConfig(newConfig);
 
-        return c.redirect("/admin/auto-moderation");
+        return c.redirect(`${env.ADMIN_PATH}/auto-moderation`);
     } catch (error: any) {
         console.error("Error updating auto-moderation config:", error);
         return c.json({ error: error.message }, 500);
@@ -188,15 +192,15 @@ toolsRouter.get("/backups", async (c) => {
     try {
         const user = c.get("user");
 
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -211,11 +215,7 @@ toolsRouter.get("/backups", async (c) => {
 
         return c.html(
             BackupsNexusPage({
-                user: {
-                    id: user.userId,
-                    name: user.name || user.email,
-                    email: user.email,
-                },
+                user: normalizeUser(user),
                 backups: backups as any[],
                 stats: stats as any,
                 notifications,
@@ -311,15 +311,15 @@ toolsRouter.get("/system-updates", async (c) => {
     try {
         const user = c.get("user");
 
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -329,21 +329,25 @@ toolsRouter.get("/system-updates", async (c) => {
 
         // Check for updates
         const checkResult = await systemUpdatesService.checkForUpdates();
+        const updates = checkResult.updates?.map((u) => ({
+            ...u,
+            releaseDate: new Date(u.releaseDate ?? Date.now()),
+        }));
+        const news = checkResult.news?.map((item) => ({
+            ...item,
+            publishDate: new Date(item.publishDate ?? Date.now()),
+        }));
 
         // Get configuration
         const config = getUpdateConfig();
 
         return c.html(
             SystemUpdatesNexusPage({
-                user: {
-                    id: user.userId,
-                    name: user.name || user.email,
-                    email: user.email,
-                },
+                user: normalizeUser(user),
                 currentVersion: SYSTEM_VERSION,
                 latestVersion: checkResult.latestVersion,
-                updates: checkResult.updates,
-                news: checkResult.news,
+                updates,
+                news,
                 config,
                 lastChecked: checkResult.lastChecked,
                 notifications,

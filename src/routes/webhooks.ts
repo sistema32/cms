@@ -4,8 +4,8 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 import { webhookManager } from "../lib/webhooks/index.ts";
 import type { WebhookConfig, WebhookDeliveryFilter, WebhookFilter } from "../lib/webhooks/index.ts";
 

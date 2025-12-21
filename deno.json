@@ -1,4 +1,11 @@
 {
+  "lint": {
+    "exclude": [
+      "src/admin/assets/",
+      "plugins/**/public/js/",
+      "src/themes/**/assets/"
+    ]
+  },
   "tasks": {
     "dev": "deno run --allow-read --allow-write --allow-net --allow-env --allow-run --allow-ffi --allow-sys --unstable-worker-options --watch src/main.ts",
     "dev:css": "deno task css:watch",
@@ -11,8 +18,10 @@
     "css:watch:admin": "deno run -A scripts/build-admin-css.ts --watch",
     "css:build:all": "deno task css:build && deno task css:build:admin",
     "bundle:ckeditor": "sh -c \"cp node_modules/ckeditor5/dist/ckeditor5.css src/admin/assets/css/ckeditor.css && ./node_modules/.bin/esbuild src/admin/assets/js/ckeditor-entry.ts --bundle --format=esm --platform=browser --target=es2018 --outfile=src/admin/assets/js/ckeditor-bundle.js --loader:.svg=text --loader:.ttf=dataurl --loader:.woff=dataurl --loader:.woff2=dataurl && rm -f src/admin/assets/js/ckeditor-bundle.css\"",
+    "bundle:tiptap": "deno run -A scripts/bundle-tiptap.ts",
     "db:generate": "deno run -A src/db/generate-migrations.ts",
     "db:migrate": "deno run -A src/db/migrate.ts",
+    "db:all": "deno run -A src/db/migrate.ts && deno run -A scripts/migrate-plugin-signatures.ts && deno run -A scripts/migrate-menu-css-id.ts",
     "db:push": "deno run -A npm:drizzle-kit push --config=drizzle.config.ts",
     "db:studio": "deno run -A npm:drizzle-kit studio --config=drizzle.config.ts",
     "db:translate-schema": "deno run -A scripts/translate-schema.ts",
@@ -58,7 +67,7 @@
     "zod": "npm:zod@^3.23",
     "tailwindcss": "npm:tailwindcss@^3.4.0",
     "@tailwindcss/cli": "npm:tailwindcss@^3.4.0",
-    "daisyui": "npm:daisyui@^4.12.14",
+    "daisyui": "npm:daisyui@^5.5.0",
     "autoprefixer": "npm:autoprefixer@^10.4",
     "lowlight": "npm:lowlight@^3.1.0",
     "@/": "./src/"

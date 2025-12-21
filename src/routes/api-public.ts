@@ -4,13 +4,13 @@
  */
 
 import { Hono } from "hono";
-import { apiAuthMiddleware } from "../middleware/apiAuthMiddleware.ts";
+import { apiAuthMiddleware } from "@/middleware/apiAuthMiddleware.ts";
 import { API_PERMISSIONS } from "../lib/api/types.ts";
 import { db } from "../config/db.ts";
 import { content, categories, tags, contentCategories, contentTags } from "../db/schema.ts";
 import { eq, and, like, or, desc } from "drizzle-orm";
-import { successResponse, ErrorResponses, createPaginationMeta } from "../utils/api-response.ts";
-import { parsePagination } from "../utils/query-parser.ts";
+import { successResponse, ErrorResponses, createPaginationMeta } from "@/utils/api-response.ts";
+import { parsePagination } from "@/utils/query-parser.ts";
 
 const publicAPI = new Hono();
 
@@ -35,21 +35,23 @@ publicAPI.get("/content", async (c) => {
     const categorySlug = queryParams.category;
     const tagSlug = queryParams.tag;
     const search = queryParams.search;
+    const conditions = [eq(content.status, status)];
 
-    let query = db.select().from(content).where(eq(content.status, status));
-
-    // Apply search filter
     if (search) {
-      query = query.where(
-        or(
-          like(content.title, `%${search}%`),
-          like(content.body, `%${search}%`)
-        )!
+      const searchCondition = or(
+        like(content.title, `%${search}%`),
+        like(content.body, `%${search}%`),
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
+    const whereClause = conditions.filter(Boolean);
+
     // Get content
-    const results = await query
+    const results = await db.select().from(content)
+      .where(whereClause.length ? and(...whereClause) : undefined)
       .orderBy(desc(content.publishedAt))
       .limit(limit)
       .offset(offset);

@@ -119,6 +119,7 @@ if ('serviceWorker' in navigator) {
     precacheUrls?: string[];
   }): string {
     const { version, cacheStrategies, offlinePageUrl, precacheUrls = [] } = config;
+    const defaultCacheName = `lexcms-v${version}`;
 
     return `// Service Worker v${version}
 const CACHE_VERSION = '${version}';
@@ -133,7 +134,7 @@ const CACHE_STRATEGIES = ${JSON.stringify(cacheStrategies.map(s => ({
       name: s.name,
       pattern: s.pattern.toString(),
       strategy: s.strategy,
-      cacheName: s.cacheName || CACHE_NAME,
+      cacheName: s.cacheName || '${defaultCacheName}',
       maxAge: s.maxAge,
       maxEntries: s.maxEntries,
     })), null, 2)};

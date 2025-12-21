@@ -1,4 +1,4 @@
-import { isDevelopment } from "../../config/env.ts";
+import { isDevelopment } from "@/config/env.ts";
 
 /**
  * Un "Higher-Order Component" (HOC) que envuelve un componente de página del admin.

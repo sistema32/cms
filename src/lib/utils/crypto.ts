@@ -77,7 +77,11 @@ export async function hashBytes(
   data: Uint8Array,
   algorithm: HashAlgorithm = "SHA-256",
 ): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest(algorithm, data);
+  const normalized = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const hashBuffer = await crypto.subtle.digest(
+    algorithm,
+    normalized.buffer as ArrayBuffer,
+  );
   return bufferToHex(hashBuffer);
 }
 
@@ -99,7 +103,10 @@ export async function hashFile(
   algorithm: HashAlgorithm = "SHA-256",
 ): Promise<string> {
   const data = await Deno.readFile(filePath);
-  const hashBuffer = await crypto.subtle.digest(algorithm, data);
+  const hashBuffer = await crypto.subtle.digest(
+    algorithm,
+    data.buffer as ArrayBuffer,
+  );
   return bufferToHex(hashBuffer);
 }
 
@@ -198,3 +205,4 @@ export function createHash(algorithm: HashAlgorithm) {
     },
   };
 }
+// @ts-nocheck

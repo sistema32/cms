@@ -1,0 +1,85 @@
+import { html } from "hono/html";
+import { env, isDevelopment } from "@/config/env.ts";
+import { ToastContainer } from "../ui/Toast.tsx";
+import { type NotificationItem } from "../ui/NotificationPanel.tsx";
+import { NexusStyles } from "../nexus/NexusStyles.tsx";
+import { NexusSidebar } from "../nexus/NexusSidebar.tsx";
+import { NexusHeader } from "../nexus/NexusHeader.tsx";
+
+/**
+ * Admin Layout Nexus - Exact copy of Nexus Dashboard 3
+ * Full sidebar + modern header + professional design
+ */
+
+interface AdminLayoutNexusProps {
+  title: string;
+  children: any;
+  activePage?: string;
+  activeUrl?: string;
+  request?: Request;
+  response?: Response;
+  adminPath?: string;
+  user?: {
+    name: string | null;
+    email: string;
+    avatar?: string;
+  };
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
+  settingsAvailability?: Record<string, unknown>;
+  startTime?: number | Date;
+}
+
+export const AdminLayoutNexus = (props: AdminLayoutNexusProps) => {
+  const {
+    title,
+    children,
+    activePage = "dashboard",
+    user,
+    notifications = [],
+    unreadNotificationCount = 0,
+    adminPath: adminPathProp,
+  } = props;
+  const adminPath = adminPathProp ?? env.ADMIN_PATH;
+
+  return html`
+    <!DOCTYPE html>
+    <html lang="es" data-theme="light">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title} - LexCMS Admin</title>
+        <link rel="stylesheet" href="${adminPath}/assets/css/admin-compiled.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        ${NexusStyles()}
+      </head>
+      <body>
+        <div class="nexus-layout">
+          <!-- Mobile Overlay -->
+          <div class="mobile-overlay" id="mobileOverlay" data-action="toggleSidebar()"></div>
+
+          ${NexusSidebar({ activePage, adminPath })}
+
+          <main class="nexus-main" id="mainContent">
+            ${NexusHeader({ title, user, notifications, unreadNotificationCount, adminPath })}
+
+            <div class="nexus-content">
+              ${children}
+            </div>
+          </main>
+        </div>
+
+        ${ToastContainer()}
+
+        <!-- External Admin Scripts (CSP-compliant) -->
+        <script src="${adminPath}/assets/js/admin-utils.js"></script>
+        <script src="${adminPath}/assets/js/toast-manager.js"></script>
+        <script src="${adminPath}/assets/js/media-picker.js"></script>
+      </body>
+    </html>
+  `;
+};
+
+export default AdminLayoutNexus;

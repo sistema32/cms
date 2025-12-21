@@ -8,7 +8,7 @@ import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.43/deno-dom-wasm.ts
  */
 
 Deno.test("RolesNexus: should not have inline onclick handlers with string interpolation", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/RolesNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/RolesNexus.tsx");
 
   // Should NOT contain onclick with string interpolation and manual escaping
   const vulnerablePattern = /onclick=["']deleteRole\(\$\{.*?\.replace\(/;
@@ -39,7 +39,7 @@ Deno.test("RolesNexus: should not have inline onclick handlers with string inter
 });
 
 Deno.test("RolesNexus: should use DOM API instead of innerHTML concatenation", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/RolesNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/RolesNexus.tsx");
 
   // Should use DOM API
   assertStringIncludes(
@@ -71,7 +71,7 @@ Deno.test("RolesNexus: should use DOM API instead of innerHTML concatenation", a
 });
 
 Deno.test("RolesNexus: should have event listeners setup", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/RolesNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/RolesNexus.tsx");
 
   assertStringIncludes(
     content,
@@ -93,7 +93,7 @@ Deno.test("RolesNexus: should have event listeners setup", async () => {
 });
 
 Deno.test("UsersNexus: should not have inline onclick handlers with string interpolation", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/UsersNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/UsersNexus.tsx");
 
   // Should NOT contain onclick with string interpolation
   const vulnerablePattern = /onclick=["']editUser\(\$\{.*?\.replace\(/;
@@ -136,7 +136,7 @@ Deno.test("UsersNexus: should not have inline onclick handlers with string inter
 });
 
 Deno.test("UsersNexus: should have event listeners setup", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/UsersNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/UsersNexus.tsx");
 
   assertStringIncludes(
     content,
@@ -164,7 +164,7 @@ Deno.test("UsersNexus: should have event listeners setup", async () => {
 });
 
 Deno.test("SettingsNexus: should not have vulnerable patterns", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/SettingsNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/system/SettingsNexus.tsx");
 
   // Settings doesn't have dynamic onclick handlers, but verify no innerHTML abuse
   const dangerousInnerHTML = /innerHTML\s*=\s*[^;]*\$\{/;
@@ -176,7 +176,7 @@ Deno.test("SettingsNexus: should not have vulnerable patterns", async () => {
 });
 
 Deno.test("ContentListNexus: should not have vulnerable patterns", async () => {
-  const content = await Deno.readTextFile("./src/admin/pages/ContentListNexus.tsx");
+  const content = await Deno.readTextFile("./src/admin/pages/content/ContentListNexus.tsx");
 
   // Verify no dangerous patterns
   const dangerousInnerHTML = /innerHTML\s*=\s*[^;]*\$\{/;
@@ -189,12 +189,12 @@ Deno.test("ContentListNexus: should not have vulnerable patterns", async () => {
 
 Deno.test("Security: verify no eval() usage in Nexus pages", async () => {
   const nexusFiles = [
-    "./src/admin/pages/RolesNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
-    "./src/admin/pages/SettingsNexus.tsx",
-    "./src/admin/pages/ContentListNexus.tsx",
-    "./src/admin/pages/DashboardNexus.tsx",
-    "./src/admin/pages/LoginNexus.tsx",
+    "./src/admin/pages/system/RolesNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
+    "./src/admin/pages/system/SettingsNexus.tsx",
+    "./src/admin/pages/content/ContentListNexus.tsx",
+    "./src/admin/pages/dashboard/DashboardNexus.tsx",
+    "./src/admin/pages/auth/LoginNexus.tsx",
   ];
 
   for (const file of nexusFiles) {
@@ -209,8 +209,8 @@ Deno.test("Security: verify no eval() usage in Nexus pages", async () => {
 
 Deno.test("Security: verify authorization checks in Nexus pages", async () => {
   const filesWithAuth = [
-    "./src/admin/pages/RolesNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
+    "./src/admin/pages/system/RolesNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
   ];
 
   for (const file of filesWithAuth) {

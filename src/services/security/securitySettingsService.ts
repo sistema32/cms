@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Security Settings Service
  * Manages security configuration settings

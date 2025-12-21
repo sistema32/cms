@@ -5,6 +5,7 @@
 
 import type { RateLimitConfig, RateLimitEntry } from "./types.ts";
 import { securityManager } from "./SecurityManager.ts";
+import { env } from "@/config/env.ts";
 
 export class RateLimiter {
   private store = new Map<string, RateLimitEntry>();
@@ -96,6 +97,9 @@ export class RateLimiter {
    * Start cleanup interval
    */
   private startCleanup(): void {
+    if (env.DENO_ENV !== "production") {
+      return;
+    }
     this.cleanupInterval = setInterval(() => {
       const now = Date.now();
 
@@ -105,6 +109,10 @@ export class RateLimiter {
         }
       }
     }, 60000); // Cleanup every minute
+
+    if (typeof Deno.unrefTimer === "function") {
+      Deno.unrefTimer(this.cleanupInterval);
+    }
   }
 
   /**

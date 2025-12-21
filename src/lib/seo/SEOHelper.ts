@@ -12,6 +12,13 @@ import type {
 import type { Content } from "../../db/schema.ts";
 import { env } from "../../config/env.ts";
 
+type ContentWithSeo = Content & {
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  featuredImage?: string | null;
+};
+
 export class SEOHelper {
   private static instance: SEOHelper;
 
@@ -28,13 +35,13 @@ export class SEOHelper {
    * Generate complete SEO metadata for content
    */
   generateContentMetadata(
-    content: Content,
+    content: ContentWithSeo,
     author?: { name: string }
   ): SEOMetadata {
     const url = `${env.BASE_URL}/${content.slug}`;
     const title = content.metaTitle || content.title;
     const description = content.metaDescription || content.excerpt || "";
-    const keywords = content.metaKeywords?.split(",").map((k) => k.trim()) || [];
+    const keywords = content.metaKeywords?.split(",").map((k: string) => k.trim()) || [];
     const image = content.featuredImage || undefined;
 
     return {
@@ -212,7 +219,7 @@ export class SEOHelper {
   /**
    * Audit content SEO
    */
-  auditContent(content: Content): SEOAuditResult {
+  auditContent(content: ContentWithSeo): SEOAuditResult {
     const issues: SEOAuditResult["issues"] = [];
     const recommendations: string[] = [];
     let score = 100;

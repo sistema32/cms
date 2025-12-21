@@ -27,9 +27,9 @@ Deno.test("Security: verify no SQL concatenation in routes", async () => {
 
 Deno.test("Security: verify password fields use type='password'", async () => {
   const nexusFiles = [
-    "./src/admin/pages/LoginNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
-    "./src/admin/pages/SettingsNexus.tsx",
+    "./src/admin/pages/auth/LoginNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
+    "./src/admin/pages/system/SettingsNexus.tsx",
   ];
 
   for (const file of nexusFiles) {
@@ -56,10 +56,10 @@ Deno.test("Security: verify no credentials in code", async () => {
   ];
 
   const filesToCheck = [
-    "./src/admin/pages/RolesNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
-    "./src/admin/pages/SettingsNexus.tsx",
-    "./src/admin/pages/LoginNexus.tsx",
+    "./src/admin/pages/system/RolesNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
+    "./src/admin/pages/system/SettingsNexus.tsx",
+    "./src/admin/pages/auth/LoginNexus.tsx",
   ];
 
   for (const file of filesToCheck) {
@@ -77,8 +77,8 @@ Deno.test("Security: verify no credentials in code", async () => {
 
 Deno.test("Security: verify HTTPS enforcement in fetch calls", async () => {
   const nexusFiles = [
-    "./src/admin/pages/RolesNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
+    "./src/admin/pages/system/RolesNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
   ];
 
   for (const file of nexusFiles) {
@@ -100,9 +100,9 @@ Deno.test("Security: verify HTTPS enforcement in fetch calls", async () => {
 
 Deno.test("Security: verify no inline scripts in HTML (CSP compliance)", async () => {
   const nexusFiles = [
-    "./src/admin/pages/RolesNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
-    "./src/admin/pages/SettingsNexus.tsx",
+    "./src/admin/pages/system/RolesNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
+    "./src/admin/pages/system/SettingsNexus.tsx",
   ];
 
   for (const file of nexusFiles) {
@@ -190,9 +190,9 @@ Deno.test("Security: verify no redundant imports in admin.ts", async () => {
 
 Deno.test("Security: verify sensitive data is not logged", async () => {
   const nexusFiles = [
-    "./src/admin/pages/LoginNexus.tsx",
-    "./src/admin/pages/UsersNexus.tsx",
-    "./src/admin/pages/SettingsNexus.tsx",
+    "./src/admin/pages/auth/LoginNexus.tsx",
+    "./src/admin/pages/system/UsersNexus.tsx",
+    "./src/admin/pages/system/SettingsNexus.tsx",
   ];
 
   for (const file of nexusFiles) {

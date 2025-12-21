@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as permissionController from "../controllers/permissionController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, requireSuperAdmin } from "../middleware/permission.ts";
+import * as permissionController from "@/controllers/permissionController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, requireSuperAdmin } from "@/middleware/permission.ts";
 
 const permissions = new Hono();
 

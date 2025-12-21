@@ -1,4 +1,4 @@
-import * as settingsService from "../../services/settingsService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 import type { SiteData } from "./types.ts";
 
 /**

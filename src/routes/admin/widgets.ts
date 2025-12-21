@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 import { env } from "../../config/env.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import * as themeService from "../../services/themeService.ts";
-import * as widgetService from "../../services/widgetService.ts";
-import WidgetsNexusPage from "../../admin/pages/WidgetsNexus.tsx";
-import { parseStringField } from "./helpers.ts";
+import * as themeService from "@/services/themes/themeService.ts";
+import * as widgetService from "@/services/system/widgetService.ts";
+import WidgetsNexusPage from "../../admin/pages/themes/WidgetsNexus.tsx";
+import { parseStringField, normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
 
 export const widgetsRouter = new Hono();
+const normalizeUser = (user: any) => ({
+    id: user.userId,
+    name: (user.name as string | null) || user.email,
+    email: user.email,
+});
 
 /**
  * GET /appearance/widgets - Widgets management page
@@ -15,15 +20,15 @@ widgetsRouter.get("/appearance/widgets", async (c) => {
     try {
         const user = c.get("user");
 
-        let notifications: any[] = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -52,17 +57,13 @@ widgetsRouter.get("/appearance/widgets", async (c) => {
                 id: w.id,
                 type: w.type,
                 title: w.title || w.type,
-                settings: w.settings,
-                order: w.order
+                settings: w.settings || {},
+                order: w.order ?? 0,
             }))
         }));
 
         return c.html(WidgetsNexusPage({
-            user: {
-                id: user.userId,
-                name: user.name || user.email,
-                email: user.email,
-            },
+            user: normalizeUser(user),
             widgetAreas: transformedWidgetAreas,
             availableWidgets: transformedAvailableWidgets,
             activeTheme,

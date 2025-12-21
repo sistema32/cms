@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface IPBlacklistProps {
   user?: {
@@ -167,13 +167,20 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
         font-size: 0.8125rem;
       }
 
+      .loading-spinner {
+        display: inline-block; width: 40px; height: 40px; 
+        border: 3px solid var(--nexus-base-300); 
+        border-top-color: var(--nexus-primary); 
+        border-radius: 50%; 
+        animation: spin 0.8s linear infinite;
+      }
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
     </style>
 
     <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <div class="u-flex-between u-mb-xl">
         <div>
           <h1 class="dashboard-title">Lista Negra de IPs</h1>
           <p class="dashboard-subtitle">Gestiona las direcciones IP bloqueadas</p>
@@ -182,12 +189,12 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
       </div>
     </div>
 
-    <div id="loading" style="text-align: center; padding: 3rem;">
-      <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--nexus-base-300); border-top-color: var(--nexus-primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <p style="margin-top: 1rem; color: var(--nexus-base-content); opacity: 0.6;">Cargando...</p>
+    <div id="loading" class="text-center p-12">
+      <div class="loading-spinner"></div>
+      <p class="mt-4 opacity-60">Cargando...</p>
     </div>
 
-    <div class="content-card" id="table-container" style="display: none; padding: 0; overflow: hidden;">
+    <div class="content-card u-hidden p-0 overflow-hidden" id="table-container">
       <table id="ip-table">
         <thead>
           <tr>
@@ -195,7 +202,7 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
             <th>Razón</th>
             <th>Expira</th>
             <th>Agregada</th>
-            <th style="text-align: right;">Acciones</th>
+            <th class="text-right">Acciones</th>
           </tr>
         </thead>
         <tbody id="ip-tbody">
@@ -206,14 +213,14 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
     <!-- Add IP Modal -->
     <div id="add-modal" class="modal-overlay">
       <div class="modal-content">
-        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">Bloquear Dirección IP</h2>
+        <h2 class="text-xl font-bold mb-6">Bloquear Dirección IP</h2>
         <form id="add-form" onsubmit="window.handleSubmit(event)">
           <div class="form-group">
-            <label class="form-label">Dirección IP <span style="color: var(--nexus-error);">*</span></label>
+            <label class="form-label">Dirección IP <span class="text-error">*</span></label>
             <input type="text" class="form-input" id="ip-input" required placeholder="192.168.1.1">
           </div>
           <div class="form-group">
-            <label class="form-label">Razón <span style="color: var(--nexus-error);">*</span></label>
+            <label class="form-label">Razón <span class="text-error">*</span></label>
             <input type="text" class="form-input" id="reason-input" required placeholder="Actividad sospechosa">
           </div>
           <div class="form-group">
@@ -254,7 +261,7 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
         container.style.display = 'block';
 
         if (rules.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--nexus-base-content); opacity: 0.6;">No hay IPs bloqueadas</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center p-12 opacity-60">No hay IPs bloqueadas</td></tr>';
           return;
         }
 
@@ -264,7 +271,7 @@ export const IPBlacklistPage = (props: IPBlacklistProps) => {
             <td>\${rule.reason}</td>
             <td>\${rule.expiresAt ? new Date(rule.expiresAt).toLocaleDateString('es-ES') : 'Nunca'}</td>
             <td>\${new Date(rule.createdAt).toLocaleDateString('es-ES')}</td>
-            <td style="text-align: right;">
+            <td class="text-right">
               <button class="btn btn-danger" onclick="removeIP(\${rule.id})">Eliminar</button>
             </td>
           </tr>

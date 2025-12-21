@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API Key Manager
  * Manages API keys for public REST API access

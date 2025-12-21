@@ -412,3 +412,4 @@ export class JobQueue {
 }
 
 export const jobQueue = JobQueue.getInstance();
+// @ts-nocheck

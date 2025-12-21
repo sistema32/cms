@@ -1,21 +1,21 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface SecurityRulesProps {
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    notifications?: NotificationItem[];
-    unreadNotificationCount?: number;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
 }
 
 export const SecurityRulesPage = (props: SecurityRulesProps) => {
-    const { user, notifications = [], unreadNotificationCount = 0 } = props;
+  const { user, notifications = [], unreadNotificationCount = 0 } = props;
 
-    const content = html`
+  const content = html`
     <style>
       .dashboard-title {
         font-size: 2rem;
@@ -176,7 +176,7 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
 
     <!-- Add New Rule Form -->
     <div class="content-card">
-      <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem;">Nueva Regla</h2>
+      <h2 class="content-card-title u-mb-lg">Nueva Regla</h2>
       <form id="add-rule-form" onsubmit="handleAddRule(event)">
         <div class="form-grid">
           <div class="form-group">
@@ -210,11 +210,11 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
             </select>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
+        <div class="form-group u-mb-md">
           <label class="form-label">Patrón</label>
           <input type="text" class="form-input" id="pattern" required placeholder="SELECT.*FROM|DROP.*TABLE">
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
+        <div class="form-group u-mb-md">
           <label class="form-label">Descripción</label>
           <textarea class="form-textarea" id="description" placeholder="Detecta intentos de SQL injection"></textarea>
         </div>
@@ -224,9 +224,9 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
 
     <!-- Existing Rules -->
     <div class="content-card">
-      <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.5rem;">Reglas Activas</h2>
+      <h2 class="content-card-title u-mb-lg">Reglas Activas</h2>
       <div id="rules-container">
-        <p style="text-align: center; padding: 2rem; color: var(--nexus-base-content); opacity: 0.6;">Cargando reglas...</p>
+        <p class="p-8 text-center opacity-60">Cargando reglas...</p>
       </div>
     </div>
 
@@ -250,7 +250,7 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
         const container = document.getElementById('rules-container');
         
         if (rules.length === 0) {
-          container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--nexus-base-content); opacity: 0.6;">No hay reglas configuradas</p>';
+          container.innerHTML = '<p class="p-8 text-center opacity-60">No hay reglas configuradas</p>';
           return;
         }
 
@@ -268,9 +268,9 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
                 <p>\${rule.description || 'Sin descripción'}</p>
                 <p><strong>Tipo:</strong> \${rule.type} | <strong>Acción:</strong> \${rule.action}</p>
                 <p><code>\${rule.pattern}</code></p>
-                <p style="font-size: 0.75rem; opacity: 0.5;">Activada \${rule.triggerCount} veces</p>
+                <p class="text-xs opacity-50">Activada \${rule.triggerCount} veces</p>
               </div>
-              <div style="display: flex; gap: 0.5rem;">
+              <div class="u-flex-gap-sm">
                 <button class="btn btn-primary" onclick="toggleRule(\${rule.id}, \${!rule.enabled})">
                   \${rule.enabled ? 'Desactivar' : 'Activar'}
                 </button>
@@ -346,14 +346,14 @@ export const SecurityRulesPage = (props: SecurityRulesProps) => {
     </script>
   `;
 
-    return AdminLayoutNexus({
-        title: "Reglas de Seguridad",
-        children: content,
-        activePage: "security.rules",
-        user,
-        notifications,
-        unreadNotificationCount,
-    });
+  return AdminLayoutNexus({
+    title: "Reglas de Seguridad",
+    children: content,
+    activePage: "security.rules",
+    user,
+    notifications,
+    unreadNotificationCount,
+  });
 };
 
 export default SecurityRulesPage;

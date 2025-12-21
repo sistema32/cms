@@ -8,6 +8,10 @@ import { renderProperties, updateLayerStyle, updateLayerContent, updateLayerProp
 import { initTimeline, renderTimelineTracks, timelineZoom, addKeyframe, startBarDrag, onLayerDragStart, onLayerDragOver, onLayerDragLeave, onLayerDrop, updateSlideDuration, startKeyframeDrag, toggleTimelineSnap, setPlaybackSpeed, toggleGroupExpand } from './modules/TimelineManager.js?v=3.0.28';
 import { getAnimationCSS } from './modules/AnimationPresets.js?v=3.0.28';
 import { pushState, undo, redo, canUndo, canRedo, clearHistory, beginBatch, endBatch } from './modules/HistoryManager.js?v=3.0.28';
+import {
+    toggleHistoryPanel, renderHistoryPanel, historyUndo, historyRedo, historyGoTo
+} from './modules/EditorPanels.js';
+
 
 // Global Namespace for HTML event handlers
 let assetCallback = null;
@@ -64,6 +68,34 @@ window.LexSlider = {
     setActiveTab,
     deselectKeyframe,
     timelineZoom,
+
+    // Video URL helper - parses YouTube/Vimeo URLs
+    updateVideoUrl: (url) => {
+        if (!state.selectedLayer) return;
+
+        let embedUrl = url;
+        let videoId = '';
+
+        // YouTube
+        if (url.includes('youtube.com/watch')) {
+            const match = url.match(/v=([^&]+)/);
+            if (match) {
+                videoId = match[1];
+                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            }
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+            if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+        // Vimeo
+        else if (url.includes('vimeo.com/')) {
+            videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+            if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+        }
+
+        updateLayerContent('src', embedUrl);
+        renderProperties();
+    },
     addKeyframe,
     startBarDrag,
     startKeyframeDrag,
@@ -83,14 +115,224 @@ window.LexSlider = {
     pushState,
     beginBatch,
     endBatch,
+
+    // History Panel
+    toggleHistoryPanel,
+    renderHistoryPanel,
+    historyUndo,
+    historyRedo,
+    historyGoTo,
+
+    // Sidebar Tab Switcher
+    switchSidebarTab: (tab) => {
+        const layersTab = document.getElementById('sidebar-tab-layers');
+        const historyTab = document.getElementById('sidebar-tab-history');
+        const layersContent = document.getElementById('sidebar-content-layers');
+        const historyContent = document.getElementById('sidebar-content-history');
+
+        if (tab === 'layers') {
+            layersTab?.classList.add('tab-active');
+            historyTab?.classList.remove('tab-active');
+            layersContent?.classList.remove('hidden');
+            historyContent?.classList.add('hidden');
+        } else if (tab === 'history') {
+            layersTab?.classList.remove('tab-active');
+            historyTab?.classList.add('tab-active');
+            layersContent?.classList.add('hidden');
+            historyContent?.classList.remove('hidden');
+            // Initialize history panel if needed
+            window.LexSlider.renderHistoryPanel?.();
+        }
+    },
+
+
+    // Layer Type Handlers
+    updateCountdownStyle: (style) => {
+        if (!state.selectedLayer) return;
+        pushState('Change Countdown Style', 'change-style');
+        if (!state.selectedLayer.content.countdownConfig) state.selectedLayer.content.countdownConfig = {};
+        state.selectedLayer.content.countdownConfig.style = style;
+        renderCanvas();
+    },
+    updateCountdownOption: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.countdownConfig) state.selectedLayer.content.countdownConfig = {};
+        state.selectedLayer.content.countdownConfig[key] = value;
+        renderCanvas();
+    },
+    updateTypingTexts: (value) => {
+        if (!state.selectedLayer) return;
+        pushState('Edit Typing Texts', 'edit-text');
+        if (!state.selectedLayer.content.typingConfig) state.selectedLayer.content.typingConfig = {};
+        state.selectedLayer.content.typingConfig.texts = value.split('\n').filter(t => t.trim());
+        renderCanvas();
+    },
+    updateTypingPreset: (preset) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.typingConfig) state.selectedLayer.content.typingConfig = {};
+        state.selectedLayer.content.typingConfig.preset = preset;
+        renderCanvas();
+    },
+    updateTypingOption: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.typingConfig) state.selectedLayer.content.typingConfig = {};
+        state.selectedLayer.content.typingConfig[key] = value;
+        renderCanvas();
+    },
+    toggleShareNetwork: (network, enabled) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.shareConfig) state.selectedLayer.content.shareConfig = { networks: ['facebook', 'twitter', 'whatsapp'] };
+        const networks = state.selectedLayer.content.shareConfig.networks || [];
+        if (enabled && !networks.includes(network)) {
+            networks.push(network);
+        } else if (!enabled) {
+            const idx = networks.indexOf(network);
+            if (idx > -1) networks.splice(idx, 1);
+        }
+        state.selectedLayer.content.shareConfig.networks = networks;
+        renderCanvas();
+    },
+    updateShareOption: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.shareConfig) state.selectedLayer.content.shareConfig = {};
+        state.selectedLayer.content.shareConfig[key] = value;
+        renderCanvas();
+    },
+    updateLottieOption: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.lottieConfig) state.selectedLayer.content.lottieConfig = {};
+        state.selectedLayer.content.lottieConfig[key] = value;
+        renderCanvas();
+    },
+    setEmbedType: (type) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.embedConfig) state.selectedLayer.content.embedConfig = {};
+        state.selectedLayer.content.embedConfig.type = type;
+        renderProperties();
+    },
+    updateEmbedOption: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.content.embedConfig) state.selectedLayer.content.embedConfig = {};
+        state.selectedLayer.content.embedConfig[key] = value;
+        renderCanvas();
+    },
+    addHotspot: () => {
+        if (!state.selectedLayer) return;
+        pushState('Add Hotspot', 'add-layer');
+        if (!state.selectedLayer.content.hotspots) state.selectedLayer.content.hotspots = [];
+        state.selectedLayer.content.hotspots.push({
+            id: `hotspot_${Date.now()}`,
+            x: 50, y: 50,
+            icon: 'plus', style: 'pulse',
+            tooltip: { title: '', content: '' }
+        });
+        renderProperties();
+        renderCanvas();
+    },
+    removeHotspot: (index) => {
+        if (!state.selectedLayer) return;
+        pushState('Remove Hotspot', 'delete-layer');
+        state.selectedLayer.content.hotspots.splice(index, 1);
+        renderProperties();
+        renderCanvas();
+    },
+    updateHotspot: (index, key, value) => {
+        if (!state.selectedLayer?.content?.hotspots?.[index]) return;
+        state.selectedLayer.content.hotspots[index][key] = value;
+        renderCanvas();
+    },
+    updateHotspotTooltip: (index, key, value) => {
+        if (!state.selectedLayer?.content?.hotspots?.[index]) return;
+        if (!state.selectedLayer.content.hotspots[index].tooltip) {
+            state.selectedLayer.content.hotspots[index].tooltip = {};
+        }
+        state.selectedLayer.content.hotspots[index].tooltip[key] = value;
+        renderCanvas();
+    },
+
+    // Parallax & Effects
+    updateParallax: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.style) state.selectedLayer.style = {};
+        if (!state.selectedLayer.style.parallax) state.selectedLayer.style.parallax = {};
+        state.selectedLayer.style.parallax[key] = value;
+        renderCanvas();
+        renderProperties();
+    },
+    updateKenBurns: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.style) state.selectedLayer.style = {};
+        if (!state.selectedLayer.style.kenBurns) state.selectedLayer.style.kenBurns = {};
+        state.selectedLayer.style.kenBurns[key] = value;
+        renderCanvas();
+        renderProperties();
+    },
+    updateImageFilter: (filterName, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.style) state.selectedLayer.style = {};
+        const current = state.selectedLayer.style.filter || '';
+        const regex = new RegExp(`${filterName}\\([^)]+\\)`, 'g');
+        let newFilter = current.replace(regex, '').trim();
+        if (value && value !== '0' && value !== '100%' && value !== '0deg' && value !== '0px') {
+            newFilter = `${newFilter} ${filterName}(${value})`.trim();
+        }
+        state.selectedLayer.style.filter = newFilter || 'none';
+        renderCanvas();
+        renderProperties();
+    },
+    resetImageFilters: () => {
+        if (!state.selectedLayer) return;
+        pushState('Reset Filters', 'change-style');
+        if (!state.selectedLayer.style) state.selectedLayer.style = {};
+        state.selectedLayer.style.filter = 'none';
+        renderCanvas();
+        renderProperties();
+    },
+
+    // Slide Handlers
+    updateSlideVideo: (key, value) => {
+        if (!state.currentSlide) return;
+        if (!state.currentSlide.backgroundVideo) state.currentSlide.backgroundVideo = {};
+        state.currentSlide.backgroundVideo[key] = value;
+        renderCanvas();
+    },
+    updateSlideParticles: (key, value) => {
+        if (!state.currentSlide) return;
+        if (!state.currentSlide.particles) state.currentSlide.particles = {};
+        state.currentSlide.particles[key] = value;
+        renderCanvas();
+    },
+    updateAutoHeight: (key, value) => {
+        if (!state.currentSlider?.settings) {
+            if (!state.currentSlider) return;
+            state.currentSlider.settings = {};
+        }
+        if (!state.currentSlider.settings.autoHeight) state.currentSlider.settings.autoHeight = {};
+        state.currentSlider.settings.autoHeight[key] = value;
+        renderCanvas();
+    },
+    updateNavigation: (key, value) => {
+        if (!state.currentSlider?.settings) {
+            if (!state.currentSlider) return;
+            state.currentSlider.settings = {};
+        }
+        if (!state.currentSlider.settings.navigation) state.currentSlider.settings.navigation = {};
+        state.currentSlider.settings.navigation[key] = value;
+    },
+    updateLayerAction: (key, value) => {
+        if (!state.selectedLayer) return;
+        if (!state.selectedLayer.action) state.selectedLayer.action = { type: 'none' };
+        state.selectedLayer.action[key] = value;
+        renderProperties();
+    },
+
     openAssetManager: (callback) => {
-        // Use global CMS MediaPicker with permissions
+        // Use global CMS MediaPicker
         if (window.CMS?.MediaPicker) {
             window.CMS.MediaPicker.open({
                 filter: 'image',
                 multiple: false,
                 onSelect: (media) => {
-                    // media is { url, id, ... }
                     if (media && media.url) {
                         callback(media.url);
                     }
@@ -100,86 +342,6 @@ window.LexSlider = {
             console.error('CMS MediaPicker not available');
             alert('Media Library permissions required');
         }
-    },
-    closeAssetManager: () => {
-        document.getElementById('modal-asset-manager').classList.add('hidden');
-        assetCallback = null;
-    },
-    switchAssetTab: (tab) => {
-        document.getElementById('asset-tab-url').classList.toggle('hidden', tab !== 'url');
-        document.getElementById('asset-tab-library').classList.toggle('hidden', tab !== 'library');
-
-        // Update tab active states
-        const tabs = document.querySelectorAll('#modal-asset-manager .tab');
-        tabs.forEach(t => t.classList.remove('tab-active'));
-        if (tab === 'url') tabs[0]?.classList.add('tab-active');
-        if (tab === 'library') {
-            tabs[1]?.classList.add('tab-active');
-            window.LexSlider.loadMediaLibrary();
-        }
-    },
-    loadMediaLibrary: async () => {
-        const container = document.getElementById('media-library-content');
-        if (!container) return;
-
-        // Show loading
-        container.innerHTML = `
-            <div class="col-span-4 flex items-center justify-center py-8">
-                <span class="loading loading-spinner loading-md"></span>
-                <span class="ml-2 text-sm opacity-70">Cargando biblioteca...</span>
-            </div>
-        `;
-
-        try {
-            const res = await fetch('/api/media?limit=50', { credentials: 'include' });
-            if (!res.ok) throw new Error('Error al cargar medios');
-
-            const data = await res.json();
-            const mediaItems = Array.isArray(data) ? data : (data.media || data.rows || []);
-
-            // Filter only images
-            const images = mediaItems.filter(m => m.type === 'image');
-
-            if (images.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-4 text-center py-8">
-                        <span class="material-icons-round text-4xl opacity-30">image_not_supported</span>
-                        <p class="text-xs opacity-50 mt-2">No hay imágenes en la biblioteca</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = images.map(media => `
-                <div class="aspect-square bg-[#111] border border-[#333] cursor-pointer hover:border-primary relative group"
-                     onclick="window.LexSlider.selectAsset('${media.url}')">
-                    <img src="${media.url}" alt="${media.originalFilename || ''}" 
-                         class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity">
-                    <div class="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 text-[10px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                        ${media.originalFilename || media.filename}
-                    </div>
-                </div>
-            `).join('');
-
-        } catch (err) {
-            console.error('[LexSlider] Error loading media library:', err);
-            container.innerHTML = `
-                <div class="col-span-4 text-center py-8 text-error">
-                    <span class="material-icons-round text-4xl">error_outline</span>
-                    <p class="text-xs mt-2">Error al cargar la biblioteca de medios</p>
-                </div>
-            `;
-        }
-    },
-    selectAsset: (url) => {
-        document.getElementById('asset-url-input').value = url;
-    },
-    confirmAsset: () => {
-        const url = document.getElementById('asset-url-input').value;
-        if (url && assetCallback) {
-            assetCallback(url);
-        }
-        window.LexSlider.closeAssetManager();
     },
 
     // Copy to Clipboard utility
@@ -242,20 +404,30 @@ window.LexSlider = {
                 if (layer.style.mobile) style = { ...style, ...layer.style.mobile };
             }
 
-            // Convert style object to string
+            // Convert style object to string (exclude animation properties)
             const styleString = Object.entries(style).map(([k, v]) => {
                 if (typeof v === 'object' && v !== null) return '';
-                // Skip animation props here, we apply them separately to ensure valid CSS
-                if (['animationIn', 'animationDuration', 'animationDelay'].includes(k)) return '';
+                // Skip animation props here, we apply them separately
+                if (['animationIn', 'animationDuration', 'animationDelay', 'loopAnimation', 'loopDuration', 'loopIntensity'].includes(k)) return '';
                 const key = k.replace(/([A-Z])/g, '-$1').toLowerCase();
                 return `${key}:${v}`;
             }).join(';');
 
-            // Animation Styles
+            // Entrance Animation Styles
             let animStyle = '';
             if (style.animationIn && style.animationIn !== 'none') {
                 animStyle = `animation: ${style.animationIn} ${style.animationDuration || '1s'} ease-out ${style.animationDelay || '0s'} both;`;
             }
+
+            // Loop Animation Styles  
+            let loopStyle = '';
+            if (style.loopAnimation && style.loopAnimation !== 'none') {
+                const duration = style.loopDuration || 2;
+                loopStyle = `animation: ${style.loopAnimation} ${duration}s ease-in-out infinite;`;
+            }
+
+            // Combine animations (entrance first, then loop)
+            let finalAnimStyle = animStyle || loopStyle;
 
             let content = '';
             if (layer.type === 'heading') content = `<h1>${layer.content.text}</h1>`;
@@ -264,8 +436,12 @@ window.LexSlider = {
             else if (layer.type === 'image') content = `<img src="${layer.content.src}" style="width:100%;height:100%;object-fit:cover;">`;
             else if (layer.type === 'video') content = `<iframe width="100%" height="100%" src="${layer.content.src}" frameborder="0" allowfullscreen></iframe>`;
             else if (layer.type === 'icon') content = `<span class="material-icons-round" style="font-size: inherit; color: inherit;">${layer.content.icon}</span>`;
+            else if (layer.type === 'shape') content = `<div style="width:100%;height:100%;background:${layer.content?.fill || '#666'};border-radius:${layer.content?.borderRadius || '0'}"></div>`;
+            else if (layer.type === 'divider') content = `<hr style="border:none;height:${layer.content?.thickness || '2px'};background:${layer.content?.color || '#333'}">`;
+            else if (layer.type === 'countdown') content = `<div class="countdown-preview">00:00:00</div>`;
+            else if (layer.type === 'social') content = `<div class="social-preview">Social Icons</div>`;
 
-            layersHTML += `<div style="position:absolute; ${styleString} ${animStyle}">${content}</div>`;
+            layersHTML += `<div style="position:absolute; ${styleString} ${finalAnimStyle}">${content}</div>`;
         });
 
         // Collect Styles
@@ -595,6 +771,12 @@ async function openSlider(id) {
         // Re-initialize timeline events (scroll sync, buttons) since DOM was replaced
         initTimeline();
 
+        // Update editor title with current slider name
+        const titleEl = document.getElementById('editor-slider-name');
+        if (titleEl && state.currentSlider) {
+            titleEl.textContent = state.currentSlider.title || state.currentSlider.name || 'Untitled';
+        }
+
         renderCanvas();
         renderLayerList();
         renderSlideList(); // Render slides
@@ -618,3 +800,95 @@ window.editor = {
 window.LexSlider.addSlide = addSlide;
 window.LexSlider.switchSlide = switchSlide;
 window.LexSlider.deleteSlide = deleteSlide;
+
+// Dashboard Quick Actions
+window.LexSlider.duplicateSlider = async (id) => {
+    if (!confirm('¿Duplicar este slider?')) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/sliders/${id}/duplicate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        if (!res.ok) throw new Error('Failed to duplicate');
+
+        const data = await res.json();
+        if (data.success) {
+            await loadSliders();
+            alert('Slider duplicado correctamente');
+        }
+    } catch (err) {
+        console.error('[LexSlider] Duplicate error:', err);
+        alert('Error al duplicar slider');
+    }
+};
+
+window.LexSlider.exportSlider = async (id) => {
+    try {
+        const res = await fetch(`${API_BASE}/sliders/${id}/export`);
+        if (!res.ok) throw new Error('Failed to export');
+
+        const data = await res.json();
+        if (data.success) {
+            // Download as JSON file
+            const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `slider-${id}-export.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    } catch (err) {
+        console.error('[LexSlider] Export error:', err);
+        alert('Error al exportar slider');
+    }
+};
+
+window.LexSlider.deleteSlider = async (id, name) => {
+    if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/sliders/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+
+        await loadSliders();
+    } catch (err) {
+        console.error('[LexSlider] Delete error:', err);
+        alert('Error al eliminar slider');
+    }
+};
+
+window.LexSlider.importSlider = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            const res = await fetch(`${API_BASE}/sliders/import`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data })
+            });
+
+            if (!res.ok) throw new Error('Failed to import');
+
+            await loadSliders();
+            alert('Slider importado correctamente');
+        } catch (err) {
+            console.error('[LexSlider] Import error:', err);
+            alert('Error al importar slider. Verifica el formato del archivo.');
+        }
+    };
+
+    input.click();
+};

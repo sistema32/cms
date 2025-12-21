@@ -1,7 +1,7 @@
 import { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
-import { verifyToken } from "../utils/jwt.ts";
-import type { JWTPayload } from "../utils/jwt.ts";
+import { verifyToken } from "@/utils/jwt.ts";
+import type { JWTPayload } from "@/utils/jwt.ts";
 
 // Extender el contexto de Hono con el payload del usuario
 declare module "hono" {

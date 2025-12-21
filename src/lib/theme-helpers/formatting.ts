@@ -1,4 +1,4 @@
-import * as settingsService from "../../services/settingsService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 
 /**
  * Formatting Helpers - Functions for formatting dates, text, etc.

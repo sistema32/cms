@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as tagController from "../controllers/tagController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission, allowPublic } from "../middleware/permission.ts";
+import * as tagController from "@/controllers/tagController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission, allowPublic } from "@/middleware/permission.ts";
 
 const tags = new Hono();
 

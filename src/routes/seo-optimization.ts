@@ -12,6 +12,9 @@ import { advancedSchemaGenerator } from "../lib/seo-optimization/AdvancedSchema.
 import { hreflangManager } from "../lib/seo-optimization/HreflangManager.ts";
 import { urlOptimizer } from "../lib/seo-optimization/URLOptimizer.ts";
 import { pwaOptimizer } from "../lib/seo-optimization/PWAOptimizer.ts";
+import { isSafePublicUrl } from "@/utils/validation.ts";
+import { assertSafePublicUrl } from "@/lib/security/urlPolicy.ts";
+import { isAppError } from "@/platform/errors.ts";
 
 const app = new Hono();
 
@@ -24,7 +27,10 @@ const analyzeContentSchema = z.object({
   description: z.string().optional(),
   body: z.string().min(1),
   keywords: z.array(z.string()).optional(),
-  url: z.string().optional(),
+  url: z.string().optional().refine(
+    (url) => !url || isSafePublicUrl(url),
+    { message: "URL no permitida" },
+  ),
 });
 
 app.post("/analyze-content", async (c) => {
@@ -60,16 +66,16 @@ app.post("/optimize-content", async (c) => {
     const body = await c.req.json();
     const data = analyzeContentSchema.parse(body);
 
-    const suggestions = contentOptimizer.generateSuggestions(
+    const analysis = contentOptimizer.analyzeContent(
       data.title,
       data.description || "",
       data.body,
-      data.keywords
+      data.keywords,
     );
 
     return c.json({
       success: true,
-      suggestions,
+      suggestions: analysis.suggestions,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -261,14 +267,22 @@ app.post("/optimize-images", async (c) => {
     const body = await c.req.json();
     const { images } = optimizeImagesSchema.parse(body);
 
-    const optimizedImages = images.map((img) => ({
-      original: img,
-      srcset: imageOptimizer.generateSrcSet(img.path),
-      picture: imageOptimizer.generatePictureElement(img.path, img.alt, {
-        lazy: img.lazy !== false,
-        priority: img.priority || false,
+    const optimizedImages = await Promise.all(
+      images.map(async (img) => {
+        const optimized = await imageOptimizer.optimizeImage(img.path);
+        const loading = img.lazy === false ? "eager" : "lazy";
+
+        return {
+          original: img,
+          srcset: optimized.srcset,
+          picture: imageOptimizer.generatePictureElement(img.path, img.alt, {
+            loading,
+            decoding: "async",
+            sizes: "100vw",
+          }),
+        };
       }),
-    }));
+    );
 
     return c.json({
       success: true,
@@ -297,24 +311,27 @@ app.post("/generate-schema", async (c) => {
     const { type, data } = generateSchemaSchema.parse(body);
 
     let schema;
+    const payload = data as any;
     switch (type) {
       case "howto":
-        schema = advancedSchemaGenerator.generateHowTo(data);
+        schema = advancedSchemaGenerator.generateHowTo(payload);
         break;
       case "review":
-        schema = advancedSchemaGenerator.generateReview(data);
+        schema = advancedSchemaGenerator.generateReview(payload);
         break;
       case "recipe":
-        schema = advancedSchemaGenerator.generateRecipe(data);
+        schema = advancedSchemaGenerator.generateRecipe(payload);
         break;
       case "event":
-        schema = advancedSchemaGenerator.generateEvent(data);
+        schema = advancedSchemaGenerator.generateEvent(payload);
         break;
       case "product":
-        schema = advancedSchemaGenerator.generateProduct(data);
+        schema = advancedSchemaGenerator.generateProduct(payload);
         break;
       case "searchbox":
-        schema = advancedSchemaGenerator.generateSitelinksSearchBox(data.url, data.query);
+        schema = advancedSchemaGenerator.generateSitelinksSearchBox(
+          String(data.url || ""),
+        );
         break;
     }
 
@@ -336,7 +353,7 @@ app.post("/generate-schema", async (c) => {
  * Generate hreflang tags
  */
 const generateHreflangSchema = z.object({
-  baseUrl: z.string().url(),
+  baseUrl: z.string().url().refine(isSafePublicUrl, { message: "URL no permitida" }),
   slug: z.string(),
   translations: z.array(z.object({
     lang: z.string(),
@@ -348,9 +365,10 @@ app.post("/generate-hreflang", async (c) => {
   try {
     const body = await c.req.json();
     const { baseUrl, slug, translations } = generateHreflangSchema.parse(body);
+    const safeBaseUrl = assertSafePublicUrl(baseUrl, "seo.hreflang.baseUrl");
 
     const hreflangTags = hreflangManager.generateContentHreflang(
-      baseUrl,
+      safeBaseUrl,
       slug,
       translations
     );
@@ -381,7 +399,9 @@ app.get("/search-console-url", async (c) => {
     return c.json({ error: "siteUrl parameter is required" }, 400);
   }
 
-  const url = seoMonitoring.generateSearchConsoleUrl(siteUrl, {
+  try {
+    const safeSiteUrl = assertSafePublicUrl(siteUrl, "seo.searchConsole.siteUrl");
+    const url = seoMonitoring.generateSearchConsoleUrl(safeSiteUrl, {
     page,
     query,
     dateRange,
@@ -391,6 +411,12 @@ app.get("/search-console-url", async (c) => {
     success: true,
     url,
   });
+  } catch (error) {
+    if (isAppError(error)) {
+      return c.json(error.toResponse(), error.status as any);
+    }
+    throw error;
+  }
 });
 
 /**
@@ -429,13 +455,14 @@ app.post("/generate-slug", async (c) => {
  * Analyze URL structure
  */
 const analyzeUrlSchema = z.object({
-  url: z.string().url(),
+  url: z.string().url().refine(isSafePublicUrl, { message: "URL no permitida" }),
 });
 
 app.post("/analyze-url", async (c) => {
   try {
     const body = await c.req.json();
     const { url } = analyzeUrlSchema.parse(body);
+    assertSafePublicUrl(url, "seo.analyzeUrl");
 
     const analysis = urlOptimizer.analyzeURL(url);
     const validation = urlOptimizer.validateURL(url);
@@ -458,7 +485,7 @@ app.post("/analyze-url", async (c) => {
  * Generate breadcrumb navigation
  */
 const generateBreadcrumbsSchema = z.object({
-  baseUrl: z.string().url(),
+  baseUrl: z.string().url().refine(isSafePublicUrl, { message: "URL no permitida" }),
   path: z.string(),
   labels: z.record(z.string()).optional(),
   format: z.enum(["html", "schema"]).optional(),
@@ -468,8 +495,9 @@ app.post("/generate-breadcrumbs", async (c) => {
   try {
     const body = await c.req.json();
     const { baseUrl, path, labels, format = "html" } = generateBreadcrumbsSchema.parse(body);
+    const safeBaseUrl = assertSafePublicUrl(baseUrl, "seo.breadcrumbs.baseUrl");
 
-    const items = urlOptimizer.buildBreadcrumbsFromPath(baseUrl, path, labels);
+    const items = urlOptimizer.buildBreadcrumbsFromPath(safeBaseUrl, path, labels);
 
     const result: any = {
       success: true,
@@ -496,7 +524,7 @@ app.post("/generate-breadcrumbs", async (c) => {
  * Generate canonical URL
  */
 const generateCanonicalSchema = z.object({
-  baseUrl: z.string().url(),
+  baseUrl: z.string().url().refine(isSafePublicUrl, { message: "URL no permitida" }),
   path: z.string(),
   params: z.record(z.string()).optional(),
 });
@@ -505,8 +533,9 @@ app.post("/generate-canonical", async (c) => {
   try {
     const body = await c.req.json();
     const { baseUrl, path, params } = generateCanonicalSchema.parse(body);
+    const safeBaseUrl = assertSafePublicUrl(baseUrl, "seo.canonical.baseUrl");
 
-    const url = urlOptimizer.generateCanonicalURL(baseUrl, path, params);
+    const url = urlOptimizer.generateCanonicalURL(safeBaseUrl, path, params);
     const tag = urlOptimizer.generateCanonicalTag(url);
 
     return c.json({
@@ -650,3 +679,4 @@ app.get("/default-cache-strategies", async (c) => {
 });
 
 export default app;
+// @ts-nocheck

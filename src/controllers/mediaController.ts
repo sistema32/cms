@@ -1,8 +1,9 @@
 import type { Context } from "hono";
-import * as mediaService from "../services/mediaService.ts";
+import * as mediaService from "@/services/content/mediaService.ts";
 import { z } from "zod";
 import { isAbsolute, join, normalize, relative, resolve } from "@std/path";
-import { getErrorMessage } from "../utils/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { AppError } from "@/platform/errors.ts";
 
 const mediaSeoSchema = z.object({
   alt: z.string().optional(),
@@ -16,6 +17,16 @@ const mediaSeoSchema = z.object({
 
 const UPLOADS_ROOT = resolve("uploads");
 
+const makeEmptyResponse = (status: number) =>
+  new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    }),
+    { status },
+  );
+
 /**
  * Sube un archivo de media
  */
@@ -28,7 +39,7 @@ export async function uploadMedia(c: Context) {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
-      return c.json({ error: "No se proporcionó ningún archivo" }, 400);
+      throw new AppError("file_required", "No se proporcionó ningún archivo", 400);
     }
 
     // Leer datos del archivo
@@ -45,12 +56,9 @@ export async function uploadMedia(c: Context) {
         seo = mediaSeoSchema.parse(parsed);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          return c.json(
-            { error: "Datos SEO inválidos", details: error.errors },
-            400,
-          );
+          throw AppError.fromCatalog("validation_error", { details: { issues: error.errors }, message: "Datos SEO inválidos" });
         }
-        return c.json({ error: "Datos SEO inválidos" }, 400);
+        throw AppError.fromCatalog("validation_error", { message: "Datos SEO inválidos" });
       }
     }
 
@@ -75,13 +83,10 @@ export async function uploadMedia(c: Context) {
       (error.message.includes("no soportado") ||
         error.message.includes("demasiado grande"))
     ) {
-      return c.json({ error: error.message }, 400);
+      throw new AppError("upload_failed", error.message, 400);
     }
 
-    return c.json({
-      error: "Error procesando archivo",
-      details: getErrorMessage(error),
-    }, 500);
+    throw error instanceof AppError ? error : new AppError("upload_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -98,7 +103,7 @@ export async function listMedia(c: Context) {
 
     return c.json({ media, limit, offset });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("media_list_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -110,18 +115,18 @@ export async function getMediaById(c: Context) {
     const id = Number(c.req.param("id"));
 
     if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     const media = await mediaService.getMediaById(id);
 
     if (!media) {
-      return c.json({ error: "Media no encontrado" }, 404);
+      throw AppError.fromCatalog("not_found", { message: "Media no encontrado" });
     }
 
     return c.json({ media });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 500);
+    throw error instanceof AppError ? error : new AppError("media_get_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -133,7 +138,7 @@ export async function updateMediaSeo(c: Context) {
     const id = Number(c.req.param("id"));
 
     if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     const body = await c.req.json();
@@ -146,9 +151,9 @@ export async function updateMediaSeo(c: Context) {
     return c.json({ media });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Datos inválidos", details: error.errors }, 400);
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
     }
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("media_seo_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -160,14 +165,14 @@ export async function deleteMedia(c: Context) {
     const id = Number(c.req.param("id"));
 
     if (isNaN(id)) {
-      return c.json({ error: "ID inválido" }, 400);
+      throw AppError.fromCatalog("invalid_id");
     }
 
     await mediaService.deleteMedia(id);
 
     return c.json({ message: "Media eliminado exitosamente" });
   } catch (error) {
-    return c.json({ error: getErrorMessage(error) }, 400);
+    throw error instanceof AppError ? error : new AppError("media_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -200,7 +205,17 @@ export async function serveMedia(c: Context) {
     const rawPath = extractRequestedPath();
 
     if (!rawPath) {
-      return c.json({ error: "Ruta no permitida" }, 400);
+      return makeEmptyResponse(400);
+    }
+
+    // Bloquear traversal simples antes de normalizar
+    try {
+      const decoded = decodeURIComponent(rawPath);
+      if (decoded.includes("..")) {
+        return makeEmptyResponse(403);
+      }
+    } catch {
+      // Si decode falla, continuar con sanitización estándar
     }
 
     const sanitizedPath = rawPath
@@ -216,7 +231,7 @@ export async function serveMedia(c: Context) {
         requestPath: c.req.path,
         sanitizedPath,
       });
-      return c.json({ error: "Ruta no permitida" }, 400);
+      return makeEmptyResponse(400);
     }
 
     const withoutUploadsPrefix = sanitizedPath.replace(/^uploads\//, "");
@@ -230,22 +245,20 @@ export async function serveMedia(c: Context) {
       normalizedRelative.includes("..\\") ||
       isAbsolute(normalizedRelative)
     ) {
-      return c.json({ error: "Ruta no permitida" }, 403);
+      return makeEmptyResponse(403);
     }
 
     const fullPath = resolve(join(UPLOADS_ROOT, normalizedRelative));
     const relativeToBase = relative(UPLOADS_ROOT, fullPath);
 
     if (!relativeToBase || relativeToBase.startsWith("..")) {
-      return c.json({ error: "Ruta no permitida" }, 403);
+      return makeEmptyResponse(403);
     }
 
     const fileInfo = await Deno.stat(fullPath);
     if (!fileInfo.isFile) {
-      return c.json({ error: "Archivo no encontrado" }, 404);
+      return makeEmptyResponse(404);
     }
-
-    const file = await Deno.open(fullPath, { read: true });
 
     const extension = normalizedRelative.toLowerCase();
     let contentType = "application/octet-stream";
@@ -279,12 +292,14 @@ export async function serveMedia(c: Context) {
       headers.set("Last-Modified", fileInfo.mtime.toUTCString());
     }
 
+    const content = await Deno.readFile(fullPath);
+
     // Hono 4: use Response directly instead of c.newResponse to avoid polyfill issues
-    return new Response(file.readable, { status: 200, headers });
+    return new Response(content, { status: 200, headers });
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      return c.json({ error: "Archivo no encontrado" }, 404);
+      return makeEmptyResponse(404);
     }
-    return c.json({ error: "Error sirviendo archivo" }, 500);
+    return makeEmptyResponse(500);
   }
 }

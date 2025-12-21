@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { requirePermission, allowPublic } from "../middleware/permission.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import * as menuController from "../controllers/menuController.ts";
+import { requirePermission, allowPublic } from "@/middleware/permission.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import * as menuController from "@/controllers/menuController.ts";
 
 /**
  * ============================================

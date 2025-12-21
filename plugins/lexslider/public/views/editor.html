@@ -40,6 +40,10 @@
                     onclick="window.LexSlider.redo(); window.LexSlider.updateUndoRedoButtons();" title="Redo (Ctrl+Y)">
                     <span class="material-icons-round text-base">redo</span>
                 </button>
+                <button id="btn-history" class="btn btn-sm btn-ghost join-item h-8 min-h-[32px]"
+                    onclick="window.LexSlider.toggleHistoryPanel();" title="History Panel">
+                    <span class="material-icons-round text-base">history</span>
+                </button>
             </div>
         </div>
 
@@ -82,36 +86,143 @@
         <!-- RIGHT SIDEBAR: PROPERTIES -->
         <div class="splitter-h" id="splitter-sidebar"></div>
         <aside class="w-80 bg-base-200 border-l border-base-300 flex flex-col z-10 shadow-lg" id="sidebar-panel">
-            <!-- FIXED TOP PANEL: ADD LAYERS -->
-            <div class="p-2 border-b border-[#333] bg-[#232323]">
-                <div class="text-[9px] font-bold opacity-50 mb-1 uppercase tracking-wider">Add Layer</div>
-                <div class="grid grid-cols-4 gap-2 p-2">
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('heading')"
-                        title="Heading"><span class="material-icons-round">title</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('text')"
-                        title="Text"><span class="material-icons-round">text_fields</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('image')"
-                        title="Image"><span class="material-icons-round">image</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('button')"
-                        title="Button"><span class="material-icons-round">smart_button</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('video')"
-                        title="Video"><span class="material-icons-round">play_circle</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('icon')"
-                        title="Icon"><span class="material-icons-round">star</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full" onclick="editor.addLayer('shape')"
-                        title="Shape"><span class="material-icons-round">crop_square</span></button>
-                    <button class="btn btn-square btn-outline btn-xs h-10 w-full"
-                        onclick="window.LexSlider.groupLayers()" title="Add Group"><span
-                            class="material-icons-round">folder</span></button>
+            <!-- SIDEBAR TABS -->
+            <div class="tabs tabs-boxed bg-[#1a1a1a] p-1 m-1 rounded-lg">
+                <a class="tab tab-sm flex-1 tab-active" id="sidebar-tab-layers"
+                    onclick="window.LexSlider.switchSidebarTab('layers')">
+                    <span class="material-icons-round text-sm mr-1">layers</span>Layers
+                </a>
+                <a class="tab tab-sm flex-1" id="sidebar-tab-history"
+                    onclick="window.LexSlider.switchSidebarTab('history')">
+                    <span class="material-icons-round text-sm mr-1">history</span>History
+                </a>
+            </div>
+
+            <!-- TAB CONTENT: LAYERS -->
+            <div id="sidebar-content-layers" class="flex flex-col flex-1 overflow-hidden">
+                <!-- ADD LAYERS PANEL -->
+                <div class="p-3 border-b border-[#333] bg-[#232323]">
+                    <!-- Basic Layers -->
+                    <div class="text-[9px] font-bold opacity-50 mb-2 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-icons-round text-[10px]">layers</span> Content
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 mb-3">
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('heading')" title="Heading">
+                            <span class="material-icons-round text-base">title</span>
+                            <span class="text-[8px] opacity-60">Heading</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('text')"
+                            title="Text">
+                            <span class="material-icons-round text-base">text_fields</span>
+                            <span class="text-[8px] opacity-60">Text</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('image')"
+                            title="Image">
+                            <span class="material-icons-round text-base">image</span>
+                            <span class="text-[8px] opacity-60">Image</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('button')" title="Button">
+                            <span class="material-icons-round text-base">smart_button</span>
+                            <span class="text-[8px] opacity-60">Button</span>
+                        </button>
+                    </div>
+
+                    <!-- Media Layers -->
+                    <div class="text-[9px] font-bold opacity-50 mb-2 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-icons-round text-[10px]">play_circle</span> Media
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 mb-3">
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('video')"
+                            title="Video">
+                            <span class="material-icons-round text-base">videocam</span>
+                            <span class="text-[8px] opacity-60">Video</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('audio')"
+                            title="Audio">
+                            <span class="material-icons-round text-base">audiotrack</span>
+                            <span class="text-[8px] opacity-60">Audio</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('icon')"
+                            title="Icon">
+                            <span class="material-icons-round text-base">star</span>
+                            <span class="text-[8px] opacity-60">Icon</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('lottie')" title="Lottie">
+                            <span class="material-icons-round text-base">animation</span>
+                            <span class="text-[8px] opacity-60">Lottie</span>
+                        </button>
+                    </div>
+
+                    <!-- Special Layers -->
+                    <div class="text-[9px] font-bold opacity-50 mb-2 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-icons-round text-[10px]">auto_awesome</span> Special
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 mb-3">
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('shape')"
+                            title="Shape">
+                            <span class="material-icons-round text-base">crop_square</span>
+                            <span class="text-[8px] opacity-60">Shape</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('divider')" title="Divider">
+                            <span class="material-icons-round text-base">horizontal_rule</span>
+                            <span class="text-[8px] opacity-60">Divider</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('countdown')" title="Countdown">
+                            <span class="material-icons-round text-base">timer</span>
+                            <span class="text-[8px] opacity-60">Timer</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="editor.addLayer('social')" title="Social Icons">
+                            <span class="material-icons-round text-base">share</span>
+                            <span class="text-[8px] opacity-60">Social</span>
+                        </button>
+                    </div>
+
+                    <!-- Structure Layers -->
+                    <div class="text-[9px] font-bold opacity-50 mb-2 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-icons-round text-[10px]">dashboard</span> Structure
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1"
+                            onclick="window.LexSlider.groupLayers()" title="Group">
+                            <span class="material-icons-round text-base">folder</span>
+                            <span class="text-[8px] opacity-60">Group</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('row')"
+                            title="Row Layout">
+                            <span class="material-icons-round text-base">view_column</span>
+                            <span class="text-[8px] opacity-60">Row</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1" onclick="editor.addLayer('html')"
+                            title="Custom HTML">
+                            <span class="material-icons-round text-base">code</span>
+                            <span class="text-[8px] opacity-60">HTML</span>
+                        </button>
+                        <button class="btn btn-outline btn-xs h-9 flex-col gap-0 p-1 btn-disabled opacity-30"
+                            title="More coming soon">
+                            <span class="material-icons-round text-base">more_horiz</span>
+                            <span class="text-[8px] opacity-60">More</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCROLLABLE PROPERTIES -->
+                <div class="flex-1 overflow-y-auto p-0 custom-scrollbar" id="property-inspector">
+                    <div class="h-full flex flex-col items-center justify-center text-base-content/30 p-8 text-center">
+                        <span class="material-icons-round text-5xl mb-2">touch_app</span>
+                        <p class="text-xs">Select a layer to edit properties</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- SCROLLABLE PROPERTIES -->
-            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar" id="property-inspector">
-                <div class="h-full flex flex-col items-center justify-center text-base-content/30 p-8 text-center">
-                    <span class="material-icons-round text-5xl mb-2">touch_app</span>
-                    <p class="text-xs">Select a layer to edit properties</p>
-                </div>
+            <!-- TAB CONTENT: HISTORY -->
+            <div id="sidebar-content-history" class="flex-1 overflow-hidden hidden">
+                <div id="historyPanelContainer" class="h-full"></div>
             </div>
         </aside>
     </div>

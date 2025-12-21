@@ -1,4 +1,4 @@
-import * as settingsService from "../../services/settingsService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 import { db } from "../../config/db.ts";
 import { content } from "../../db/schema.ts";
 import { and, desc, eq } from "drizzle-orm";

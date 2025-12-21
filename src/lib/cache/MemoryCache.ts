@@ -7,8 +7,9 @@ import type {
   CacheEntry,
   CacheInterface,
   CacheOptions,
-  CacheStats,
+ CacheStats,
 } from "./types.ts";
+import { env } from "@/config/env.ts";
 
 export class MemoryCache implements CacheInterface {
   private cache = new Map<string, CacheEntry>();
@@ -27,10 +28,16 @@ export class MemoryCache implements CacheInterface {
   constructor(maxSize = 10000, cleanupIntervalMs = 60000) {
     this.maxSize = maxSize;
 
-    // Start cleanup interval
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, cleanupIntervalMs);
+    // Start cleanup interval (production only to avoid leaking timers in tests/dev)
+    if (env.DENO_ENV === "production") {
+      this.cleanupInterval = setInterval(() => {
+        this.cleanup();
+      }, cleanupIntervalMs);
+
+      if (typeof Deno.unrefTimer === "function") {
+        Deno.unrefTimer(this.cleanupInterval);
+      }
+    }
   }
 
   async get<T = any>(key: string): Promise<T | null> {

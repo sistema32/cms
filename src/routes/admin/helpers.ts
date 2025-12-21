@@ -1,3 +1,5 @@
+import type { NotificationItem } from "../../admin/components/ui/NotificationPanel.tsx";
+
 export function parseSettingValueForAdmin(value: string | null): unknown {
     if (value === null || value === undefined) {
         return null;
@@ -81,4 +83,21 @@ export function extractSeoPayload(body: Record<string, unknown>) {
     });
 
     return seo;
+}
+
+export type NormalizedNotification = NotificationItem & { createdAt: Date };
+
+export function normalizeNotifications(items: any[] = []): NormalizedNotification[] {
+    return items.map((item) => ({
+        ...item,
+        actionUrl: item.actionUrl ?? undefined,
+        actionLabel: item.actionLabel ?? undefined,
+        icon: item.icon ?? undefined,
+        link: item.link ?? undefined,
+        createdAt: item.createdAt instanceof Date
+            ? item.createdAt
+            : new Date(item.createdAt ?? Date.now()),
+        readAt: item.readAt ?? undefined,
+        expiresAt: item.expiresAt ?? undefined,
+    }));
 }

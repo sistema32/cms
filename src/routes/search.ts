@@ -13,8 +13,8 @@ import {
   getSearchSuggestions,
   getSearchStats,
   initializeSearchIndexes,
-} from "../services/searchService.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+} from "@/services/system/searchService.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 
 const search = new Hono();
 

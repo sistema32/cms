@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
-import { AdminLayoutNexus } from "../../components/AdminLayoutNexus.tsx";
-import type { NotificationItem } from "../../components/NotificationPanel.tsx";
+import { AdminLayoutNexus } from "@/admin/components/layout/AdminLayoutNexus.tsx";
+import type { NotificationItem } from "@/admin/components/ui/NotificationPanel.tsx";
 
 interface SecurityLogsProps {
   user?: {
@@ -131,12 +131,12 @@ export const SecurityLogsPage = (props: SecurityLogsProps) => {
     </style>
 
     <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <div class="u-flex-between u-mb-xl">
         <div>
           <h1 class="dashboard-title">Logs de Seguridad</h1>
           <p class="dashboard-subtitle">Visualiza y analiza eventos de seguridad</p>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
+        <div class="u-flex-gap-sm">
           <button onclick="exportLogs('csv')" class="btn btn-primary">📥 Exportar CSV</button>
           <button onclick="exportLogs('json')" class="btn btn-primary">📥 Exportar JSON</button>
         </div>
@@ -144,7 +144,7 @@ export const SecurityLogsPage = (props: SecurityLogsProps) => {
     </div>
 
     <!-- Filters -->
-    <div class="content-card" style="margin-bottom: 1.5rem;">
+    <div class="content-card u-mb-lg">
       <div class="filter-grid">
         <div class="filter-group">
           <label class="filter-label">Tipo</label>
@@ -184,17 +184,17 @@ export const SecurityLogsPage = (props: SecurityLogsProps) => {
           <input type="date" class="filter-select" id="filter-end" onchange="loadLogs()">
         </div>
       </div>
-      <div style="margin-top: 1rem;">
+      <div class="u-mt-md">
         <button onclick="clearFilters()" class="btn btn-secondary">Limpiar Filtros</button>
       </div>
     </div>
 
-    <div id="loading" style="text-align: center; padding: 3rem;">
-      <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--nexus-base-300); border-top-color: var(--nexus-primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-      <p style="margin-top: 1rem; color: var(--nexus-base-content); opacity: 0.6;">Cargando logs...</p>
+    <div id="loading" class="text-center p-12">
+      <div class="loading-spinner"></div>
+      <p class="mt-4 opacity-60">Cargando logs...</p>
     </div>
 
-    <div class="content-card" id="table-container" style="display: none; padding: 0; overflow: hidden;">
+    <div class="content-card u-hidden p-0 overflow-hidden" id="table-container">
       <table id="logs-table">
         <thead>
           <tr>
@@ -212,6 +212,13 @@ export const SecurityLogsPage = (props: SecurityLogsProps) => {
     </div>
 
     <style>
+      .loading-spinner {
+        display: inline-block; width: 40px; height: 40px; 
+        border: 3px solid var(--nexus-base-300); 
+        border-top-color: var(--nexus-primary); 
+        border-radius: 50%; 
+        animation: spin 0.8s linear infinite;
+      }
       @keyframes spin {
         to { transform: rotate(360deg); }
       }
@@ -254,7 +261,7 @@ export const SecurityLogsPage = (props: SecurityLogsProps) => {
         container.style.display = 'block';
 
         if (logs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--nexus-base-content); opacity: 0.6;">No se encontraron logs</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center p-12 opacity-60">No se encontraron logs</td></tr>';
           return;
         }
 

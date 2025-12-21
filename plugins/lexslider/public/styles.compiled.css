@@ -406,4 +406,526 @@ body {
     to {
         transform: scale(1.15)
     }
+}/* LexSlider 3.0 - Revolution Edition */
+/* @tailwind base; - REMOVED */
+/* @tailwind components; - REMOVED */
+@tailwind utilities;
+
+/* SR Clone Variables */
+#app {
+    /* Deep Dark Palette */
+    --bg-main: #1e1e1e;
+    /* Main Workspace */
+    --bg-panel: #232323;
+    /* Sidebars/Toolbar */
+    --bg-input: #111111;
+    /* Inputs */
+    --bg-hover: #2a2a2a;
+    /* Hover states */
+
+    --border-color: #333333;
+    /* Subtle borders */
+    --primary: #0069ff;
+    /* SR Blue */
+    --primary-hover: #0056d0;
+
+    --text-main: #dddddd;
+    --text-muted: #888888;
+
+    --radius: 2px;
+    /* Sharp-ish look */
+
+    font-family: 'Roboto', 'Inter', sans-serif;
+    font-size: 11px;
+    /* High density */
+    color: var(--text-main);
+    background-color: var(--bg-main);
+}
+
+/* Global Resets & Overrides */
+#app * {
+    border-color: var(--border-color);
+}
+
+/* Panels */
+#view-editor,
+#view-dashboard,
+.bg-base-100,
+.bg-base-200,
+.bg-base-300 {
+    background-color: var(--bg-main) !important;
+}
+
+aside,
+.navbar,
+#timeline-panel {
+    background-color: var(--bg-panel) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Hide scrollbar on timeline-tree but keep scrollable */
+#timeline-tree::-webkit-scrollbar {
+    display: none;
+}
+
+/* Inputs (SR Style: Dark, Inset, Sharp) */
+input,
+select,
+textarea,
+.input,
+.select,
+.textarea {
+    background-color: var(--bg-input) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+    border-radius: var(--radius) !important;
+    font-size: 11px !important;
+    height: 24px !important;
+    /* Compact */
+    min-height: 24px !important;
+    padding: 0 6px !important;
+}
+
+textarea {
+    height: auto !important;
+    padding: 6px !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--primary) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px var(--primary) !important;
+}
+
+/* Buttons (SR Style: Flat or Icon) */
+.btn {
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--text-main) !important;
+    border-radius: var(--radius) !important;
+    min-height: 24px !important;
+    height: 24px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    padding: 0 10px !important;
+}
+
+.btn:hover {
+    background-color: var(--bg-hover) !important;
+    color: #fff !important;
+}
+
+.btn-primary {
+    background-color: var(--primary) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+}
+
+.btn-square {
+    width: 24px !important;
+    padding: 0 !important;
+}
+
+/* Splitters */
+.splitter-h,
+.splitter-v {
+    background-color: var(--bg-main);
+    border-color: var(--border-color);
+}
+
+.splitter-h:hover,
+.splitter-v:hover {
+    background-color: var(--primary);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: var(--bg-panel);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Canvas Area */
+#canvas-area {
+    background-color: #151515;
+    /* Even darker for contrast */
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Timeline Tracks */
+.timeline-track-lane {
+    background: var(--bg-input);
+    border-bottom: 1px solid var(--border-color);
+    height: 28px;
+    /* Compact */
+}
+
+.timeline-layer-bar {
+    border-radius: 2px;
+    height: 20px;
+    top: 4px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    padding-left: 4px;
+}
+
+/* Tree View */
+.tree-item {
+    height: 28px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tree-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.tree-item.active {
+    background-color: #2a2a35;
+    color: var(--primary);
+    border-left: 2px solid var(--primary);
+}
+
+/* Fix Autosave Text Position */
+.navbar .flex-col {
+    justify-content: center;
+}
+
+/* Force Dark Theme Backgrounds (Safety Net) */
+body {
+    background-color: #282a36 !important;
+    /* Dracula Background */
+    color: #f8f8f2 !important;
+}
+
+/* Custom Scrollbar for High Density Panels */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Canvas Area Pattern */
+#canvas-area {
+    background-image:
+        linear-gradient(45deg, #1d232a 25%, transparent 25%),
+        linear-gradient(-45deg, #1d232a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1d232a 75%),
+        linear-gradient(-45deg, transparent 75%, #1d232a 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color: #191e24;
+    /* base-300 darker */
+}
+
+/* Splitters */
+.splitter-h {
+    width: 4px;
+    cursor: col-resize;
+    background: #191e24;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+    z-index: 50;
+}
+
+.splitter-h:hover,
+.splitter-h.dragging {
+    background: #8470ff;
+}
+
+.splitter-v {
+    height: 4px;
+    cursor: row-resize;
+    background: #191e24;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+    z-index: 50;
+}
+
+.splitter-v:hover,
+.splitter-v.dragging {
+    background: #8470ff;
+}
+
+/* Timeline Specifics */
+.timeline-track-lane {
+    height: 32px;
+    /* Fixed height for tracks */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.timeline-track-lane.selected {
+    background: rgba(132, 112, 255, 0.1);
+    /* Primary color low opacity */
+}
+
+.timeline-layer-bar {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    background: #8470ff;
+    /* Primary */
+    border-radius: 4px;
+    cursor: grab;
+    opacity: 0.8;
+    min-width: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-layer-bar:active {
+    cursor: grabbing;
+    opacity: 1;
+}
+
+.timeline-layer-bar.selected {
+    border: 1px solid white;
+    z-index: 10;
+}
+
+.bar-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: rgba(255, 255, 255, 0.2);
+    display: none;
+    /* Show on hover */
+}
+
+.timeline-layer-bar:hover .bar-handle {
+    display: block;
+}
+
+.bar-handle.left {
+    left: 0;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+.bar-handle.right {
+    right: 0;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* Tree View Specifics */
+.tree-item {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    /* Match track height */
+    padding: 0 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    color: #a6adbb;
+    /* base-content opacity */
+}
+
+.tree-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.tree-item.active {
+    background-color: rgba(132, 112, 255, 0.15);
+    color: #8470ff;
+    border-left: 2px solid #8470ff;
+}
+
+.tree-item .icon {
+    font-size: 16px;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+
+.tree-item .actions {
+    margin-left: auto;
+    display: none;
+    gap: 4px;
+}
+
+.tree-item:hover .actions {
+    display: flex;
+}
+
+/* Keyframe Diamond */
+.timeline-keyframe {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border: 1px solid #8470ff;
+    z-index: 5;
+    cursor: pointer;
+}
+
+.timeline-keyframe:hover {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.2);
+    background: #8470ff;
+}
+
+/* Ruler Ticks */
+.ruler-mark {
+    position: absolute;
+    bottom: 0;
+    height: 100%;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ruler-tick {
+    height: 6px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.ruler-label {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 4px;
+    margin-top: 2px;
+}
+
+/* Resize Handles */
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    border: 1px solid var(--primary);
+    z-index: 100;
+}
+
+.resize-handle.nw {
+    top: -5px;
+    left: -5px;
+    cursor: nw-resize;
+}
+
+.resize-handle.ne {
+    top: -5px;
+    right: -5px;
+    cursor: ne-resize;
+}
+
+.resize-handle.sw {
+    bottom: -5px;
+    left: -5px;
+    cursor: sw-resize;
+}
+
+.resize-handle.se {
+    bottom: -5px;
+    right: -5px;
+    cursor: se-resize;
+}
+
+/* Selected Layer Border */
+.layer-item.selected {
+    outline: 1px solid var(--primary);
+}
+
+@keyframes kenBurns {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.15);
+    }
+}
+
+/* ========== MODAL OVERRIDES ========== */
+/* Prevent dark theme from affecting modals */
+dialog.modal {
+    background-color: transparent;
+}
+
+dialog.modal .modal-box {
+    background-color: #2a303c !important; /* DaisyUI dark box color */
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box h3 {
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box .label-text {
+    color: #a6adbb !important;
+}
+
+dialog.modal .modal-box input,
+dialog.modal .modal-box select,
+dialog.modal .modal-box textarea {
+    background-color: #1d232a !important;
+    border-color: #3d4451 !important;
+    color: #f8f8f2 !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 14px !important;
+}
+
+dialog.modal .modal-box .btn {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+}
+
+dialog.modal .modal-box .btn-ghost {
+    color: #a6adbb !important;
+}
+
+dialog.modal .modal-box .btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box .btn-primary {
+    background-color: #661ae6 !important;
+    border-color: #661ae6 !important;
+    color: #fff !important;
+}
+
+dialog.modal .modal-box .btn-primary:hover {
+    background-color: #7b32f0 !important;
 }

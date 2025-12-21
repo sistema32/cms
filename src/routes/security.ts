@@ -4,9 +4,10 @@
  */
 
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 import { securityManager } from "../lib/security/SecurityManager.ts";
 import { z } from "zod";
+import type { IPBlockRule } from "../lib/security/types.ts";
 
 const security = new Hono();
 
@@ -29,12 +30,12 @@ security.get("/rules", async (c) => {
     if (active === "true") {
       const now = new Date();
       filteredRules = rules.filter(
-        (rule) => !rule.expiresAt || new Date(rule.expiresAt) > now,
+        (rule: IPBlockRule) => !rule.expiresAt || new Date(rule.expiresAt) > now,
       );
     } else if (active === "false") {
       const now = new Date();
       filteredRules = rules.filter(
-        (rule) => rule.expiresAt && new Date(rule.expiresAt) <= now,
+        (rule: IPBlockRule) => rule.expiresAt && new Date(rule.expiresAt) <= now,
       );
     }
 
@@ -87,7 +88,8 @@ security.post("/block", async (c) => {
     const { ip, reason, expiresAt } = parsed.data;
     const expiresAtDate = expiresAt ? new Date(expiresAt) : undefined;
 
-    await securityManager.blockIP(ip, reason, expiresAtDate, user.id);
+    const userId = Number(user?.userId ?? user?.id);
+    await securityManager.blockIP(ip, reason, expiresAtDate, userId);
 
     return c.json({
       success: true,
@@ -135,7 +137,8 @@ security.post("/whitelist", async (c) => {
     const { ip, reason, expiresAt } = parsed.data;
     const expiresAtDate = expiresAt ? new Date(expiresAt) : undefined;
 
-    await securityManager.whitelistIP(ip, reason, expiresAtDate, user.id);
+    const userId = Number(user?.userId ?? user?.id);
+    await securityManager.whitelistIP(ip, userId);
 
     return c.json({
       success: true,

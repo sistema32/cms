@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 import {
   upsertContentSeo,
   getContentSeoByContentId,
-} from "../controllers/contentController.ts";
+} from "@/controllers/contentController.ts";
 
 const contentSeoRouter = new Hono();
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as mediaController from "../controllers/mediaController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
-import { requirePermission } from "../middleware/permission.ts";
+import * as mediaController from "@/controllers/mediaController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
+import { requirePermission } from "@/middleware/permission.ts";
 
 const media = new Hono();
 

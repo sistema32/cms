@@ -1,8 +1,8 @@
 import { html } from "hono/html";
-import { formService } from "../services/formService.ts";
+import { formService } from "@/services/formService.ts";
 import FormRenderer from "../components/FormRenderer.tsx";
-import * as captchaService from "../services/captchaService.ts";
-import * as settingsService from "../services/settingsService.ts";
+import * as captchaService from "@/services/system/captchaService.ts";
+import * as settingsService from "@/services/system/settingsService.ts";
 
 /**
  * Procesa shortcodes de formularios en el contenido

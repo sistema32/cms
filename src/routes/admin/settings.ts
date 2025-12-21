@@ -4,14 +4,15 @@ import { db } from "../../config/db.ts";
 import { content, contentTypes } from "../../db/schema.ts";
 import { env } from "../../config/env.ts";
 import { notificationService } from "../../lib/email/index.ts";
-import { updateSetting as updateSettingService } from "../../services/settingsService.ts";
+import { updateSetting as updateSettingService } from "@/services/system/settingsService.ts";
 import {
     resolveFieldDefault,
     SETTINGS_DEFINITIONS,
     SETTINGS_FIELD_MAP,
 } from "../../config/settingsDefinitions.ts";
-import SettingsNexusPage from "../../admin/pages/SettingsNexus.tsx";
+import SettingsNexusPage from "../../admin/pages/system/SettingsNexus.tsx";
 import { parseSettingValueForAdmin } from "./helpers.ts";
+import { normalizeNotifications, type NormalizedNotification } from "./helpers.ts";
 
 export const settingsRouter = new Hono();
 
@@ -117,15 +118,15 @@ settingsRouter.get("/settings", async (c) => {
             : fallbackCategory;
 
         // Get notifications for the user
-        let notifications = [];
+        let notifications: NormalizedNotification[] = [];
         let unreadNotificationCount = 0;
         try {
-            notifications = await notificationService.getForUser({
+            notifications = normalizeNotifications(await notificationService.getForUser({
                 userId: user.userId,
                 isRead: false,
                 limit: 5,
                 offset: 0,
-            });
+            }));
             unreadNotificationCount = await notificationService.getUnreadCount(
                 user.userId,
             );
@@ -136,7 +137,7 @@ settingsRouter.get("/settings", async (c) => {
         return c.html(SettingsNexusPage({
             user: {
                 id: user.userId,
-                name: user.name || user.email,
+                name: (user.name as string | null) || user.email,
                 email: user.email,
             },
             settings: resolvedSettings,
@@ -258,7 +259,7 @@ settingsRouter.post("/settings/save", async (c) => {
 settingsRouter.post("/settings/clear-cache", async (c) => {
     try {
         const { cacheManager } = await import("../../lib/cache/index.ts");
-        await cacheManager.clear();
+        await cacheManager.getCache().clear();
 
         return c.json({ success: true, message: "Cache limpiado exitosamente" });
     } catch (error: any) {

@@ -1,23 +1,26 @@
 import { html } from "hono/html";
-import { NotificationPanel, type NotificationItem } from "../NotificationPanel.tsx";
+import { NotificationPanel, type NotificationItem } from "../ui/NotificationPanel.tsx";
+import { env } from "@/config/env.ts";
 
 interface NexusHeaderProps {
-    title: string;
-    user?: {
-        name: string | null;
-        email: string;
-        avatar?: string;
-    };
-    notifications: NotificationItem[];
-    unreadNotificationCount: number;
+  title: string;
+  user?: {
+    name: string | null;
+    email: string;
+    avatar?: string;
+  };
+  notifications: NotificationItem[];
+  unreadNotificationCount: number;
+  adminPath?: string;
 }
 
-export const NexusHeader = ({ title, user, notifications, unreadNotificationCount }: NexusHeaderProps) => {
-    const userName = user?.name || user?.email?.split('@')[0] || 'Usuario';
+export const NexusHeader = ({ title, user, notifications, unreadNotificationCount, adminPath }: NexusHeaderProps) => {
+  const userName = user?.name || user?.email?.split('@')[0] || 'Usuario';
+  const baseAdminPath = adminPath || env.ADMIN_PATH || "/admincp";
 
-    return html`
+  return html`
     <header class="nexus-header">
-      <button class="mobile-menu-btn" onclick="toggleSidebar()">
+      <button class="mobile-menu-btn" data-action="toggleSidebar()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
@@ -40,7 +43,7 @@ export const NexusHeader = ({ title, user, notifications, unreadNotificationCoun
           <input type="text" placeholder="Buscar...">
         </div>
 
-        ${NotificationPanel({ notifications, unreadCount: unreadNotificationCount })}
+        ${NotificationPanel({ notifications, unreadCount: unreadNotificationCount, adminPath: baseAdminPath })}
 
         <button class="nexus-icon-btn">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

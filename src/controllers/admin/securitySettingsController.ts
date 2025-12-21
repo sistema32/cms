@@ -1,5 +1,15 @@
 import type { Context } from "hono";
 import { securitySettingsService } from "../../services/security/securitySettingsService.ts";
+import { AppError } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { z } from "zod";
+
+const log = createLogger("securitySettingsController");
+const updateSettingSchema = z.object({
+    key: z.string().min(1),
+    value: z.any(),
+});
 
 export class SecuritySettingsController {
     /**
@@ -10,8 +20,8 @@ export class SecuritySettingsController {
             const settings = await securitySettingsService.getSettingsObject();
             return c.json({ success: true, data: settings });
         } catch (error) {
-            console.error("Error fetching security settings:", error);
-            return c.json({ success: false, error: "Failed to fetch settings" }, 500);
+            log.error("Error fetching security settings", error instanceof Error ? error : undefined);
+            throw new AppError("security_settings_fetch_failed", getErrorMessage(error), 500);
         }
     }
 
@@ -21,11 +31,7 @@ export class SecuritySettingsController {
     async updateSetting(c: Context) {
         try {
             const body = await c.req.json();
-            const { key, value } = body;
-
-            if (!key || value === undefined) {
-                return c.json({ success: false, error: "Key and value are required" }, 400);
-            }
+            const { key, value } = updateSettingSchema.parse(body);
 
             // Get existing setting to determine type and category
             const existing = await securitySettingsService.getSetting(key);
@@ -60,8 +66,11 @@ export class SecuritySettingsController {
 
             return c.json({ success: true, data: updated });
         } catch (error) {
-            console.error("Error updating security setting:", error);
-            return c.json({ success: false, error: "Failed to update setting" }, 500);
+            if (error instanceof z.ZodError) {
+                throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+            }
+            log.error("Error updating security setting", error instanceof Error ? error : undefined);
+            throw error instanceof AppError ? error : new AppError("security_setting_update_failed", getErrorMessage(error), 500);
         }
     }
 }

@@ -1,33 +1,33 @@
 import { html, raw } from "hono/html";
 
 export interface CollapsibleSectionProps {
-    id: string;
-    title: string;
-    icon?: string;
-    children: any;
-    defaultOpen?: boolean;
-    className?: string;
+  id: string;
+  title: string;
+  icon?: string;
+  children: unknown;
+  defaultOpen?: boolean;
+  className?: string;
 }
 
 export const CollapsibleSection = (props: CollapsibleSectionProps) => {
-    const {
-        id,
-        title,
-        icon,
-        children,
-        defaultOpen = false,
-        className = "",
-    } = props;
+  const {
+    id,
+    title,
+    icon,
+    children,
+    defaultOpen = false,
+    className = "",
+  } = props;
 
-    const sectionId = `collapsible-${id}`;
-    const storageKey = `collapsible-state-${id}`;
+  const sectionId = `collapsible-${id}`;
+  const storageKey = `collapsible-state-${id}`;
 
-    return html`
+  return html`
     <div class="nexus-collapsible ${className}" data-collapsible-id="${id}">
       <button
         type="button"
         class="nexus-collapsible-header"
-        onclick="toggleCollapsible('${id}')"
+        data-collapsible-toggle="${id}"
         aria-expanded="${defaultOpen}"
         aria-controls="${sectionId}"
       >
@@ -174,13 +174,24 @@ export const CollapsibleSection = (props: CollapsibleSectionProps) => {
             localStorage.setItem(storageKey, newState);
           };
 
-          // Initialize on load
+          // Initialize on load and add event delegation
           document.addEventListener('DOMContentLoaded', function() {
             const sections = document.querySelectorAll('[data-collapsible-id]');
             sections.forEach(function(section) {
               const id = section.getAttribute('data-collapsible-id');
               initCollapsible(id);
             });
+          });
+
+          // CSP-compliant: Use event delegation for collapsible toggles
+          document.addEventListener('click', function(e) {
+            const toggle = e.target.closest('[data-collapsible-toggle]');
+            if (toggle) {
+              const id = toggle.getAttribute('data-collapsible-toggle');
+              if (id && window.toggleCollapsible) {
+                window.toggleCollapsible(id);
+              }
+            }
           });
         })();
       </script>

@@ -21,7 +21,7 @@ export class SitemapGenerator {
       includeTags: true,
       includePages: true,
       maxUrls: 50000, // Google limit
-      excludePaths: ["/admin", "/api"],
+      excludePaths: [`/${env.ADMIN_PATH}`, "/api"],
     };
   }
 
@@ -91,6 +91,7 @@ export class SitemapGenerator {
       .where(eq(content.status, "published"));
 
     return allContent.map((item) => {
+      const featuredImage = (item as any).featuredImage as string | undefined;
       const url: SitemapUrl = {
         loc: `${this.config.baseUrl}/${item.slug}`,
         lastmod: item.updatedAt?.toISOString() || item.publishedAt?.toISOString(),
@@ -99,10 +100,10 @@ export class SitemapGenerator {
       };
 
       // Add images if featured image exists
-      if (item.featuredImage) {
+      if (featuredImage) {
         url.images = [
           {
-            loc: item.featuredImage,
+            loc: featuredImage,
             title: item.title,
           },
         ];

@@ -126,6 +126,44 @@ function getDefaultContent(type) {
         case 'icon': return { icon: 'star', size: '48px', color: '#ffcc00' };
         case 'shape': return {};
         case 'group': return {};
+        // New layer types
+        case 'countdown': return {
+            countdownConfig: {
+                targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+                style: 'boxes',
+                showDays: true, showHours: true, showMinutes: true, showSeconds: true
+            }
+        };
+        case 'typing': return {
+            typingConfig: {
+                texts: ['Hello World', 'Welcome to LexSlider', 'Create Amazing Sliders'],
+                preset: 'typewriter', loop: true, typingSpeed: 50, cursor: '|'
+            }
+        };
+        case 'lottie': return {
+            lottieConfig: {
+                src: 'https://assets10.lottiefiles.com/packages/lf20_jcikwtux.json',
+                autoplay: true, loop: true, speed: 1
+            }
+        };
+        case 'social': return {
+            shareConfig: {
+                networks: ['facebook', 'twitter', 'whatsapp', 'linkedin'],
+                layout: 'horizontal', buttonStyle: 'filled'
+            }
+        };
+        case 'html': return {
+            embedConfig: {
+                type: 'html', content: '<div style="padding: 20px;">Custom HTML content</div>',
+                width: '100%', height: '200px'
+            }
+        };
+        case 'iframe': return {
+            embedConfig: {
+                type: 'embed', url: '',
+                width: '100%', height: '400px', lazy: true
+            }
+        };
         default: return {};
     }
 }
@@ -147,6 +185,13 @@ function getDefaultStyle(type) {
     if (type === 'icon') return { ...base, fontSize: '48px', color: '#ffcc00' };
     if (type === 'shape') return { ...base, width: '100px', height: '100px', background: '#8470ff' };
     if (type === 'group') return { ...base, width: '300px', height: '200px', border: '1px dashed rgba(255,255,255,0.3)' };
+    // New layer types
+    if (type === 'countdown') return { ...base, fontSize: '24px', color: '#ffffff' };
+    if (type === 'typing') return { ...base, fontSize: '32px', color: '#ffffff', fontFamily: 'monospace' };
+    if (type === 'lottie') return { ...base, width: '200px', height: '200px' };
+    if (type === 'social') return { ...base };
+    if (type === 'html' || type === 'iframe') return { ...base, width: '400px', height: '300px' };
 
     return base;
 }
+

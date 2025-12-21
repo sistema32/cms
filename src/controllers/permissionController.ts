@@ -1,6 +1,8 @@
 import { Context } from "hono";
-import * as permissionService from "../services/permissionService.ts";
+import * as permissionService from "@/services/auth/permissionService.ts";
 import { z } from "zod";
+import { AppError, parseNumericParam } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
 
 // Esquemas de validación
 const createPermissionSchema = z.object({
@@ -27,10 +29,8 @@ export async function getAllPermissions(c: Context) {
       data: permissions,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permisos";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_list_failed", message, 500);
   }
 }
 
@@ -39,11 +39,7 @@ export async function getAllPermissions(c: Context) {
  */
 export async function getPermissionById(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID");
 
     const permission = await permissionService.getPermissionById(id);
 
@@ -52,10 +48,8 @@ export async function getPermissionById(c: Context) {
       data: permission,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permiso";
-    return c.json({ success: false, error: message }, 404);
+    const message = getErrorMessage(error);
+    throw error instanceof AppError ? error : new AppError("permission_get_failed", message, 404);
   }
 }
 
@@ -73,10 +67,8 @@ export async function getPermissionsByModule(c: Context) {
       data: permissions,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permisos";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_module_failed", message, 500);
   }
 }
 
@@ -99,10 +91,11 @@ export async function createPermission(c: Context) {
       201
     );
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al crear permiso";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    const message = getErrorMessage(error);
+    throw new AppError("permission_create_failed", message, 400);
   }
 }
 
@@ -111,11 +104,7 @@ export async function createPermission(c: Context) {
  */
 export async function updatePermission(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID");
 
     const body = await c.req.json();
     const data = updatePermissionSchema.parse(body);
@@ -128,10 +117,11 @@ export async function updatePermission(c: Context) {
       message: "Permiso actualizado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al actualizar permiso";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    const message = getErrorMessage(error);
+    throw new AppError("permission_update_failed", message, 400);
   }
 }
 
@@ -140,11 +130,7 @@ export async function updatePermission(c: Context) {
  */
 export async function deletePermission(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID");
 
     await permissionService.deletePermission(id);
 
@@ -153,10 +139,8 @@ export async function deletePermission(c: Context) {
       message: "Permiso eliminado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al eliminar permiso";
-    return c.json({ success: false, error: message }, 400);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_delete_failed", message, 400);
   }
 }
 
@@ -165,11 +149,7 @@ export async function deletePermission(c: Context) {
  */
 export async function getUserPermissions(c: Context) {
   try {
-    const userId = Number(c.req.param("userId"));
-
-    if (isNaN(userId)) {
-      return c.json({ success: false, error: "ID de usuario inválido" }, 400);
-    }
+    const userId = parseNumericParam(c.req.param("userId"), "User ID");
 
     const permissions = await permissionService.getUserPermissions(userId);
 
@@ -178,10 +158,8 @@ export async function getUserPermissions(c: Context) {
       data: permissions,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permisos del usuario";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("user_permissions_failed", message, 500);
   }
 }
 
@@ -197,10 +175,8 @@ export async function getPermissionsGrouped(c: Context) {
       data: grouped,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permisos agrupados";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_group_failed", message, 500);
   }
 }
 
@@ -216,10 +192,8 @@ export async function getAllModules(c: Context) {
       data: modules,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener módulos";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_modules_failed", message, 500);
   }
 }
 
@@ -235,10 +209,8 @@ export async function getPermissionStats(c: Context) {
       data: stats,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener estadísticas";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw new AppError("permission_stats_failed", message, 500);
   }
 }
 
@@ -250,7 +222,7 @@ export async function searchPermissions(c: Context) {
     const query = c.req.query("q");
 
     if (!query) {
-      return c.json({ success: false, error: "Query requerido" }, 400);
+      throw AppError.fromCatalog("validation_error", { message: "Query requerido" });
     }
 
     const permissions = await permissionService.searchPermissions(query);
@@ -260,9 +232,7 @@ export async function searchPermissions(c: Context) {
       data: permissions,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al buscar permisos";
-    return c.json({ success: false, error: message }, 500);
+    const message = getErrorMessage(error);
+    throw error instanceof AppError ? error : new AppError("permission_search_failed", message, 500);
   }
 }

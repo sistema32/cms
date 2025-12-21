@@ -1,5 +1,5 @@
 import { html, raw } from "hono/html";
-import { registeredSlots } from "../../../services/pluginRuntime.ts";
+import { registeredSlots } from "@/services/plugins/pluginRuntime.ts";
 import { env } from "../../../config/env.ts";
 
 export interface NavSubItem {
@@ -186,7 +186,7 @@ export const NexusSidebar = ({ activePage, adminPath }: NexusSidebarProps) => {
         <a href="${adminPath}/" class="nexus-sidebar-brand">
           <div class="nexus-sidebar-logo">LexCMS</div>
         </a>
-        <button class="sidebar-close-btn" onclick="toggleSidebar()">
+        <button class="sidebar-close-btn" data-action="toggleSidebar()">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>

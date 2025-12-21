@@ -1,6 +1,11 @@
 import { Context } from "hono";
-import * as roleService from "../services/roleService.ts";
+import * as roleService from "@/services/auth/roleService.ts";
 import { z } from "zod";
+import { AppError, parseNumericParam } from "@/platform/errors.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+
+const log = createLogger("roleController");
 
 // Esquemas de validación
 const createRoleSchema = z.object({
@@ -29,8 +34,8 @@ export async function getAllRoles(c: Context) {
       data: roles,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al obtener roles";
-    return c.json({ success: false, error: message }, 500);
+    log.error("Error al obtener roles", error instanceof Error ? error : undefined);
+    throw new AppError("role_list_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -39,21 +44,22 @@ export async function getAllRoles(c: Context) {
  */
 export async function getRoleById(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const role = await roleService.getRoleById(id);
+
+    if (!role) {
+      throw new AppError("role_not_found", "Rol no encontrado", 404);
+    }
 
     return c.json({
       success: true,
       data: role,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al obtener rol";
-    return c.json({ success: false, error: message }, 404);
+    if (error instanceof AppError) throw error;
+    log.error("Error al obtener rol", error instanceof Error ? error : undefined);
+    throw new AppError("role_get_failed", getErrorMessage(error), 404);
   }
 }
 
@@ -70,14 +76,16 @@ export async function createRole(c: Context) {
     return c.json(
       {
         success: true,
-        data: role,
-        message: "Rol creado exitosamente",
-      },
-      201
+      data: role,
+      message: "Rol creado exitosamente",
+    },
+      201,
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al crear rol";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_create_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -86,11 +94,7 @@ export async function createRole(c: Context) {
  */
 export async function updateRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const body = await c.req.json();
     const data = updateRoleSchema.parse(body);
@@ -103,8 +107,10 @@ export async function updateRole(c: Context) {
       message: "Rol actualizado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al actualizar rol";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_update_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -113,11 +119,7 @@ export async function updateRole(c: Context) {
  */
 export async function deleteRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     await roleService.deleteRole(id);
 
@@ -126,8 +128,8 @@ export async function deleteRole(c: Context) {
       message: "Rol eliminado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error al eliminar rol";
-    return c.json({ success: false, error: message }, 400);
+    log.error("Error al eliminar rol", error instanceof Error ? error : undefined);
+    throw error instanceof AppError ? error : new AppError("role_delete_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -136,18 +138,14 @@ export async function deleteRole(c: Context) {
  */
 export async function assignPermissionsToRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const body = await c.req.json();
     const data = assignPermissionsSchema.parse(body);
 
     const role = await roleService.assignPermissionsToRole(
       id,
-      data.permissionIds
+      data.permissionIds,
     );
 
     return c.json({
@@ -156,10 +154,10 @@ export async function assignPermissionsToRole(c: Context) {
       message: "Permisos asignados exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al asignar permisos";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_permissions_assign_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -168,11 +166,7 @@ export async function assignPermissionsToRole(c: Context) {
  */
 export async function getRolePermissions(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const permissions = await roleService.getRolePermissions(id);
 
@@ -181,10 +175,7 @@ export async function getRolePermissions(c: Context) {
       data: permissions,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener permisos del rol";
-    return c.json({ success: false, error: message }, 404);
+    throw error instanceof AppError ? error : new AppError("role_permissions_get_failed", getErrorMessage(error), 404);
   }
 }
 
@@ -200,10 +191,7 @@ export async function getRoleStats(c: Context) {
       data: stats,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener estadísticas de roles";
-    return c.json({ success: false, error: message }, 500);
+    throw new AppError("role_stats_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -212,11 +200,7 @@ export async function getRoleStats(c: Context) {
  */
 export async function getRoleWithStats(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const role = await roleService.getRoleByIdWithStats(id);
 
@@ -225,10 +209,7 @@ export async function getRoleWithStats(c: Context) {
       data: role,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener rol";
-    return c.json({ success: false, error: message }, 404);
+    throw error instanceof AppError ? error : new AppError("role_get_failed", getErrorMessage(error), 404);
   }
 }
 
@@ -244,10 +225,7 @@ export async function getAllRolesWithStats(c: Context) {
       data: roles,
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al obtener roles";
-    return c.json({ success: false, error: message }, 500);
+    throw new AppError("role_list_failed", getErrorMessage(error), 500);
   }
 }
 
@@ -256,18 +234,10 @@ export async function getAllRolesWithStats(c: Context) {
  */
 export async function addPermissionToRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const body = await c.req.json();
-    const { permissionId } = body;
-
-    if (!permissionId || isNaN(Number(permissionId))) {
-      return c.json({ success: false, error: "permissionId requerido" }, 400);
-    }
+    const { permissionId } = z.object({ permissionId: z.number() }).parse(body);
 
     const role = await roleService.addPermissionToRole(id, Number(permissionId));
 
@@ -277,10 +247,10 @@ export async function addPermissionToRole(c: Context) {
       message: "Permiso agregado exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al agregar permiso al rol";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_permission_add_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -289,18 +259,10 @@ export async function addPermissionToRole(c: Context) {
  */
 export async function removePermissionFromRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const body = await c.req.json();
-    const { permissionId } = body;
-
-    if (!permissionId || isNaN(Number(permissionId))) {
-      return c.json({ success: false, error: "permissionId requerido" }, 400);
-    }
+    const { permissionId } = z.object({ permissionId: z.number() }).parse(body);
 
     const role = await roleService.removePermissionFromRole(id, Number(permissionId));
 
@@ -310,10 +272,10 @@ export async function removePermissionFromRole(c: Context) {
       message: "Permiso removido exitosamente",
     });
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al remover permiso del rol";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_permission_remove_failed", getErrorMessage(error), 400);
   }
 }
 
@@ -322,18 +284,13 @@ export async function removePermissionFromRole(c: Context) {
  */
 export async function cloneRole(c: Context) {
   try {
-    const id = Number(c.req.param("id"));
-
-    if (isNaN(id)) {
-      return c.json({ success: false, error: "ID inválido" }, 400);
-    }
+    const id = parseNumericParam(c.req.param("id"), "ID de rol");
 
     const body = await c.req.json();
-    const { name, description } = body;
-
-    if (!name) {
-      return c.json({ success: false, error: "Nombre requerido" }, 400);
-    }
+    const { name, description } = z.object({
+      name: z.string().min(1, "Nombre requerido"),
+      description: z.string().optional(),
+    }).parse(body);
 
     const role = await roleService.cloneRole(id, name, description);
 
@@ -343,9 +300,9 @@ export async function cloneRole(c: Context) {
       message: "Rol clonado exitosamente",
     }, 201);
   } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "Error al clonar rol";
-    return c.json({ success: false, error: message }, 400);
+    if (error instanceof z.ZodError) {
+      throw AppError.fromCatalog("validation_error", { details: { issues: error.errors } });
+    }
+    throw error instanceof AppError ? error : new AppError("role_clone_failed", getErrorMessage(error), 400);
   }
 }

@@ -31,13 +31,23 @@ export class SecurityManager {
    * Load IP block rules into cache
    */
   private async loadIPBlockCache(): Promise<void> {
-    const rules = await db.select().from(ipBlockRules);
+    let rules: IPBlockRule[] = [];
+    try {
+      rules = await db.select().from(ipBlockRules) as IPBlockRule[];
+    } catch (error) {
+      console.warn("SecurityManager: skipping IP block cache load (db unavailable)", error);
+      this.ipBlockCache.clear();
+      this.lastCacheUpdate = Date.now();
+      return;
+    }
 
     this.ipBlockCache.clear();
     for (const rule of rules) {
       // Check if rule has expired
       if (rule.expiresAt && rule.expiresAt < new Date()) {
-        await this.deleteIPRule(rule.id);
+        if (rule.id !== undefined && rule.id !== null) {
+          await this.deleteIPRule(rule.id);
+        }
         continue;
       }
 
@@ -65,8 +75,9 @@ export class SecurityManager {
     const rule = this.ipBlockCache.get(ip);
     if (!rule) return false;
 
-    // Check if it's a block rule
-    if (rule.type !== "block") return false;
+    // Check if it's a block rule (supporting legacy "blacklist" label)
+    const ruleType = rule.type as string;
+    if (ruleType !== "block" && ruleType !== "blacklist") return false;
 
     // Check if expired
     if (rule.expiresAt && rule.expiresAt < new Date()) {
@@ -169,6 +180,10 @@ export class SecurityManager {
     await this.loadIPBlockCache();
   }
 
+  async removeIPRule(id: number): Promise<void> {
+    await this.deleteIPRule(id);
+  }
+
   /**
    * Unblock IP
    */
@@ -196,6 +211,10 @@ export class SecurityManager {
     });
 
     return rules as IPBlockRule[];
+  }
+
+  async getAllIPRules(type?: "block" | "whitelist"): Promise<IPBlockRule[]> {
+    return this.getIPRules(type);
   }
 
   /**
@@ -276,6 +295,33 @@ export class SecurityManager {
     })) as SecurityEvent[];
   }
 
+  async getSecurityEvents(filters: {
+    type?: string;
+    severity?: string;
+    ip?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<SecurityEvent[]> {
+    const { type, severity, ip, limit = 100, offset = 0 } = filters;
+    const conditions = [];
+
+    if (type) conditions.push(eq(securityEvents.type, type));
+    if (severity) conditions.push(eq(securityEvents.severity, severity));
+    if (ip) conditions.push(eq(securityEvents.ip, ip));
+
+    const events = await db.query.securityEvents.findMany({
+      where: conditions.length ? and(...conditions) : undefined,
+      orderBy: [desc(securityEvents.createdAt)],
+      limit,
+      offset,
+    });
+
+    return events.map((e) => ({
+      ...e,
+      details: e.details ? JSON.parse(e.details) : undefined,
+    })) as SecurityEvent[];
+  }
+
   /**
    * Get security statistics
    */
@@ -319,41 +365,14 @@ export class SecurityManager {
   }
 
   /**
-   * Get security stats in the format expected by main.ts
-   */
-  async getSecurityStats() {
-    const allRules = await db.select().from(ipBlockRules);
-    const allEvents = await db.select().from(securityEvents);
-
-    // Events in last 24h
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    const eventsLast24h = allEvents.filter(e =>
-      new Date(e.createdAt) >= oneDayAgo
-    );
-
-    return {
-      ipRules: {
-        total: allRules.length,
-        blocked: allRules.filter(r => r.type === "block").length,
-        whitelisted: allRules.filter(r => r.type === "whitelist").length,
-      },
-      events: {
-        total: allEvents.length,
-        last24h: eventsLast24h.length,
-      },
-    };
-  }
-
-  /**
    * Clean old events (older than 30 days)
    */
-  async cleanOldEvents(): Promise<number> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async cleanOldEvents(retentionDays = 30): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - retentionDays);
 
     const result = await db.delete(securityEvents)
-      .where(sql`${securityEvents.createdAt} < ${thirtyDaysAgo}`);
+      .where(sql`${securityEvents.createdAt} < ${cutoff}`);
 
     return result.rowsAffected || 0;
   }
@@ -415,13 +434,17 @@ export class SecurityManager {
     const whitelistedCount = allRules.filter(r => r.type === 'whitelist').length;
 
     // Get events stats
-    const now = Date.now() / 1000; // Unix timestamp in seconds
-    const oneDayAgo = now - (24 * 60 * 60);
-    const oneWeekAgo = now - (7 * 24 * 60 * 60);
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
 
     const allEvents = await db.select().from(securityEvents);
-    const last24hCount = allEvents.filter(e => e.createdAt >= oneDayAgo).length;
-    const lastWeekCount = allEvents.filter(e => e.createdAt >= oneWeekAgo).length;
+    const last24hCount = allEvents.filter((e) =>
+      new Date(e.createdAt) >= oneDayAgo
+    ).length;
+    const lastWeekCount = allEvents.filter((e) =>
+      new Date(e.createdAt) >= oneWeekAgo
+    ).length;
 
     return {
       ipRules: {

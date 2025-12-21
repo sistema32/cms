@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import * as authController from "../controllers/authController.ts";
-import * as twoFactorController from "../controllers/twoFactorController.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+import * as authController from "@/controllers/authController.ts";
+import * as twoFactorController from "@/controllers/twoFactorController.ts";
+import { authMiddleware } from "@/middleware/auth.ts";
 
 const auth = new Hono();
 

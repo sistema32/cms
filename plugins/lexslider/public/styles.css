@@ -465,3 +465,59 @@ body {
         transform: scale(1.15);
     }
 }
+
+/* ========== MODAL OVERRIDES ========== */
+/* Prevent dark theme from affecting modals */
+dialog.modal {
+    background-color: transparent;
+}
+
+dialog.modal .modal-box {
+    background-color: #2a303c !important; /* DaisyUI dark box color */
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box h3 {
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box .label-text {
+    color: #a6adbb !important;
+}
+
+dialog.modal .modal-box input,
+dialog.modal .modal-box select,
+dialog.modal .modal-box textarea {
+    background-color: #1d232a !important;
+    border-color: #3d4451 !important;
+    color: #f8f8f2 !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 14px !important;
+}
+
+dialog.modal .modal-box .btn {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+}
+
+dialog.modal .modal-box .btn-ghost {
+    color: #a6adbb !important;
+}
+
+dialog.modal .modal-box .btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #f8f8f2 !important;
+}
+
+dialog.modal .modal-box .btn-primary {
+    background-color: #661ae6 !important;
+    border-color: #661ae6 !important;
+    color: #fff !important;
+}
+
+dialog.modal .modal-box .btn-primary:hover {
+    background-color: #7b32f0 !important;
+}

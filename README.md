@@ -105,6 +105,10 @@ ADMIN_PATH=/admincp
 # JWT Secret (cambiar en producción)
 JWT_SECRET=your-secret-key-change-in-production
 
+# Límites de payload (opcional)
+REQUEST_MAX_JSON_BYTES=1000000  # bytes máx por request JSON (1MB por defecto)
+REQUEST_MAX_JSON_DEPTH=30       # profundidad máxima del JSON
+
 # Base de datos
 DATABASE_URL=./data/db.sqlite  # SQLite para dev
 # DATABASE_URL=postgresql://user:password@host:5432/db  # PostgreSQL para prod
@@ -380,6 +384,10 @@ deno task db:seed          # Insertar datos de prueba y usuario admin
 # Testing
 deno task test             # Ejecutar tests
 deno task test:watch       # Tests en modo watch
+# Suite completa (incluye integración/seguridad, usa DB en memoria con bootstrap automático)
+deno test -A
+
+Más detalles sobre el bootstrap en `docs/DB_BOOTSTRAP.md`.
 ```
 
 ## 📡 API REST Endpoints

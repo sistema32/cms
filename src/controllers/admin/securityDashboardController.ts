@@ -8,6 +8,11 @@ import { securityLogService } from "../../services/security/securityLogService.t
 import { ipManagementService } from "../../services/security/ipManagementService.ts";
 import { rateLimitConfigService } from "../../services/security/rateLimitConfigService.ts";
 import { securityRuleService } from "../../services/security/securityRuleService.ts";
+import { AppError } from "@/platform/errors.ts";
+import { createLogger } from "@/platform/logger.ts";
+import { getErrorMessage } from "@/utils/errors.ts";
+
+const log = createLogger("securityDashboardController");
 
 export class SecurityDashboardController {
     /**
@@ -52,11 +57,8 @@ export class SecurityDashboardController {
                 },
             });
         } catch (error) {
-            console.error("Error getting security dashboard:", error);
-            return c.json({
-                success: false,
-                error: "Failed to load security dashboard",
-            }, 500);
+            log.error("Error getting security dashboard", error instanceof Error ? error : undefined);
+            throw new AppError("security_dashboard_failed", getErrorMessage(error), 500);
         }
     }
 }

@@ -2,29 +2,9 @@
  * Utilidades de sanitización para prevenir XSS y otras vulnerabilidades
  */
 
-/**
- * Lista de tags HTML permitidos (whitelist)
- */
-const ALLOWED_TAGS = [
-  'p', 'br', 'strong', 'em', 'b', 'i', 'u',
-  'ul', 'ol', 'li',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'blockquote', 'code', 'pre',
-  'a', 'img',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td',
-  'div', 'span'
-];
-
-/**
- * Atributos permitidos por tag
- */
-const ALLOWED_ATTRIBUTES: Record<string, string[]> = {
-  'a': ['href', 'title', 'target'],
-  'img': ['src', 'alt', 'title', 'width', 'height'],
-  'div': ['class'],
-  'span': ['class'],
-  'p': ['class'],
-  'code': ['class'],
+export type RichTextPolicy = {
+  allowedTags: string[];
+  allowedAttributes: Record<string, string[]>;
 };
 
 /**
@@ -44,12 +24,121 @@ const DANGEROUS_PATTERNS = [
   /<base\b[^>]*>/gi,
 ];
 
+const RICH_TEXT_POLICIES: Record<string, RichTextPolicy> = {
+  default: {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "em",
+      "b",
+      "i",
+      "u",
+      "ul",
+      "ol",
+      "li",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "blockquote",
+      "code",
+      "pre",
+      "a",
+      "img",
+      "table",
+      "thead",
+      "tbody",
+      "tr",
+      "th",
+      "td",
+      "div",
+      "span",
+    ],
+    allowedAttributes: {
+      a: ["href", "title", "target"],
+      img: ["src", "alt", "title", "width", "height"],
+      div: ["class"],
+      span: ["class"],
+      p: ["class"],
+      code: ["class"],
+    },
+  },
+  comment: {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "em",
+      "b",
+      "i",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "code",
+      "pre",
+      "a",
+    ],
+    allowedAttributes: {
+      a: ["href", "title"],
+      code: ["class"],
+    },
+  },
+  adminNote: {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "em",
+      "b",
+      "i",
+      "u",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "code",
+      "pre",
+      "a",
+      "table",
+      "thead",
+      "tbody",
+      "tr",
+      "th",
+      "td",
+      "div",
+      "span",
+    ],
+    allowedAttributes: {
+      a: ["href", "title", "target"],
+      div: ["class"],
+      span: ["class"],
+      table: ["class"],
+      code: ["class"],
+    },
+  },
+};
+
+function getPolicy(name: keyof typeof RICH_TEXT_POLICIES | string): RichTextPolicy {
+  return RICH_TEXT_POLICIES[name as keyof typeof RICH_TEXT_POLICIES] ??
+    RICH_TEXT_POLICIES.default;
+}
+
+export const richTextPolicies = RICH_TEXT_POLICIES;
+
 /**
  * Sanitiza HTML removiendo scripts y contenido peligroso
  */
-export function sanitizeHTML(dirty: string | null | undefined): string {
+export function sanitizeRichText(
+  dirty: string | null | undefined,
+  policyName: keyof typeof RICH_TEXT_POLICIES | string = "default",
+): string {
   if (!dirty) return '';
 
+  const policy = getPolicy(policyName);
   let clean = dirty;
 
   // Remover patrones peligrosos
@@ -63,13 +152,13 @@ export function sanitizeHTML(dirty: string | null | undefined): string {
     const tag = tagName.toLowerCase();
 
     // Si el tag no está permitido, remover el tag pero mantener contenido
-    if (!ALLOWED_TAGS.includes(tag)) {
+    if (!policy.allowedTags.includes(tag)) {
       return '';
     }
 
     // Si es un tag permitido, limpiar atributos peligrosos
     if (match.includes('=')) {
-      const allowedAttrs = ALLOWED_ATTRIBUTES[tag] || [];
+      const allowedAttrs = policy.allowedAttributes[tag] || [];
 
       // Extraer y validar atributos
       const attrPattern = /(\w+)\s*=\s*["']([^"']*)["']/g;
@@ -96,6 +185,10 @@ export function sanitizeHTML(dirty: string | null | undefined): string {
   });
 
   return clean.trim();
+}
+
+export function sanitizeHTML(dirty: string | null | undefined): string {
+  return sanitizeRichText(dirty, "default");
 }
 
 /**
@@ -258,7 +351,7 @@ export function sanitizeLikeQueryArray(
  * }
  * ```
  */
-export function validateSearchQuery(
+function validateSearchQuery(
   query: string | null | undefined,
   maxLength: number = 100,
 ): string {
